@@ -5,7 +5,7 @@ agent:
     type: e1-standard-2
     os_image: ubuntu2004
 execution_time_limit:
-  hours: 3
+  hours: 2
 global_job_config:
   prologue:
     commands:
@@ -34,7 +34,7 @@ global_job_config:
 blocks:
   - name: CI
     execution_time_limit:
-      hours: 3
+      hours: 2
     task:
       jobs:
         - name: CI
