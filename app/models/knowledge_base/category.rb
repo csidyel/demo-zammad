@@ -32,6 +32,8 @@ class KnowledgeBase::Category < ApplicationModel
 
   validates :category_icon, presence: true
 
+  validate :cannot_be_child_of_parent
+
   scope :root,   -> { where(parent: nil) }
   scope :sorted, -> { order(position: :asc) }
 
@@ -53,7 +55,8 @@ class KnowledgeBase::Category < ApplicationModel
 
   def self_parent?(candidate)
     return true if candidate == parent
-    return true if parent&.self_parent?(candidate)
+
+    true if parent&.self_parent?(candidate)
   end
 
   def self_with_children
@@ -136,7 +139,6 @@ class KnowledgeBase::Category < ApplicationModel
   def cannot_be_child_of_parent
     errors.add(:parent_id, __('cannot be a subcategory of the parent category')) if self_parent?(self)
   end
-  validate :cannot_be_child_of_parent
 
   def sibling_categories
     parent&.children || knowledge_base.categories.root
