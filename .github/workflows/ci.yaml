@@ -59,10 +59,14 @@ jobs:
         uses: actions/cache@v3
         with:
           path: .yarn/cache
-          key: ${{ runner.os }}-cache-npm-${{ hashFiles('yarn.lock') }}    
+          key: ${{ runner.os }}-cache-npm-${{ hashFiles('yarn.lock') }} 
+      - name: Yarn install
         run: yarn install
+      - name: Install Cypress
         run: yarn cypress:install
+      - name: Yarn test
         run: yarn test
+      - name: Frontend
         run: yarn test:ci:ct
   Tests:
     strategy:
