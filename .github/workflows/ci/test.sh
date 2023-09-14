@@ -22,9 +22,9 @@ bundle exec rake zammad:db:init
 #TEST_BOOSTERS_RSPEC_TEST_EXCLUDE_PATTERN='spec/system/**/*_spec.rb' TB_RSPEC_OPTIONS="-t ~searchindex -t ~integration -t ~required_envs" rspec_booster --job "${JOB_INDEX}/${JOB_COUNT}"
 
 gem install knapsack_pro
-KNAPSACK_PRO_TEST_FILE_EXCLUDE_PATTERN='spec/system/**/*_spec.rb' bundle exec knapsack_pro:queue:rspec -t ~searchindex -t ~integration -t ~required_envs
+KNAPSACK_PRO_TEST_FILE_EXCLUDE_PATTERN='spec/system/**/*_spec.rb' bundle exec knapsack_pro:rspec -t ~searchindex -t ~integration -t ~required_envs
 
 echo "Running basic minitest tests..."
 bundle exec rake zammad:db:reset
-bundle exec rake knapsack_pro:queue:minitest
+bundle exec rake knapsack_pro:minitest
 #bundle exec rake test:units
