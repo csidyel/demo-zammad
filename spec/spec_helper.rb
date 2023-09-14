@@ -18,6 +18,12 @@
 # users commonly want.
 #
 # See http://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
+require 'knapsack_pro'
+
+# Custom Knapsack Pro config here
+
+KnapsackPro::Adapters::RSpecAdapter.bind
+
 require 'webmock/rspec'
 
 RSpec.configure do |config|
