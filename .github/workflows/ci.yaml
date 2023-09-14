@@ -13,6 +13,7 @@ env:
   CI_SKIP_ASSETS_PRECOMPILE: 'true'
   # Avoid unnecessary DB resets.
   CI_SKIP_DB_RESET: 'true'
+
 jobs:
   Lint:
     runs-on: ubuntu-latest
@@ -71,7 +72,8 @@ jobs:
   Tests:
     strategy:
       matrix:
-        JobIndex: [1,2,3,4]
+        ci_node_total: [2]
+        ci_node_index: [0, 1]
     runs-on: ubuntu-latest
     container:
       image: zammad/zammad-ci:latest
@@ -85,8 +87,14 @@ jobs:
         # Use Redis 5 which is shipped in Debian 10.
         image: redis:5
     env:
-      JOB_INDEX: ${{matrix.JobIndex}}
-      JOB_COUNT: ${{strategy.job-total}}
+      #JOB_INDEX: ${{matrix.JobIndex}}
+      #JOB_COUNT: ${{strategy.job-total}}
+      KNAPSACK_PRO_TEST_SUITE_TOKEN_RSPEC: ${{ secrets.KNAPSACK_PRO_TEST_SUITE_TOKEN_RSPEC }}
+      KNAPSACK_PRO_TEST_SUITE_TOKEN_MINITEST: ${{ secrets.KNAPSACK_PRO_TEST_SUITE_TOKEN_MINITEST }}
+      KNAPSACK_PRO_TEST_SUITE_TEST_UNIT: ${{ secrets.KNAPSACK_PRO_TEST_SUITE_TOKEN_TEST_UNIT }}
+      KNAPSACK_PRO_CI_NODE_TOTAL: ${{ matrix.ci_node_total }}
+      KNAPSACK_PRO_CI_NODE_INDEX: ${{ matrix.ci_node_index }}
+      KNAPSACK_PRO_LOG_LEVEL: info
     steps:
       - name: Checkout
         uses: actions/checkout@v3
