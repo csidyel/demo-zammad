@@ -18,9 +18,13 @@ bundle exec rake assets:precompile
 echo "Running basic rspec tests..."
 bundle exec rake zammad:db:init
 #bundle exec rspec --exclude-pattern "spec/system/**/*_spec.rb" -t ~searchindex -t ~integration -t ~required_envs
-gem install semaphore_test_boosters
-TEST_BOOSTERS_RSPEC_TEST_EXCLUDE_PATTERN='spec/system/**/*_spec.rb' TB_RSPEC_OPTIONS="-t ~searchindex -t ~integration -t ~required_envs" rspec_booster --job "${JOB_INDEX}/${JOB_COUNT}"
+#gem install semaphore_test_boosters
+#TEST_BOOSTERS_RSPEC_TEST_EXCLUDE_PATTERN='spec/system/**/*_spec.rb' TB_RSPEC_OPTIONS="-t ~searchindex -t ~integration -t ~required_envs" rspec_booster --job "${JOB_INDEX}/${JOB_COUNT}"
+
+gem install knapsack_pro
+bundle exec rake knapsack_pro:queue:rspec
 
 echo "Running basic minitest tests..."
 bundle exec rake zammad:db:reset
-bundle exec rake test:units
+bundle exec rake knapsack_pro:queue:minitest
+#bundle exec rake test:units
