@@ -73,7 +73,7 @@ jobs:
     strategy:
       matrix:
         ci_node_total: [2]
-        ci_node_index: [0, 1]
+        ci_node_index: [0, 1, 2, 3]
     runs-on: ubuntu-latest
     container:
       image: zammad/zammad-ci:latest
