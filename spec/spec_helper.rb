@@ -18,13 +18,23 @@
 # users commonly want.
 #
 # See http://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
+
 require 'knapsack_pro'
+require 'webmock/rspec'
+require 'vcr'
 
 # Custom Knapsack Pro config here
 
 KnapsackPro::Adapters::RSpecAdapter.bind
 
-require 'webmock/rspec'
+VCR.configure do |config|
+  config.hook_into :webmock
+  config.ignore_hosts('localhost', '127.0.0.1', '0.0.0.0', 'api.knapsackpro.com')
+end
+
+WebMock.disable_net_connect!(allow_localhost: true, allow: ['api.knapsackpro.com'])
+
+# Rest of config
 
 RSpec.configure do |config|
   # rspec-expectations config goes here. You can use an alternate

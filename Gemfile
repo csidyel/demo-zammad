@@ -248,6 +248,8 @@ group :development, :test do
 
   # self-signed localhost certificates for puma / capybara
   gem 'localhost'
+
+  gem "knapsack_pro"
 end
 
 # To permanently extend Zammad with additional gems, you can specify them in Gemfile.local.

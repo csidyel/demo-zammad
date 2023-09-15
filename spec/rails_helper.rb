@@ -1,11 +1,5 @@
 # Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
 
-require 'knapsack_pro'
-
-# Custom Knapsack Pro config here
-
-KnapsackPro::Adapters::RSpecAdapter.bind
-
 # This file is copied to spec/ when you run 'rails generate rspec:install'
 ENV['RAILS_ENV'] ||= 'test'
 require File.expand_path('../config/environment', __dir__)
