@@ -26,5 +26,5 @@ bundle exec rake "knapsack_pro:rspec[-t ~searchindex -t ~integration -t ~require
 
 echo "Running basic minitest tests..."
 bundle exec rake zammad:db:reset
-bundle exec rake knapsack_pro:minitest
+bundle exec rake knapsack_pro:test_unit
 #bundle exec rake test:units
