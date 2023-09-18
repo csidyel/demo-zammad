@@ -8,16 +8,10 @@ knapsack_pro_adapter = KnapsackPro::Adapters::TestUnitAdapter.bind
 knapsack_pro_adapter.set_test_helper_path(__FILE__)
 
 ENV['RAILS_ENV'] = 'test'
-#require File.expand_path('../config/environment', __dir__)
-require File.expand_path('../../config/environment', __FILE__)
+require File.expand_path('../config/environment', __dir__)
 require 'rails/test_help'
 require 'test_support_helper'
-require 'knapsack_pro'
 
-# Custom Knapsack Pro config here
-
-knapsack_pro_adapter = KnapsackPro::Adapters::MinitestAdapter.bind
-knapsack_pro_adapter.set_test_helper_path(__FILE__)
 class ActiveSupport::TestCase
 
   # disable transactions / to work with own database connections for each thread
