@@ -1,7 +1,15 @@
 # Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
 
+require 'knapsack_pro'
+
+# Custom Knapsack Pro config here
+
+knapsack_pro_adapter = KnapsackPro::Adapters::TestUnitAdapter.bind
+knapsack_pro_adapter.set_test_helper_path(__FILE__)
+
 ENV['RAILS_ENV'] = 'test'
-require File.expand_path('../config/environment', __dir__)
+#require File.expand_path('../config/environment', __dir__)
+require File.expand_path('../../config/environment', __FILE__)
 require 'rails/test_help'
 require 'minitest/profile'
 
@@ -9,7 +17,7 @@ require 'knapsack_pro'
 
 # Custom Knapsack Pro config here
 
-knapsack_pro_adapter = KnapsackPro::Adapters::TestUnitAdapter.bind
+knapsack_pro_adapter = KnapsackPro::Adapters::MinitestAdapter.bind
 knapsack_pro_adapter.set_test_helper_path(__FILE__)
 
 require 'test_support_helper'
