@@ -8,13 +8,6 @@ require 'json'
 require 'net/http'
 require 'uri'
 
-require 'knapsack_pro'
-
-# Custom Knapsack Pro config here
-
-knapsack_pro_adapter = KnapsackPro::Adapters::MinitestAdapter.bind
-knapsack_pro_adapter.set_test_helper_path(__FILE__)
-
 # This is a workaround for running the browser test suite
 # in an alphabetical order
 # because `test/browser/aaa_*` tests are required to run first
