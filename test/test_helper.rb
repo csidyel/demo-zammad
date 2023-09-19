@@ -2,12 +2,6 @@
 
 ENV['RAILS_ENV'] = 'test'
 require File.expand_path('../config/environment', __dir__)
-require 'knapsack_pro'
-
-# Custom Knapsack Pro config here
-
-knapsack_pro_adapter = KnapsackPro::Adapters::MinitestAdapter.bind
-knapsack_pro_adapter.set_test_helper_path(__FILE__)
 require 'rails/test_help'
 require 'minitest/profile'
 
