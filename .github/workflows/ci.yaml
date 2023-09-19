@@ -13,7 +13,6 @@ env:
   CI_SKIP_ASSETS_PRECOMPILE: "true"
   # Avoid unnecessary DB resets.
   CI_SKIP_DB_RESET: "true"
-  ES_URL: "http://127.0.0.1:9200"
 
 jobs:
   Lint:
