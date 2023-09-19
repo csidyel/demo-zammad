@@ -1,20 +1,19 @@
 # Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
 
-ENV['RAILS_ENV'] = 'test'
-# rubocop:disable Lint/NonLocalExitFromIterator, Style/GuardClause, Lint/MissingCopEnableDirective
-#require File.expand_path('../config/environment', __dir__)
-require File.expand_path('../../config/environment', __FILE__)
-require 'selenium-webdriver'
-require 'json'
-require 'net/http'
-require 'uri'
-
 require 'knapsack_pro'
 
 # Custom Knapsack Pro config here
 
 knapsack_pro_adapter = KnapsackPro::Adapters::MinitestAdapter.bind
 knapsack_pro_adapter.set_test_helper_path(__FILE__)
+
+ENV['RAILS_ENV'] = 'test'
+# rubocop:disable Lint/NonLocalExitFromIterator, Style/GuardClause, Lint/MissingCopEnableDirective
+require File.expand_path('../config/environment', __dir__)
+require 'selenium-webdriver'
+require 'json'
+require 'net/http'
+require 'uri'
 
 # This is a workaround for running the browser test suite
 # in an alphabetical order
