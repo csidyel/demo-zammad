@@ -88,15 +88,8 @@ jobs:
         # Use Redis 5 which is shipped in Debian 10.
         image: redis:5
     env:
-      #JOB_INDEX: ${{matrix.JobIndex}}
-      #JOB_COUNT: ${{strategy.job-total}}
-      KNAPSACK_PRO_TEST_SUITE_TOKEN_RSPEC: ${{ secrets.KNAPSACK_PRO_TEST_SUITE_TOKEN_RSPEC }}
-      KNAPSACK_PRO_TEST_SUITE_TOKEN_MINITEST: ${{ secrets.KNAPSACK_PRO_TEST_SUITE_TOKEN_MINITEST }}
-      KNAPSACK_PRO_TEST_SUITE_TOKEN_TEST_UNIT: ${{ secrets.KNAPSACK_PRO_TEST_SUITE_TOKEN_TEST_UNIT }}
-      KNAPSACK_PRO_CI_NODE_TOTAL: ${{ matrix.ci_node_total }}
-      KNAPSACK_PRO_CI_NODE_INDEX: ${{ matrix.ci_node_index }}
-      KNAPSACK_PRO_TEST_FILE_EXCLUDE_PATTERN: "spec/system/**/*_spec.rb"
-      KNAPSACK_PRO_LOG_LEVEL: info
+      JOB_INDEX: ${{matrix.JobIndex}}
+      JOB_COUNT: ${{strategy.job-total}}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
