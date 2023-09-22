@@ -26,7 +26,6 @@ jobs:
           POSTGRES_USER: zammad
           POSTGRES_PASSWORD: zammad
       redis:
-        # Use Redis 5 which is shipped in Debian 10.
         image: redis:5
     steps:
       - name: Checkout
