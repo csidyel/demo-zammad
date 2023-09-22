@@ -11,7 +11,7 @@ env:
   REDIS_URL: redis://redis:6379
   # Compile assets only once
   CI_SKIP_ASSETS_PRECOMPILE: "true"
-  # Avoid unnecessary DB resets.
+  # Avoid unnecessary DB resets
   CI_SKIP_DB_RESET: "true"
 
 jobs:
