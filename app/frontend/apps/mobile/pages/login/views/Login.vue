@@ -58,7 +58,6 @@ const { forceDesktop } = useForceDesktop()
 const { twoFactorPlugins, twoFactorMethods } = useTwoFactorPlugins()
 
 const finishLogin = () => {
-  // TODO: maybe we need some additional logic for the ThirtParty-Login situtation.
   const { redirect: redirectUrl } = route.query
   if (typeof redirectUrl === 'string') {
     router.replace(redirectUrl)
@@ -224,7 +223,11 @@ const hasAlternativeLoginMethod = computed(() => {
           )
         }}
       </p>
-      <CommonLink link="/#admin_password_auth" class="font-semibold text-gray">
+      <CommonLink
+        link="/#admin_password_auth"
+        class="font-semibold text-gray"
+        @click="forceDesktop"
+      >
         {{ $t('Request the password login here.') }}
       </CommonLink>
     </section>

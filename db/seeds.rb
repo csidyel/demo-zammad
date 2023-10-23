@@ -8,8 +8,14 @@
 #   cities = City.create([{ :name => 'Chicago' }, { :name => 'Copenhagen' }])
 #   Mayor.create(:name => 'Emanuel', :city => cities.first)
 
+if User.any?
+  warn 'Database already has data, skipping seed.'
+  return
+end
+
 # clear old caches to start from scratch
 Rails.cache.clear
+ApplicationModel.reset_column_information
 
 # this is the __ordered__ list of seed files
 # extend only if needed - try to add your changes

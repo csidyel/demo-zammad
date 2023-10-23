@@ -3,7 +3,7 @@ class App.Macro extends App.Model
   @extend Spine.Model.Ajax
   @url: @apiPath + '/macros'
   @configure_attributes = [
-    { name: 'name',            display: __('Name'),              tag: 'input', type: 'text', limit: 100, null: false },
+    { name: 'name',            display: __('Name'),              tag: 'input', type: 'text', translate: true, limit: 100, null: false },
     { name: 'perform',         display: __('Actions'),           tag: 'ticket_perform_action',           null: true
     },
     { name: 'ux_flow_next_up', display: __('Once completed…'), tag: 'select', default: 'none', translate: true, options: {
@@ -12,7 +12,7 @@ class App.Macro extends App.Model
     },
     { name: 'updated_at',      display: __('Updated'),  tag: 'datetime',      readonly: 1 },
     { name: 'note',            display: __('Note'),     tag: 'textarea',      limit:   250,      null: true },
-    { name: 'group_ids',       display: __('Groups'),   tag: 'column_select', relation: 'Group', null: true, unsortable: true },
+    { name: 'group_ids',       display: __('Groups'),   tag: 'column_select', relation: 'Group', null: true, unsortable: true, display_full_name: true },
     { name: 'active',          display: __('Active'),   tag: 'active',        default: true },
   ]
   @configure_delete = true

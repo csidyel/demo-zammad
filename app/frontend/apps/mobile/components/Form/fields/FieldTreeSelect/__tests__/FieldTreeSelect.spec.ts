@@ -1013,7 +1013,7 @@ describe('Form - Field - TreeSelect - Features', () => {
 
     expect(selectOptions).toHaveLength(1)
 
-    expect(selectOptions[0]).toHaveTextContent('Item IV — Item A — Item 2')
+    expect(selectOptions[0]).toHaveTextContent('Item IV — Item A › Item 2')
 
     await wrapper.events.click(wrapper.getByLabelText('Clear Search'))
 
@@ -1081,7 +1081,7 @@ describe('Form - Field - TreeSelect - Features', () => {
     selectOptions = wrapper.getAllByRole('option')
 
     expect(selectOptions).toHaveLength(1)
-    expect(selectOptions[0]).toHaveTextContent('Item III — Item A — Item 1')
+    expect(selectOptions[0]).toHaveTextContent('Item III — Item A › Item 1')
 
     await wrapper.rerender({ noFiltering: true })
 
@@ -1410,6 +1410,32 @@ describe('Form - Field - TreeSelect - Visuals', () => {
 
     await expect(
       view.findByIconName('mobile-chevron-left'),
+    ).resolves.toBeInTheDocument()
+  })
+
+  it('back button arrow changes direction when locale changes', async () => {
+    const view = renderComponent(FormKit, {
+      ...wrapperParameters,
+      props: {
+        label: 'Select…',
+        type: 'treeselect',
+        options: testOptions,
+      },
+    })
+
+    await view.events.click(view.getByLabelText('Select…'))
+
+    await view.events.click(view.getAllByIconName('mobile-chevron-right')[0])
+
+    expect(view.getByIconName('mobile-chevron-left')).toBeInTheDocument()
+
+    const locale = useLocaleStore()
+    locale.localeData = {
+      dir: EnumTextDirection.Rtl,
+    } as any
+
+    await expect(
+      view.findByIconName('mobile-chevron-right'),
     ).resolves.toBeInTheDocument()
   })
 })

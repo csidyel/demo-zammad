@@ -4,7 +4,7 @@ source 'https://rubygems.org'
 
 # core - base
 ruby '3.1.3'
-gem 'rails', '~> 6.1.0'
+gem 'rails', '~> 7.0.8'
 
 # TEMPORARY Security updates from Ruby 3.1.4. Can be removed when updating from Ruby 3.1.3 to a higher version.
 # See also: https://www.ruby-lang.org/en/news/2023/03/30/ruby-3-1-4-released/
@@ -18,6 +18,7 @@ gem 'activerecord-session_store'
 gem 'bootsnap', require: false
 gem 'composite_primary_keys'
 gem 'json'
+gem 'parallel'
 
 # core - application servers
 gem 'puma', group: :puma
@@ -66,6 +67,9 @@ gem 'dalli', require: false
 
 # Vite is required by the web server
 gem 'vite_rails'
+
+# asset handling - config.assets for pipeline
+gem 'sprockets-rails'
 
 # Only load gems for asset compilation if they are needed to avoid
 #   having unneeded runtime dependencies like NodeJS.
@@ -183,6 +187,9 @@ gem 'openssl'
 gem 'byk', require: false
 gem 'PoParser', require: false
 
+# Simple storage
+gem 'aws-sdk-s3', require: false
+
 # Gems used only for develop/test and not required
 # in production environments by default.
 group :development, :test do
@@ -248,6 +255,10 @@ group :development, :test do
 
   # self-signed localhost certificates for puma / capybara
   gem 'localhost'
+
+  # Keycloak admin tool for setting up SAML auth tests
+  gem 'httparty'
+  gem 'keycloak-admin', git: 'https://github.com/tschaefer/ruby-keycloak-admin/', branch: 'develop', require: false
 end
 
 # To permanently extend Zammad with additional gems, you can specify them in Gemfile.local.

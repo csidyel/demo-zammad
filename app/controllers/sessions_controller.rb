@@ -223,7 +223,6 @@ class SessionsController < ApplicationController
       next if session.data['user_id'].blank?
 
       sessions_clean.push session
-      next if session.data['user_id']
 
       user = User.lookup(id: session.data['user_id'])
       next if !user
@@ -315,6 +314,8 @@ class SessionsController < ApplicationController
     if current_user
       config['session_id'] = session.id.public_id
     end
+
+    config['core_workflow_config'] = CoreWorkflow.config
 
     config
   end

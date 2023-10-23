@@ -22,8 +22,6 @@ class User < ApplicationModel
   include User::PerformsGeoLookup
   include User::UpdatesTicketOrganization
 
-  include HasTransactionDispatcher
-
   has_and_belongs_to_many :organizations,          after_add: %i[cache_update create_organization_add_history], after_remove: %i[cache_update create_organization_remove_history], class_name: 'Organization'
   has_and_belongs_to_many :overviews,              dependent: :nullify
   has_many                :tokens,                 after_add: :cache_update, after_remove: :cache_update, dependent: :destroy
@@ -56,9 +54,12 @@ class User < ApplicationModel
   validate :ensure_uniq_email, unless: :skip_ensure_uniq_email
 
   # workflow checks should run after before_create and before_update callbacks
+  # the transaction dispatcher must be run after the workflow checks!
   include ChecksCoreWorkflow
+  include HasTransactionDispatcher
 
-  core_workflow_screens 'create', 'edit'
+  core_workflow_screens 'create', 'edit', 'invite_agent'
+  core_workflow_admin_screens 'create', 'edit'
 
   store :preferences
 
@@ -910,6 +911,7 @@ try to find correct name
   end
 
   def ensure_email
+    return if Setting.get('import_mode')
     return if email.blank?
     return if id == 1
 
@@ -999,7 +1001,7 @@ try to find correct name
       where += ' OR ' if where != ''
       where += 'permissions.name = ? OR permissions.name LIKE ?'
       where_bind.push permission_name
-      where_bind.push "#{permission_name}.%"
+      where_bind.push "#{SqlHelper.quote_like(permission_name)}.%"
     end
     return [] if where == ''
 

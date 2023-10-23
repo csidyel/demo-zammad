@@ -185,6 +185,7 @@ QUnit.test("form elements check", assert => {
   });
   assert.equal(el.find('[name="tree_select"]').val(), 'aa::aab', 'check tree_select value');
   assert.equal(el.find('[name="tree_select"]').closest('.searchableSelect').find('.js-input').val(), 'yes2', 'check tree_select .js-input value');
+  assert.equal(el.find('[name="tree_select"]').closest('.searchableSelect').find('.js-input').attr('title'), 'yes › yes2', 'check tree_select .js-input tooltip');
   var params = App.ControllerForm.params(el)
   var test_params = {
     tree_select: 'aa::aab'

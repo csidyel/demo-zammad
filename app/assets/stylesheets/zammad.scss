@@ -429,6 +429,23 @@ ul {
   }
 }
 
+.u-breakNormal.u-breakNormal {
+  word-break: normal;
+
+  @supports (overflow-wrap: normal) {
+    overflow-wrap: normal;
+  }
+}
+
+.u-breakWords.u-breakWords {
+  word-break: break-word;
+
+  @supports (overflow-wrap: break-word) {
+    overflow-wrap: break-word;
+    word-break: unset;
+  }
+}
+
 .zIndex-1 {
   z-index: 100;
 }
@@ -2544,7 +2561,7 @@ select[multiple]:focus {
 .select.form-group,
 .user_autocompletion.form-group {
   .form-control:not([multiple]) {
-    padding-right: 21px;
+    @include ltr(padding-right, 21px);
   }
 }
 
@@ -2560,6 +2577,31 @@ select[multiple]:focus {
   height: 7px;
 
   @extend .u-unclickable;
+}
+
+.dropdown-clear {
+  position: absolute;
+  padding: 1px;
+
+  @include bidi-style(right, 12px, left, auto);
+
+  top: 50%;
+  margin-top: -7px;
+  border: 1px solid transparent;
+
+  .icon-diagonal-cross {
+    display: block;
+    width: 10px;
+    height: 10px;
+    fill: var(--interactive-muted);
+  }
+
+  &:focus {
+    outline: none;
+    border-radius: 3px;
+    border-color: var(--border-highlight);
+    box-shadow: 0 0 0 3px var(--shadow-highlight);
+  }
 }
 
 select::-ms-expand {
@@ -4230,6 +4272,10 @@ footer {
   @include phone {
     flex-direction: column;
     align-items: flex-end;
+  }
+
+  .form-group.tree_select {
+    overflow: visible;
   }
 }
 
@@ -7920,7 +7966,7 @@ a.list-group-item.active > .badge,
   justify-content: center;
   position: absolute;
 
-  @include bidi-style(left, -55px, right, auto);
+  @include bidi-style(left, -56px, right, auto);
 
   top: 0;
   bottom: 0;
@@ -8546,7 +8592,8 @@ li.list-item-none {
 }
 
 .token {
-  padding: 0 0 0 10px;
+  @include ltr(padding, 0 0 0 10px);
+
   margin: 0 5px 6px 0;
   height: 26px;
   color: var(--tag-text);
@@ -8602,6 +8649,9 @@ li.list-item-none {
 
 .token-label {
   padding: 0;
+
+  @include rtl(padding, 0 10px 0 0);
+
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -9270,10 +9320,6 @@ li.dropdown-header {
 
   display: flex;
 
-  &:not(:hover, .is-active) {
-    background: hsl(206, 7%, 28%);
-  }
-
   .icon {
     fill: var(--text-inverted);
 
@@ -9402,12 +9448,18 @@ li.dropdown-header {
   background: hsl(147, 52%, 43%);
 }
 
-.recipientList-controls,
-.recipientList-controls:hover {
+.recipientList-controls {
   @extend .u-clickable;
 
   padding: 0 10px !important;
-  background: var(--background-modifier-lighter);
+
+  .dropdown &:hover {
+    background: var(--supergood-color);
+
+    .icon-arrow-left {
+      fill: var(--text-inverted);
+    }
+  }
 
   & + li {
     box-shadow: 0 1px rgba(255, 255, 255, 0.13) inset;
@@ -9853,6 +9905,11 @@ li.dropdown-header {
 
   &.wizard-slide--large {
     width: 460px;
+  }
+
+  &.wizard-slide--very-large {
+    width: auto;
+    max-width: 990px;
   }
 }
 
@@ -11281,6 +11338,10 @@ output {
   .settings-list--bottom-button {
     margin-top: 10px;
   }
+
+  .settings-list-middle {
+    vertical-align: middle;
+  }
 }
 
 .settings-list--roles-permissions {
@@ -11419,15 +11480,39 @@ output {
     }
 
     &.is-inactive {
-      opacity: 0.73;
-      text-decoration: line-through;
-      pointer-events: none;
+      opacity: 0.33;
+      cursor: not-allowed;
     }
   }
 
   &.dropdown li {
-    &:hover:not(.is-active) {
+    &.has-inactive {
+      cursor: unset;
+    }
+
+    &.js-enter:hover,
+    &.js-enter.is-active {
       background: none;
+
+      + li {
+        box-shadow: 0 1px rgba(255, 255, 255, 0.13) inset;
+      }
+    }
+
+    &.js-enter.is-highlighted {
+      span.searchableSelect-option-text {
+        background: var(--highlight);
+      }
+    }
+
+    &.js-back:hover,
+    &.js-back.is-active {
+      background: var(--supergood-color);
+
+      .icon-arrow-left,
+      .icon-arrow-right {
+        opacity: 1;
+      }
     }
 
     &.is-hidden {
@@ -11438,11 +11523,46 @@ output {
       padding: 0;
 
       span.searchableSelect-option-text {
-        padding: 11px 15px;
+        @include ltr(padding, 11px 45px 11px 15px);
+        @include rtl(padding, 11px 15px 11px 45px);
+      }
+
+      span.searchableSelect-option-checkmark {
+        @include ltr(margin-left, -31px);
+        @include ltr(padding-right, 15px);
+        @include rtl(margin-right, -31px);
+        @include rtl(padding-left, 15px);
       }
 
       span.searchableSelect-option-arrow {
         padding: 11px 15px;
+        cursor: pointer;
+
+        &:hover {
+          background: var(--supergood-color);
+
+          .recipientList-arrow {
+            opacity: 1;
+          }
+        }
+      }
+    }
+
+    span.searchableSelect-option-text {
+      @include ltr(padding-right, 45px);
+      @include rtl(padding-left, 45px);
+
+      &:hover {
+        background: var(--highlight);
+      }
+    }
+
+    span.searchableSelect-option-checkmark {
+      @include ltr(margin-left, -16px);
+      @include rtl(margin-right, 16px);
+
+      .icon-checkmark {
+        fill: var(--text-inverted);
       }
     }
   }

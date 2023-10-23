@@ -6,6 +6,24 @@ require 'system/examples/core_workflow_examples'
 require 'system/examples/text_modules_examples'
 
 RSpec.describe 'Ticket Create', type: :system do
+
+  context 'when calling without session' do
+    describe 'redirect to' do
+
+      it 'login screen after certain create was called', authenticated_as: false do
+        visit '#ticket/create/id/1234'
+
+        expect(page).to have_selector('#login')
+      end
+
+      it 'login screen after generic create was called', authenticated_as: false do
+        visit '#ticket/create'
+
+        expect(page).to have_selector('#login')
+      end
+    end
+  end
+
   context 'when logged in as non admin' do
     let(:agent) { create(:agent) }
 
@@ -850,7 +868,7 @@ RSpec.describe 'Ticket Create', type: :system do
     end
 
     it 'does not show double signature on template usage' do
-      select Group.first.name, from: 'group_id'
+      set_tree_select_value('group_id', Group.first.name)
       use_template(template)
       expect(page).to have_no_text('Test Other Agent')
     end
@@ -930,7 +948,7 @@ RSpec.describe 'Ticket Create', type: :system do
       it 'can create tickets for secondary organizations' do
         fill_in 'Title', with: 'test'
         find('.richtext-content').send_keys 'test'
-        select Group.first.name, from: 'group_id'
+        set_tree_select_value('group_id', Group.first.name)
 
         find('[name=customer_id_completion]').fill_in with: user1.firstname
         wait.until { page.all("li.recipientList-entry.js-object[data-object-id='#{user1.id}']").present? }
@@ -961,7 +979,7 @@ RSpec.describe 'Ticket Create', type: :system do
       it 'can create tickets for secondary organizations', authenticated_as: :customer1 do
         fill_in 'Title', with: 'test'
         find('.richtext-content').send_keys 'test'
-        select Group.first.name, from: 'group_id'
+        set_tree_select_value('group_id', Group.first.name)
         find('div[data-attribute-name=organization_id] .js-input').fill_in with: customer1.organizations[0].name, fill_options: { clear: :backspace }
         wait.until { page.all("div[data-attribute-name=organization_id] .js-option[data-value='#{customer1.organizations[0].id}']").present? }
         page.find("div[data-attribute-name=organization_id] .js-option[data-value='#{customer1.organizations[0].id}'] span").click
@@ -1428,6 +1446,68 @@ RSpec.describe 'Ticket Create', type: :system do
         expect(page.find_field('Title').value).to eq('title 123')
         expect(page.find('div[data-name=body]')['innerHTML']).to eq('<b>text 123</b>')
       end
+    end
+  end
+
+  describe 'Date field value of a ticket template is not added into a new ticket #4864', authenticated_as: :authenticate, db_strategy: :reset do
+    let(:field_name) { SecureRandom.uuid }
+    let(:field) do
+      create(:object_manager_attribute_date, :required_screen, name: field_name, display: field_name)
+      ObjectManager::Attribute.migration_execute
+    end
+    let(:template) do
+      create(:template, :dummy_data).tap do |template|
+        template.update(options: template.options.merge("ticket.#{field_name}" => { 'operator' => 'relative', 'value' => '1', 'range' => 'day' }))
+      end
+    end
+
+    def authenticate
+      field
+      true
+    end
+
+    before do
+      visit 'ticket/create'
+      use_template(template)
+    end
+
+    it 'does create a date with a relative template value' do
+      click '.js-submit'
+      expect(Ticket.last).to have_attributes(field_name => 1.day.from_now.to_date)
+    end
+  end
+
+  describe 'Setting a group via CoreWorkflow in the ticket creation mask does not update text module filters and email signatures #4891', authenticated_as: :authenticate do
+    let(:group_1) { create(:group, signature: create(:signature, body: SecureRandom.uuid)) }
+    let(:group_2) { create(:group, signature: create(:signature, body: SecureRandom.uuid)) }
+    let(:workflow_1) do
+      create(:core_workflow,
+             object:             'Ticket',
+             condition_selected: { 'ticket.priority_id'=>{ 'operator' => 'is', 'value' => Ticket::Priority.find_by(name: '3 high').id.to_s } },
+             perform:            { 'ticket.group_id' => { 'operator' => 'select', 'select' => group_1.id.to_s } })
+    end
+    let(:workflow_2) do
+      create(:core_workflow,
+             object:             'Ticket',
+             condition_selected: { 'ticket.priority_id'=>{ 'operator' => 'is', 'value' => Ticket::Priority.find_by(name: '1 low').id.to_s } },
+             perform:            { 'ticket.group_id' => { 'operator' => 'select', 'select' => group_2.id.to_s } })
+    end
+
+    def authenticate
+      workflow_1 && workflow_2
+      group_1 && group_2
+      create(:agent, groups: Group.all)
+    end
+
+    it 'does change the signature when switching group via core workflow' do
+      visit 'ticket/create'
+      find('[data-type=email-out]').click
+
+      page.find('[name=priority_id]').select '3 high'
+      expect(page).to have_text(group_1.signature.body)
+
+      page.find('[name=priority_id]').select '1 low'
+      expect(page).to have_text(group_2.signature.body)
     end
   end
 end

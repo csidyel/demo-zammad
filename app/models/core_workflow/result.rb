@@ -6,6 +6,10 @@ class CoreWorkflow::Result
   attr_accessor :payload, :payload_backup, :user, :assets, :assets_in_result, :result, :rerun, :form_updater, :restricted_fields
 
   def initialize(payload:, user:, assets: {}, assets_in_result: true, result: {}, form_updater: false)
+    if payload.respond_to?(:permit!)
+      payload = payload.permit!.to_h
+    end
+
     raise ArgumentError, __("The required parameter 'payload->class_name' is missing.") if !payload['class_name']
     raise ArgumentError, __("The required parameter 'payload->screen' is missing.") if !payload['screen']
 
@@ -31,6 +35,7 @@ class CoreWorkflow::Result
   def set_default
     @rerun = false
 
+    set_payload_body
     set_payload_customer_id_default
 
     @result[:restrict_values] = {}
@@ -51,6 +56,10 @@ class CoreWorkflow::Result
     end
 
     set_default_only_shown_if_selectable
+  end
+
+  def set_payload_body
+    @payload['params']['body'] = @payload.dig('params', 'article', 'body')
   end
 
   def set_payload_customer_id_default

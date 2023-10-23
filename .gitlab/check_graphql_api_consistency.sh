@@ -10,12 +10,13 @@ trap 'rm -f $TMP_FILE_BEFORE $TMP_FILE_AFTER' EXIT
 
 function serialize_graphql_api() {
   TARGET_FILE=$1
+  INTROSPECTION_FILE='app/graphql/graphql_introspection.json'
   TYPES_FILE='./app/frontend/shared/graphql/types.ts'
   API_FILES=$(find ./app/frontend -path '*/graphql/*' -name '*.api.ts')
-  cat $TYPES_FILE $API_FILES > $TARGET_FILE
+  cat $INTROSPECTION_FILE $TYPES_FILE $API_FILES > $TARGET_FILE
 }
 
-echo "Checking if auto-generated GraphQL API is up-to-date..."
+echo "Checking if auto-generated GraphQL API is up-to-date…"
 serialize_graphql_api $TMP_FILE_BEFORE
 yarn generate-graphql-api
 serialize_graphql_api $TMP_FILE_AFTER

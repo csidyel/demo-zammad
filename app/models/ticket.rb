@@ -38,16 +38,17 @@ class Ticket < ApplicationModel
   # This must be loaded late as it depends on the internal before_create and before_update handlers of ticket.rb.
   include Ticket::SetsLastOwnerUpdateTime
 
-  include HasTransactionDispatcher
-
   # workflow checks should run after before_create and before_update callbacks
+  # the transaction dispatcher must be run after the workflow checks!
   include ChecksCoreWorkflow
+  include HasTransactionDispatcher
 
   validates :group_id, presence: true
 
   activity_stream_permission 'ticket.agent'
 
   core_workflow_screens 'create_middle', 'edit', 'overview_bulk'
+  core_workflow_admin_screens 'create_middle', 'edit'
 
   activity_stream_attributes_ignored :organization_id, # organization_id will change automatically on user update
                                      :create_article_type_id,
@@ -1189,44 +1190,32 @@ returns a hex color code
       end
 
       # loop protection / check if maximal count of trigger mail has reached
-      map = {
-        10  => 10,
-        30  => 15,
-        60  => 25,
-        180 => 50,
-        600 => 100,
-      }
+      map = Setting.get('ticket_trigger_loop_protection_articles_per_ticket')
       skip = false
       map.each do |minutes, count|
         already_sent = Ticket::Article.where(
           ticket_id: id,
           sender:    Ticket::Article::Sender.find_by(name: 'System'),
           type:      Ticket::Article::Type.find_by(name: 'email'),
-        ).where('ticket_articles.created_at > ? AND ticket_articles.to LIKE ?', Time.zone.now - minutes.minutes, "%#{recipient_email.strip}%").count
+        ).where('ticket_articles.created_at > ? AND ticket_articles.to LIKE ?', Time.zone.now - minutes.minutes, "%#{SqlHelper.quote_like(recipient_email.strip)}%").count
         next if already_sent < count
 
-        logger.info "Send no trigger based notification to #{recipient_email} because already sent #{count} for this ticket within last #{minutes} minutes (loop protection)"
+        logger.error "Send no trigger based notification to #{recipient_email} because already sent #{count} for this ticket within last #{minutes} minutes (loop protection set by setting ticket_trigger_loop_protection_articles_per_ticket)"
         skip = true
         break
       end
       next if skip
 
-      map = {
-        10  => 30,
-        30  => 60,
-        60  => 120,
-        180 => 240,
-        600 => 360,
-      }
+      map = Setting.get('ticket_trigger_loop_protection_articles_total')
       skip = false
       map.each do |minutes, count|
         already_sent = Ticket::Article.where(
           sender: Ticket::Article::Sender.find_by(name: 'System'),
           type:   Ticket::Article::Type.find_by(name: 'email'),
-        ).where('ticket_articles.created_at > ? AND ticket_articles.to LIKE ?', Time.zone.now - minutes.minutes, "%#{recipient_email.strip}%").count
+        ).where('ticket_articles.created_at > ? AND ticket_articles.to LIKE ?', Time.zone.now - minutes.minutes, "%#{SqlHelper.quote_like(recipient_email.strip)}%").count
         next if already_sent < count
 
-        logger.info "Send no trigger based notification to #{recipient_email} because already sent #{count} in total within last #{minutes} minutes (loop protection)"
+        logger.error "Send no trigger based notification to #{recipient_email} because already sent #{count} in total within last #{minutes} minutes (loop protection set by setting ticket_trigger_loop_protection_articles_total)"
         skip = true
         break
       end

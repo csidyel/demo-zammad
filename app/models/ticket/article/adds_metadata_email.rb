@@ -47,7 +47,7 @@ module Ticket::Article::AddsMetadataEmail
     # generate message id, force it in production, in test allow to set it for testing reasons
     if !message_id || Rails.env.production?
       fqdn = Setting.get('fqdn')
-      self.message_id = "<#{DateTime.current.to_s(:number)}.#{ticket_id}.#{SecureRandom.uuid}@#{fqdn}>"
+      self.message_id = "<#{DateTime.current.to_fs(:number)}.#{ticket_id}.#{SecureRandom.uuid}@#{fqdn}>"
     end
 
     # generate message_id_md5
@@ -59,7 +59,7 @@ module Ticket::Article::AddsMetadataEmail
     email_address = ticket.group.email_address
 
     if !email_address
-      raise "No email address found for group '#{ticket.group.name}' (#{ticket.group_id})"
+      raise "No email address found for group '#{ticket.group.fullname}' (#{ticket.group_id})"
     end
 
     # remember email address for background job

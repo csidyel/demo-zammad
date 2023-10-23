@@ -36,26 +36,27 @@ class GettingStartedAgent extends App.ControllerWizardFullScreen
 
     @replaceWith App.view('getting_started/agent')()
 
+    @el
+      .find('.wizard-slide')
+      .addClass('wizard-slide--very-large')
+
+    role = App.Role.findByAttribute('name', 'Agent')
+
     @form = new App.ControllerForm(
       el:        @$('.js-agent-form')
       model:     App.User
       screen:    'invite_agent'
+      params:    { role_ids: [role?.id] }
       autofocus: true
     )
 
   submit: (e) =>
     e.preventDefault()
     @formDisable(e)
-    @params          = @formParam(e.target)
-    @params.role_ids = []
 
+    @params = @formParam(e.target)
     # set invite flag
     @params.invite = true
-
-    # find agent role
-    role = App.Role.findByAttribute('name', 'Agent')
-    if role
-      @params.role_ids = role.id
 
     user = new App.User
     user.load(@params)

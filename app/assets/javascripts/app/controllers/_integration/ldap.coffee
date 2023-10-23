@@ -277,12 +277,14 @@ class ConnectionWizard extends App.ControllerWizardModal
     'click .js-goToSlide':               'goToSlide'
     'click .js-saveQuit':                'saveQuit'
     'change .js-Ssl':                    'sslChange'
+    'input .js-hostUrl':                 'hostChange'
 
   elements:
-    '.modal-body': 'body'
+    '.modal-body':         'body'
     '.js-userMappingForm': 'userMappingForm'
-    '.js-groupRoleForm': 'groupRoleForm'
-    '.js-expertForm': 'expertForm'
+    '.js-groupRoleForm':   'groupRoleForm'
+    '.js-expertForm':      'expertForm'
+    '.js-sslVerifyAlert':  'sslVerifyAlert'
 
   constructor: ->
     super
@@ -380,6 +382,18 @@ class ConnectionWizard extends App.ControllerWizardModal
       @[method](true)
     super
 
+  hostChange: (e) ->
+    e.preventDefault()
+
+    [protocol, host] = $(e.currentTarget).val().split('://')
+    return if _.isEmpty(protocol) || _.isEmpty(host)
+    return if !['ldap', 'ldaps'].includes(protocol)
+
+    protocol_ssl_mapping = { ldap: 'off', ldaps: 'ssl' }
+
+    $('.js-hostUrl').val(host)
+    $('.js-Ssl').val(protocol_ssl_mapping[protocol]).trigger('change')
+
   sslChange: (e) =>
     @checkSslVerifyVisibility($(e.currentTarget).val())
 
@@ -393,8 +407,10 @@ class ConnectionWizard extends App.ControllerWizardModal
 
     if exists && disabled
       el.parent().remove()
+      @sslVerifyAlert.addClass('hide')
     else if !exists && !disabled
       @$('.js-Ssl').closest('tr').after(@buildRowSslVerify())
+      @handleSslVerifyAlert()
 
   buildRowSslVerify: =>
     el = $(App.view('integration/ldap_ssl_verify_row')())
@@ -411,6 +427,7 @@ class ConnectionWizard extends App.ControllerWizardModal
       translate: true
       class: 'form-control form-control--small'
     )
+    sslVerifyElement.on('change', @handleSslVerifyAlert)
     el.find('.js-sslVerify').html sslVerifyElement
     el
 
@@ -433,6 +450,9 @@ class ConnectionWizard extends App.ControllerWizardModal
           @showSlide('js-discover')
           @showAlert('js-discover', data.message)
           return
+
+        if !_.isEmpty(data.error) && data.error is 'disallow-bind-anon'
+          @wizardConfig.disallow_bind_anon = true
 
         @wizardConfig.host       = params.host
         @wizardConfig.ssl        = params.ssl
@@ -466,7 +486,24 @@ class ConnectionWizard extends App.ControllerWizardModal
 
   bindShow: (alreadyShown) =>
     @showSlide('js-bind') if !alreadyShown
-    @$('.js-bind .js-baseDn').html(@createSelection('base_dn', @wizardConfig.options, @wizardConfig.base_dn || @wizardConfig.option, true))
+
+    if @wizardConfig.disallow_bind_anon
+      baseDnInput = App.UiElement.input.render(
+        name: 'base_dn'
+        id: 'base_dn'
+        display: __('Base DN')
+        tag: 'input'
+        type: 'text'
+        class: 'form-control--small js-baseDn'
+        required: 'required'
+        placeholder: ''
+        value: @wizardConfig.base_dn
+        autocomplete: 'autocomplete="off"'
+      )[0].outerHTML
+      @$('.js-bind .js-baseDn').html(baseDnInput)
+    else
+      @$('.js-bind .js-baseDn').html(@createSelection('base_dn', @wizardConfig.options, @wizardConfig.base_dn || @wizardConfig.option, true))
+
     @$('.js-bind input[name="bind_user"]').val(@wizardConfig.bind_user)
     @$('.js-bind input[name="bind_pw"]').val(@wizardConfig.bind_pw)
 
@@ -743,6 +780,11 @@ class ConnectionWizard extends App.ControllerWizardModal
     el = $(App.view('integration/ldap_summary')(job: job))
     @el.find('.js-summary').html(el)
 
+  handleSslVerifyAlert: =>
+    if @formParam(@el).ssl_verify
+      @sslVerifyAlert.addClass('hide')
+    else
+      @sslVerifyAlert.removeClass('hide')
 
 class LdapSourceIndex extends App.ControllerGenericIndex
   constructor: ->

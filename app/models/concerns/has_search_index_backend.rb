@@ -176,15 +176,21 @@ reload search index with full data
 
 =end
 
-    def search_index_reload(silent: false)
+    def search_index_reload(silent: false, worker: 0)
       tolerance       = 10
       tolerance_count = 0
       query           = reorder(created_at: :desc)
       total           = query.count
       record_count    = 0
-      batch_size      = 100
-      query.as_batches(size: batch_size) do |record|
-        if !record.ignore_search_indexing?(:destroy)
+      offset          = 0
+      batch_size      = 200
+
+      while query.offset(offset).limit(batch_size).count.positive?
+        records = query.offset(offset).limit(batch_size)
+
+        Parallel.map(records, { in_processes: worker }) do |record|
+          next if record.ignore_search_indexing?(:destroy)
+
           begin
             record.search_index_update_backend
           rescue => e
@@ -195,9 +201,11 @@ reload search index with full data
           end
         end
 
+        offset += batch_size
+
         next if silent
 
-        record_count += 1
+        record_count += records.count
         if (record_count % batch_size).zero? || record_count == total
           print "\r    #{record_count}/#{total}" # rubocop:disable Rails/Output
         end

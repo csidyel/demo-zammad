@@ -329,7 +329,9 @@ returns
     if uri.scheme.match?(%r{https}i)
       http.use_ssl = true
 
-      if !options.fetch(:verify_ssl, false)
+      if options.fetch(:verify_ssl, true)
+        Certificate::ApplySSLCertificates.ensure_fresh_ssl_context
+      else
         http.verify_mode = OpenSSL::SSL::VERIFY_NONE
       end
     end
@@ -357,7 +359,7 @@ returns
   def self.set_params(request, params, options)
     if options[:json]
       if !request.is_a?(Net::HTTP::Get) # GET requests pass params in query, see 'parse_uri'.
-        request.add_field('Content-Type', 'application/json')
+        request.add_field('Content-Type', 'application/json; charset=utf-8')
         if params.present?
           request.body = params.to_json
         end

@@ -137,7 +137,7 @@ class App.TicketCreate extends App.Controller
 
     # force changing signature
     # skip on initialization because it will trigger core workflow
-    @$('[name="group_id"]').trigger('change', true)
+    @$('[name="group_id"]').trigger('change', non_interactive: true)
 
     # add observer to change options
     @$('[name="cc"], [name="group_id"], [name="customer_id"]').on('change', =>
@@ -236,7 +236,7 @@ class App.TicketCreate extends App.Controller
   dirtyMonitorStart: =>
     @dirty = {}
 
-    update = (e, nonInteractive) =>
+    update = (e, args) =>
       { target } = e
 
       field = target.getAttribute('name') || target.getAttribute('data-name')
@@ -247,7 +247,7 @@ class App.TicketCreate extends App.Controller
         return
 
       # Skip tracking of non-interactive fields
-      if nonInteractive || field == 'id'
+      if (_.isObject(args) && args.non_interactive) || field == 'id'
         @log 'debug', 'ticket create dirty monitor', 'non-interactive change', field
         return
 
@@ -413,7 +413,8 @@ class App.TicketCreate extends App.Controller
 
                 # Calculate the target time value from now, in case of relative datetime fields (#4318).
                 if templateValue['operator'] is 'relative' and templateValue['range']
-                  value = App.ViewHelpers.relative_time(templateValue['value'], templateValue['range'])
+                  isDateTime = _.find(App.Ticket.configure_attributes, (attr) -> attr.name is field)?.tag is 'datetime'
+                  value = App.ViewHelpers.relative_time(templateValue['value'], templateValue['range'], isDateTime)
 
                 # Remember complete tags configuration for further processing.
                 if field is 'tags'
@@ -809,6 +810,9 @@ class Router extends App.ControllerPermanent
       id = Math.floor( Math.random() * 99999 )
       @navigate "#ticket/create/id/#{id}#{split}"
       return
+
+    # check authentication
+    @authenticateCheckRedirect()
 
     # cleanup params
     clean_params =

@@ -24,6 +24,7 @@ class ObjectManager::Attribute < ApplicationModel
     autocompletion_ajax_customer_organization
     boolean
     user_permission
+    group_permissions
     active
   ].freeze
 
@@ -73,7 +74,7 @@ list of all attributes
 =end
 
   def self.list_full
-    result = ObjectManager::Attribute.all.reorder('position ASC, name ASC')
+    result = ObjectManager::Attribute.reorder('position ASC, name ASC')
     references = ObjectManager::Attribute.attribute_to_references_hash
     attributes = []
     result.each do |item|
@@ -105,7 +106,7 @@ add a new attribute entry for an object
     object: 'Ticket',
     name: 'group_id',
     display: __('Group'),
-    data_type: 'select',
+    data_type: 'tree_select',
     data_option: {
       relation: 'Group',
       relation_condition: { access: 'full' },

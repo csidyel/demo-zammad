@@ -1215,7 +1215,7 @@ class TicketTriggerTest < ActiveSupport::TestCase
       condition:            {
         'ticket.state_id' => {
           'operator' => 'is',
-          'value'    => Ticket::State.all.pluck(:id),
+          'value'    => Ticket::State.pluck(:id),
         },
         'ticket.action'   => {
           'operator' => 'is',
@@ -1305,7 +1305,7 @@ class TicketTriggerTest < ActiveSupport::TestCase
       condition:            {
         'ticket.state_id' => {
           'operator' => 'is',
-          'value'    => Ticket::State.all.pluck(:id),
+          'value'    => Ticket::State.pluck(:id),
         },
         'ticket.action'   => {
           'operator' => 'is',
@@ -3136,7 +3136,7 @@ class TicketTriggerTest < ActiveSupport::TestCase
       condition:            {
         'ticket.state_id'   => {
           'operator' => 'is',
-          'value'    => Ticket::State.all.pluck(:id),
+          'value'    => Ticket::State.pluck(:id),
         },
         'article.sender_id' => {
           'operator' => 'is',
@@ -3602,8 +3602,8 @@ class TicketTriggerTest < ActiveSupport::TestCase
           'value'    => Ticket::State.lookup(name: 'new').id.to_s,
         },
         'ticket.tags'     => {
-          # 'operator' => 'contains one not',
-          'operator' => 'contains all not',
+          'operator' => 'contains one not',
+          # 'operator' => 'contains all not',
           'value'    => 'sender1, sender2',
         },
       },

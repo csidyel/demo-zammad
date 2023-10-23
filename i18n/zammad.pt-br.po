@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: zammad\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2023-08-01 01:05+0000\n"
+"PO-Revision-Date: 2023-10-03 01:05+0000\n"
 "Last-Translator: \"Decio E. Silva\" <decio@verinatec.com.br>\n"
 "Language-Team: Portuguese (Brazil) <https://translations.zammad.org/projects/"
 "zammad/zammad-development/pt_BR/>\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 4.18.2\n"
+"X-Generator: Weblate 5.0.2\n"
 
 #. Default date format to use for the current locale.
 #. These placeholders are supported:
@@ -50,11 +50,18 @@ msgid " to "
 msgstr " para "
 
 #: db/seeds/settings.rb
+#, fuzzy
+#| msgid ""
+#| "\"Database\" stores all attachments in the database (not recommended for "
+#| "storing large amounts of data). \"Filesystem\" stores the data in the "
+#| "filesystem. You can switch between the modules even on a system that is "
+#| "already in production without any loss of data."
 msgid ""
 "\"Database\" stores all attachments in the database (not recommended for "
 "storing large amounts of data). \"Filesystem\" stores the data in the "
-"filesystem. You can switch between the modules even on a system that is "
-"already in production without any loss of data."
+"filesystem. \"Simple Storage (S3)\" stores the data in a remote S3 "
+"compatible object filesystem. You can switch between the modules even on a "
+"system that is already in production without any loss of data."
 msgstr ""
 "\"Database\" armazena todos os anexos no banco de dados (não recomendado "
 "para armazenar grandes quantidades de dados). \"Filesystem\" armazena os "
@@ -503,10 +510,6 @@ msgstr "%s minutos atrás"
 msgid "%s months ago"
 msgstr "%s meses atrás"
 
-#: app/frontend/apps/mobile/pages/ticket/components/TicketDetailView/TicketDetailViewActions.vue
-msgid "%s new replies"
-msgstr "%s novas respostas"
-
 #: app/assets/javascripts/app/views/generic/object_import/imported.jst.eco
 msgid "%s object(s) have been created."
 msgstr "%s objeto(s) foram criados."
@@ -761,10 +764,6 @@ msgstr "1 minuto atrás"
 #: app/frontend/shared/i18n/dates.ts
 msgid "1 month ago"
 msgstr "1 mês atrás"
-
-#: app/frontend/apps/mobile/pages/ticket/components/TicketDetailView/TicketDetailViewActions.vue
-msgid "1 new reply"
-msgstr "1 nova resposta"
 
 #: db/seeds/settings.rb
 msgid "1 week"
@@ -1023,6 +1022,7 @@ msgstr "(contas)"
 #: app/assets/javascripts/app/views/api.jst.eco
 #: app/assets/javascripts/app/views/calendar/holiday_selector.jst.eco
 #: app/assets/javascripts/app/views/generic/actions.jst.eco
+#: app/assets/javascripts/app/views/generic/user_permission_group.jst.eco
 #: app/assets/javascripts/app/views/integration/clearbit.jst.eco
 #: app/assets/javascripts/app/views/integration/cti.jst.eco
 #: app/assets/javascripts/app/views/integration/exchange_wizard.jst.eco
@@ -1052,6 +1052,7 @@ msgstr "Execução da ação"
 #: app/assets/javascripts/app/models/template.coffee
 #: app/assets/javascripts/app/views/integration/pgp_list.jst.eco
 #: app/assets/javascripts/app/views/integration/smime_list.jst.eco
+#: app/assets/javascripts/app/views/ssl_certificates_list.jst.eco
 msgid "Actions"
 msgstr "Ações"
 
@@ -1132,6 +1133,7 @@ msgstr "Adaptador"
 
 #: app/assets/javascripts/app/controllers/_integration/pgp.coffee
 #: app/assets/javascripts/app/controllers/_integration/smime.coffee
+#: app/assets/javascripts/app/controllers/ssl_certificate.coffee
 #: app/assets/javascripts/app/views/calendar/holiday_selector.jst.eco
 #: app/assets/javascripts/app/views/channel/email_account_overview.jst.eco
 #: app/assets/javascripts/app/views/channel/topics.jst.eco
@@ -1139,6 +1141,7 @@ msgstr "Adaptador"
 #: app/assets/javascripts/app/views/generic/postmaster_match.jst.eco
 #: app/assets/javascripts/app/views/generic/postmaster_set_row.jst.eco
 #: app/assets/javascripts/app/views/generic/ticket_perform_action/row.jst.eco
+#: app/assets/javascripts/app/views/generic/user_permission_group.jst.eco
 #: app/assets/javascripts/app/views/google/list.jst.eco
 #: app/assets/javascripts/app/views/integration/clearbit.jst.eco
 #: app/assets/javascripts/app/views/integration/cti.jst.eco
@@ -1172,6 +1175,7 @@ msgid "Add Bot"
 msgstr "Adicionar Bot"
 
 #: app/assets/javascripts/app/controllers/_integration/smime.coffee
+#: app/assets/javascripts/app/controllers/ssl_certificate.coffee
 #: app/assets/javascripts/app/views/integration/smime.jst.eco
 msgid "Add Certificate"
 msgstr "Adicionar Certificado"
@@ -1192,6 +1196,10 @@ msgstr "Adicionar Chave privada"
 #: app/assets/javascripts/app/controllers/_integration/pgp.coffee
 msgid "Add Public or Private Key"
 msgstr "Adicionar Chave Pública ou Privada"
+
+#: app/assets/javascripts/app/views/ssl_certificates.jst.eco
+msgid "Add SSL Certificate"
+msgstr "Adicionar Certificado SSL"
 
 #: app/assets/javascripts/app/views/knowledge_base/sidebar/tags.jst.eco
 #: app/assets/javascripts/app/views/widget/tag.jst.eco
@@ -1739,6 +1747,7 @@ msgstr "Tem certeza de que deseja remover \"%s\" como padrão?"
 #: app/assets/javascripts/app/controllers/_ui_element/ticket_selector.coffee
 #: app/assets/javascripts/app/controllers/data_privacy.coffee
 #: app/assets/javascripts/app/controllers/maintenance.coffee
+#: app/assets/javascripts/app/controllers/ssl_certificate.coffee
 #: app/assets/javascripts/app/controllers/ticket_shared_draft_modal.coffee
 #: app/assets/javascripts/app/controllers/ticket_zoom/article_action/delete.coffee
 #: app/assets/javascripts/app/controllers/widget/two_factor_configuration/modal/security_keys.coffee
@@ -1934,6 +1943,18 @@ msgstr "Anexo - Pesquisar por resposta a atendimentos nos anexos."
 msgid "Attachments"
 msgstr "Anexos"
 
+#: app/assets/javascripts/app/views/settings/storage_provider.jst.eco
+msgid "Attachments are stored in a Simple Storage Service."
+msgstr ""
+
+#: app/assets/javascripts/app/views/settings/storage_provider.jst.eco
+msgid "Attachments are stored in the database."
+msgstr ""
+
+#: app/assets/javascripts/app/views/settings/storage_provider.jst.eco
+msgid "Attachments are stored in the filesystem."
+msgstr ""
+
 #: app/assets/javascripts/app/views/generic/calender_preview.jst.eco
 msgid "Attendees"
 msgstr "Participantes"
@@ -1983,7 +2004,7 @@ msgstr ""
 "Atributo que identifica o usuário de forma única. Se não definido, o "
 "identificador de nome fornecido pelo IDP é usado."
 
-#: app/assets/javascripts/app/controllers/ticket_overview.coffee
+#: app/assets/javascripts/app/controllers/ticket_overview/settings.coffee
 #: app/assets/javascripts/app/models/overview.coffee
 msgid "Attributes"
 msgstr "Atributos"
@@ -2047,10 +2068,8 @@ msgid "Authenticator app secret"
 msgstr "Segredo do aplicativo de autenticação"
 
 #: app/assets/javascripts/app/views/ticket_shared_draft_modal.jst.eco
-#, fuzzy
-#| msgid "Authy"
 msgid "Author"
-msgstr "Authy"
+msgstr "Autor"
 
 #: app/controllers/application_controller/handles_errors.rb
 msgid "Authorization failed"
@@ -2206,6 +2225,7 @@ msgstr "Acumulado"
 msgid "Base"
 msgstr "Base"
 
+#: app/assets/javascripts/app/controllers/_integration/ldap.coffee
 #: app/assets/javascripts/app/views/integration/ldap.jst.eco
 #: app/assets/javascripts/app/views/integration/ldap_wizard.jst.eco
 msgid "Base DN"
@@ -2350,6 +2370,10 @@ msgstr ""
 "Ao mapear seu usuário SIP sipgate a sua conta Zammad, podemos ajudar os "
 "agentes abrindo a janela de novo ticket ou um perfil do usuário ao receber "
 "uma chamada."
+
+#: app/assets/javascripts/app/views/ssl_certificates_list.jst.eco
+msgid "CA"
+msgstr "CA"
 
 #: app/assets/javascripts/app/controllers/_ui_element/postmaster_match.coffee
 #: app/assets/javascripts/app/controllers/agent_ticket_create.coffee
@@ -2943,6 +2967,7 @@ msgstr "Clonar"
 #: app/assets/javascripts/app/controllers/widget/error_modal.coffee
 #: app/assets/javascripts/app/controllers/widget/import_result.coffee
 #: app/assets/javascripts/app/views/generic/ticket_duplicate_detection/warning.jst.eco
+#: app/frontend/shared/form/i18n/locales.ts
 msgid "Close"
 msgstr "Fechar"
 
@@ -3544,6 +3569,7 @@ msgstr "Criar:"
 #: app/assets/javascripts/app/views/integration/smime_list.jst.eco
 #: app/assets/javascripts/app/views/popover/ticket.jst.eco
 #: app/assets/javascripts/app/views/profile/token_access.jst.eco
+#: app/assets/javascripts/app/views/ssl_certificates_list.jst.eco
 #: app/assets/javascripts/app/views/widget/ticket_stats_frequency.jst.eco
 #: app/models/report.rb
 msgid "Created"
@@ -3654,7 +3680,7 @@ msgstr "O usuário atual não tem permissão para usar 'From'/'X-On-Behalf-Of'!"
 msgid "Currently no overview is assigned to your roles."
 msgstr "Não existem visões atribuídas aos seus papeis."
 
-#: app/assets/javascripts/app/controllers/ticket_overview.coffee
+#: app/assets/javascripts/app/controllers/ticket_overview/navbar.coffee
 msgid ""
 "Currently no overview is assigned to your roles. Please contact your "
 "administrator."
@@ -3757,6 +3783,7 @@ msgstr "TarefaPrivacidadeDados"
 msgid "DataPrivacyTasks"
 msgstr "TarefasPrivacidadeDados"
 
+#: app/assets/javascripts/app/views/settings/storage_provider.jst.eco
 #: db/seeds/settings.rb
 msgid "Database"
 msgstr "Banco de Dados"
@@ -3937,6 +3964,10 @@ msgstr "Defina as notificações padrão do agente para novos usuários."
 #: db/seeds/settings.rb
 msgid "Define the maximum number of ticket shown in overviews."
 msgstr "Define o número máximo de tickets mostrados na visão geral."
+
+#: db/seeds/settings.rb
+msgid "Defines Elasticsearch SSL verification."
+msgstr "Define a verificação SSL do Elasticsearch."
 
 #: db/seeds/settings.rb
 msgid "Defines Elasticsearch index name."
@@ -4257,16 +4288,12 @@ msgstr ""
 "complexas."
 
 #: db/seeds/settings.rb
-#, fuzzy
-#| msgid ""
-#| "Defines if the ticket conditions editor supports complex logical "
-#| "expressions."
 msgid ""
 "Defines if the ticket conditions editor supports regular expression "
 "operators for triggers and ticket auto assignment."
 msgstr ""
-"Define se as condições do editor do chamado suporta expressões lógicas "
-"complexas."
+"Define se o editor de condições de ticket suporta operadores de expressão "
+"regular para gatilhos e atribuição automática de tickets."
 
 #: db/seeds/settings.rb
 msgid "Defines if the time accounting types are enabled."
@@ -4829,6 +4856,7 @@ msgstr ""
 #: app/assets/javascripts/app/views/profile/token_access.jst.eco
 #: app/assets/javascripts/app/views/session.jst.eco
 #: app/assets/javascripts/app/views/sla/index.jst.eco
+#: app/assets/javascripts/app/views/ssl_certificates_list.jst.eco
 #: app/assets/javascripts/app/views/tag/table.jst.eco
 #: app/assets/javascripts/app/views/telegram/index.jst.eco
 #: app/assets/javascripts/app/views/twitter/list.jst.eco
@@ -5191,6 +5219,7 @@ msgid "Download %s record(s)"
 msgstr "Baixar %s registros"
 
 #: app/assets/javascripts/app/views/integration/smime_list.jst.eco
+#: app/assets/javascripts/app/views/ssl_certificates_list.jst.eco
 msgid "Download Certificate"
 msgstr "Certificado de Download"
 
@@ -5331,6 +5360,10 @@ msgstr "Usuário do Elasticsearch Endpoint"
 #: db/seeds/settings.rb
 msgid "Elasticsearch Pipeline Name"
 msgstr "Nome do pipeline do Elasticsearch"
+
+#: db/seeds/settings.rb
+msgid "Elasticsearch SSL verification"
+msgstr "Verificação SSL do Elasticsearch"
 
 #: db/seeds/settings.rb
 msgid "Elasticsearch Total Payload Size"
@@ -5862,7 +5895,7 @@ msgstr "Entre com seu %s App Keys"
 
 #: app/assets/javascripts/app/views/profile/password.jst.eco
 msgid "Enter your current password, insert a new one and confirm it."
-msgstr ""
+msgstr "Digite sua senha atual, insira uma nova e confirme-a."
 
 #: app/assets/javascripts/app/views/import/kayako.jst.eco
 msgid ""
@@ -6034,6 +6067,12 @@ msgstr "Exemplo:"
 msgid "Examples"
 msgstr "Exemplos"
 
+#: app/assets/javascripts/app/views/settings/storage_provider.jst.eco
+#, fuzzy
+#| msgid "Examples"
+msgid "Examples:"
+msgstr "Exemplos"
+
 #: app/assets/javascripts/app/controllers/_manage/ticket_auto_assignment.coffee
 msgid "Excepted users"
 msgstr "Usuários com exceção"
@@ -6100,6 +6139,7 @@ msgstr "Configurações Avançadas"
 #: app/assets/javascripts/app/views/integration/smime_list.jst.eco
 #: app/assets/javascripts/app/views/profile/token_access.jst.eco
 #: app/assets/javascripts/app/views/profile/token_access_create.jst.eco
+#: app/assets/javascripts/app/views/ssl_certificates_list.jst.eco
 msgid "Expires"
 msgstr "Expira"
 
@@ -6220,6 +6260,7 @@ msgstr "O arquivo '%s' está sendo carregado"
 msgid "File too big, max. %s MB allowed."
 msgstr "Arquivo muito grande, máx. %s MB permitidos."
 
+#: app/assets/javascripts/app/views/settings/storage_provider.jst.eco
 #: db/seeds/settings.rb
 msgid "Filesystem"
 msgstr "Sistema de arquivos"
@@ -6242,6 +6283,7 @@ msgstr "Encontre o que você está procurando. Ex. \"frase de pesquisa\""
 
 #: app/assets/javascripts/app/views/integration/pgp_list.jst.eco
 #: app/assets/javascripts/app/views/integration/smime_list.jst.eco
+#: app/assets/javascripts/app/views/ssl_certificates_list.jst.eco
 msgid "Fingerprint"
 msgstr "Impressão digital"
 
@@ -6567,8 +6609,8 @@ msgid "Getting an Access Token"
 msgstr "Obter um Token de Acesso"
 
 #: app/assets/javascripts/app/views/widget/two_factor_configuration/security_keys/register.jst.eco
-msgid "Getting key information from the browser..."
-msgstr "Obtendo informações da chave do navegador..."
+msgid "Getting key information from the browser…"
+msgstr "Obtendo informações da chave do navegador…"
 
 #: app/assets/javascripts/app/controllers/_integration/github.coffee
 #: app/assets/javascripts/app/controllers/_profile/linked_accounts.coffee
@@ -6627,10 +6669,6 @@ msgid "GitLab request failed! Please have a look at the log file for details"
 msgstr ""
 "Falha na solicitação do GitLab! Por favor, dê uma olhada no arquivo de log "
 "para detalhes"
-
-#: app/models/ticket/time_accounting.rb
-msgid "Given Ticket Article is not part of the Ticket"
-msgstr ""
 
 #: app/assets/javascripts/app/views/google/index.jst.eco
 #: app/assets/javascripts/app/views/google/list.jst.eco
@@ -6719,7 +6757,6 @@ msgstr "Saudações"
 #: app/assets/javascripts/app/models/ticket.coffee
 #: app/assets/javascripts/app/views/agent_ticket_view/detail.jst.eco
 #: app/assets/javascripts/app/views/channel/sms_account_overview.jst.eco
-#: app/assets/javascripts/app/views/generic/permission.jst.eco
 #: app/assets/javascripts/app/views/generic/user_permission_group.jst.eco
 #: app/assets/javascripts/app/views/integration/pgp_group.jst.eco
 #: app/assets/javascripts/app/views/integration/smime_group.jst.eco
@@ -6780,6 +6817,18 @@ msgstr "O grupo é inválido!"
 msgid "Group needed in channel definition!"
 msgstr "Grupo necessário na definição do canal!"
 
+#: app/models/group.rb
+msgid "Group or children exceeded max depth!"
+msgstr ""
+
+#: app/assets/javascripts/app/models/role.coffee
+#: app/assets/javascripts/app/models/user.coffee
+#: db/seeds/object_manager_attributes.rb
+#, fuzzy
+#| msgid "Permissions"
+msgid "Group permissions"
+msgstr "permissão"
+
 #: app/assets/javascripts/app/views/channel/form.jst.eco db/seeds/settings.rb
 msgid "Group selection for Ticket creation"
 msgstr "Seleção de Grupos para criação de Chamados"
@@ -6788,12 +6837,12 @@ msgstr "Seleção de Grupos para criação de Chamados"
 msgid "Group selection for ticket creation"
 msgstr "Seleção de Grupos para criação de Chamados"
 
-#: app/assets/javascripts/app/controllers/ticket_overview.coffee
+#: app/assets/javascripts/app/controllers/ticket_overview/settings.coffee
 #: app/assets/javascripts/app/models/overview.coffee
 msgid "Grouping by"
 msgstr "Agrupar por"
 
-#: app/assets/javascripts/app/controllers/ticket_overview.coffee
+#: app/assets/javascripts/app/controllers/ticket_overview/settings.coffee
 #: app/assets/javascripts/app/models/overview.coffee
 msgid "Grouping order"
 msgstr "Ordem de Agrupamento"
@@ -7015,6 +7064,7 @@ msgid "Home"
 msgstr "Página Inicial"
 
 #: app/assets/javascripts/app/controllers/_channel/email.coffee
+#: app/assets/javascripts/app/controllers/_integration/ldap.coffee
 #: app/assets/javascripts/app/controllers/getting_started/channel_email.coffee
 #: app/assets/javascripts/app/controllers/getting_started/email_notification.coffee
 #: app/assets/javascripts/app/views/channel/email_account_overview.jst.eco
@@ -7752,7 +7802,7 @@ msgstr "Iônicos"
 msgid "It is not possible to merge into an already merged ticket."
 msgstr "Não é possível mesclar em um ticket já mesclado."
 
-#: app/assets/javascripts/app/controllers/ticket_overview.coffee
+#: app/assets/javascripts/app/controllers/ticket_overview/settings.coffee
 msgid "Items per page"
 msgstr "itens por página"
 
@@ -7945,10 +7995,8 @@ msgid "Last change %s %s by %s"
 msgstr "Última alteração %s %s por %s"
 
 #: app/assets/javascripts/app/views/ticket_shared_draft_modal.jst.eco
-#, fuzzy
-#| msgid "has changed"
 msgid "Last changed"
-msgstr "foi mudado"
+msgstr "Última modificação"
 
 #: app/assets/javascripts/app/models/ticket.coffee
 #: app/graphql/gql/types/overview_type.rb
@@ -8120,6 +8168,7 @@ msgstr "Falha ao carregar, tente novamente mais tarde."
 #: app/assets/javascripts/app/controllers/_integration/pgp.coffee
 #: app/assets/javascripts/app/controllers/_integration/smime.coffee
 #: app/assets/javascripts/app/controllers/knowledge_base/search_field_widget.coffee
+#: app/assets/javascripts/app/controllers/ssl_certificate.coffee
 #: app/assets/javascripts/app/controllers/ticket_zoom/sidebar_git_issue.coffee
 #: app/assets/javascripts/app/controllers/ticket_zoom/sidebar_idoit.coffee
 #: app/assets/javascripts/app/controllers/widget/payload_example.coffee
@@ -9042,6 +9091,7 @@ msgid "Next in overview"
 msgstr "Próximo em Visão Geral"
 
 #: app/assets/javascripts/app/controllers/_ui_element/_application_action.coffee
+#: app/assets/javascripts/app/views/ssl_certificates_list.jst.eco
 msgid "No"
 msgstr "Não"
 
@@ -9062,6 +9112,7 @@ msgstr "Sem %s configurado."
 #: app/assets/javascripts/app/views/integration/smime_group.jst.eco
 #: app/assets/javascripts/app/views/integration/smime_list.jst.eco
 #: app/assets/javascripts/app/views/microsoft365/list.jst.eco
+#: app/assets/javascripts/app/views/ssl_certificates_list.jst.eco
 #: app/assets/javascripts/app/views/time_accounting/by_activity.jst.eco
 #: app/assets/javascripts/app/views/time_accounting/by_customer.jst.eco
 #: app/assets/javascripts/app/views/time_accounting/by_organization.jst.eco
@@ -9087,6 +9138,7 @@ msgid "No Proxy"
 msgstr "Sem proxy"
 
 #: app/assets/javascripts/app/controllers/_channel/email.coffee
+#: app/assets/javascripts/app/controllers/_integration/ldap.coffee
 #: app/assets/javascripts/app/controllers/getting_started/channel_email.coffee
 msgid "No SSL"
 msgstr "Sem SSL"
@@ -9115,6 +9167,10 @@ msgstr "Nenhuma configuração definida."
 #: app/views/knowledge_base/public/tags/show.html.erb
 msgid "No content to show"
 msgstr "Nenhum conteúdo para mostrar"
+
+#: app/models/group.rb
+msgid "No double colons (::) allowed, reserved delimiter"
+msgstr ""
 
 #: app/assets/javascripts/app/views/widget/shared_draft.jst.eco
 msgid "No drafts"
@@ -9868,6 +9924,12 @@ msgstr "Parâmetro 'dados' ou 'arquivo' obrigatório."
 msgid "Parent"
 msgstr "Pai"
 
+#: db/seeds/object_manager_attributes.rb
+#, fuzzy
+#| msgid "Parent"
+msgid "Parent group"
+msgstr "Pai"
+
 #: app/assets/javascripts/app/controllers/_channel/email.coffee
 #: app/assets/javascripts/app/controllers/_manage/security.coffee
 #: app/assets/javascripts/app/controllers/getting_started/channel_email.coffee
@@ -9931,6 +9993,8 @@ msgid "Paste"
 msgstr "Colar"
 
 #: app/assets/javascripts/app/views/integration/smime_certificate_add.jst.eco
+#: app/assets/javascripts/app/views/ssl_certificate_binary_or_text.jst.eco
+#: app/assets/javascripts/app/views/ssl_certificates_create.jst.eco
 msgid "Paste Certificate"
 msgstr "Colar Certificado"
 
@@ -9990,7 +10054,6 @@ msgstr "Nível de permissão para consultar tickets"
 #: app/assets/javascripts/app/models/role.coffee
 #: app/assets/javascripts/app/views/object_manager/screens.jst.eco
 #: app/assets/javascripts/app/views/profile/token_access.jst.eco
-#: db/seeds/object_manager_attributes.rb
 msgid "Permissions"
 msgstr "permissão"
 
@@ -10433,16 +10496,12 @@ msgid "Queue already exists!"
 msgstr "A fila já existe!"
 
 #: app/assets/javascripts/app/views/profile/calendar_subscriptions.jst.eco
-#, fuzzy
-#| msgid ""
-#| "Enable REST API access using the username/email address and password for "
-#| "the authentication user."
 msgid ""
 "REST API access using the username/email address and password is currently "
 "disabled. Please contact your administrator."
 msgstr ""
-"Habilita acesso REST API utilizando-se de usuario/email e senha para "
-"autenticar-se."
+"O acesso à API REST usando o nome de usuário/endereço de email e senha está "
+"atualmente desativado. Por favor, entre em contato com o seu administrador."
 
 #: app/assets/javascripts/app/controllers/ticket_zoom/article_view.coffee
 #: app/frontend/apps/mobile/pages/ticket/components/TicketDetailView/ArticleMetadataDialog.vue
@@ -10574,6 +10633,7 @@ msgstr "Remoto"
 #: app/assets/javascripts/app/views/generic/application_selector_row.jst.eco
 #: app/assets/javascripts/app/views/generic/application_selector_subclause.jst.eco
 #: app/assets/javascripts/app/views/generic/ticket_perform_action/row.jst.eco
+#: app/assets/javascripts/app/views/generic/user_permission_group.jst.eco
 #: app/assets/javascripts/app/views/integration/clearbit.jst.eco
 #: app/assets/javascripts/app/views/integration/cti.jst.eco
 #: app/assets/javascripts/app/views/integration/exchange_user_attribute_row.jst.eco
@@ -10947,7 +11007,7 @@ msgstr "A função %s está em conflito com a função %s, deseja continuar?"
 
 #: app/assets/javascripts/app/controllers/role.coffee
 #: app/assets/javascripts/app/views/integration/ldap_wizard.jst.eco
-#: db/seeds/permissions.rb
+#: db/seeds/object_manager_attributes.rb db/seeds/permissions.rb
 msgid "Roles"
 msgstr "Papéis"
 
@@ -11074,20 +11134,32 @@ msgid "SMTP - configure your own outgoing SMTP settings"
 msgstr "SMTP - defina suas próprias configurações de SMTP de saída"
 
 #: app/assets/javascripts/app/controllers/_channel/email.coffee
+#: app/assets/javascripts/app/controllers/_integration/ldap.coffee
 #: app/assets/javascripts/app/controllers/getting_started/channel_email.coffee
 msgid "SSL"
 msgstr "SSL"
 
-#: app/assets/javascripts/app/models/webhook.coffee
-msgid "SSL Verify"
-msgstr "Verificar o SSL"
+#: app/assets/javascripts/app/controllers/_manage/security.coffee
+#: app/assets/javascripts/app/views/ssl_certificates.jst.eco
+msgid "SSL Certificates"
+msgstr "Certificados SSL"
 
+#: app/assets/javascripts/app/controllers/_channel/email.coffee
+#: app/assets/javascripts/app/controllers/getting_started/channel_email.coffee
+#: app/assets/javascripts/app/controllers/getting_started/email_notification.coffee
+#: app/assets/javascripts/app/models/webhook.coffee
+#: app/assets/javascripts/app/views/integration/exchange.jst.eco
+#: app/assets/javascripts/app/views/integration/gitlab.jst.eco
+#: app/assets/javascripts/app/views/integration/idoit.jst.eco
+#: app/assets/javascripts/app/views/integration/ldap.jst.eco
 #: app/assets/javascripts/app/views/integration/ldap_ssl_verify_row.jst.eco
 msgid "SSL verification"
 msgstr "Verificação SSL"
 
 #: app/assets/javascripts/app/controllers/_channel/email.coffee
 #: app/assets/javascripts/app/controllers/getting_started/channel_email.coffee
+#: app/assets/javascripts/app/views/integration/ldap.jst.eco
+#: app/assets/javascripts/app/views/integration/ldap_wizard.jst.eco
 msgid "SSL/STARTTLS"
 msgstr "SSL/STARTTLS"
 
@@ -11098,6 +11170,7 @@ msgid "SSO"
 msgstr "SSO"
 
 #: app/assets/javascripts/app/controllers/_channel/email.coffee
+#: app/assets/javascripts/app/controllers/_integration/ldap.coffee
 #: app/assets/javascripts/app/controllers/getting_started/channel_email.coffee
 msgid "STARTTLS"
 msgstr "STARTTLS"
@@ -11513,6 +11586,7 @@ msgstr "Nível de registro do sequenciador"
 #: app/assets/javascripts/app/controllers/_integration/ldap.coffee
 #: app/assets/javascripts/app/controllers/_integration/pgp.coffee
 #: app/assets/javascripts/app/controllers/_integration/smime.coffee
+#: app/assets/javascripts/app/controllers/ssl_certificate.coffee
 msgid "Server operation failed."
 msgstr "Falha na operação do servidor."
 
@@ -11790,11 +11864,9 @@ msgstr "Mostrar visualizadores de tickets"
 
 #: app/assets/javascripts/app/views/time_accounting/settings.jst.eco
 #: db/seeds/settings.rb
-#, fuzzy
-#| msgid "Enable time accounting for following matching tickets."
 msgid "Show time accounting dialog when updating matching tickets."
 msgstr ""
-"Habilite a bilhetagem de tempo para acompanhamento de tickets "
+"Mostrar diálogo de contabilização de tempo ao atualizar tickets "
 "correspondentes."
 
 #: app/assets/javascripts/app/views/channel/form.jst.eco
@@ -11909,6 +11981,19 @@ msgstr "Tickets semelhantes encontrados"
 msgid "Simple Line Icons"
 msgstr "Ícones de linha simples"
 
+#: app/assets/javascripts/app/views/settings/storage_provider.jst.eco
+#: db/seeds/settings.rb
+msgid "Simple Storage (S3)"
+msgstr ""
+
+#: app/models/store/provider/s3/config.rb
+msgid "Simple Storage Service configuration not found or invalid."
+msgstr ""
+
+#: app/models/store/provider/s3.rb
+msgid "Simple Storage Service not reachable."
+msgstr ""
+
 #: db/seeds/settings.rb
 msgid "Sina Weibo"
 msgstr "Sina Weibo"
@@ -12013,12 +12098,12 @@ msgstr "Desculpe, nem todos os campos estão preenchidos corretamente."
 msgid "Sorry, there is currently no CTI backend enabled."
 msgstr "Desculpe, não há back-end de CTI ativado no momento."
 
-#: app/assets/javascripts/app/controllers/ticket_overview.coffee
+#: app/assets/javascripts/app/controllers/ticket_overview/settings.coffee
 #: app/assets/javascripts/app/models/overview.coffee
 msgid "Sorting by"
 msgstr "Ordenar por"
 
-#: app/assets/javascripts/app/controllers/ticket_overview.coffee
+#: app/assets/javascripts/app/controllers/ticket_overview/settings.coffee
 #: app/assets/javascripts/app/models/overview.coffee
 msgid "Sorting order"
 msgstr "Ordem de classificação"
@@ -12183,6 +12268,7 @@ msgstr "Rua"
 #: app/assets/javascripts/app/views/generic/ticket_perform_action/article.jst.eco
 #: app/assets/javascripts/app/views/generic/ticket_perform_action/notification.jst.eco
 #: app/assets/javascripts/app/views/integration/smime_list.jst.eco
+#: app/assets/javascripts/app/views/ssl_certificates_list.jst.eco
 #: app/assets/javascripts/app/views/ticket_zoom/article_new.jst.eco
 #: app/assets/javascripts/app/views/ticket_zoom/article_view.jst.eco
 #: app/frontend/apps/mobile/pages/ticket/components/TicketDetailView/ArticleMetadataDialog.vue
@@ -12647,11 +12733,10 @@ msgstr ""
 "no chat)."
 
 #: lib/secure_mailing/smime/security_options.rb
-#, fuzzy
-#| msgid "The certificate for %s was found, but has expired."
 msgid ""
 "The certificate for %s was found, but it is not valid yet or has expired."
-msgstr "O certificado para %s foi encontrado, mas expirou."
+msgstr ""
+"O certificado para %s foi encontrado, mas ainda não é válido ou já expirou."
 
 #: lib/secure_mailing/smime/security_options.rb
 msgid "The certificate for %s was found."
@@ -12669,17 +12754,30 @@ msgstr "O certificado para esta chave privada não foi encontrado."
 msgid "The certificate for verification could not be found."
 msgstr "O certificado para verificação não pôde ser encontrado."
 
-#: lib/secure_mailing/smime/certificate.rb
+#: lib/certificate/x509/smime.rb
 msgid ""
 "The certificate is not valid for S/MIME usage. Please check the certificate "
 "format."
 msgstr ""
+"O certificado não é válido para uso S/MIME. Por favor, verifique o formato "
+"do certificado."
 
-#: lib/secure_mailing/smime/certificate.rb
+#: lib/certificate/x509/smime.rb
 msgid ""
 "The certificate is not valid for S/MIME usage. Please check the key usage, "
 "subject alternative name and public key cryptographic algorithm."
 msgstr ""
+"O certificado não é válido para uso S/MIME. Por favor, verifique o uso da "
+"chave, o nome alternativo do assunto e o algoritmo criptográfico da chave "
+"pública."
+
+#: lib/certificate/x509/ssl.rb
+msgid ""
+"The certificate is not valid for SSL usage. Please check e.g. the validity "
+"period or the extensions."
+msgstr ""
+"O certificado não é válido para uso SSL. Por favor, verifique, por exemplo, "
+"o período de validade ou as extensões."
 
 #: app/assets/javascripts/app/views/integration/exchange_certificate_issue.jst.eco
 msgid ""
@@ -12869,6 +12967,7 @@ msgstr "A imagem é inválida."
 
 #: app/assets/javascripts/app/controllers/_integration/pgp.coffee
 #: app/assets/javascripts/app/controllers/_integration/smime.coffee
+#: app/assets/javascripts/app/controllers/ssl_certificate.coffee
 #: app/assets/javascripts/app/controllers/widget/import.coffee
 #: app/assets/javascripts/app/controllers/widget/import_try_result.coffee
 msgid "The import failed."
@@ -12984,12 +13083,16 @@ msgid ""
 "The private key is not valid for S/MIME usage. Please check the key "
 "cryptographic algorithm."
 msgstr ""
+"A chave privada não é válida para uso S/MIME. Por favor, verifique o "
+"algoritmo criptográfico da chave."
 
 #: lib/secure_mailing/smime/private_key.rb
 msgid ""
 "The private key is not valid for S/MIME usage. Please check the key format "
 "and the secret."
 msgstr ""
+"A chave privada não é válida para uso S/MIME. Por favor, verifique o formato "
+"da chave e o segredo."
 
 #: app/frontend/apps/mobile/pages/account/views/AccountOverview.vue
 msgid "The product version could not be fetched."
@@ -13511,15 +13614,18 @@ msgstr ""
 "Foram encontradas chaves PGP para %s, mas pelo menos uma delas expirou."
 
 #: lib/secure_mailing/smime/security_options.rb
-#, fuzzy
-#| msgid ""
-#| "There were certificates found for %s, but at least one of them has "
-#| "expired."
 msgid ""
 "There were certificates found for %s, but at least one of them is not valid "
 "yet or has expired."
 msgstr ""
-"Foram encontrados certificados para %s, mas pelo menos um deles expirou."
+"Foram encontrados certificados para %s, mas pelo menos um deles ainda não é "
+"válido ou já expirou."
+
+#: app/frontend/shared/form/i18n/locales.ts
+#, fuzzy
+#| msgid "There are no business hours configured."
+msgid "There were errors in your form."
+msgstr "Não há horário comercial configurado."
 
 #: app/assets/javascripts/app/controllers/_manage/security.coffee
 msgid "Third-party Applications"
@@ -13539,6 +13645,10 @@ msgid ""
 msgstr ""
 "Este email PGP foi criptografado com um algoritmo de criptografia "
 "potencialmente desconhecido."
+
+#: app/models/ticket/time_accounting.rb
+msgid "This article is not part of the ticket."
+msgstr "Este artigo não faz parte do ticket."
 
 #: lib/telegram_helper.rb
 msgid "This bot already exists."
@@ -13738,6 +13848,13 @@ msgstr ""
 msgid "This is not a private PGP key."
 msgstr "Esta não é uma chave privada PGP."
 
+#: app/models/ssl_certificate.rb
+msgid ""
+"This is not a valid X509 certificate. Please check the certificate format."
+msgstr ""
+"Este não é um certificado X509 válido. Por favor, verifique o formato do "
+"certificado."
+
 #: app/models/channel/email_parser.rb
 msgid ""
 "This message cannot be displayed because it contains over 5,000 links. "
@@ -13914,10 +14031,8 @@ msgid "Ticket Conditions Expert Mode"
 msgstr "Modo Especialista em Condições de Ticket"
 
 #: db/seeds/settings.rb
-#, fuzzy
-#| msgid "Ticket Conditions Expert Mode"
 msgid "Ticket Conditions Regular Expression Operators"
-msgstr "Modo Especialista em Condições de Ticket"
+msgstr "Operadores de Expressão Regular para Condições de Ticket"
 
 #: app/models/report.rb
 msgid "Ticket Count"
@@ -14287,10 +14402,8 @@ msgid "Time Accounting Unit"
 msgstr "Unidade de Contabilização de Tempo"
 
 #: app/policies/ticket/time_accounting_policy.rb
-#, fuzzy
-#| msgid "Time Accounting Unit"
 msgid "Time Accounting is not enabled"
-msgstr "Unidade de Contabilização de Tempo"
+msgstr "A contabilização de tempo não está ativada"
 
 #: app/assets/javascripts/app/views/time_accounting/by_activity.jst.eco
 #: app/assets/javascripts/app/views/time_accounting/by_customer.jst.eco
@@ -14524,16 +14637,12 @@ msgid "Topics"
 msgstr "Topicos"
 
 #: app/assets/javascripts/app/views/ticket_zoom/time_unit.jst.eco
-#, fuzzy
-#| msgid "Total: %s"
 msgid "Total"
-msgstr "Total: %s"
+msgstr "Total"
 
 #: app/frontend/apps/mobile/pages/ticket/components/TicketDetailView/TicketObjectAttributes.vue
-#, fuzzy
-#| msgid "Accounted Time"
 msgid "Total Accounted Time"
-msgstr "Tempo contado"
+msgstr "Tempo Total Contabilizado"
 
 #: db/seeds/settings.rb
 msgid "Total display of the number of objects in a grouping."
@@ -14552,10 +14661,8 @@ msgid "Transfer conversation to another chat:"
 msgstr "Transferir conversa para outro chat:"
 
 #: app/assets/javascripts/app/controllers/_ui_element/object_manager_attribute.coffee
-#, fuzzy
-#| msgid "Translations"
 msgid "Translate field contents"
-msgstr "Traduções"
+msgstr "Traduzir conteúdo do campo"
 
 #: app/assets/javascripts/app/controllers/_plugin/keyboard_shortcuts.coffee
 #: app/assets/javascripts/app/controllers/translation.coffee
@@ -14628,6 +14735,23 @@ msgstr "Terça"
 #: app/assets/javascripts/app/views/customer_chat/chat_footer.jst.eco
 msgid "Turn chat into ticket"
 msgstr "Transforme chat em um Ticket"
+
+#: app/assets/javascripts/app/controllers/webhook.coffee
+#: app/assets/javascripts/app/views/channel/email_account_wizard.jst.eco
+#: app/assets/javascripts/app/views/channel/email_notification_wizard.jst.eco
+#: app/assets/javascripts/app/views/getting_started/email.jst.eco
+#: app/assets/javascripts/app/views/getting_started/email_notification.jst.eco
+#: app/assets/javascripts/app/views/integration/exchange.jst.eco
+#: app/assets/javascripts/app/views/integration/gitlab.jst.eco
+#: app/assets/javascripts/app/views/integration/idoit.jst.eco
+#: app/assets/javascripts/app/views/integration/ldap.jst.eco
+#: app/assets/javascripts/app/views/integration/ldap_wizard.jst.eco
+msgid ""
+"Turning off SSL verification is a security risk and should be used only "
+"temporary. Use this option at your own risk!"
+msgstr ""
+"Desativar a verificação SSL é um risco à segurança e deve ser usado apenas "
+"temporariamente. Use esta opção por sua própria conta e risco!"
 
 #: app/assets/javascripts/app/views/twitter/account_edit.jst.eco
 msgid "Tweets containing search terms are automatically turned into tickets."
@@ -15041,6 +15165,8 @@ msgid "Upload"
 msgstr "Enviar"
 
 #: app/assets/javascripts/app/views/integration/smime_certificate_add.jst.eco
+#: app/assets/javascripts/app/views/ssl_certificate_binary_or_text.jst.eco
+#: app/assets/javascripts/app/views/ssl_certificates_create.jst.eco
 msgid "Upload Certificate"
 msgstr "Carregar certificado"
 
@@ -15352,8 +15478,8 @@ msgid "Verify sending and receiving"
 msgstr "Verificando enviar e receber"
 
 #: app/assets/javascripts/app/views/widget/two_factor_login/security_keys.jst.eco
-msgid "Verifying key information..."
-msgstr "Verificando informações da chave..."
+msgid "Verifying key information…"
+msgstr "Verificando informações da chave…"
 
 #: app/assets/javascripts/app/views/channel/email_account_wizard.jst.eco
 #: app/assets/javascripts/app/views/channel/email_notification_wizard.jst.eco
@@ -15849,6 +15975,7 @@ msgstr "Amarelo"
 #: app/assets/javascripts/app/controllers/_ui_element/_application_action.coffee
 #: app/assets/javascripts/app/controllers/tag.coffee
 #: app/assets/javascripts/app/controllers/ticket_shared_draft_modal.coffee
+#: app/assets/javascripts/app/views/ssl_certificates_list.jst.eco
 msgid "Yes"
 msgstr "Sim"
 
@@ -16013,9 +16140,13 @@ msgid "You can request your password"
 msgstr "Você pode solicitar sua senha"
 
 #: app/assets/javascripts/app/views/settings/storage_provider.jst.eco
+#, fuzzy
+#| msgid ""
+#| "You can switch between the backends for new attachments even on a system "
+#| "that is already in production without any loss of data."
 msgid ""
-"You can switch between the backends for new attachments even on a system "
-"that is already in production without any loss of data."
+"You can switch between the following backends for new attachments even on a "
+"system that is already in production without any loss of data."
 msgstr ""
 "Você pode alternar entre os back-ends para novos anexos, mesmo em um sistema "
 "que já esteja em produção, sem perda de dados."
@@ -16370,6 +16501,10 @@ msgid "active"
 msgstr "ativo"
 
 #: app/assets/javascripts/app/controllers/_ui_element/core_workflow_perform.coffee
+msgid "add"
+msgstr "adicionar"
+
+#: app/assets/javascripts/app/controllers/_ui_element/core_workflow_perform.coffee
 msgid "add option"
 msgstr "adicionar opção"
 
@@ -16401,7 +16536,7 @@ msgstr "e"
 msgid "archived"
 msgstr "arquivado"
 
-#: app/assets/javascripts/app/controllers/ticket_overview.coffee
+#: app/assets/javascripts/app/controllers/ticket_overview/settings.coffee
 #: app/assets/javascripts/app/models/overview.coffee
 #: app/frontend/apps/mobile/pages/ticket/components/TicketList/TicketOrderBySelector.vue
 msgid "ascending"
@@ -16538,6 +16673,7 @@ msgstr "Contêm um"
 msgid "contains one not"
 msgstr "contém um não"
 
+#: app/assets/javascripts/app/controllers/_ui_element/_application_selector.coffee
 #: app/assets/javascripts/app/views/integration/exchange_last_import.jst.eco
 #: app/assets/javascripts/app/views/integration/exchange_summary.jst.eco
 #: app/assets/javascripts/app/views/integration/ldap_last_import.jst.eco
@@ -16606,7 +16742,7 @@ msgstr "padrão"
 msgid "delete"
 msgstr "excluir"
 
-#: app/assets/javascripts/app/controllers/ticket_overview.coffee
+#: app/assets/javascripts/app/controllers/ticket_overview/settings.coffee
 #: app/assets/javascripts/app/models/overview.coffee
 #: app/frontend/apps/mobile/pages/ticket/components/TicketList/TicketOrderBySelector.vue
 msgid "descending"
@@ -16644,10 +16780,8 @@ msgstr "não existe"
 
 #: app/assets/javascripts/app/controllers/_ui_element/_application_selector.coffee
 #: app/assets/javascripts/app/controllers/_ui_element/core_workflow_condition.coffee
-#, fuzzy
-#| msgid "doesn't match %{attribute}"
 msgid "does not match regex"
-msgstr "não corresponde a %{attribute}"
+msgstr "não coincide com regex"
 
 msgid "doesn't match %{attribute}"
 msgstr "não corresponde a %{attribute}"
@@ -16715,10 +16849,8 @@ msgstr "termina com"
 
 #: app/assets/javascripts/app/controllers/_ui_element/_application_selector.coffee
 #: app/assets/javascripts/app/controllers/_ui_element/core_workflow_condition.coffee
-#, fuzzy
-#| msgid "ends with"
 msgid "ends with one of"
-msgstr "termina com"
+msgstr "termina com um dos"
 
 #: app/assets/javascripts/app/models/ticket.coffee
 msgid "escalated"
@@ -16956,7 +17088,7 @@ msgstr "já é usado"
 #: app/assets/javascripts/app/controllers/_ui_element/_application_selector.coffee
 #: app/assets/javascripts/app/controllers/_ui_element/core_workflow_condition.coffee
 msgid "is any of"
-msgstr ""
+msgstr "é algum dos"
 
 #: app/assets/javascripts/app/controllers/_ui_element/_application_selector.coffee
 msgid "is in working time"
@@ -16979,10 +17111,8 @@ msgstr "é maior que o comprimento permitido %{maxlength}"
 
 #: app/assets/javascripts/app/controllers/_ui_element/_application_selector.coffee
 #: app/assets/javascripts/app/controllers/_ui_element/core_workflow_condition.coffee
-#, fuzzy
-#| msgid "is not"
 msgid "is none of"
-msgstr "não é"
+msgstr "não é nenhum dos"
 
 #: app/assets/javascripts/app/controllers/_ui_element/_application_selector.coffee
 #: app/assets/javascripts/app/controllers/_ui_element/core_workflow_condition.coffee
@@ -17098,10 +17228,8 @@ msgstr "resultados encontrados"
 
 #: app/assets/javascripts/app/controllers/_ui_element/_application_selector.coffee
 #: app/assets/javascripts/app/controllers/_ui_element/core_workflow_condition.coffee
-#, fuzzy
-#| msgid "matches found"
 msgid "matches regex"
-msgstr "resultados encontrados"
+msgstr "corresponde à regex"
 
 #: app/assets/javascripts/app/views/cti/caller_log.jst.eco
 #: app/assets/javascripts/app/views/cti/caller_log_avatar.jst.eco
@@ -17112,6 +17240,10 @@ msgstr "talvez:"
 #: db/seeds/ticket_state_types.rb db/seeds/ticket_states.rb
 msgid "merged"
 msgstr "agrupado"
+
+#: app/assets/javascripts/app/controllers/_ui_element/_application_selector.coffee
+msgid "merged into"
+msgstr "mesclado em"
 
 #: app/assets/javascripts/app/controllers/_ui_element/_application_action.coffee
 msgid "message"
@@ -17154,6 +17286,11 @@ msgstr "deve ser maior que %{count}"
 
 msgid "must be greater than or equal to %{count}"
 msgstr "deve ser maior ou igual a %{count}"
+
+#, fuzzy
+#| msgid "must be less than %{count}"
+msgid "must be in %{count}"
+msgstr "deve ser menor que %{count}"
 
 msgid "must be less than %{count}"
 msgstr "deve ser menor que %{count}"
@@ -17201,6 +17338,8 @@ msgstr "novo & abrir"
 #: app/assets/javascripts/app/controllers/_ui_element/boolean.coffee
 #: app/assets/javascripts/app/controllers/time_accounting_types.coffee
 #: app/assets/javascripts/app/models/public_link.coffee
+#: app/assets/javascripts/app/views/integration/exchange.jst.eco
+#: app/assets/javascripts/app/views/integration/ldap.jst.eco
 #: app/assets/javascripts/app/views/object_manager/attribute/boolean.jst.eco
 #: app/frontend/apps/mobile/pages/ticket/views/TicketInformation/TicketInformationDetails.vue
 #: app/frontend/shared/components/ObjectAttributes/attributes/AttributeBoolean/AttributeBoolean.vue
@@ -17279,6 +17418,8 @@ msgstr "opcional"
 #: app/assets/javascripts/app/controllers/_integration/pgp.coffee
 #: app/assets/javascripts/app/views/integration/smime_certificate_add.jst.eco
 #: app/assets/javascripts/app/views/integration/smime_private_key_add.jst.eco
+#: app/assets/javascripts/app/views/ssl_certificate_binary_or_text.jst.eco
+#: app/assets/javascripts/app/views/ssl_certificates_create.jst.eco
 msgid "or"
 msgstr "ou"
 
@@ -17323,6 +17464,10 @@ msgstr "quarto de hora(s)"
 #: app/assets/javascripts/app/models/ticket.coffee
 msgid "reached"
 msgstr "encontrado"
+
+#: app/assets/javascripts/app/controllers/_ui_element/_application_selector.coffee
+msgid "received merge"
+msgstr "recebeu mesclagem"
 
 #: app/assets/javascripts/app/views/widget/two_factor_login/try_another_method.jst.eco
 msgid "recovery codes"
@@ -17487,10 +17632,8 @@ msgstr "começa com"
 
 #: app/assets/javascripts/app/controllers/_ui_element/_application_selector.coffee
 #: app/assets/javascripts/app/controllers/_ui_element/core_workflow_condition.coffee
-#, fuzzy
-#| msgid "starts with"
 msgid "starts with one of"
-msgstr "começa com"
+msgstr "começa com um dos"
 
 #: app/assets/javascripts/app/views/getting_started/email.jst.eco
 msgid "support@example.com"
@@ -17587,6 +17730,7 @@ msgstr "não definido somente leitura"
 msgid "untouched"
 msgstr "intocado"
 
+#: app/assets/javascripts/app/controllers/_ui_element/_application_selector.coffee
 #: app/assets/javascripts/app/views/integration/exchange_last_import.jst.eco
 #: app/assets/javascripts/app/views/integration/exchange_summary.jst.eco
 #: app/assets/javascripts/app/views/integration/ldap_last_import.jst.eco
@@ -17626,6 +17770,7 @@ msgstr "dentro da próxima (relativo)"
 #: app/assets/javascripts/app/controllers/time_accounting_types.coffee
 #: app/assets/javascripts/app/models/group.coffee
 #: app/assets/javascripts/app/models/public_link.coffee
+#: app/assets/javascripts/app/views/integration/ldap.jst.eco
 #: app/assets/javascripts/app/views/object_manager/attribute/boolean.jst.eco
 #: app/frontend/apps/mobile/pages/ticket/views/TicketInformation/TicketInformationDetails.vue
 #: app/frontend/shared/components/ObjectAttributes/attributes/AttributeBoolean/AttributeBoolean.vue
@@ -17673,6 +17818,15 @@ msgstr "...da area de texto"
 #: app/assets/javascripts/app/views/dashboard/stats/ticket_waiting_time.jst.eco
 msgid "∅ Waiting time today"
 msgstr "∅ tempo de espera hoje"
+
+#~ msgid "SSL Verify"
+#~ msgstr "Verificar o SSL"
+
+#~ msgid "%s new replies"
+#~ msgstr "%s novas respostas"
+
+#~ msgid "1 new reply"
+#~ msgstr "1 nova resposta"
 
 #~ msgid "Enable time accounting for these tickets."
 #~ msgstr "Habilite a contabilização de tempo para esses tickets."

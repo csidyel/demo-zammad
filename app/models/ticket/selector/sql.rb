@@ -127,9 +127,7 @@ class Ticket::Selector::Sql < Ticket::Selector::Base
         tables         |= ['INNER JOIN ticket_states ON tickets.state_id = ticket_states.id']
         sql_helper      = SqlHelper.new(object: Ticket::State)
       when 'ticket'
-        if attribute_name == 'mention_user_ids'
-          tables |= ["LEFT JOIN mentions ON tickets.id = mentions.mentionable_id AND mentions.mentionable_type = 'Ticket'"]
-        end
+        # nothing
       else
         raise "invalid selector #{attribute_table}, #{attribute_name}"
       end
@@ -151,6 +149,11 @@ class Ticket::Selector::Sql < Ticket::Selector::Base
 
     if attribute_table == 'ticket' && attribute_name == 'tags'
       block_condition[:value] = block_condition[:value].split(',').collect(&:strip)
+    end
+
+    # Performance: use left join instead of sub select if tags value is only one element and contains all is used
+    if attribute_table == 'ticket' && attribute_name == 'tags' && block_condition[:operator] == 'contains all' && block_condition[:value].count == 1
+      block_condition[:operator] = 'contains one'
     end
 
     #
@@ -222,16 +225,18 @@ class Ticket::Selector::Sql < Ticket::Selector::Base
     # because of no grouping support we select not_set by sub select for mentions
     elsif attribute_table == 'ticket' && attribute_name == 'mention_user_ids'
       if block_condition[:pre_condition] == 'not_set'
+        tables |= ["LEFT JOIN mentions ON tickets.id = mentions.mentionable_id AND mentions.mentionable_type = 'Ticket'"]
         query << if block_condition[:operator] == 'is'
-                   "(SELECT 1 FROM mentions mentions_sub WHERE mentions_sub.mentionable_type = 'Ticket' AND mentions_sub.mentionable_id = tickets.id) IS NULL"
+                   'mentions.user_id IS NULL'
                  else
-                   "1 = (SELECT 1 FROM mentions mentions_sub WHERE mentions_sub.mentionable_type = 'Ticket' AND mentions_sub.mentionable_id = tickets.id)"
+                   'mentions.user_id IS NOT NULL'
                  end
       else
         query << if block_condition[:operator] == 'is'
-                   "1 = (SELECT 1 FROM mentions mentions_sub WHERE mentions_sub.mentionable_type = 'Ticket' AND mentions_sub.mentionable_id = tickets.id AND mentions_sub.user_id IN (?))"
+                   tables |= ["LEFT JOIN mentions ON tickets.id = mentions.mentionable_id AND mentions.mentionable_type = 'Ticket'"]
+                   'mentions.user_id IN (?)'
                  else
-                   "(SELECT 1 FROM mentions mentions_sub WHERE mentions_sub.mentionable_type = 'Ticket' AND mentions_sub.mentionable_id = tickets.id AND mentions_sub.user_id IN (?)) IS NULL"
+                   "tickets.id NOT IN (SELECT mentionable_id FROM mentions WHERE mentionable_type = 'Ticket' AND user_id IN (?))"
                  end
         if block_condition[:pre_condition] == 'current_user.id'
           bind_params.push current_user_id
@@ -241,26 +246,26 @@ class Ticket::Selector::Sql < Ticket::Selector::Base
       end
     elsif block_condition[:operator] == 'starts with'
       query << "#{attribute} #{like} (?)"
-      bind_params.push "#{block_condition[:value]}%"
+      bind_params.push "#{SqlHelper.quote_like(block_condition[:value])}%"
     elsif block_condition[:operator] == 'starts with one of'
       block_condition[:value] = Array.wrap(block_condition[:value])
 
       sub_query = []
       block_condition[:value].each do |value|
         sub_query << "#{attribute} #{like} (?)"
-        bind_params.push "#{value}%"
+        bind_params.push "#{SqlHelper.quote_like(value)}%"
       end
       query << "(#{sub_query.join(' OR ')})" if sub_query.present?
     elsif block_condition[:operator] == 'ends with'
       query << "#{attribute} #{like} (?)"
-      bind_params.push "%#{block_condition[:value]}"
+      bind_params.push "%#{SqlHelper.quote_like(block_condition[:value])}"
     elsif block_condition[:operator] == 'ends with one of'
       block_condition[:value] = Array.wrap(block_condition[:value])
 
       sub_query = []
       block_condition[:value].each do |value|
         sub_query << "#{attribute} #{like} (?)"
-        bind_params.push "%#{value}"
+        bind_params.push "%#{SqlHelper.quote_like(value)}"
       end
       query << "(#{sub_query.join(' OR ')})" if sub_query.present?
     elsif block_condition[:operator] == 'is any of'
@@ -373,10 +378,10 @@ class Ticket::Selector::Sql < Ticket::Selector::Base
       end
     elsif block_condition[:operator] == 'contains'
       query << "#{attribute} #{like} (?)"
-      bind_params.push "%#{block_condition[:value]}%"
+      bind_params.push "%#{SqlHelper.quote_like(block_condition[:value])}%"
     elsif block_condition[:operator] == 'contains not'
       query << "#{attribute} NOT #{like} (?)"
-      bind_params.push "%#{block_condition[:value]}%"
+      bind_params.push "%#{SqlHelper.quote_like(block_condition[:value])}%"
     elsif block_condition[:operator] == 'matches regex'
       query << sql_helper.regex_match(attribute, negated: false)
       bind_params.push block_condition[:value]
@@ -385,22 +390,24 @@ class Ticket::Selector::Sql < Ticket::Selector::Base
       bind_params.push block_condition[:value]
     elsif block_condition[:operator] == 'contains all'
       if attribute_table == 'ticket' && attribute_name == 'tags'
-        query << "? = (
-                                              SELECT
-                                                COUNT(*)
-                                              FROM
-                                                tag_objects,
-                                                tag_items,
-                                                tags
-                                              WHERE
-                                                tickets.id = tags.o_id AND
-                                                tag_objects.id = tags.tag_object_id AND
-                                                tag_objects.name = 'Ticket' AND
-                                                tag_items.id = tags.tag_item_id AND
-                                                tag_items.name IN (?)
-                                            )"
-        bind_params.push block_condition[:value].count
+        query << "tickets.id IN (
+                        SELECT
+                          tags.o_id
+                        FROM
+                          tag_objects, tag_items, tags
+                        WHERE
+                          tag_objects.id = tags.tag_object_id
+                          AND tag_objects.name = 'Ticket'
+                          AND tag_items.id = tags.tag_item_id
+                          AND tag_items.name IN (?)
+                        GROUP BY
+                          tags.o_id
+                        HAVING
+                          COUNT(*) = ?
+                      )"
+
         bind_params.push block_condition[:value]
+        bind_params.push block_condition[:value].count
       elsif sql_helper.containable?(attribute_name)
         query << sql_helper.array_contains_all(attribute_name, block_condition[:value])
       end
@@ -415,40 +422,39 @@ class Ticket::Selector::Sql < Ticket::Selector::Base
       end
     elsif block_condition[:operator] == 'contains all not'
       if attribute_name == 'tags' && attribute_table == 'ticket'
-        query << "0 = (
+        query << "tickets.id NOT IN (
                         SELECT
-                          COUNT(*)
+                          DISTINCT tags.o_id
                         FROM
-                          tag_objects,
-                          tag_items,
-                          tags
+                          tag_objects, tag_items, tags
                         WHERE
-                          tickets.id = tags.o_id AND
-                          tag_objects.id = tags.tag_object_id AND
-                          tag_objects.name = 'Ticket' AND
-                          tag_items.id = tags.tag_item_id AND
-                          tag_items.name IN (?)
+                          tag_objects.id = tags.tag_object_id
+                          AND tag_objects.name = 'Ticket'
+                          AND tag_items.id = tags.tag_item_id
+                          AND tag_items.name IN (?)
+                        GROUP BY
+                          tags.o_id
+                        HAVING
+                          COUNT(*) = ?
                       )"
         bind_params.push block_condition[:value]
+        bind_params.push block_condition[:value].count
       elsif sql_helper.containable?(attribute_name)
         query << sql_helper.array_contains_all(attribute_name, block_condition[:value], negated: true)
       end
     elsif block_condition[:operator] == 'contains one not'
       if attribute_name == 'tags' && attribute_table == 'ticket'
-        query << "(
-                    SELECT
-                      COUNT(*)
-                    FROM
-                      tag_objects,
-                      tag_items,
-                      tags
-                    WHERE
-                      tickets.id = tags.o_id AND
-                      tag_objects.id = tags.tag_object_id AND
-                      tag_objects.name = 'Ticket' AND
-                      tag_items.id = tags.tag_item_id AND
-                      tag_items.name IN (?)
-                  ) BETWEEN 0 AND 0"
+        query << "tickets.id NOT IN (
+                        SELECT
+                          DISTINCT tags.o_id
+                        FROM
+                          tag_objects, tag_items, tags
+                        WHERE
+                          tag_objects.id = tags.tag_object_id
+                          AND tag_objects.name = 'Ticket'
+                          AND tag_items.id = tags.tag_item_id
+                          AND tag_items.name IN (?)
+                      )"
         bind_params.push block_condition[:value]
       elsif sql_helper.containable?(attribute_name)
         query << sql_helper.array_contains_one(attribute_name, block_condition[:value], negated: true)
