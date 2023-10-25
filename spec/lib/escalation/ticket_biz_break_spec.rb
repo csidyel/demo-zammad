@@ -145,7 +145,6 @@ RSpec.describe Escalation::TicketBizBreak, time_zone: 'Europe/Berlin' do
       it { expect(result.values[4]['00:00']).to eq '24:00' }
       it { expect(result.values[5].keys).to eq %w[00:00] }
       xit { expect(result.values[5]['00:00']).to eq '12:00' }
-      end
     end
   end
 
