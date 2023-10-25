@@ -12,7 +12,7 @@ global_job_config:
     commands:
       - checkout
       - cache restore
-      - sem-service start postgres 10 --username=zammad --password=zammad
+      - sem-service start postgres 16 --username=zammad --password=zammad
       - sem-service start redis 5
       - sem-version ruby 3.1.3
       - sudo apt-get update
