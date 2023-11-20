@@ -4,14 +4,15 @@ agent:
   machine:
     type: e2-standard-2
     os_image: ubuntu2004
-execution_time_limit:
-  hours: 3   
+auto_cancel:
+  running:
+    when: "true"
 global_job_config:
   prologue:
     commands:
       - checkout
       - cache restore
-      - sem-service start postgres 10 --username=zammad --password=zammad
+      - sem-service start postgres 16 --username=zammad --password=zammad
       - sem-service start redis 5
       - sem-version ruby 3.1.3
       - sudo apt-get update
@@ -54,5 +55,3 @@ blocks:
             - bundle exec rspec --exclude-pattern "spec/system/**/*_spec.rb" -t ~searchindex -t ~integration -t ~required_envs
             - bundle exec rake zammad:db:reset
             - bundle exec rake test:units
-            
-    
