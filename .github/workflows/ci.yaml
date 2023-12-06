@@ -2,13 +2,10 @@ name: CI
 
 on: 
   push:
-  schedule:
-    # Runs every day.
-    - cron:  '0 8,13,18 * * *'
 
 jobs:
   CI:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     container:
       image: zammad/zammad-ci:latest
     services:
