@@ -11,18 +11,6 @@ global_job_config:
   prologue:
     commands:
       - checkout
-      - cache restore
-      - sem-service start postgres 16 --username=zammad --password=zammad
-      - sem-service start redis 5
-      - sem-version ruby 3.1.3
-      - sudo apt-get update
-      - sudo apt-get install -y -f optipng jhead imagemagick libimlib2 openssl direnv shellcheck libimlib2-dev
-      - echo '127.0.0.1 redis postgresql' | sudo tee -a /etc/hosts
-      - rbenv rehash
-      - bundle install --path vendor/bundle
-      - yarn install
-      - 'yarn cypress:install'
-      - cache store
   env_vars:
     - name: RAILS_ENV
       value: test
@@ -45,3 +33,6 @@ promotions:
     deployment_target: staging
     auto_promote:
       when: branch = 'single-tests' AND result = 'passed'
+  - name: production
+    pipeline_file: pipeline_3.yml
+    deployment_target: production
