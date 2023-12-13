@@ -36,3 +36,8 @@ promotions:
   - name: production
     pipeline_file: pipeline_3.yml
     deployment_target: production
+  - name: development
+    pipeline_file: pipeline_4.yml
+    deployment_target: development
+    auto_promote:
+      when: branch = 'single-tests' AND result = 'passed'
