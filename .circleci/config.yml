@@ -19,7 +19,7 @@ jobs:
           POSTGRES_PASSWORD: zammad
       - image: cimg/redis:5.0
       
-    resource_class: medium
+    resource_class: medium+
     steps:
       - checkout
       - restore_cache:
