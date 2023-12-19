@@ -1,25 +1,21 @@
 version: 2.1
 jobs:
   zammad:
-    docker:
-      - image: zammad/zammad-ci:latest
+    machine:
+      - image: ubuntu-2004:current
         environment:
           PGHOST: '127.0.0.1'
-          PGUSER: root
+          #PGUSER: root
+          POSTGRES_USER: zammad
+          POSTGRES_PASSWORD: zammad
           RAILS_ENV: test
           Z_LOCALES: "en-us:de-de"
           REDIS_URL: redis://redis:6379
           # Compile assets only once.
           CI_SKIP_ASSETS_PRECOMPILE: 'true'
           # Avoid unnecessary DB resets.
-          CI_SKIP_DB_RESET: 'true'
-      - image: cimg/postgres:16.0
-        environment:
-          POSTGRES_USER: zammad
-          POSTGRES_PASSWORD: zammad
-      - image: cimg/redis:5.0
-      
-    resource_class: medium+
+          CI_SKIP_DB_RESET: 'true'      
+    resource_class: medium
     steps:
       - checkout
       - restore_cache:
@@ -31,6 +27,9 @@ jobs:
       - run: echo '127.0.0.1 redis postgresql' | sudo tee -a /etc/hosts
       - run: sudo apt update -y
       - run: sudo apt install -y postgresql-client
+      - run: sudo apt-get install -y postgresql postgresql-contrib
+      - run: sudo apt-get install -y redis-server
+      - run: sudo service redis-server start
       - run: .github/workflows/ci/pre.sh
       - run: .github/workflows/ci/lint.sh        
       - run: .github/workflows/ci/test.sh
