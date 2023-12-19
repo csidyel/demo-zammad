@@ -29,6 +29,7 @@ jobs:
           name: Restore Ruby Cache
           keys: cache-gems-{{ checksum "Gemfile.lock" }}
       - run: echo '127.0.0.1 redis postgresql' | sudo tee -a /etc/hosts
+      - run: sudo apt update -y
       - run: sudo apt install -y postgresql-client
       - run: .github/workflows/ci/pre.sh
       - run: .github/workflows/ci/lint.sh        
