@@ -31,7 +31,7 @@ jobs:
       - run: echo '127.0.0.1 redis postgresql' | sudo tee -a /etc/hosts
       - run: sudo apt update -y
       - run: sudo apt install -y postgresql-client
-      - run: sudo swapoff -a && sudo fallocate -l 2G /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
+      - run: sudo swapoff -a && sudo fallocate -l 2G /swapfile && sudo chmod 0600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile
       - run: .github/workflows/ci/pre.sh
       - run: .github/workflows/ci/lint.sh        
       - run: .github/workflows/ci/test.sh
