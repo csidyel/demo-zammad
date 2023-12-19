@@ -46,6 +46,14 @@ jobs:
             - ~/.bundle
 
 workflows:
+  nightly-snapshot:
+    triggers: #use the triggers key to indicate a scheduled build
+      - schedule:
+          cron: "0 8,14,20 * * *" # use cron syntax to set the schedule
+          filters:
+            branches:
+              only:
+                - circle-docker-large
   CI-workflow:
     jobs:
       - zammad
