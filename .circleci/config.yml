@@ -27,7 +27,7 @@ jobs:
           key: yarn-packages-{{ checksum "yarn.lock" }}
       - restore_cache:
           name: Restore Ruby Cache
-          keys: cache-gems-{{ checksum "Gemfile.lock" }}
+          key: cache-gems-{{ checksum "Gemfile.lock" }}
       - run: echo '127.0.0.1 redis postgresql' | sudo tee -a /etc/hosts
       - run: sudo apt update -y
       - run: sudo apt install -y postgresql-client
