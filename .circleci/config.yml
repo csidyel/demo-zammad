@@ -8,21 +8,13 @@ jobs:
       - checkout
       - restore_cache:
           name: Restore Yarn Package Cache
-          keys:
-            - yarn-packages-{{ checksum "yarn.lock" }}
+          key: yarn-packages-{{ checksum "yarn.lock" }}
       - restore_cache:
           name: Restore Ruby Cache
-          keys:
-            - cache-gems-{{ checksum "Gemfile.lock" }}
-      - run:
-          name: Pre
-          commands: .github/workflows/ci/pre.sh
-      - run:
-          name: Lint
-          commands: .github/workflows/ci/lint.sh        
-      - run:
-          name: Test
-          commands: .github/workflows/ci/test.sh
+          keys: cache-gems-{{ checksum "Gemfile.lock" }}
+      - run: .github/workflows/ci/pre.sh
+      - run: .github/workflows/ci/lint.sh        
+      - run: .github/workflows/ci/test.sh
       - save_cache:
           name: Save Yarn Package Cache
           key: yarn-packages-{{ checksum "yarn.lock" }}
