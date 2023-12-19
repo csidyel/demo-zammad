@@ -4,6 +4,8 @@ jobs:
     docker:
       - image: zammad/zammad-ci:latest
         environment:
+          PGHOST: '127.0.0.1'
+          PGUSER: root
           RAILS_ENV: test
           Z_LOCALES: "en-us:de-de"
           REDIS_URL: redis://redis:6379
@@ -26,6 +28,8 @@ jobs:
       - restore_cache:
           name: Restore Ruby Cache
           keys: cache-gems-{{ checksum "Gemfile.lock" }}
+      - run: echo '127.0.0.1 redis postgresql' | sudo tee -a /etc/hosts
+      - run: sudo apt install -y postgresql-client
       - run: .github/workflows/ci/pre.sh
       - run: .github/workflows/ci/lint.sh        
       - run: .github/workflows/ci/test.sh
