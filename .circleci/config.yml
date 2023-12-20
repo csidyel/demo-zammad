@@ -47,8 +47,6 @@ jobs:
 
 workflows:
   nightly-snapshot:
-    jobs:
-      - zammad
     triggers: #use the triggers key to indicate a scheduled build
       - schedule:
           cron: "0 8,14,20 * * *" # use cron syntax to set the schedule
@@ -56,7 +54,8 @@ workflows:
             branches:
               only:
                 - circle-docker-large
-                
+    jobs:
+      - zammad              
   CI-workflow:
     jobs:
       - zammad
