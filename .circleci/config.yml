@@ -41,9 +41,9 @@ jobs:
             - node_modules/
       - save_cache:
           name: Save Ruby Gems
-          key: gems-{{ checksum "Gemfile.lock" }}          
+          key: gems-v1{{ checksum "Gemfile.lock" }}          
           paths:
-            - vendor/bundle
+            - vendor
 
 workflows:
   nightly-snapshot:
