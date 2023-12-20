@@ -24,7 +24,7 @@ jobs:
       - checkout
       - restore_cache:
           name: Restore Yarn Package Cache
-          key: yarn-packages-{{ checksum "yarn.lock" }}
+          key: node-packages-{{ checksum "yarn.lock" }}
       - restore_cache:
           name: Restore Ruby Cache
           key: cache-gems-{{ checksum "Gemfile.lock" }}
@@ -36,14 +36,14 @@ jobs:
       - run: .github/workflows/ci/test.sh
       - save_cache:
           name: Save Yarn Package Cache
-          key: yarn-packages-{{ checksum "yarn.lock" }}
+          key: node-packages-{{ checksum "yarn.lock" }}
           paths:
-            - ~/.cache/yarn
+            - node_modules/
       - save_cache:
           name: Save Ruby Gems
           key: cache-gems-{{ checksum "Gemfile.lock" }}          
           paths:
-            - ~/.bundle
+            - vendor/bundle
 
 workflows:
   nightly-snapshot:
