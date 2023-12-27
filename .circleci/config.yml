@@ -22,6 +22,7 @@ jobs:
     resource_class: large
     steps:
       - checkout
+      - run: echo "test"
       - restore_cache:
           name: Restore Yarn Package Cache
           key: node-packages-{{ checksum "yarn.lock" }}
