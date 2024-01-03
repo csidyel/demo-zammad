@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class SecureMailing::PGP::Outgoing < SecureMailing::Backend::HandlerOutgoing
   def type
@@ -26,7 +26,7 @@ class SecureMailing::PGP::Outgoing < SecureMailing::Backend::HandlerOutgoing
     raise
   end
 
-  def self.encoded_body_part(data) # rubocop:disable Metrics/AbcSize
+  def self.encoded_body_part(data)
     Mail::Part.new do
       if data.multipart?
         if data.content_type =~ %r{(multipart[^;]+)}

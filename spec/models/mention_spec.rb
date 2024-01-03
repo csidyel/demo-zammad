@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -8,7 +8,10 @@ RSpec.describe Mention, type: :model do
 
   describe 'validation' do
     it 'does not allow mentions for customers' do
-      expect { create(:mention, mentionable: ticket, user: create(:customer)) }.to raise_error(ActiveRecord::RecordInvalid, 'Validation failed: User has no agent access to this ticket')
+      record = build(:mention, mentionable: ticket, user: create(:customer))
+      record.save
+
+      expect(record.errors.full_messages).to include('A mentioned user has no agent access to this ticket')
     end
   end
 

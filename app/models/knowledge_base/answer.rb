@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class KnowledgeBase::Answer < ApplicationModel
   include HasTranslations
@@ -103,7 +103,9 @@ class KnowledgeBase::Answer < ApplicationModel
   private
 
   def touch_translations
-    translations.each(&:touch) # move to #touch_all when migrationg to Rails 6
+    translations
+      .reject(&:destroyed?)
+      .each(&:touch) # touch each translation separately to trigger after_commit callbacks
   end
   after_touch :touch_translations
 

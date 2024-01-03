@@ -1,14 +1,14 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Sequencer::Unit::Import::Freshdesk::Ticket::RequesterContact < Sequencer::Unit::Import::Freshdesk::SubSequence::Generic
   prepend ::Sequencer::Unit::Import::Common::Model::Mixin::Skip::Action
 
   skip_action :skipped, :failed
 
-  uses :dry_run, :import_job, :resource, :field_map, :id_map
+  uses :dry_run, :import_job, :resource, :field_map, :id_map, :skip_initial_contacts
 
   def process
-    return if contact_exists? || resource['requester_id'].blank?
+    return if !skip_initial_contacts || contact_exists? || resource['requester_id'].blank?
 
     ::Sequencer.process('Import::Freshdesk::Contact',
                         parameters: {

@@ -1,6 +1,10 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { UserError, UserInput } from '#shared/graphql/types.ts'
+import type {
+  UserError,
+  UserInput,
+  UserSignupInput,
+} from '#shared/graphql/types.ts'
 import gql from 'graphql-tag'
 
 export interface TestAvatarQuery {
@@ -48,6 +52,63 @@ export const TestAvatarDocument = gql`
       imageFull
       createdAt
       updatedAt
+    }
+  }
+`
+
+export interface TestTicketArticlesMultipleQuery {
+  description: {
+    edges: {
+      node: {
+        id: string
+        bodyWithUrls: string
+      }
+    }[]
+  }
+  articles: {
+    totalCount: number
+    edges: {
+      node: {
+        id: string
+        bodyWithUrls: string
+      }
+      cursor: string
+    }[]
+    pageInfo: {
+      endCursor: string
+      startCursor: string
+      hasPreviousPage: boolean
+    }
+  }
+}
+
+export const TestTicketArticlesMultiple = gql`
+  query ticketArticles($ticketId: ID!, $beforeCursor: String) {
+    description: ticketArticles(ticket: { ticketId: $ticketId }, first: 1) {
+      edges {
+        node {
+          id
+          bodyWithUrls
+        }
+      }
+    }
+    articles: ticketArticles(
+      ticket: { ticketId: $ticketId }
+      before: $beforeCursor
+    ) {
+      totalCount
+      edges {
+        node {
+          id
+          bodyWithUrls
+        }
+        cursor
+      }
+      pageInfo {
+        endCursor
+        startCursor
+        hasPreviousPage
+      }
     }
   }
 `
@@ -120,3 +181,43 @@ export const TestUserUpdatesDocument = gql`
     }
   }
 `
+
+export interface TestAutocompleteArrayFirstLevelQuery {
+  autocompleteSearchObjectAttributeExternalDataSource: {
+    value: number
+    label: string
+  }[]
+}
+
+export const TestAutocompleteArrayFirstLevel = gql`
+  query autocompleteSearchObjectAttributeExternalDataSource(
+    $input: AutocompleteSearchObjectAttributeExternalDataSourceInput!
+  ) {
+    autocompleteSearchObjectAttributeExternalDataSource(input: $input) {
+      value
+      label
+    }
+  }
+`
+
+export const TestUserSignupMutationDocument = gql`
+  mutation userSignup($input: UserSignupInput!) {
+    userSignup(input: $input) {
+      success
+      errors {
+        ...errors
+      }
+    }
+  }
+`
+
+export interface TestUserSignupMutationQuery {
+  userSignup: {
+    success: boolean
+    errors: UserError[] | null
+  }
+}
+
+export interface TestUserSignupArgs {
+  input: UserSignupInput
+}

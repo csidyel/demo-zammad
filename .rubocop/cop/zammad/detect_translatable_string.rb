@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module RuboCop
   module Cop
@@ -56,7 +56,7 @@ module RuboCop
           '@'
         ].freeze
 
-        def offense?(node) # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+        def offense?(node)
 
           # Ignore Hash Keys
           return false if node.parent.type.eql?(:pair) && node.parent.children.first.equal?(node)

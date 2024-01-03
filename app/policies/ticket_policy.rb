@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class TicketPolicy < ApplicationPolicy
 
@@ -58,7 +58,9 @@ class TicketPolicy < ApplicationPolicy
   end
 
   def create_mentions?
-    agent_read_access?
+    return true if agent_read_access?
+
+    not_authorized __('You have insufficient permissions to mention other users.')
   end
 
   private

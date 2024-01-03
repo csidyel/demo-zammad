@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Import
   module OTRS
@@ -85,9 +85,9 @@ module Import
       end
 
       def update_ticket_state
-        agent_new = fetch_ticket_states(%w[merged removed])
-        agent_edit = fetch_ticket_states(%w[new merged removed])
-        customer_new = fetch_ticket_states(%w[ew closed])
+        agent_new = fetch_ticket_states(%w[merged])
+        agent_edit = fetch_ticket_states(%w[new merged])
+        customer_new = fetch_ticket_states(%w[new closed])
         customer_edit = fetch_ticket_states(%w[open closed])
 
         ticket_state_id = ::ObjectManager::Attribute.get(

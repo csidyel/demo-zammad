@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module SecureMailing::PGP::Tool::Parse
   extend ActiveSupport::Concern
@@ -21,7 +21,7 @@ module SecureMailing::PGP::Tool::Parse
 
     private
 
-    def parse_info(data) # rubocop:disable Metrics/AbcSize
+    def parse_info(data)
       info = {
         fingerprint: nil,
         uids:        [],

@@ -1,11 +1,15 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { useApolloClient } from '@vue/apollo-composable'
 import { random } from 'lodash-es'
 import type { RouteRecordRaw } from 'vue-router'
 import LayoutTest from './LayoutTest.vue'
 import mockApolloClient from '../mock-apollo-client.ts'
-import renderComponent, { getTestRouter } from './renderComponent.ts'
+import renderComponent, {
+  getTestRouter,
+  type ExtendedMountingOptions,
+} from './renderComponent.ts'
+import { getTestAppName } from './app.ts'
 
 vi.mock('#shared/server/apollo/client.ts', () => {
   return {
@@ -32,18 +36,27 @@ Object.defineProperty(window, 'fetch', {
 
 const html = String.raw
 
-interface VisitViewOptions {
+interface VisitViewOptions extends ExtendedMountingOptions<unknown> {
   mockApollo?: boolean
 }
 
+const isDesktop = getTestAppName() === 'desktop'
+
+// TODO: for desktop app `LayoutTest` should have an abstract header component instead of mobile one
 export const visitView = async (
   href: string,
-  options: VisitViewOptions = { mockApollo: true },
+  // rely on new way to mock apollo in desktop by default
+  options: VisitViewOptions = { mockApollo: !isDesktop },
 ) => {
-  const { routes } = await import('#mobile/router/index.ts')
+  const { routes } = isDesktop
+    ? await import('#desktop/router/index.ts')
+    : await import('#mobile/router/index.ts')
 
   if (options.mockApollo) {
     mockApolloClient([])
+  } else if (isDesktop) {
+    // automocking is enabled when this file is imported because it happens on the top level
+    await import('#tests/graphql/builders/mocks.ts')
   }
 
   // remove LayoutMain layout, keep only actual content
@@ -74,6 +87,7 @@ export const visitView = async (
       propsData: {
         testKey,
       },
+      ...options,
     },
   )
 

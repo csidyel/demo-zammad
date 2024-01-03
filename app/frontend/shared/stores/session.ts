@@ -1,4 +1,4 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
@@ -72,6 +72,7 @@ export const useSessionStore = defineStore(
     const id = ref<Maybe<string>>(null)
     const afterAuth = ref<Maybe<SessionAfterAuth>>(null)
     const initialized = ref(false)
+    const locale = useLocaleStore()
 
     const checkSession = async (): Promise<string | null> => {
       const sessionQuery = getSessionQuery()
@@ -104,7 +105,6 @@ export const useSessionStore = defineStore(
       log.debug('currentUserUpdate', user.value)
 
       // Check if the locale is different, then a update is needed.
-      const locale = useLocaleStore()
       const userLocale = user.value?.preferences?.locale as string | undefined
 
       if (

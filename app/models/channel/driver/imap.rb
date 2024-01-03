@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'net/imap'
 
@@ -116,7 +116,9 @@ example
     Certificate::ApplySSLCertificates.ensure_fresh_ssl_context if ssl || starttls
 
     timeout(check_type_timeout) do
-      @imap = ::Net::IMAP.new(options[:host], port, ssl, nil, ssl_verify)
+      ssl_settings = false
+      ssl_settings = (ssl_verify ? true : { verify_mode: OpenSSL::SSL::VERIFY_NONE }) if ssl
+      @imap = ::Net::IMAP.new(options[:host], port: port, ssl: ssl_settings)
       if starttls
         @imap.starttls(nil, ssl_verify)
       end
@@ -213,10 +215,9 @@ example
     # reverse message order to increase performance
     if check_type == 'verify'
       Rails.logger.info "verify mode, fetch no emails #{verify_string}"
-      message_ids.reverse!
 
       # check for verify message
-      message_ids.each do |message_id|
+      message_ids.reverse_each do |message_id|
 
         message_meta = nil
         timeout(FETCH_METADATA_TIMEOUT) do

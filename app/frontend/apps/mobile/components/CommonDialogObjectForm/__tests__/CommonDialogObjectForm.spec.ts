@@ -1,4 +1,4 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { keyBy } from 'lodash-es'
 import { useMutation } from '@vue/apollo-composable'
@@ -8,7 +8,7 @@ import {
   mockOrganizationObjectAttributes,
   organizationObjectAttributes,
 } from '#mobile/entities/organization/__tests__/mocks/organization-mocks.ts'
-import { defineFormSchema } from '#mobile/form/defineFormSchema.ts'
+import { defineFormSchema } from '#shared/form/defineFormSchema.ts'
 import { EnumObjectManagerObjects } from '#shared/graphql/types.ts'
 import { renderComponent } from '#tests/support/components/index.ts'
 import { MutationHandler } from '#shared/server/apollo/handler/index.ts'

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 Permission.create_if_not_exists(
   name:        'admin',
@@ -199,6 +199,20 @@ Permission.create_if_not_exists(
   note:        __('Manage %s Settings'),
   preferences: {
     translations: [__('Ticket')]
+  },
+)
+Permission.create_if_not_exists(
+  name:        'admin.ticket_state',
+  note:        __('Manage %s Settings'),
+  preferences: {
+    translations: [__('Ticket States')]
+  },
+)
+Permission.create_if_not_exists(
+  name:        'admin.ticket_priority',
+  note:        __('Manage %s Settings'),
+  preferences: {
+    translations: [__('Ticket Priorities')]
   },
 )
 Permission.create_if_not_exists(

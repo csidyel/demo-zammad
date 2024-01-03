@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -52,6 +52,17 @@ RSpec.describe Import::OTRS::State do
 
     it 'updates' do
       updates_with(zammad_structure)
+    end
+  end
+
+  context 'with removed state' do
+    let(:object_structure) { load_state_json('removed') }
+
+    it 'skips', :aggregate_failures do
+      start_import_test
+
+      expect(import_object).not_to receive(:new)
+      expect(Ticket::State.find_by(name: 'removed')).to be_nil
     end
   end
 end

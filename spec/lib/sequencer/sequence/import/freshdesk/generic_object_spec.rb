@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -33,14 +33,15 @@ RSpec.describe Sequencer::Sequence::Import::Freshdesk::GenericObject, db_strateg
 
     let(:process_payload) do
       {
-        import_job:           build_stubbed(:import_job, name: 'Import::Freshdesk', payload: {}),
-        dry_run:              false,
-        object:               'Group',
-        request_params:       {},
-        field_map:            {},
-        id_map:               {},
-        skipped_resource_id:  nil,
-        time_entry_available: true,
+        import_job:            build_stubbed(:import_job, name: 'Import::Freshdesk', payload: {}),
+        dry_run:               false,
+        object:                'Group',
+        request_params:        {},
+        field_map:             {},
+        id_map:                {},
+        skipped_resource_id:   nil,
+        time_entry_available:  true,
+        skip_initial_contacts: false,
       }
     end
 

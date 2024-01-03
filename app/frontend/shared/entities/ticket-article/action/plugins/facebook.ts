@@ -1,4 +1,4 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import type {
   TicketArticleAction,
@@ -19,7 +19,7 @@ const actionPlugin: TicketArticleActionPlugin = {
       apps: ['mobile'],
       label: __('Reply'),
       name: type,
-      icon: { mobile: 'mobile-reply' },
+      icon: 'reply',
       view: {
         agent: ['change'],
       },
@@ -46,9 +46,7 @@ const actionPlugin: TicketArticleActionPlugin = {
       apps: ['mobile'],
       value: 'facebook feed comment',
       label: __('Facebook'),
-      icon: {
-        mobile: 'mobile-facebook',
-      },
+      icon: 'facebook',
       view: {
         agent: ['change'],
       },

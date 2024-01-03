@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Zammad
   module Service
@@ -61,7 +61,7 @@ module Zammad
 
         private
 
-        def yaml # rubocop:disable Metrics/AbcSize
+        def yaml
           return {} if @yaml.blank? || !@yaml.exist?
 
           config = YAML.load_file(@yaml, aliases: true).deep_symbolize_keys
@@ -79,7 +79,7 @@ module Zammad
           resolve_url(ENV[@env])
         end
 
-        def resolve_url(url) # rubocop:disable Metrics/AbcSize
+        def resolve_url(url)
           uri = URI.parse(url)
 
           config = template(uri)

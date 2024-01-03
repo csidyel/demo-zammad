@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Mention < ApplicationModel
   include HasDefaultModelUserRelations
@@ -66,9 +66,7 @@ class Mention < ApplicationModel
   # @param user
   # @return Boolean
   def self.subscribe!(object, user)
-    object
-      .mentions
-      .find_or_create_by! user: user
+    object.mentions.create!(user: user) if !subscribed?(object, user)
 
     true
   end

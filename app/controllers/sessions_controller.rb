@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class SessionsController < ApplicationController
   prepend_before_action :authenticate_and_authorize!, only: %i[switch_to_user list delete]
@@ -90,7 +90,13 @@ class SessionsController < ApplicationController
 
     auth = request.env['omniauth.auth']
 
-    redirect_url = request.env['omniauth.origin']&.include?('/mobile') ? '/mobile' : '/#'
+    redirect_url = if request.env['omniauth.origin']&.include?('/mobile')
+                     '/mobile'
+                   elsif request.env['omniauth.origin']&.include?('/desktop')
+                     '/desktop'
+                   else
+                     '/#'
+                   end
 
     if !auth
       logger.info('AUTH IS NULL, SERVICE NOT LINKED TO ACCOUNT')
@@ -301,6 +307,10 @@ class SessionsController < ApplicationController
     #   but we still to display one of the options
     # https://github.com/zammad/zammad/issues/4263
     config['auth_saml_display_name'] = Setting.get('auth_saml_credentials')[:display_name]
+
+    # Include the flag for JSON column type support (currently only on PostgreSQL backend).
+    config['column_type_json_supported'] =
+      ActiveRecord::Base.connection_db_config.configuration_hash[:adapter] == 'postgresql'
 
     # Announce searchable models to the front end.
     config['models_searchable'] = Models.searchable.map(&:to_s)

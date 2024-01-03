@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 # Adds a last_owner_update time on ticket changes.
 module Ticket::SetsLastOwnerUpdateTime
@@ -37,7 +37,7 @@ module Ticket::SetsLastOwnerUpdateTime
 
     # check if state is not new/open
     if changes_to_save['state_id'].present?
-      state_ids = Ticket::State.by_category(:work_on).pluck(:id)
+      state_ids = Ticket::State.by_category_ids(:work_on)
       if state_ids.exclude?(changes_to_save['state_id'][1])
         self.last_owner_update_at = nil
         return true

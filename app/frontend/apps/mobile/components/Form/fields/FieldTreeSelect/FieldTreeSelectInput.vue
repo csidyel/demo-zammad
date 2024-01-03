@@ -1,11 +1,11 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 import { computed, nextTick, ref, toRef } from 'vue'
 import { i18n } from '#shared/i18n.ts'
 import { useDialog } from '#shared/composables/useDialog.ts'
 import CommonTicketStateIndicator from '#shared/components/CommonTicketStateIndicator/CommonTicketStateIndicator.vue'
-import { useFormBlock } from '#mobile/form/useFormBlock.ts'
+import { useFormBlock } from '#shared/form/useFormBlock.ts'
 import useSelectOptions from '#shared/composables/useSelectOptions.ts'
 import useSelectPreselect from '#shared/composables/useSelectPreselect.ts'
 import useValue from '#shared/components/Form/composables/useValue.ts'
@@ -220,7 +220,7 @@ setupMissingOrDisabledOptionHandling()
         v-if="context.clearable && hasValue && !context.disabled"
         :label="__('Clear Selection')"
         class="absolute -mt-5 shrink-0 text-gray ltr:right-2 rtl:left-2"
-        name="mobile-close-small"
+        name="close-small"
         size="base"
         role="button"
         tabindex="0"

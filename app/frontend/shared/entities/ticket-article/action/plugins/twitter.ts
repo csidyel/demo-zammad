@@ -1,4 +1,4 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import type { FormValues } from '#shared/components/Form/types.ts'
 import type { FieldEditorProps } from '#shared/components/Form/fields/FieldEditor/types.ts'
@@ -93,7 +93,7 @@ const actionPlugin: TicketArticleActionPlugin = {
       apps: ['mobile'],
       label: __('Reply'),
       name: type,
-      icon: { mobile: 'mobile-reply' },
+      icon: 'reply',
       view: {
         agent: ['change'],
       },
@@ -119,9 +119,7 @@ const actionPlugin: TicketArticleActionPlugin = {
       apps: ['mobile'],
       value: descriptionType,
       label: __('Twitter'),
-      icon: {
-        mobile: 'mobile-twitter',
-      },
+      icon: 'twitter',
       view: {
         agent: ['change'],
       },

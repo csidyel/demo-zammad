@@ -1,4 +1,4 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import {
   EnumSecurityStateType,
@@ -276,7 +276,13 @@ test("redirects to error page, if can't find ticket", async () => {
 test('show article context on click', async () => {
   const { waitUntilTicketLoaded } = mockTicketDetailViewGql()
 
-  const view = await visitView('/tickets/1')
+  const view = await visitView('/tickets/1', {
+    global: {
+      stubs: {
+        transition: false,
+      },
+    },
+  })
 
   await waitUntilTicketLoaded()
 
@@ -373,7 +379,7 @@ describe('calling API to retry encryption', () => {
     const [articlesElement] = view.getAllByRole('comment')
 
     expect(getByLabelText(articlesElement, 'Signed')).toBeInTheDocument()
-    expect(getByIconName(articlesElement, 'mobile-signed')).toBeInTheDocument()
+    expect(getByIconName(articlesElement, 'signed')).toBeInTheDocument()
   })
 
   it('updates non-description article', async () => {
@@ -432,9 +438,7 @@ describe('calling API to retry encryption', () => {
     const [, firstCommentArticle] = view.getAllByRole('comment')
 
     expect(getByLabelText(firstCommentArticle, 'Signed')).toBeInTheDocument()
-    expect(
-      getByIconName(firstCommentArticle, 'mobile-signed'),
-    ).toBeInTheDocument()
+    expect(getByIconName(firstCommentArticle, 'signed')).toBeInTheDocument()
   })
 })
 
@@ -542,7 +546,7 @@ describe('ticket viewers inside a ticket', () => {
     expect(
       view.queryByRole('dialog', { name: 'Ticket viewers' }),
     ).toHaveTextContent('John Doe')
-    expect(view.queryByIconName('mobile-desktop')).not.toBeInTheDocument()
+    expect(view.queryByIconName('desktop')).not.toBeInTheDocument()
 
     await mockTicketLiveUsersSubscription.next({
       data: {
@@ -578,7 +582,7 @@ describe('ticket viewers inside a ticket', () => {
       },
     })
 
-    expect(view.queryByIconName('mobile-desktop')).toBeInTheDocument()
+    expect(view.queryByIconName('desktop')).toBeInTheDocument()
   })
 
   it('editing has always the highest priority', async () => {
@@ -642,7 +646,7 @@ describe('ticket viewers inside a ticket', () => {
     expect(
       view.queryByRole('dialog', { name: 'Ticket viewers' }),
     ).toHaveTextContent('John Doe')
-    expect(view.queryByIconName('mobile-desktop-edit')).toBeInTheDocument()
+    expect(view.queryByIconName('desktop-edit')).toBeInTheDocument()
   })
 
   it('show current user avatar when editing on other device', async () => {
@@ -706,7 +710,7 @@ describe('ticket viewers inside a ticket', () => {
     expect(
       view.queryByRole('dialog', { name: 'Ticket viewers' }),
     ).toHaveTextContent('Agent 1 Test')
-    expect(view.queryByIconName('mobile-desktop-edit')).toBeInTheDocument()
+    expect(view.queryByIconName('desktop-edit')).toBeInTheDocument()
   })
 
   it('customer should only add live user entry but not subscribe', async () => {

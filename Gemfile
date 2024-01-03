@@ -1,16 +1,10 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 source 'https://rubygems.org'
 
 # core - base
-ruby '3.1.3'
+ruby '3.2.2'
 gem 'rails', '~> 7.0.8'
-
-# TEMPORARY Security updates from Ruby 3.1.4. Can be removed when updating from Ruby 3.1.3 to a higher version.
-# See also: https://www.ruby-lang.org/en/news/2023/03/30/ruby-3-1-4-released/
-gem 'time', '>= 0.2.2'
-gem 'uri', '>= 0.12.1'
-# END TEMPORARY
 
 # core - rails additions
 gem 'activerecord-import'
@@ -26,7 +20,7 @@ gem 'puma', group: :puma
 # core - supported ORMs
 gem 'activerecord-nulldb-adapter', group: :nulldb
 gem 'mysql2', group: :mysql
-gem 'pg', '~> 1.2.0', group: :postgres
+gem 'pg', '~> 1.5', '>= 1.5.4', group: :postgres
 
 # core - asynchrous task execution
 gem 'daemons'
@@ -190,19 +184,22 @@ gem 'PoParser', require: false
 # Simple storage
 gem 'aws-sdk-s3', require: false
 
+# Debugging and profiling
+gem 'byebug'
+gem 'pry-byebug'
+gem 'pry-doc'
+gem 'pry-rails'
+gem 'pry-remote'
+gem 'pry-rescue'
+gem 'pry-stack_explorer'
+gem 'pry-theme'
+
 # Gems used only for develop/test and not required
 # in production environments by default.
 group :development, :test do
 
   # watch file changes
   gem 'listen'
-
-  # debugging
-  gem 'byebug'
-  gem 'pry-rails'
-  gem 'pry-remote'
-  gem 'pry-rescue'
-  gem 'pry-stack_explorer'
 
   # test frameworks
   gem 'minitest-profile', require: false
@@ -247,9 +244,6 @@ group :development, :test do
   # image comparison in tests
   gem 'chunky_png'
 
-  # refresh ENVs in CI environment
-  gem 'dotenv', require: false
-
   # Slack helper for testing
   gem 'slack-ruby-client', require: false
 
@@ -257,8 +251,7 @@ group :development, :test do
   gem 'localhost'
 
   # Keycloak admin tool for setting up SAML auth tests
-  gem 'httparty'
-  gem 'keycloak-admin', git: 'https://github.com/tschaefer/ruby-keycloak-admin/', branch: 'develop', require: false
+  gem 'keycloak-admin', git: 'https://github.com/tschaefer/ruby-keycloak-admin/', branch: 'main', require: false
 end
 
 # To permanently extend Zammad with additional gems, you can specify them in Gemfile.local.

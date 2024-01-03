@@ -1,4 +1,4 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 defineProps<{
@@ -16,10 +16,14 @@ const emit = defineEmits<{
   save: []
 }>()
 
+// Turn off transitions in test mode.
 const bannerTransitionDuration = VITE_TEST_MODE ? 0 : { enter: 300, leave: 200 }
 
+// Switch to instant scrolling in test mode as it may interfere with subsequent scroll actions in headless mode.
+const behavior = VITE_TEST_MODE ? 'instant' : 'smooth'
+
 const scrollDown = () => {
-  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+  window.scrollTo({ top: document.body.scrollHeight, behavior })
 }
 </script>
 
@@ -56,7 +60,7 @@ const scrollDown = () => {
               "
               @click="scrollDown"
             >
-              <CommonIcon name="mobile-arrow-down" size="small" decorative />
+              <CommonIcon name="arrow-down" size="small" decorative />
               <div
                 v-if="newRepliesCount"
                 aria-hidden="true"
@@ -78,7 +82,7 @@ const scrollDown = () => {
             @click.prevent="emit('reply')"
           >
             <div>
-              <CommonIcon name="mobile-chat" size="small" decorative />
+              <CommonIcon name="chat" size="small" decorative />
             </div>
             <span class="line-clamp-1 break-all">
               {{ newArticlePresent ? $t('Edit reply') : $t('Add reply') }}
@@ -104,7 +108,7 @@ const scrollDown = () => {
           >
             <CommonIcon
               class="mx-auto h-5"
-              name="mobile-close"
+              name="close"
               size="tiny"
               decorative
             />

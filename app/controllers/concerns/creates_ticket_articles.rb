@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module CreatesTicketArticles # rubocop:disable Metrics/ModuleLength
   extend ActiveSupport::Concern
@@ -53,6 +53,7 @@ module CreatesTicketArticles # rubocop:disable Metrics/ModuleLength
 
     article = Ticket::Article.new(clean_params)
     article.ticket_id = ticket.id
+    article.check_mentions_raises_error = true
 
     # store dataurl images to store
     attachments_inline = []

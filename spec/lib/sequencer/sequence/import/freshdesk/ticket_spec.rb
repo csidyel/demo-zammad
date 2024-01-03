@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -70,12 +70,13 @@ RSpec.describe Sequencer::Sequence::Import::Freshdesk::Ticket, db_strategy: :res
     end
     let(:process_payload) do
       {
-        import_job:           build_stubbed(:import_job, name: 'Import::Freshdesk', payload: {}),
-        dry_run:              false,
-        resource:             resource,
-        field_map:            field_map,
-        id_map:               id_map,
-        time_entry_available: true,
+        import_job:            build_stubbed(:import_job, name: 'Import::Freshdesk', payload: {}),
+        dry_run:               false,
+        resource:              resource,
+        field_map:             field_map,
+        id_map:                id_map,
+        time_entry_available:  true,
+        skip_initial_contacts: false,
       }
     end
     let(:owner) { create(:agent, group_ids: [group.id]) }

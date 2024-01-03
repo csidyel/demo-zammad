@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Sequencer::Unit::Import::Kayako::Requester
   mattr_accessor :session_id
@@ -16,7 +16,7 @@ module Sequencer::Unit::Import::Kayako::Requester
       end
 
       handle_error response, iteration
-    rescue Net::HTTPClientError => e
+    rescue e
       handle_exception e, iteration
     end
 

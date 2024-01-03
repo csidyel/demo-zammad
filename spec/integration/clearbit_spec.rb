@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 RSpec.describe 'Clearbit', aggregate_failures: true, current_user_id: 1, integration: true, performs_jobs: true, required_envs: %w[CLEARBIT_CI_API_KEY] do
@@ -388,7 +388,7 @@ RSpec.describe 'Clearbit', aggregate_failures: true, current_user_id: 1, integra
 
       expect(customer.organization).to have_attributes(
         name: 'Clearbit',
-        note: 'Clearbit is a B2B data activation platform that helps teams understand customers, identify prospects, and personalize interactions with real-time intelligence.',
+        note: "Clearbit is a sales intelligence platform that provides data and insights to help businesses identify and target their ideal customers. With Clearbit's APIs, businesses can access a comprehensive database of B2B companies and their contact information,...",
       )
     end
   end

@@ -1,4 +1,5 @@
 @import '#shared/styles/main.css';
+@config './tailwind.mobile.js';
 
 .Content,
 .ProseMirror {
@@ -138,6 +139,10 @@
   .floating-textarea:focus-within label,
   .floating-textarea.formkit-outer[data-populated] label {
     @apply translate-y-0 text-xs opacity-75;
+  }
+
+  .required-indicator {
+    @apply text-yellow;
   }
 }
 

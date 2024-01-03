@@ -1,8 +1,8 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
-RSpec.describe Service::GeoCalendar, integration: true do
+RSpec.describe Service::GeoCalendar, integration: true, retry: 5, retry_wait: 30.seconds do
   describe '#location' do
     describe 'testing some locations' do
       subject(:lookup_result) { described_class.location(ip_address) }

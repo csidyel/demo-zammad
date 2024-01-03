@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -150,6 +150,45 @@ RSpec.describe Service::Ticket::Article::Create, current_user_id: -> { user.id }
   9TXL0Y4OHwAAAABJRU5ErkJggg==" alt="Red dot" />'
 
         expect(article.attachments).to be_one
+      end
+    end
+
+    describe 'mentions', aggregate_failures: true do
+      def text_blob_with(user)
+        "Lorem ipsum dolor <a data-mention-user-id='#{user.id}'>#{user.fullname}</a>"
+      end
+
+      let(:payload) { { body: body } }
+
+      context 'when author can mention other users' do
+        context 'when valid user is mentioned' do
+          let(:body) { text_blob_with(user) }
+
+          it 'create ticket with mentions' do
+            expect { article }.to change(Mention, :count).by(1)
+          end
+        end
+
+        context 'when user without access to the ticket is mentioned' do
+          let(:body) { text_blob_with(create(:agent)) }
+
+          it 'raises an error with one of mentions being invalid' do
+            expect { article }
+              .to raise_error(ActiveRecord::RecordInvalid)
+            expect(Mention.count).to eq(0)
+          end
+        end
+      end
+
+      context 'when author does not have permissions to create mentions' do
+        let(:user) { create(:customer) }
+        let(:body) { text_blob_with(create(:agent, groups: [ticket.group])) }
+
+        it 'raise an error if author does not have permissions to create mentions' do
+          expect { article }
+            .to raise_error(Pundit::NotAuthorizedError)
+          expect(Mention.count).to eq(0)
+        end
       end
     end
   end

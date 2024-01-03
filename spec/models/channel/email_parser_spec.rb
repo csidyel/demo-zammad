@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -636,12 +636,6 @@ RSpec.describe Channel::EmailParser, type: :model do
 
               context 'and ticket is merged' do
                 before { ticket.update(state: Ticket::State.find_by(name: 'merged')) }
-
-                include_examples 'creates a new ticket'
-              end
-
-              context 'and ticket is removed' do
-                before { ticket.update(state: Ticket::State.find_by(name: 'removed')) }
 
                 include_examples 'creates a new ticket'
               end

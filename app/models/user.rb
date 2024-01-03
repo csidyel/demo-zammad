@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class User < ApplicationModel
   include CanBeImported
@@ -13,6 +13,8 @@ class User < ApplicationModel
   include HasObjectManagerAttributes
   include HasTaskbars
   include HasTwoFactor
+  include CanSelector
+  include CanPerformChanges
   include User::Assets
   include User::Avatar
   include User::Search
@@ -52,6 +54,8 @@ class User < ApplicationModel
 
   validate :ensure_identifier, :ensure_email
   validate :ensure_uniq_email, unless: :skip_ensure_uniq_email
+
+  available_perform_change_actions :data_privacy_deletion_task, :attribute_updates
 
   # workflow checks should run after before_create and before_update callbacks
   # the transaction dispatcher must be run after the workflow checks!
@@ -662,6 +666,9 @@ returns
     return if !user
     return if !user.email
 
+    # Discard any possible previous tokens for safety reasons.
+    Token.where(action: 'Signup', user_id: user.id).destroy_all
+
     # generate token
     token = Token.create(action: 'Signup', user_id: user.id)
 
@@ -880,8 +887,8 @@ try to find correct name
   end
 
   def check_name
-    firstname&.strip!
-    lastname&.strip!
+    self.firstname = sanitize_name(firstname)
+    self.lastname  = sanitize_name(lastname)
 
     return if firstname.present? && lastname.present?
 
@@ -894,6 +901,25 @@ try to find correct name
 
     check_name_apply(:firstname, local_firstname)
     check_name_apply(:lastname, local_lastname)
+  end
+
+  def sanitize_name(value)
+    result = value&.strip
+
+    return result if result.blank?
+
+    result.split(%r{\s}).map { |v| strip_uri(v) }.join("\s")
+  end
+
+  def strip_uri(value)
+    uri = URI.parse(value)
+
+    return value if !uri || uri.scheme.blank? || uri.hostname.blank?
+
+    # Strip the scheme from the URI.
+    uri.hostname + uri.path
+  rescue
+    value
   end
 
   def check_name_apply(identifier, input)
@@ -1251,7 +1277,7 @@ raise 'At least one user need to have admin permissions'
   # (see https://github.com/zammad/zammad/issues/2057)
   def update_caller_id
     # skip if "phone" does not change, or changes like [nil, ""]
-    return if persisted? && !previous_changes[:phone]&.any?(&:present?)
+    return if persisted? && !previous_changes[:phone]&.any?(&:present?) # rubocop:disable Style/InverseMethods
     return if destroyed? && phone.blank?
 
     Cti::CallerId.build(self)

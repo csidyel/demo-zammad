@@ -1,10 +1,10 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 /* eslint-disable zammad/zammad-detect-translatable-string */
 
 import Form from '#shared/components/Form/Form.vue'
-import { defineFormSchema } from '#mobile/form/defineFormSchema.ts'
+import { defineFormSchema } from '#shared/form/defineFormSchema.ts'
 import { useDialog } from '#shared/composables/useDialog.ts'
 import CommonButton from '#mobile/components/CommonButton/CommonButton.vue'
 import CommonButtonGroup from '#mobile/components/CommonButtonGroup/CommonButtonGroup.vue'
@@ -14,6 +14,13 @@ import { computed, reactive, ref } from 'vue'
 import { EnumSecurityStateType } from '#shared/components/Form/fields/FieldSecurity/types.ts'
 
 const linkSchemaRaw = [
+  {
+    type: 'externalDataSource',
+    name: 'external_data_source',
+    label: 'External Data Source',
+    object: 'Ticket',
+    required: true,
+  },
   {
     type: 'security',
     name: 'security',
@@ -231,7 +238,7 @@ const linkSchemaRaw = [
       sorting: 'label',
       link: '/tickets',
       action: '/tickets',
-      actionIcon: 'mobile-new-customer',
+      actionIcon: 'new-customer',
       gqlQuery: `
 query autocompleteSearchUser($input: AutocompleteSearchInput!) {
   autocompleteSearchUser(input: $input) {
@@ -454,9 +461,9 @@ const logSubmit = console.log
       mode="full"
       model-value="subscribe"
       :options="[
-        { label: 'Merge tickets', icon: 'mobile-home' },
-        { label: 'Subscribe', icon: 'mobile-home', value: 'subscribe' },
-        { label: 'Ticket info', icon: 'mobile-home' },
+        { label: 'Merge tickets', icon: 'home' },
+        { label: 'Subscribe', icon: 'home', value: 'subscribe' },
+        { label: 'Ticket info', icon: 'home' },
       ]"
     />
 
@@ -467,9 +474,9 @@ const logSubmit = console.log
       type="radio"
       :buttons="true"
       :options="[
-        { label: 'Incoming Phone', value: 1, icon: 'mobile-phone-in' },
-        { label: 'Outgoing Phone', value: 2, icon: 'mobile-phone-out' },
-        { label: 'Send Email', value: 3, icon: 'mobile-mail-out' },
+        { label: 'Incoming Phone', value: 1, icon: 'phone-in' },
+        { label: 'Outgoing Phone', value: 2, icon: 'phone-out' },
+        { label: 'Send Email', value: 3, icon: 'mail-out' },
       ]"
     />
 
@@ -478,8 +485,8 @@ const logSubmit = console.log
       input-class="py-2 px-4 w-full h-14 text-xl rounded-xl select-none"
       variant="submit"
       type="submit"
-      prefix-icon="mobile-arrow-right"
-      suffix-icon="mobile-arrow-left"
+      prefix-icon="arrow-right"
+      suffix-icon="arrow-left"
     >
       {{ $t('Sign in') }}
     </FormKit>

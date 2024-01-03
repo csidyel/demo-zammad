@@ -1,8 +1,8 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { createApp } from 'vue'
 import initializeApp from '#mobile/initialize.ts'
-import App from '#mobile/App.vue'
+import App from '#mobile/AppMobile.vue'
 import { useSessionStore } from '#shared/stores/session.ts'
 import initializeStoreSubscriptions from '#shared/initializer/storeSubscriptions.ts'
 import { useApplicationStore } from '#shared/stores/application.ts'
@@ -11,7 +11,7 @@ import initializeApolloClient from '#mobile/server/apollo/index.ts'
 import initializeRouter from '#mobile/router/index.ts'
 import { useAuthenticationStore } from '#shared/stores/authentication.ts'
 import { useForceDesktop } from '#shared/composables/useForceDesktop.ts'
-import { ensureAfterAuth } from './pages/login/after-auth/composable/useAfterAuthPlugins.ts'
+import { ensureAfterAuth } from './pages/authentication/after-auth/composable/useAfterAuthPlugins.ts'
 
 const { forceDesktopLocalStorage } = useForceDesktop()
 

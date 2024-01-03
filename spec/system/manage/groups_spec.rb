@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 require 'system/examples/core_workflow_examples'
@@ -31,7 +31,7 @@ RSpec.describe 'Manage > Groups', type: :system do
       let(:group_name_last) { Faker::Lorem.unique.word.capitalize }
 
       before do
-        click_on 'New Group'
+        click_link 'New Group'
       end
 
       it 'creates a nested group' do
@@ -84,7 +84,7 @@ RSpec.describe 'Manage > Groups', type: :system do
         lambda {
           ensure_websocket(check_if_pinged: false) do
             visit 'manage/groups'
-            click_on 'New Group'
+            click_link 'New Group'
           end
         }
       end

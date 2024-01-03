@@ -1,10 +1,10 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
 require 'keycloak/admin'
 
-RSpec.describe 'SAML Authentication', authenticated_as: false, integration: true, required_envs: %w[KEYCLOAK_BASE_URL KEYCLOAK_ADMIN_USER KEYCLOAK_ADMIN_PASSWORD], type: :system do
+RSpec.describe 'SAML Authentication', authenticated_as: false, integration: true, integration_standalone: :saml, required_envs: %w[KEYCLOAK_BASE_URL KEYCLOAK_ADMIN_USER KEYCLOAK_ADMIN_PASSWORD], type: :system do
   let(:zammad_base_url)              { "#{Capybara.app_host}:#{Capybara.current_session.server.port}" }
   let(:zammad_saml_metadata)         { "#{zammad_base_url}/auth/saml/metadata" }
   let(:saml_base_url)                { ENV['KEYCLOAK_BASE_URL'] }
@@ -73,7 +73,7 @@ RSpec.describe 'SAML Authentication', authenticated_as: false, integration: true
       find('.auth-provider--saml').click
     when 'mobile'
       visit '/login', app: :mobile
-      find('.icon-mobile-saml').click
+      find('.icon-saml').click
     end
 
     login_saml_keycloak
@@ -114,6 +114,7 @@ RSpec.describe 'SAML Authentication', authenticated_as: false, integration: true
     find_by_id('app')
   end
 
+  # TODO: Should be replaced with tests for the new desktop-view (or the test in general should be removed outside of selenium).
   describe 'SP login and SP logout' do
     before do
       set_saml_config(security: security)

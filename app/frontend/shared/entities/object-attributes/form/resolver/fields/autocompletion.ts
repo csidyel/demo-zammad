@@ -1,4 +1,4 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import type { FieldResolverModule } from '#shared/entities/object-attributes/types/resolver.ts'
 import { camelize } from '#shared/utils/formatter.ts'
@@ -26,6 +26,7 @@ export class FieldResolverAutocompletion extends FieldResolver {
   public fieldTypeAttributes() {
     return {
       props: {
+        clearable: this.attributeConfig.nulloption || false,
         noOptionsLabelTranslation: !this.attributeConfig.translate,
         belongsToObjectField: camelize(
           (this.attributeConfig.belongs_to as string) || '',

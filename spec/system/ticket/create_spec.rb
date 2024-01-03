@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -13,13 +13,13 @@ RSpec.describe 'Ticket Create', type: :system do
       it 'login screen after certain create was called', authenticated_as: false do
         visit '#ticket/create/id/1234'
 
-        expect(page).to have_selector('#login')
+        expect(page).to have_css('#login')
       end
 
       it 'login screen after generic create was called', authenticated_as: false do
         visit '#ticket/create'
 
-        expect(page).to have_selector('#login')
+        expect(page).to have_css('#login')
       end
     end
   end
@@ -257,7 +257,7 @@ RSpec.describe 'Ticket Create', type: :system do
       browser_travel_to Time.current
 
       visit 'ticket/create'
-      use_template template
+      use_template template, without_taskbar: true
     end
 
     let(:field_date) { find 'input[name="{date}date_test"]', visible: :all }
@@ -329,9 +329,9 @@ RSpec.describe 'Ticket Create', type: :system do
         click('.sidebar-header-headline.js-headline')
 
         # add issue
-        click_on 'Link issue'
+        click_link 'Link issue'
         fill_in 'link', with: ENV['GITLAB_ISSUE_LINK']
-        click_on 'Submit'
+        click_button 'Submit'
 
         # verify issue
         content = find('.sidebar-git-issue-content')
@@ -374,9 +374,9 @@ RSpec.describe 'Ticket Create', type: :system do
         click('.sidebar-header-headline.js-headline')
 
         # add issue
-        click_on 'Link issue'
+        click_link 'Link issue'
         fill_in 'link', with: ENV['GITHUB_ISSUE_LINK']
-        click_on 'Submit'
+        click_button 'Submit'
 
         # verify issue
         content = find('.sidebar-git-issue-content')
@@ -501,20 +501,20 @@ RSpec.describe 'Ticket Create', type: :system do
     let(:agent)    { create(:agent, password: 'test') }
     let(:customer) { create(:customer, password: 'test') }
 
-    it 'customer user should not have agent object attributes', authenticated_as: :agent do
-      # Log out again, so that we can execute the next login.
-      logout
+    it 'customer user should not have agent object attributes', authenticated_as: false do
 
-      # Re-create agent session and fetch object attributes.
+      # Create agent session and fetch object attributes.
       login(
         username: agent.login,
         password: 'test'
       )
       visit 'ticket/create'
 
-      # Re-remove local object attributes bound to the session
-      # there was an issue (#1856) where the old attribute values
-      # persisted and were stored as the original attributes.
+      expect(page).to have_field('customer_id', type: 'hidden')
+
+      # Remove local object attributes bound to the session.
+      #   There was an issue (#1856) where the old attribute values
+      #   persisted and were stored as the original attributes.
       logout
 
       # Create customer session and fetch object attributes.
@@ -522,10 +522,9 @@ RSpec.describe 'Ticket Create', type: :system do
         username: customer.login,
         password: 'test'
       )
-
       visit 'customer_ticket_new'
 
-      expect(page).to have_no_css('.newTicket input[name="customer_id"]')
+      expect(page).to have_no_field('customer_id', type: 'hidden')
     end
   end
 
@@ -614,11 +613,11 @@ RSpec.describe 'Ticket Create', type: :system do
         object: 'Ticket',
         name:   'state_id',
       )
-      attribute.data_option[:filter] = Ticket::State.by_category(:viewable).pluck(:id)
-      attribute.screens[:create_middle]['ticket.agent'][:filter] = Ticket::State.by_category(:viewable_agent_new).pluck(:id)
-      attribute.screens[:create_middle]['ticket.customer'][:filter] = Ticket::State.by_category(:viewable_customer_new).pluck(:id)
-      attribute.screens[:edit]['ticket.agent'][:filter] = Ticket::State.by_category(:viewable_agent_edit).pluck(:id)
-      attribute.screens[:edit]['ticket.customer'][:filter] = Ticket::State.by_category(:viewable_customer_edit).pluck(:id)
+      attribute.data_option[:filter] = Ticket::State.by_category_ids(:viewable)
+      attribute.screens[:create_middle]['ticket.agent'][:filter] = Ticket::State.by_category_ids(:viewable_agent_new)
+      attribute.screens[:create_middle]['ticket.customer'][:filter] = Ticket::State.by_category_ids(:viewable_customer_new)
+      attribute.screens[:edit]['ticket.agent'][:filter] = Ticket::State.by_category_ids(:viewable_agent_edit)
+      attribute.screens[:edit]['ticket.customer'][:filter] = Ticket::State.by_category_ids(:viewable_customer_edit)
       attribute.save!
     end
 
@@ -824,8 +823,10 @@ RSpec.describe 'Ticket Create', type: :system do
     end
 
     def add_email(input)
-      fill_in 'CC', with: input
-      send_keys(:enter) # trigger blur
+      field = find_field('CC')
+      field.fill_in with: input
+      field.execute_script "$(this).trigger('blur')" # trigger blur
+
       find '.token', text: input # wait for email to tokenize
     end
   end
@@ -1031,7 +1032,11 @@ RSpec.describe 'Ticket Create', type: :system do
     end
 
     it 'preserves text input from the user' do
+      taskbar_timestamp = Taskbar.last.updated_at
+
       set_editor_field_value('body', 'foobar')
+
+      wait.until { Taskbar.last.updated_at != taskbar_timestamp }
 
       use_template(template1)
       check_input_field_value('title', 'template 1')
@@ -1047,7 +1052,11 @@ RSpec.describe 'Ticket Create', type: :system do
       check_input_field_value('title', 'template 2')
       check_editor_field_value('body', 'body 2')
 
+      taskbar_timestamp = Taskbar.last.updated_at
+
       set_editor_field_value('body', 'foobar')
+
+      wait.until { Taskbar.last.updated_at != taskbar_timestamp }
 
       # This time body value should be left as-is
       use_template(template1)
@@ -1063,7 +1072,7 @@ RSpec.describe 'Ticket Create', type: :system do
       shared_examples 'calculated datetime value' do
 
         it 'applies correct datetime value' do
-          use_template(template)
+          use_template(template, without_taskbar: true)
 
           check_date_field_value(field, date.strftime('%m/%d/%Y'))
           check_time_field_value(field, date.strftime('%H:%M'))
@@ -1118,7 +1127,7 @@ RSpec.describe 'Ticket Create', type: :system do
       let(:template_value) { date.to_datetime.to_s }
 
       it 'applies correct date value' do
-        use_template(template)
+        use_template(template, without_taskbar: true)
 
         check_date_field_value(field, date.strftime('%m/%d/%Y'))
       end
@@ -1212,7 +1221,7 @@ RSpec.describe 'Ticket Create', type: :system do
     end
 
     it 'filters active templates only' do
-      expect(find('#form-template select[name="id"]')).to have_selector('option', text: active_template.name).and(have_no_selector('option', text: inactive_template.name))
+      expect(find('#form-template select[name="id"]')).to have_css('option', text: active_template.name).and(have_no_selector('option', text: inactive_template.name))
     end
   end
 
@@ -1256,8 +1265,6 @@ RSpec.describe 'Ticket Create', type: :system do
       it 'applies configured cc value' do
         use_template(template)
 
-        await_empty_ajax_queue
-
         expect(page).to have_css('label', text: 'CC')
 
         check_input_field_value('cc', cc_recipients, visible: :all)
@@ -1273,8 +1280,6 @@ RSpec.describe 'Ticket Create', type: :system do
 
       it 'ignores configured cc value' do
         use_template(template)
-
-        await_empty_ajax_queue
 
         expect(page).to have_no_css('label', text: 'CC')
 
@@ -1315,7 +1320,7 @@ RSpec.describe 'Ticket Create', type: :system do
 
           expect(elem)
             .to have_no_selector('.tabsSidebar-tab-count--danger')
-            .and have_selector('.tabsSidebar-tab-count--warning')
+            .and have_css('.tabsSidebar-tab-count--warning')
         end
       end
 
@@ -1324,7 +1329,7 @@ RSpec.describe 'Ticket Create', type: :system do
 
         it 'highlights as danger' do
           expect(elem)
-            .to have_selector('.tabsSidebar-tab-count--danger')
+            .to have_css('.tabsSidebar-tab-count--danger')
             .and have_no_selector('.tabsSidebar-tab-count--warning')
         end
       end
@@ -1388,9 +1393,9 @@ RSpec.describe 'Ticket Create', type: :system do
       multi_tree_select_click('Change request')
       select '1 low', from: 'priority_id'
       select 'pending reminder', from: 'state_id'
-      expect(page).to have_selector('span.token-label', text: 'Incident')
-      expect(page).to have_selector('span.token-label', text: 'Service request')
-      expect(page).to have_selector('span.token-label', text: 'Change request')
+      expect(page).to have_css('span.token-label', text: 'Incident')
+      expect(page).to have_css('span.token-label', text: 'Service request')
+      expect(page).to have_css('span.token-label', text: 'Change request')
     end
   end
 

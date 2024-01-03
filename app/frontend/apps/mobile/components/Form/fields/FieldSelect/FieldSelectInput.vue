@@ -1,4 +1,4 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 import { ref, toRef } from 'vue'
@@ -6,7 +6,7 @@ import { i18n } from '#shared/i18n.ts'
 import CommonTicketStateIndicator from '#shared/components/CommonTicketStateIndicator/CommonTicketStateIndicator.vue'
 import CommonSelect from '#mobile/components/CommonSelect/CommonSelect.vue'
 import type { CommonSelectInstance } from '#mobile/components/CommonSelect/types.ts'
-import { useFormBlock } from '#mobile/form/useFormBlock.ts'
+import { useFormBlock } from '#shared/form/useFormBlock.ts'
 import { EnumTicketStateColorCode } from '#shared/graphql/types.ts'
 import useValue from '#shared/components/Form/composables/useValue.ts'
 import useSelectOptions from '#shared/composables/useSelectOptions.ts'
@@ -138,7 +138,7 @@ setupMissingOrDisabledOptionHandling()
           v-if="context.clearable && hasValue && !context.disabled"
           :aria-label="i18n.t('Clear Selection')"
           class="absolute -mt-5 shrink-0 text-gray ltr:right-2 rtl:left-2"
-          name="mobile-close-small"
+          name="close-small"
           size="base"
           role="button"
           tabindex="0"

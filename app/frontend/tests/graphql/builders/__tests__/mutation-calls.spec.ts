@@ -1,9 +1,10 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import type { MutationsAccountAvatarAddArgs } from '#shared/graphql/types.ts'
 import { faker } from '@faker-js/faker'
 import { convertToGraphQLId } from '#shared/graphql/utils.ts'
-import { getGraphQLResult, mockGraphQLResult } from '../mocks.ts'
+import UserError from '#shared/errors/UserError.ts'
+import { getGraphQLMockCalls, mockGraphQLResult } from '../mocks.ts'
 import { getMutationHandler, getQueryHandler } from './utils.ts'
 import {
   type TestAvatarMutation,
@@ -14,11 +15,16 @@ import {
   TestUserDocument,
   type TestUserQuery,
   type TestUserQueryVariables,
+  type TestUserSignupMutationQuery,
+  TestUserSignupMutationDocument,
+  type TestUserSignupArgs,
 } from './queries.ts'
 
 describe('calling mutation without mocking document works correctly', () => {
   it('mutation correctly returns data', async () => {
-    expect(getGraphQLResult(TestAvatarActiveMutationDocument)).toBeUndefined()
+    expect(getGraphQLMockCalls(TestAvatarActiveMutationDocument)).toHaveLength(
+      0,
+    )
 
     const handler = getMutationHandler<
       TestAvatarMutation,
@@ -42,7 +48,7 @@ describe('calling mutation without mocking document works correctly', () => {
   })
 
   it('mutation correctly processed data with arrays', async () => {
-    expect(getGraphQLResult(TestUserAutorizationsDocument)).toBeUndefined()
+    expect(getGraphQLMockCalls(TestUserAutorizationsDocument)).toHaveLength(0)
 
     const handler = getMutationHandler<
       TestUserAuthorizationsMutation,
@@ -73,7 +79,7 @@ describe('calling mutation without mocking document works correctly', () => {
   })
 
   it('returns the same object if it already exists, but values are updated', async () => {
-    expect(getGraphQLResult(TestUserDocument)).toBeUndefined()
+    expect(getGraphQLMockCalls(TestUserDocument)).toHaveLength(0)
 
     const queryHandler = getQueryHandler<TestUserQuery, TestUserQueryVariables>(
       TestUserDocument,
@@ -123,7 +129,9 @@ describe('calling mutation without mocking document works correctly', () => {
 
 describe('calling mutation with mocked return data correctly returns data', () => {
   it('returns mocked data when mutation is mocked and then called', async () => {
-    expect(getGraphQLResult(TestAvatarActiveMutationDocument)).toBeUndefined()
+    expect(getGraphQLMockCalls(TestAvatarActiveMutationDocument)).toHaveLength(
+      0,
+    )
 
     const avatarId = convertToGraphQLId('Avatar', 42)
     const imageFull = 'https://example.com/image.png'
@@ -160,5 +168,50 @@ describe('calling mutation with mocked return data correctly returns data', () =
       'imageFull',
       imageFull,
     )
+  })
+
+  it('correctly returns errors if provided', async () => {
+    mockGraphQLResult(TestAvatarActiveMutationDocument, {
+      accountAvatarAdd: {
+        errors: [
+          {
+            message: 'Some error',
+          },
+        ],
+      },
+    })
+
+    const handler = getMutationHandler<
+      TestAvatarMutation,
+      MutationsAccountAvatarAddArgs
+    >(TestAvatarActiveMutationDocument)
+    const data = await handler
+      .send({
+        images: {
+          original: { name: faker.word.noun() },
+          resized: { name: faker.word.noun() },
+        },
+      })
+      .catch((e) => e)
+
+    expect(data).toBeInstanceOf(UserError)
+    expect(data.errors).toHaveLength(1)
+    expect(data.errors[0].message).toBe('Some error')
+  })
+
+  it('mutation is always successful by defualt', async () => {
+    const handler = getMutationHandler<
+      TestUserSignupMutationQuery,
+      TestUserSignupArgs
+    >(TestUserSignupMutationDocument)
+
+    const data = await handler.send({
+      input: {
+        email: faker.internet.userName(),
+        password: faker.internet.password(),
+      },
+    })
+    expect(data?.userSignup.success).toBe(true)
+    expect(data?.userSignup.errors).toBeNull()
   })
 })
