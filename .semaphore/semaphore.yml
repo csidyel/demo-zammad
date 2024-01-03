@@ -6,7 +6,7 @@ agent:
     os_image: ubuntu2004
 auto_cancel:
   running:
-    when: "true"
+    when: 'true'
 global_job_config:
   prologue:
     commands:
@@ -14,20 +14,20 @@ global_job_config:
       - cache restore
       - sem-service start postgres 16 --username=zammad --password=zammad
       - sem-service start redis 5
-      - sem-version ruby 3.1.3
+      - sem-version ruby 3.2.2
       - sudo apt-get update
       - sudo apt-get install -y -f optipng jhead imagemagick libimlib2 openssl direnv shellcheck libimlib2-dev
       - echo '127.0.0.1 redis postgresql' | sudo tee -a /etc/hosts
       - rbenv rehash
       - bundle install --path vendor/bundle
       - yarn install
-      - yarn cypress:install
+      - 'yarn cypress:install'
       - cache store
   env_vars:
     - name: RAILS_ENV
-      value: "test"
+      value: test
     - name: Z_LOCALES
-      value: "en-us:de-de"
+      value: 'en-us:de-de'
     - name: CI_SKIP_ASSETS_PRECOMPILE
       value: 'true'
     - name: CI_SKIP_DB_RESET
@@ -39,21 +39,19 @@ blocks:
         - name: CI
           commands:
             - bundle exec ruby .gitlab/configure_environment.rb
-            - bundle exec rake zammad:db:init
+            - 'bundle exec rake zammad:db:init'
             - for FILE in i18n/*.pot i18n/*.po; do echo "Checking $FILE"; msgfmt -o /dev/null -c "$FILE"; done
-            - bundle exec rails generate zammad:translation_catalog --check
+            - 'bundle exec rails generate zammad:translation_catalog --check'
             - bundle exec brakeman -o /dev/stdout -o tmp/brakeman-report.html
-            - bundle exec rails zeitwerk:check
+            - 'bundle exec rails zeitwerk:check'
             - .gitlab/check_graphql_api_consistency.sh
             - bundle exec .rubocop/validate_todos.rb
             - bundle exec rubocop --parallel
-            - yarn lint:css
+            - 'yarn lint:css'
             - yarn lint
-            - bundle exec rake assets:precompile
+            - 'bundle exec rake assets:precompile'
             - yarn test
-            - yarn test:ci:ct
+            - 'yarn test:ci:ct'
             - bundle exec rspec --exclude-pattern "spec/system/**/*_spec.rb" -t ~searchindex -t ~integration -t ~required_envs
-            - bundle exec rake zammad:db:reset
-            - bundle exec rake test:units
-            
-    
+            - 'bundle exec rake zammad:db:reset'
+            - 'bundle exec rake test:units'
