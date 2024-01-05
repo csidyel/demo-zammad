@@ -20,6 +20,7 @@ global_job_config:
       - echo '127.0.0.1 redis postgresql' | sudo tee -a /etc/hosts
       - rbenv rehash
       - bundle install --path vendor/bundle
+      - yarn set version 1.22.21
       - yarn install
       - 'yarn cypress:install'
       - cache store
