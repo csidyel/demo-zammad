@@ -34,7 +34,7 @@ global_job_config:
     - name: CI_SKIP_DB_RESET
       value: 'true'
 blocks:
-  - name: CI
+  - name: CI test
     task:
       jobs:
         - name: CI
