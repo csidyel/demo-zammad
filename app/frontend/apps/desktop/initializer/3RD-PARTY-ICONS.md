@@ -1,16 +1,24 @@
 # Third Party Icons (`desktop`)
 
 - `assets/box-arrow-up-right.svg`
+- `assets/check-all.svg`
 - `assets/check-circle-outline.svg`
+- `assets/check-square.svg`
+- `assets/check2.svg`
+- `assets/chevron-down.svg`
 - `assets/exclamation-triangle.svg`
 - `assets/eye-slash.svg`
 - `assets/eye.svg`
+- `assets/image.svg`
 - `assets/info-circle.svg`
 - `assets/key.svg`
 - `assets/moon.svg`
 - `assets/phone.svg`
+- `assets/search.svg`
 - `assets/spinner.svg`
+- `assets/square.svg`
 - `assets/sun.svg`
+- `assets/upload.svg`
 - `assets/x-circle.svg`
 - `assets/x-lg.svg`
   - Author: The Bootstrap Authors

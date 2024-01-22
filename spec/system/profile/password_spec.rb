@@ -54,7 +54,7 @@ RSpec.describe 'Profile > Password', authenticated_as: :user, type: :system do
 
       click '.btn--primary'
 
-      expect(page).to have_text 'Current password is wrong'
+      expect(page).to have_text 'The current password you provided is incorrect.'
     end
 
     it 'when new passwords do not match, show error' do
@@ -155,7 +155,7 @@ RSpec.describe 'Profile > Password', authenticated_as: :user, type: :system do
         in_modal do
           fill_in 'Password', with: user.password_plain
 
-          click_button 'Remove'
+          click_on 'Remove'
         end
 
         within('tr[data-two-factor-key="authenticator_app"]') do
@@ -171,7 +171,7 @@ RSpec.describe 'Profile > Password', authenticated_as: :user, type: :system do
 
           fill_in 'Password', with: user.password_plain
 
-          click_button 'Next'
+          click_on 'Next'
         end
 
         in_modal do

@@ -51,7 +51,9 @@ const onItemClick = (item: PopupItemDescriptor) => {
 const wrapper = shallowRef<HTMLElement>()
 
 // ignore clicks while it's rendering
-onClickOutside(wrapper, () => !animating && hidePopup())
+onClickOutside(wrapper, () => !animating && hidePopup(), {
+  ignore: ['button > [data-ignore-click]'],
+})
 onKeyUp(
   'Escape',
   (e) => {
@@ -163,7 +165,7 @@ const getClassesByType = (type: PopupItemDescriptor['type']) => {
   </Teleport>
 </template>
 
-<style scoped lang="scss">
+<style scoped>
 .window-open {
   &.window {
     transition: opacity 0.2s ease-in;

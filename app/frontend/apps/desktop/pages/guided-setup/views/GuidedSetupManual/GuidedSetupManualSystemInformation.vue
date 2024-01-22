@@ -1,0 +1,135 @@
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
+
+<script setup lang="ts">
+import { shallowRef, computed, reactive } from 'vue'
+import { useRouter } from 'vue-router'
+
+import type {
+  FormSubmitData,
+  FormValues,
+} from '#shared/components/Form/types.ts'
+import Form from '#shared/components/Form/Form.vue'
+import { MutationHandler } from '#shared/server/apollo/handler/index.ts'
+import { useApplicationStore } from '#shared/stores/application.ts'
+import { useLogoUrl } from '#shared/composables/useLogoUrl.ts'
+
+import type { SystemInformationData } from '../../types/setup-manual.ts'
+import { useSystemSetupManual } from '../../composables/useSystemSetupManual.ts'
+import GuidedSetupActionFooter from '../../components/GuidedSetupActionFooter.vue'
+import { useGuidedSetupSetSystemInformationMutation } from '../../graphql/mutations/setSystemInformation.api.ts'
+
+const router = useRouter()
+const application = useApplicationStore()
+
+const { logoUrl } = useLogoUrl()
+
+const { setTitle } = useSystemSetupManual()
+setTitle(__('System Information'))
+
+const systemInformationSchema = [
+  {
+    isLayout: true,
+    element: 'div',
+    attrs: {
+      class: 'grid gap-y-2.5',
+    },
+    children: [
+      {
+        name: 'organization',
+        label: __('Organization Name'),
+        type: 'text',
+        required: true,
+        placeholder: __('Company Inc.'),
+      },
+      {
+        name: 'logo',
+        label: __('Organization Logo'),
+        type: 'imageUpload',
+        props: {
+          placeholderImagePath: logoUrl,
+        },
+      },
+      {
+        if: '$isSystemOnlineService !== true',
+        name: 'url',
+        label: __('System URL'),
+        type: 'text',
+        required: true,
+        validation: 'url',
+        help: __('The URL of this installation of Zammad.'),
+      },
+    ],
+  },
+]
+
+const getInitialInstanceUrl = () => {
+  const { fqdn } = application.config
+
+  if (!fqdn || fqdn === 'zammad.example.com') {
+    return window.location.origin
+  }
+
+  return `${application.config.http_type}://${fqdn}`
+}
+
+const initialValues: FormValues = {
+  organization: application.config.organization,
+  url: getInitialInstanceUrl(),
+}
+
+const form = shallowRef()
+
+const isSystemOnlineService = computed(
+  () => application.config.system_online_service,
+)
+
+const schemaData = reactive({
+  isSystemOnlineService,
+})
+
+const dateTimeFormatOptions = Intl?.DateTimeFormat
+  ? new Intl.DateTimeFormat().resolvedOptions()
+  : null
+
+const locale = dateTimeFormatOptions?.locale
+const timezone = dateTimeFormatOptions?.timeZone
+
+const setSystemInformation = async (formData: SystemInformationData) => {
+  const setSystemInformationMutation = new MutationHandler(
+    useGuidedSetupSetSystemInformationMutation({}),
+  )
+
+  return setSystemInformationMutation
+    .send({
+      input: {
+        organization: formData.organization,
+        logo: formData.logo,
+        url: formData.url,
+        localeDefault: locale,
+        timezoneDefault: timezone,
+      },
+    })
+    .then(() => {
+      router.push('/guided-setup/manual/email-notification')
+    })
+    .catch(() => {})
+}
+</script>
+
+<template>
+  <Form
+    id="set-system-manual"
+    ref="form"
+    form-class="mb-2.5"
+    :schema="systemInformationSchema"
+    :schema-data="schemaData"
+    :initial-values="initialValues"
+    @submit="
+      setSystemInformation($event as FormSubmitData<SystemInformationData>)
+    "
+  />
+  <GuidedSetupActionFooter
+    :form="form"
+    :submit-button-text="__('Save and Continue')"
+  />
+</template>

@@ -6,7 +6,7 @@ import CommonButton from '#desktop/components/CommonButton/CommonButton.vue'
 import CommonNotifications from '#shared/components/CommonNotifications/CommonNotifications.vue'
 import useAppMaintenanceCheck from '#shared/composables/useAppMaintenanceCheck.ts'
 import { useAppTheme } from '#shared/stores/theme.ts'
-import useAuthenticationChanges from '#shared/composables/useAuthenticationUpdates.ts'
+import useAuthenticationChanges from '#shared/composables/authentication/useAuthenticationUpdates.ts'
 import useMetaTitle from '#shared/composables/useMetaTitle.ts'
 import usePushMessages from '#shared/composables/usePushMessages.ts'
 import { useApplicationStore } from '#shared/stores/application.ts'
@@ -26,12 +26,7 @@ useMetaTitle().initializeMetaTitle()
 
 const application = useApplicationStore()
 onBeforeMount(() => {
-  // If Zammad was not properly set up yet, redirect to desktop front end.
-  if (!application.config.system_init_done) {
-    window.location.pathname = '/'
-  } else {
-    application.setLoaded()
-  }
+  application.setLoaded()
 })
 
 useAppMaintenanceCheck()
@@ -103,7 +98,7 @@ const appTheme = useAppTheme()
     </aside>
 
     <article
-      class="w-full h-full antialiased bg-white dark:bg-gray-500 text-gray-100 dark:text-neutral-400"
+      class="w-full h-full antialiased bg-white dark:bg-gray-500 text-gray-100 dark:text-neutral-400 overflow-hidden"
     >
       <RouterView />
     </article>

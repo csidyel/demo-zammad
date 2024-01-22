@@ -45,14 +45,14 @@ RSpec.describe 'Ticket Create', type: :system do
       it 'does show the edit link for the customer' do
         click '.tabsSidebar-tab[data-tab=customer]'
         click '#userAction'
-        click_link 'Edit Customer'
+        click_on 'Edit Customer'
         modal_ready
       end
 
       it 'does show the edit link for the organization' do
         click '.tabsSidebar-tab[data-tab=organization]'
         click '#userAction'
-        click_link 'Edit Organization'
+        click_on 'Edit Organization'
         modal_ready
       end
     end
@@ -329,9 +329,9 @@ RSpec.describe 'Ticket Create', type: :system do
         click('.sidebar-header-headline.js-headline')
 
         # add issue
-        click_link 'Link issue'
+        click_on 'Link issue'
         fill_in 'link', with: ENV['GITLAB_ISSUE_LINK']
-        click_button 'Submit'
+        click_on 'Submit'
 
         # verify issue
         content = find('.sidebar-git-issue-content')
@@ -374,9 +374,9 @@ RSpec.describe 'Ticket Create', type: :system do
         click('.sidebar-header-headline.js-headline')
 
         # add issue
-        click_link 'Link issue'
+        click_on 'Link issue'
         fill_in 'link', with: ENV['GITHUB_ISSUE_LINK']
-        click_button 'Submit'
+        click_on 'Submit'
 
         # verify issue
         content = find('.sidebar-git-issue-content')
@@ -713,9 +713,9 @@ RSpec.describe 'Ticket Create', type: :system do
 
       it 'has no show more option' do
         find('[name=customer_id_completion]').fill_in with: 'zam'
-        expect(page).to have_selector("li.js-organization[data-organization-id='#{organization.id}']")
+        expect(page).to have_css("li.js-organization[data-organization-id='#{organization.id}']")
         page.find("li.js-organization[data-organization-id='#{organization.id}']").click
-        expect(page).to have_selector("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers.hidden", visible: :all)
+        expect(page).to have_css("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers.hidden", visible: :all)
       end
     end
 
@@ -732,22 +732,22 @@ RSpec.describe 'Ticket Create', type: :system do
 
       it 'does paginate through organization' do
         find('[name=customer_id_completion]').fill_in with: 'zam'
-        expect(page).to have_selector("li.js-organization[data-organization-id='#{organization.id}']")
+        expect(page).to have_css("li.js-organization[data-organization-id='#{organization.id}']")
         page.find("li.js-organization[data-organization-id='#{organization.id}']").click
         wait.until { page.all("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li", visible: :all).count == 12 } # 10 users + back + show more button
 
-        expect(page).to have_selector("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers[organization-member-limit='10']")
+        expect(page).to have_css("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers[organization-member-limit='10']")
         scroll_into_view('li.js-showMoreMembers')
         page.find("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers").click
         wait.until { page.all("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li", visible: :all).count == 27 } # 25 users + back + show more button
 
-        expect(page).to have_selector("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers[organization-member-limit='25']")
+        expect(page).to have_css("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers[organization-member-limit='25']")
         scroll_into_view('li.js-showMoreMembers')
         page.find("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers").click
         wait.until { page.all("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li", visible: :all).count == 52 } # 50 users + back + show more button
 
         scroll_into_view('li.js-showMoreMembers')
-        expect(page).to have_selector("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers.hidden", visible: :all)
+        expect(page).to have_css("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers.hidden", visible: :all)
       end
     end
   end
@@ -1513,6 +1513,57 @@ RSpec.describe 'Ticket Create', type: :system do
 
       page.find('[name=priority_id]').select '1 low'
       expect(page).to have_text(group_2.signature.body)
+    end
+  end
+
+  describe 'CoreWorkflow "fill in empty" fires on non-empty fields during ticket creation when logged in as customer #5004' do
+    let(:body_content) { SecureRandom.uuid }
+    let(:workflow) do
+      create(:core_workflow,
+             object:  'Ticket',
+             perform: { 'article.body' => { 'operator' => 'fill_in_empty', 'fill_in_empty' => body_content } })
+    end
+
+    def setup_workflows
+      workflow
+    end
+
+    context 'when agent', authenticated_as: :authenticate do
+      def authenticate
+        setup_workflows
+        true
+      end
+
+      before do
+        visit '#ticket/create'
+      end
+
+      it 'does fill the body' do
+        check_editor_field_value('body', body_content)
+        set_editor_field_value('body', 'new_content')
+        check_editor_field_value('body', 'new_content')
+        page.find('[name=priority_id]').select '3 high'
+        check_editor_field_value('body', 'new_content')
+      end
+    end
+
+    context 'when customer', authenticated_as: :authenticate do
+      def authenticate
+        setup_workflows
+        create(:customer)
+      end
+
+      before do
+        visit 'customer_ticket_new'
+      end
+
+      it 'does fill the body' do
+        check_editor_field_value('body', body_content)
+        set_editor_field_value('body', 'new_content')
+        check_editor_field_value('body', 'new_content')
+        page.find('[name=state_id]').select 'closed'
+        check_editor_field_value('body', 'new_content')
+      end
     end
   end
 end

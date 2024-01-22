@@ -20,7 +20,6 @@ import type { FormFieldContext } from '../../types/field.ts'
 
 interface FieldSecurityProps {
   context: FormFieldContext<{
-    disabled?: boolean
     securityAllowed?: SecurityAllowed
     securityDefaultOptions?: SecurityDefaultOptions
     securityMessages?: SecurityMessages
@@ -54,8 +53,8 @@ const filterOptions = (
   options: SecurityOption[],
 ) => {
   return options
-    .filter(
-      (option) => props.context.securityAllowed?.[method]?.includes(option),
+    .filter((option) =>
+      props.context.securityAllowed?.[method]?.includes(option),
     )
     .sort()
 }

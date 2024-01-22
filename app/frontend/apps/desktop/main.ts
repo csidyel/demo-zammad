@@ -2,7 +2,7 @@
 
 import { createApp } from 'vue'
 
-import '#desktop/styles/main.scss'
+import '#desktop/styles/main.css'
 
 import { useSessionStore } from '#shared/stores/session.ts'
 import initializeStoreSubscriptions from '#shared/initializer/storeSubscriptions.ts'
@@ -19,9 +19,9 @@ import { initializeDesktopIcons } from '#desktop/initializer/initializeDesktopIc
 import { initializeGlobalComponentStyles } from '#desktop/initializer/initializeGlobalComponentStyles.ts'
 import initializeApolloClient from '#desktop/server/apollo/index.ts'
 import initializeRouter from '#desktop/router/index.ts'
-import initializeForm from '#desktop/form/index.ts'
+import { initializeForm, initializeFormFields } from '#desktop/form/index.ts'
 
-import { ensureAfterAuth } from './pages/login/after-auth/composable/useAfterAuthPlugins.ts'
+import { ensureAfterAuth } from './pages/authentication/after-auth/composable/useAfterAuthPlugins.ts'
 
 import App from './AppDesktop.vue'
 
@@ -33,6 +33,7 @@ export const mountApp = async () => {
   initializeStore(app)
   initializeDesktopIcons()
   initializeForm(app)
+  initializeFormFields()
   initializeGlobalComponentStyles()
   initializeGlobalComponents(app)
   initializeAppName('desktop')

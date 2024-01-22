@@ -352,7 +352,7 @@ const onContextClick = () => {
   </div>
 </template>
 
-<style scoped lang="scss">
+<style scoped>
 .Content {
   word-break: break-word;
 }
