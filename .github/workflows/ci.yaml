@@ -2,13 +2,12 @@ name: CI
 
 on: 
   push:
-  schedule:
-    # Runs every day.
-    - cron:  '0 0 * * *'
+    branches:
+      - ubicloud
 
 jobs:
   CI:
-    runs-on: ubuntu-20.04
+    runs-on: ubicloud
     container:
       image: zammad/zammad-ci:latest
     services:
