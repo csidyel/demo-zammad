@@ -18,7 +18,7 @@ global_job_config:
       - sem-version node 20.11.0
       - sudo apt-get update
       - sudo apt-get install -y -f optipng jhead imagemagick libimlib2 openssl direnv shellcheck libimlib2-dev libxss1
-      - wget -O chrome.deb http://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_114.0.5735.133_amd64.deb
+      - wget -O chrome.deb http://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_114.0.5735.91_amd64.deb
       - sudo apt-get remove --purge -y google-chrome-stable
       - sudo dpkg -i chrome.deb  
       - wget https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_linux64.zip
