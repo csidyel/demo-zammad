@@ -8,7 +8,7 @@ on:
 
 jobs:
   CI:
-    runs-on: ubicloud
+    runs-on: ubuntu-20.04
     container:
       image: zammad/zammad-ci:latest
     services:
