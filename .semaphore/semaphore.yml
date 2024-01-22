@@ -18,9 +18,6 @@ global_job_config:
       - sem-version node 20.11.0
       - sudo apt-get update
       - sudo apt-get install -y -f optipng jhead imagemagick libimlib2 openssl direnv shellcheck libimlib2-dev libxss1
-      - wget -O chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-      - sudo apt-get remove --purge -y google-chrome-stable
-      - sudo dpkg -i chrome.deb  
       - echo '127.0.0.1 redis postgresql' | sudo tee -a /etc/hosts
       - rbenv rehash
       - bundle install --path vendor/bundle
