@@ -7,7 +7,7 @@ on:
 
 jobs:
   CI:
-    runs-on: ubicloud
+    runs-on: ubicloud-standard-4
     container:
       image: zammad/zammad-ci:latest
     services:
