@@ -13,9 +13,13 @@ import {
   onKeyDown,
   useVModel,
 } from '@vueuse/core'
-import type { SelectOption } from '#shared/components/CommonSelect/types.ts'
+import type {
+  MatchedSelectOption,
+  SelectOption,
+} from '#shared/components/CommonSelect/types.ts'
 import testFlags from '#shared/utils/testFlags.ts'
 import CommonLabel from '#shared/components/CommonLabel/CommonLabel.vue'
+import { i18n } from '#shared/i18n.ts'
 import CommonSelectItem from './CommonSelectItem.vue'
 import { useCommonSelect } from './useCommonSelect.ts'
 import type { CommonSelectInternalInstance } from './types.ts'
@@ -34,6 +38,7 @@ export interface Props {
   noRefocus?: boolean
   owner?: string
   noOptionsLabelTranslation?: boolean
+  filter?: string
 }
 
 const props = defineProps<Props>()
@@ -231,10 +236,11 @@ const select = (option: SelectOption) => {
   }
 }
 
-const hasSelectableOptions = computed(() =>
-  props.options.some(
-    (option) => !option.disabled && !isCurrentValue(option.value),
-  ),
+const hasMoreSelectableOptions = computed(
+  () =>
+    props.options.filter(
+      (option) => !option.disabled && !isCurrentValue(option.value),
+    ).length > 0,
 )
 
 const selectAll = () => {
@@ -242,6 +248,42 @@ const selectAll = () => {
     .filter((option) => !option.disabled && !isCurrentValue(option.value))
     .forEach((option) => select(option))
 }
+
+const highlightedOptions = computed(() =>
+  props.options.map((option) => {
+    let label = option.label || i18n.t('%s (unknown)', option.value.toString())
+
+    // Highlight the matched text within the option label by re-using passed regex match object.
+    //   This approach has several benefits:
+    //   - no repeated regex matching in order to identify matched text
+    //   - support for matched text with accents, in case the search keyword didn't contain them (and vice-versa)
+    if (option.match && option.match[0]) {
+      const labelBeforeMatch = label.slice(0, option.match.index)
+
+      // Do not use the matched text here, instead use part of the original label in the same length.
+      //   This is because the original match does not include accented characters.
+      const labelMatchedText = label.slice(
+        option.match.index,
+        option.match.index + option.match[0].length,
+      )
+
+      const labelAfterMatch = label.slice(
+        option.match.index + option.match[0].length,
+      )
+
+      const highlightClasses = option.disabled
+        ? 'bg-blue-200 dark:bg-gray-300'
+        : 'bg-blue-600 dark:bg-blue-900 group-hover:bg-blue-800 group-hover:group-focus:bg-blue-600 dark:group-hover:group-focus:bg-blue-900 group-hover:text-white group-focus:text-black dark:group-focus:text-white group-hover:group-focus:text-black dark:group-hover:group-focus:text-white'
+
+      label = `${labelBeforeMatch}<span class="${highlightClasses}">${labelMatchedText}</span>${labelAfterMatch}`
+    }
+
+    return {
+      ...option,
+      matchedLabel: label,
+    } as MatchedSelectOption
+  }),
+)
 
 const duration = VITE_TEST_MODE ? undefined : { enter: 300, leave: 200 }
 </script>
@@ -259,7 +301,7 @@ const duration = VITE_TEST_MODE ? undefined : { enter: 300, leave: 200 }
         v-if="showDropdown"
         id="common-select"
         ref="dropdownElement"
-        class="fixed z-10 flex antialiased"
+        class="fixed z-10 min-h-9 flex antialiased"
         :style="dropdownStyle"
       >
         <div
@@ -278,19 +320,19 @@ const duration = VITE_TEST_MODE ? undefined : { enter: 300, leave: 200 }
             }"
           >
             <div
-              v-if="multiple && hasSelectableOptions"
-              class="w-full flex justify-end px-2.5 py-1.5 gap-2"
+              v-if="multiple && hasMoreSelectableOptions"
+              class="w-full px-2.5 py-1.5 flex justify-between gap-2"
             >
               <CommonLabel
-                class="!text-blue-800 focus-visible:outline focus-visible:rounded-sm focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800"
+                class="ms-auto !text-blue-800 focus-visible:outline focus-visible:rounded-sm focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800"
                 prefix-icon="check-all"
                 role="button"
-                tabindex="0"
+                tabindex="1"
                 @click.stop="selectAll()"
                 @keypress.enter.prevent.stop="selectAll()"
                 @keypress.space.prevent.stop="selectAll()"
               >
-                {{ $t('select all') }}
+                {{ $t('select all options') }}
               </CommonLabel>
             </div>
             <div
@@ -301,17 +343,18 @@ const duration = VITE_TEST_MODE ? undefined : { enter: 300, leave: 200 }
               class="w-full overflow-y-auto"
             >
               <CommonSelectItem
-                v-for="option in options"
+                v-for="option in filter ? highlightedOptions : options"
                 :key="String(option.value)"
                 :class="{
                   'first:rounded-t-lg':
-                    hasDirectionUp && (!multiple || !hasSelectableOptions),
+                    hasDirectionUp && (!multiple || !hasMoreSelectableOptions),
                   'last:rounded-b-lg': !hasDirectionUp,
                 }"
                 :selected="isCurrentValue(option.value)"
                 :multiple="multiple"
                 :option="option"
                 :no-label-translate="noOptionsLabelTranslation"
+                :filter="filter"
                 @select="select($event)"
               />
               <CommonSelectItem

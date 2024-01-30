@@ -14,6 +14,7 @@ import useValue from '#shared/components/Form/composables/useValue.ts'
 import useSelectOptions from '#shared/composables/useSelectOptions.ts'
 import useSelectPreselect from '#shared/composables/useSelectPreselect.ts'
 import type { SelectContext } from '#shared/components/Form/fields/FieldSelect/types.ts'
+import type { SelectOption } from '#shared/components/CommonSelect/types.ts'
 
 interface Props {
   context: SelectContext
@@ -25,6 +26,7 @@ const contextReactive = toRef(props, 'context')
 
 const { hasValue, valueContainer, currentValue, clearValue } =
   useValue(contextReactive)
+
 const {
   sortedOptions,
   selectOption,
@@ -59,10 +61,36 @@ const filteredOptions = computed(() => {
     'i',
   )
 
-  // Search across options via their de-accented labels.
-  return sortedOptions.value.filter((option) =>
-    filterRegex.test(deaccent(option.label || String(option.value))),
+  return sortedOptions.value
+    .map(
+      (option) =>
+        ({
+          ...option,
+
+          // Match options via their de-accented labels.
+          match: filterRegex.exec(
+            deaccent(option.label || String(option.value)),
+          ),
+        }) as SelectOption,
+    )
+    .filter((option) => option.match)
+})
+
+const suggestedOptionLabel = computed(() => {
+  if (!filter.value || !filteredOptions.value.length) return undefined
+
+  const exactMatches = filteredOptions.value.filter(
+    (option) =>
+      (getSelectedOptionLabel(option.value) || option.value.toString())
+        .toLowerCase()
+        .indexOf(filter.value.toLowerCase()) === 0 &&
+      (getSelectedOptionLabel(option.value) || option.value.toString()).length >
+        filter.value.length,
   )
+
+  if (!exactMatches.length) return undefined
+
+  return getSelectedOptionLabel(exactMatches[0].value)
 })
 
 const inputElementBounds = useElementBounding(input)
@@ -113,9 +141,9 @@ setupMissingOrDisabledOptionHandling()
 <template>
   <div
     ref="input"
+    class="flex h-auto min-h-10 bg-blue-200 dark:bg-gray-700 hover:outline hover:outline-1 hover:outline-offset-1 hover:outline-blue-600 dark:hover:outline-blue-900 has-[output:focus,input:focus]:outline has-[output:focus,input:focus]:outline-1 has-[output:focus,input:focus]:outline-offset-1 has-[output:focus,input:focus]:outline-blue-800 dark:has-[output:focus,input:focus]:outline-blue-800"
     :class="[
       context.classes.input,
-      `flex h-auto min-h-10 bg-blue-200 dark:bg-gray-700 hover:outline hover:outline-1 hover:outline-offset-1 hover:outline-blue-600 dark:hover:outline-blue-900 has-[output:focus,input:focus]:outline has-[output:focus,input:focus]:outline-1 has-[output:focus,input:focus]:outline-offset-1 has-[output:focus,input:focus]:outline-blue-800 dark:has-[output:focus,input:focus]:outline-blue-800`,
       {
         'rounded-lg': !select?.isOpen,
         'rounded-t-lg': select?.isOpen && !isBelowHalfScreen,
@@ -131,6 +159,7 @@ setupMissingOrDisabledOptionHandling()
       :options="filteredOptions"
       :multiple="context.multiple"
       :owner="context.id"
+      :filter="filter"
       no-options-label-translation
       no-close
       passive
@@ -181,17 +210,25 @@ setupMissingOrDisabledOptionHandling()
               <CommonIcon
                 v-if="getSelectedOptionIcon(selectedValue)"
                 :name="getSelectedOptionIcon(selectedValue)"
-                class="fill-gray-100 dark:fill-neutral-400"
+                class="shrink-0 fill-gray-100 dark:fill-neutral-400"
                 size="xs"
                 decorative
               />
-              {{
-                getSelectedOptionLabel(selectedValue) ||
-                i18n.t('%s (unknown)', selectedValue)
-              }}
+              <span
+                class="line-clamp-3"
+                :title="
+                  getSelectedOptionLabel(selectedValue) ||
+                  i18n.t('%s (unknown)', selectedValue)
+                "
+              >
+                {{
+                  getSelectedOptionLabel(selectedValue) ||
+                  i18n.t('%s (unknown)', selectedValue)
+                }}
+              </span>
               <CommonIcon
                 :aria-label="i18n.t('Unselect Option')"
-                class="fill-stone-200 dark:fill-neutral-500 focus-visible:outline focus-visible:rounded-sm focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800"
+                class="shrink-0 fill-stone-200 dark:fill-neutral-500 hover:fill-black dark:hover:fill-white focus-visible:outline focus-visible:rounded-sm focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800"
                 name="x-lg"
                 size="xs"
                 role="button"
@@ -211,6 +248,7 @@ setupMissingOrDisabledOptionHandling()
           v-if="expanded && !context.noFiltering"
           ref="filterInput"
           v-model="filter"
+          :suggestion="suggestedOptionLabel"
           @keypress.space.stop
         />
         <div v-else class="flex grow flex-wrap gap-1" role="list">
@@ -222,20 +260,28 @@ setupMissingOrDisabledOptionHandling()
             <CommonIcon
               v-if="getSelectedOptionIcon(currentValue)"
               :name="getSelectedOptionIcon(currentValue)"
-              class="fill-gray-100 dark:fill-neutral-400"
+              class="shrink-0 fill-gray-100 dark:fill-neutral-400"
               size="tiny"
               decorative
             />
-            {{
-              getSelectedOptionLabel(currentValue) ||
-              i18n.t('%s (unknown)', currentValue)
-            }}
+            <span
+              class="line-clamp-3"
+              :title="
+                getSelectedOptionLabel(currentValue) ||
+                i18n.t('%s (unknown)', currentValue)
+              "
+            >
+              {{
+                getSelectedOptionLabel(currentValue) ||
+                i18n.t('%s (unknown)', currentValue)
+              }}
+            </span>
           </div>
         </div>
         <CommonIcon
           v-if="context.clearable && hasValue && !context.disabled"
           :aria-label="i18n.t('Clear Selection')"
-          class="shrink-0 fill-stone-200 dark:fill-neutral-500 focus-visible:outline focus-visible:rounded-sm focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800"
+          class="shrink-0 fill-stone-200 dark:fill-neutral-500 hover:fill-black dark:hover:fill-white focus-visible:outline focus-visible:rounded-sm focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800"
           name="x-lg"
           size="xs"
           role="button"

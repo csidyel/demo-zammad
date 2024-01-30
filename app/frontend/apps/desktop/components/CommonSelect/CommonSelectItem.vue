@@ -1,15 +1,20 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
+/* eslint-disable vue/no-v-html */
 import { computed } from 'vue'
 import { i18n } from '#shared/i18n.ts'
-import type { SelectOption } from '#shared/components/CommonSelect/types.ts'
+import type {
+  MatchedSelectOption,
+  SelectOption,
+} from '#shared/components/CommonSelect/types.ts'
 
 const props = defineProps<{
-  option: SelectOption
+  option: MatchedSelectOption | SelectOption
   selected?: boolean
   multiple?: boolean
   noLabelTranslate?: boolean
+  filter?: string
 }>()
 
 const emit = defineEmits<{
@@ -25,11 +30,13 @@ const select = (option: SelectOption) => {
 
 const label = computed(() => {
   const { option } = props
-  if (props.noLabelTranslate) {
-    return option.label
-  }
 
-  return i18n.t(option.label, ...(option.labelPlaceholder || []))
+  if (props.noLabelTranslate) return option.label || option.value.toString()
+
+  return (
+    i18n.t(option.label, ...(option.labelPlaceholder || [])) ||
+    option.value.toString()
+  )
 })
 </script>
 
@@ -41,7 +48,7 @@ const label = computed(() => {
     :tabindex="option.disabled ? '-1' : '0'"
     :aria-selected="selected"
     :aria-disabled="option.disabled ? 'true' : undefined"
-    class="group flex cursor-pointer items-center self-stretch px-2.5 py-2 gap-1.5 text-sm text-black dark:text-white outline-none hover:bg-blue-600 dark:hover:bg-blue-900 focus:bg-blue-800 hover:focus:focus:bg-blue-800 focus:text-white"
+    class="group h-9 px-2.5 flex cursor-pointer items-center self-stretch gap-1.5 text-sm text-black dark:text-white outline-none hover:bg-blue-600 dark:hover:bg-blue-900 focus:bg-blue-800 hover:focus:focus:bg-blue-800 focus:text-white"
     role="option"
     :data-value="option.value"
     @click="select(option)"
@@ -56,7 +63,7 @@ const label = computed(() => {
       size="xs"
       decorative
       :name="selected ? 'check-square' : 'square'"
-      class="fill-gray-100 dark:fill-neutral-400 group-hover:fill-black dark:group-hover:fill-white group-focus:fill-white"
+      class="shrink-0 fill-gray-100 dark:fill-neutral-400 group-hover:fill-black dark:group-hover:fill-white group-focus:fill-white"
     />
     <CommonIcon
       v-if="option.icon"
@@ -66,19 +73,30 @@ const label = computed(() => {
         'fill-stone-200 dark:fill-neutral-500': option.disabled,
       }"
       decorative
-      class="fill-gray-100 dark:fill-neutral-400 group-hover:fill-black dark:group-hover:fill-white group-focus:fill-white"
+      class="shrink-0 fill-gray-100 dark:fill-neutral-400 group-hover:fill-black dark:group-hover:fill-white group-focus:fill-white"
     />
     <span
+      v-if="filter"
       :class="{
         'text-stone-200 dark:text-neutral-500': option.disabled,
       }"
-      class="grow"
+      class="grow truncate"
+      :title="label"
+      v-html="(option as MatchedSelectOption).matchedLabel"
+    />
+    <span
+      v-else
+      :class="{
+        'text-stone-200 dark:text-neutral-500': option.disabled,
+      }"
+      class="grow truncate"
+      :title="label"
     >
-      {{ label || option.value }}
+      {{ label }}
     </span>
     <CommonIcon
       v-if="!multiple"
-      class="fill-stone-200 dark:fill-neutral-500 group-hover:fill-black dark:group-hover:fill-white group-focus:fill-white"
+      class="shrink-0 fill-stone-200 dark:fill-neutral-500 group-hover:fill-black dark:group-hover:fill-white group-focus:fill-white"
       :class="{
         invisible: !selected,
         'fill-gray-100 dark:fill-neutral-400': option.disabled,

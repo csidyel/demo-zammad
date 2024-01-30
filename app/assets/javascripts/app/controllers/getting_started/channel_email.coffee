@@ -230,7 +230,7 @@ class GettingStartedChannelEmail extends App.ControllerWizardFullScreen
           @account.inbound = params
 
           if data.content_messages && data.content_messages > 0 && (!@account['inbound']['options'] || @account['inbound']['options']['keep_on_server'] isnt true)
-            @probeInboundMessagesFound(data, true)
+            @probeInboundMessagesFound(data, false)
             @probeInboundArchive(data)
           else
             @showSlide('js-outbound')
@@ -322,6 +322,12 @@ class GettingStartedChannelEmail extends App.ControllerWizardFullScreen
     # get params
     params          = @formParam(e.target)
     params['email'] = @account['meta']['email']
+
+    sslVerifyField = $(e.target).closest('form').find('[name="options::ssl_verify"]')
+
+    if sslVerifyField[0]?.disabled
+      params.options.ssl_verify = false
+
     @disable(e)
 
     @showSlide('js-test')
