@@ -12,7 +12,6 @@ require 'models/concerns/has_taskbars_examples'
 require 'models/concerns/has_xss_sanitized_note_examples'
 require 'models/concerns/has_object_manager_attributes_examples'
 require 'models/tag/writes_to_ticket_history_examples'
-require 'models/ticket/calls_stats_ticket_reopen_log_examples'
 require 'models/ticket/enqueues_user_ticket_counter_job_examples'
 require 'models/ticket/escalation_examples'
 require 'models/ticket/resets_pending_time_seconds_examples'
@@ -22,7 +21,7 @@ require 'models/ticket/sets_last_owner_update_time_examples'
 RSpec.describe Ticket, type: :model do
   subject(:ticket) { create(:ticket) }
 
-  it_behaves_like 'ApplicationModel'
+  it_behaves_like 'ApplicationModel', can_param: { sample_data_attribute: :title }
   it_behaves_like 'CanBeImported'
   it_behaves_like 'CanCsvImport'
   include_examples 'CanCsvImport - Ticket specific tests'
@@ -34,7 +33,6 @@ RSpec.describe Ticket, type: :model do
   it_behaves_like 'HasXssSanitizedNote', model_factory: :ticket
   it_behaves_like 'HasObjectManagerAttributes'
   it_behaves_like 'Ticket::Escalation'
-  it_behaves_like 'TicketCallsStatsTicketReopenLog'
   it_behaves_like 'TicketEnqueuesTicketUserTicketCounterJob'
   it_behaves_like 'TicketResetsPendingTimeSeconds'
   it_behaves_like 'TicketSetsCloseTime'

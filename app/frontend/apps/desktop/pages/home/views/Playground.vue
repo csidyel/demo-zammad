@@ -2,11 +2,17 @@
 <!-- eslint-disable zammad/zammad-detect-translatable-string -->
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { reset } from '@formkit/core'
+
 import CommonAlert from '#shared/components/CommonAlert/CommonAlert.vue'
-import CommonButton from '#desktop/components/CommonButton/CommonButton.vue'
 import Form from '#shared/components/Form/Form.vue'
+import type { FormValues } from '#shared/components/Form/types.ts'
+
+import CommonButton from '#desktop/components/CommonButton/CommonButton.vue'
+import CommonButtonGroup from '#desktop/components/CommonButtonGroup/CommonButtonGroup.vue'
+import CommonProgressBar from '#desktop/components/CommonProgressBar/CommonProgressBar.vue'
+import type { CommonButtonItem } from '#desktop/components/CommonButtonGroup/types.ts'
 
 const alphabetOptions = computed(() =>
   [...Array(26).keys()].map((i) => ({
@@ -72,6 +78,31 @@ const treeselectOptions = [
   },
 ]
 
+const buttonGroupOptions: CommonButtonItem[] = [
+  {
+    label: 'Button 1',
+    variant: 'primary',
+    icon: 'logo-flat',
+    onActionClick: () => console.debug('Button 1 clicked'),
+  },
+  {
+    label: 'Button 2',
+    variant: 'secondary',
+  },
+  {
+    label: 'Button 3',
+    variant: 'tertiary',
+  },
+  {
+    label: 'Button 4',
+    variant: 'submit',
+  },
+  {
+    label: 'Button 5',
+    variant: 'danger',
+  },
+]
+
 const formSchema = [
   {
     isLayout: true,
@@ -118,6 +149,29 @@ const formSchema = [
     ],
   },
   {
+    name: 'group_permission_0',
+    label: 'Group permissions',
+    type: 'groupPermissions',
+    props: {
+      options: [
+        {
+          value: 1,
+          label: 'Users',
+        },
+        {
+          value: 2,
+          label: 'some_group1',
+          children: [
+            {
+              value: 3,
+              label: 'Nested group',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     type: 'select',
     name: 'select_1',
     label: 'Single select',
@@ -157,7 +211,43 @@ const formSchema = [
       options: treeselectOptions,
     },
   },
+  {
+    type: 'toggleList',
+    name: 'roles',
+    label: 'Roles',
+    props: {
+      options: [
+        { value: 3, label: 'name only' },
+        { value: 1, label: 'Long name', description: 'Note here' },
+        {
+          value: 1111,
+          label: 'Another long name',
+          description: 'Note here again',
+        },
+      ],
+    },
+  },
 ]
+
+const formInitialValues: FormValues = { roles: [3, 1] }
+
+const progressBarValue = ref(0)
+
+const increaseProgressBar = () => {
+  progressBarValue.value += 25
+}
+
+onMounted(() => {
+  setInterval(increaseProgressBar, 2000)
+})
+
+watch(progressBarValue, (newValue) => {
+  if (newValue < 100) return
+
+  setTimeout(() => {
+    progressBarValue.value = 0
+  }, 1000)
+})
 </script>
 
 <template>
@@ -210,6 +300,11 @@ const formSchema = [
       <CommonButton variant="submit" disabled>Disabled button</CommonButton>
       <CommonButton variant="danger" disabled>Disabled button</CommonButton>
     </div>
+
+    <h3>Group</h3>
+    <div class="w-1/2 space-x-3 space-y-2 py-2">
+      <CommonButtonGroup :items="buttonGroupOptions" />
+    </div>
   </div>
 
   <div class="w-1/2 ltr:ml-2 rtl:mr-2">
@@ -258,6 +353,68 @@ const formSchema = [
       >Extra large</CommonLabel
     >
   </div>
+
+  <div class="ltr:ml-2 rtl:mr-2">
+    <h2>Badges</h2>
+
+    <CommonBadge class="ltr:mr-2 rtl:ml-2" variant="neutral"
+      >Neutral</CommonBadge
+    >
+
+    <CommonBadge class="ltr:mr-2 rtl:ml-2" variant="info">Info</CommonBadge>
+
+    <CommonBadge class="ltr:mr-2 rtl:ml-2" variant="success"
+      >Success</CommonBadge
+    >
+
+    <CommonBadge class="ltr:mr-2 rtl:ml-2" variant="warning"
+      >Warning</CommonBadge
+    >
+
+    <CommonBadge class="ltr:mr-2 rtl:ml-2" variant="danger">Danger</CommonBadge>
+
+    <CommonBadge
+      class="ltr:mr-2 rtl:ml-2 dark:bg-pink-300 bg-pink-300 text-white"
+      variant="custom"
+      >Custom</CommonBadge
+    >
+  </div>
+
+  <div class="w-1/5 ltr:ml-2 rtl:mr-2">
+    <h2>Progress Bar</h2>
+
+    <div class="flex flex-col gap-3">
+      <div class="flex flex-col gap-2">
+        <CommonLabel size="small">What is the meaning of life?</CommonLabel>
+        <CommonProgressBar />
+      </div>
+
+      <div class="flex items-end gap-2">
+        <div class="mb-1 grow flex flex-col gap-1">
+          <div class="flex justify-between">
+            <CommonLabel size="small">Organizations</CommonLabel>
+            <CommonLabel
+              class="text-stone-200 dark:text-neutral-500"
+              size="small"
+            >
+              {{ progressBarValue }} of 100
+            </CommonLabel>
+          </div>
+
+          <CommonProgressBar :value="progressBarValue.toString()" max="100" />
+        </div>
+
+        <CommonIcon
+          class="shrink-0 fill-green-500"
+          :class="progressBarValue !== 100 ? 'invisible' : undefined"
+          name="check2"
+          size="tiny"
+          decorative
+        />
+      </div>
+    </div>
+  </div>
+
   <div class="w-1/2 ltr:ml-2 rtl:mr-2">
     <h2 class="text-lg">Form</h2>
 
@@ -266,6 +423,7 @@ const formSchema = [
       class="mb-96"
       form-class="mb-2.5 space-y-2.5"
       :schema="formSchema"
+      :initial-values="formInitialValues"
       @submit="console.debug($event)"
     >
       <template #after-fields>

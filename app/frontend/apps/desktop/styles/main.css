@@ -1,5 +1,7 @@
-@import '#shared/styles/main.css';
 @config './tailwind.desktop.js';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   /* Override autofill styles in Firefox. */
@@ -51,9 +53,24 @@
     @apply text-stone-200 dark:text-neutral-500;
   }
 
-  .required-indicator {
-    @apply text-yellow-600;
+  .required::after {
+    @apply inline-block font-extrabold content-['•'] ltr:ml-1 rtl:mr-1 text-yellow-600;
   }
+
+  /* Compatibility layer for object attributes and form columns. */
+  .form-group .formkit-outer {
+    @apply col-span-2;
+
+    &.form-group-single-column {
+      @apply col-span-1;
+    }
+  }
+
+  /*
+    TODO: Dirty mark styling within the field.
+
+    .form-group.form-group-mark-dirty .formkit-outer[data-dirty]::before {}
+  */
 }
 
 @layer utilities {

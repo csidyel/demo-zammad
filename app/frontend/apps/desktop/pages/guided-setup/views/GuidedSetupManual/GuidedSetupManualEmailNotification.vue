@@ -16,8 +16,8 @@ import { useEmailOutboundForm } from '#desktop/entities/channel-email/composable
 import type { EmailNotificationData } from '#desktop/entities/channel-email/types/email-notification.ts'
 
 import GuidedSetupActionFooter from '../../components/GuidedSetupActionFooter.vue'
-import GuidedSetupEmailConfigurationCheck from '../../components/GuidedSetupEmailConfigurationCheck.vue'
-import { useSystemSetupManual } from '../../composables/useSystemSetupManual.ts'
+import GuidedSetupStatusMessage from '../../components/GuidedSetupStatusMessage.vue'
+import { useSystemSetup } from '../../composables/useSystemSetup.ts'
 import { emailBeforeRouteEnterGuard } from '../../router/guards/emailBeforeRouteEnterGuard.ts'
 
 defineOptions({
@@ -26,7 +26,7 @@ defineOptions({
 
 const router = useRouter()
 
-const { setTitle } = useSystemSetupManual()
+const { setTitle } = useSystemSetup()
 setTitle(__('Email Notification'))
 
 const {
@@ -88,7 +88,7 @@ const probeEmailNotification = async (data: EmailNotificationData) => {
 </script>
 
 <template>
-  <GuidedSetupEmailConfigurationCheck
+  <GuidedSetupStatusMessage
     v-if="debouncedLoading"
     :message="__('Verifying and saving your configuration…')"
   />

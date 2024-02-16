@@ -4,22 +4,39 @@
 import { provide, ref } from 'vue'
 
 import LayoutPublicPage from '#desktop/components/layout/LayoutPublicPage/LayoutPublicPage.vue'
+import type { BoxSizes } from '#desktop/components/layout/types.ts'
 
-import { SYSTEM_SETUP_MANUAL_SYMBOL } from '../../composables/useSystemSetupManual.ts'
-import type { SystemSetupManual } from '../../types/setup-manual.ts'
+import { SYSTEM_SETUP_SYMBOL } from '../../composables/useSystemSetup.ts'
+import type { SystemSetup } from '../../types/setup.ts'
+import { useSetTitle } from '../../composables/useSetTitle.ts'
 
-const title = ref('')
-const setTitle = (newTitle: string) => {
-  title.value = newTitle
+const { title, setTitle } = useSetTitle()
+
+const boxSize = ref<BoxSizes>('medium')
+
+const setBoxSize = (newBoxSize: BoxSizes) => {
+  boxSize.value = newBoxSize
 }
 
-provide<SystemSetupManual>(SYSTEM_SETUP_MANUAL_SYMBOL, {
+const hideFooter = ref(false)
+
+const setHideFooter = (newHideFooter: boolean) => {
+  hideFooter.value = newHideFooter
+}
+
+provide<SystemSetup>(SYSTEM_SETUP_SYMBOL, {
   setTitle,
+  setBoxSize,
+  setHideFooter,
 })
 </script>
 
 <template>
-  <LayoutPublicPage box-size="medium" :title="title">
+  <LayoutPublicPage
+    :box-size="boxSize"
+    :hide-footer="hideFooter"
+    :title="title"
+  >
     <RouterView />
   </LayoutPublicPage>
 </template>

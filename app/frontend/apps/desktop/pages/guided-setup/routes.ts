@@ -23,6 +23,33 @@ const route: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'automated',
+        name: 'GuidedSetupAutomatedInfo',
+        component: () =>
+          import('./views/GuidedSetupAutomated/GuidedSetupAutomatedInfo.vue'),
+        meta: {
+          title: __('Automated Setup'),
+          requiresAuth: false,
+          requiredPermission: null,
+          hasOwnLandmarks: true,
+          sidebar: false,
+        },
+      },
+      {
+        path: 'automated/run/:token?',
+        name: 'GuidedSetupAutomatedRun',
+        props: true,
+        component: () =>
+          import('./views/GuidedSetupAutomated/GuidedSetupAutomatedRun.vue'),
+        meta: {
+          title: __('Automated Setup'),
+          requiresAuth: false,
+          requiredPermission: null,
+          hasOwnLandmarks: true,
+          sidebar: false,
+        },
+      },
+      {
         path: 'manual',
         name: 'GuidedSetupManual',
         component: () =>
@@ -125,6 +152,92 @@ const route: RouteRecordRaw[] = [
               title: __('Connect Channels'),
               requiresAuth: true,
               requiredPermission: 'admin.wizard',
+              hasOwnLandmarks: true,
+              sidebar: false,
+            },
+          },
+          {
+            path: 'invite',
+            name: 'GuidedSetupManualInviteColleagues',
+            component: () =>
+              import(
+                './views/GuidedSetupManual/GuidedSetupManualInviteColleagues.vue'
+              ),
+            meta: {
+              title: __('Invite Colleagues'),
+              requiresAuth: true,
+              requiredPermission: 'admin.wizard',
+              hasOwnLandmarks: true,
+              sidebar: false,
+            },
+          },
+        ],
+      },
+      {
+        path: 'import',
+        name: 'GuidedSetupImport',
+        component: () =>
+          import('./views/GuidedSetupImport/GuidedSetupImport.vue'),
+        children: [
+          {
+            path: '',
+            name: 'GuidedSetupImportSelection',
+            component: () =>
+              import(
+                './views/GuidedSetupImport/GuidedSetupImportSelection.vue'
+              ),
+            meta: {
+              title: __('Import'),
+              requiresAuth: false,
+              requiredPermission: null,
+              hasOwnLandmarks: true,
+              sidebar: false,
+            },
+          },
+          {
+            path: ':source',
+            name: 'GuidedSetupImportSource',
+            props: true,
+            component: () =>
+              import(
+                './views/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSource.vue'
+              ),
+            meta: {
+              title: __('Import from Source'),
+              requiresAuth: false,
+              requiredPermission: null,
+              hasOwnLandmarks: true,
+              sidebar: false,
+            },
+          },
+          {
+            path: ':source/start',
+            name: 'GuidedSetupImportSourceStart',
+            props: true,
+            component: () =>
+              import(
+                './views/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceStart.vue'
+              ),
+            meta: {
+              title: __('Start Import from Source'),
+              requiresAuth: false,
+              requiredPermission: null,
+              hasOwnLandmarks: true,
+              sidebar: false,
+            },
+          },
+          {
+            path: ':source/status',
+            name: 'GuidedSetupImportSourceStatus',
+            props: true,
+            component: () =>
+              import(
+                './views/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceStatus.vue'
+              ),
+            meta: {
+              title: __('Status Import'),
+              requiresAuth: false,
+              requiredPermission: null,
               hasOwnLandmarks: true,
               sidebar: false,
             },

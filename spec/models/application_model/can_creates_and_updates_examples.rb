@@ -1,6 +1,6 @@
 # Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-RSpec.shared_examples 'ApplicationModel::CanCreatesAndUpdates' do
+RSpec.shared_examples 'ApplicationModel::CanCreatesAndUpdates' do |unique_name: true|
   describe '.create_if_not_exists' do
     let!(:record) { create(described_class.name.underscore) }
 
@@ -36,10 +36,20 @@ RSpec.shared_examples 'ApplicationModel::CanCreatesAndUpdates' do
           expect(described_class.create_if_not_exists(name: name)).to eq(record)
         end
 
-        it 'does not create a new record' do
+        it 'does not create a new record for matching identifier' do
           allow(described_class).to receive(:create)
           described_class.create_if_not_exists(name: name)
           expect(described_class).not_to have_received(:create).with(name: name)
+        end
+
+        if unique_name
+          it 'raises uniqueness error if identifier is different in case only' do
+            swapcase_attibutes = attributes_for(described_class.name.underscore)
+              .merge(name: record.name.swapcase)
+
+            expect { described_class.create_if_not_exists(**swapcase_attibutes) }
+              .to raise_error { _1.is_a?(ActiveRecord::RecordNotUnique) || _1.is_a?(ActiveRecord::NotNullViolation) }
+          end
         end
       end
 
@@ -171,6 +181,16 @@ RSpec.shared_examples 'ApplicationModel::CanCreatesAndUpdates' do
           expect { described_class.create_or_update(name: name, updated_at: yesterday) }
             .to change { record.reload.updated_at.to_i }.to(yesterday.to_i)
         end
+
+        if unique_name
+          it 'raises uniqueness error if identifier is different in case only' do
+            swapcase_attibutes = attributes_for(described_class.name.underscore)
+              .merge(name: record.name.swapcase)
+
+            expect { described_class.create_if_not_exists(**swapcase_attibutes) }
+              .to raise_error { _1.is_a?(ActiveRecord::RecordNotUnique) || _1.is_a?(ActiveRecord::NotNullViolation) }
+          end
+        end
       end
 
       context 'when given an invalid #name' do
@@ -251,5 +271,25 @@ RSpec.shared_examples 'ApplicationModel::CanCreatesAndUpdates' do
     include_examples 'for #login attribute' if described_class.attribute_names.include?('login')
     include_examples 'for #email attribute' if described_class.attribute_names.include?('email')
     include_examples 'for #locale attribute' if described_class.attribute_names.include?('locale')
+  end
+
+  describe '.create_or_update_with_ref' do
+    before do
+      allow(described_class)
+        .to receive(:association_name_to_id_convert).and_return(converted_params)
+
+      allow(described_class)
+        .to receive(:create_or_update)
+    end
+
+    let(:given_params) { { given: 'attr' } }
+    let(:converted_params) { { converted: 'attr' } }
+
+    it 'calls create_or_update with given data', aggregate_failures: true do
+      described_class.create_or_update_with_ref(given_params)
+
+      expect(described_class).to have_received(:association_name_to_id_convert).with(given_params)
+      expect(described_class).to have_received(:create_or_update).with(converted_params)
+    end
   end
 end
