@@ -18,7 +18,6 @@ gem 'parallel'
 gem 'puma', group: :puma
 
 # core - supported ORMs
-gem 'activerecord-nulldb-adapter', group: :nulldb
 gem 'mysql2', group: :mysql
 gem 'pg', '~> 1.5', '>= 1.5.4', group: :postgres
 
@@ -78,7 +77,11 @@ group :assets do
   gem 'eco', require: false
 
   # asset handling - SASS
-  gem 'sassc-rails', require: false
+  # We cannot use sassc-rails, as it can lead to crashes on modern platforms like CentOS 9.
+  # See https://jcmaciel.com/apple-silicon-ruby-on-rails-crash-segfault-sassc/
+  #     https://github.com/sass/sassc-ruby/issues/197
+  # Pin to v5 which does not use sassc internally.
+  gem 'sass-rails', '~> 5', require: false
 
   # asset handling - pipeline
   gem 'sprockets', '~> 3.7.2', require: false
@@ -115,7 +118,8 @@ gem 'rack-attack'
 # channels
 gem 'koala'
 gem 'telegram-bot-ruby'
-gem 'twitter'
+gem 'twitter', '~> 7'
+gem 'whatsapp_sdk'
 
 # channels - email additions
 gem 'email_address'

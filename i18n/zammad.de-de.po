@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: zammad\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2024-02-05 06:12+0000\n"
+"PO-Revision-Date: 2024-03-11 07:26+0000\n"
 "Last-Translator: Martin Gruner <mg@zammad.com>\n"
 "Language-Team: German <https://translations.zammad.org/projects/zammad/"
 "zammad-development/de/>\n"
@@ -11,7 +11,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.3\n"
+"X-Generator: Weblate 5.3.1\n"
 
 #. Default date format to use for the current locale.
 #. These placeholders are supported:
@@ -397,6 +397,10 @@ msgstr "%s-Attribut"
 msgid "%s Group"
 msgstr "%s-Gruppe"
 
+#: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceStatus.vue
+msgid "%s Import Status"
+msgstr "%s Import-Status"
+
 #: app/assets/javascripts/app/views/import/freshdesk.jst.eco
 #: app/assets/javascripts/app/views/import/kayako.jst.eco
 #: app/assets/javascripts/app/views/import/otrs.jst.eco
@@ -501,6 +505,10 @@ msgstr "vor %s Stunden"
 msgid "%s is inactive, please select an active one."
 msgstr "%s ist inaktiv, bitte wählen Sie einen aktiven."
 
+#: app/assets/javascripts/app/controllers/ticket_zoom/article_action/whatsapp_reply.coffee
+msgid "%s is sent without text caption"
+msgstr ""
+
 #: app/frontend/shared/i18n/dates.ts
 msgid "%s minutes ago"
 msgstr "vor %s Minuten"
@@ -533,13 +541,17 @@ msgstr "%s Objekt(e) werden gelöscht."
 msgid "%s object(s) will be updated."
 msgstr "%s Objekt(e) werden aktualisiert."
 
+#: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceStatus.vue
+msgid "%s of %s"
+msgstr "%s von %s"
+
 #: app/assets/javascripts/app/views/dashboard/stats/ticket_in_process.jst.eco
 msgid "%s of my tickets are currently in process."
 msgstr "%s meiner Tickets sind derzeit in Bearbeitung."
 
 #: app/assets/javascripts/app/views/dashboard/stats/ticket_escalation.jst.eco
-msgid "%s of my tickets escalated."
-msgstr "%s meiner Tickets sind eskaliert."
+msgid "%s of my tickets escalated"
+msgstr "%s meiner Tickets sind eskaliert"
 
 #: app/assets/javascripts/app/views/ticket_overview/batch_overlay_user_group.jst.eco
 msgid "%s people"
@@ -955,11 +967,17 @@ msgstr "API-Token"
 msgid "API Token Access"
 msgstr "API-Token Zugriff"
 
+#: lib/whatsapp/webhook/payload.rb
+msgid "API error."
+msgstr "API-Fehler."
+
 #: app/assets/javascripts/app/views/import/freshdesk.jst.eco
 #: app/assets/javascripts/app/views/import/zendesk.jst.eco
 #: app/assets/javascripts/app/views/integration/github.jst.eco
 #: app/assets/javascripts/app/views/integration/gitlab.jst.eco
 #: app/assets/javascripts/app/views/integration/idoit.jst.eco
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceFreshdesk.vue
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceZendesk.vue
 msgid "API token"
 msgstr "API-Token"
 
@@ -980,6 +998,10 @@ msgstr "Zugriff auf Agenten-Tickets basierend auf Gruppenzugriff"
 msgid "Access to Customer Tickets based on current_user and organization"
 msgstr ""
 "Zugriff auf Kundentickets basierend auf aktuellem Benutzer und Organisation"
+
+#: app/assets/javascripts/app/views/whatsapp/account_cloud_api.jst.eco
+msgid "Access token"
+msgstr "Zugangstoken"
 
 #: app/assets/javascripts/app/views/channel/sms_account_overview.jst.eco
 #: app/frontend/apps/mobile/pages/account/routes.ts
@@ -1026,6 +1048,7 @@ msgstr "Berechnete Zeit"
 #: app/assets/javascripts/app/views/microsoft365/list.jst.eco
 #: app/assets/javascripts/app/views/twitter/index.jst.eco
 #: app/assets/javascripts/app/views/twitter/list.jst.eco
+#: app/assets/javascripts/app/views/whatsapp/index.jst.eco
 msgid "Accounts"
 msgstr "Konten"
 
@@ -1185,6 +1208,7 @@ msgstr "Hinzufügen"
 #: app/assets/javascripts/app/views/google/list.jst.eco
 #: app/assets/javascripts/app/views/microsoft365/list.jst.eco
 #: app/assets/javascripts/app/views/twitter/list.jst.eco
+#: app/assets/javascripts/app/views/whatsapp/index.jst.eco
 msgid "Add Account"
 msgstr "Konto hinzufügen"
 
@@ -1429,6 +1453,14 @@ msgid ""
 msgstr ""
 "Nach dem Installieren, Aktualisieren oder Entfernen von Paketen müssen "
 "folgende Befehle auf dem Server ausgeführt werden:"
+
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceFreshdesk.vue
+msgid ""
+"After the import is completed, the account associated with the API token "
+"will become your username, and the token itself will be your password."
+msgstr ""
+"Nach Abschluss des Imports wird das mit dem API-Token verknüpfte Konto zu "
+"Ihrem Benutzernamen, und das Token selbst wird zu Ihrem Passwort."
 
 #: app/assets/javascripts/app/views/session.jst.eco
 msgid "Age"
@@ -1713,6 +1745,10 @@ msgstr "Anmeldedaten der Facebook App."
 msgid "App credentials for Twitter."
 msgstr "Anmeldedaten der Twitter App."
 
+#: app/assets/javascripts/app/views/whatsapp/account_cloud_api.jst.eco
+msgid "App secret"
+msgstr "App-Secret"
+
 #: app/assets/javascripts/app/controllers/_plugin/keyboard_shortcuts.coffee
 #: app/assets/javascripts/app/controllers/_profile/appearance.coffee
 #: app/assets/javascripts/app/views/profile/appearance.jst.eco
@@ -1807,6 +1843,7 @@ msgstr "Wollen Sie \"%s\" wirklich als Standard entfernen?"
 #: app/assets/javascripts/app/controllers/_channel/microsoft365.coffee
 #: app/assets/javascripts/app/controllers/_channel/telegram.coffee
 #: app/assets/javascripts/app/controllers/_channel/twitter.coffee
+#: app/assets/javascripts/app/controllers/_channel/whatsapp.coffee
 #: app/assets/javascripts/app/controllers/_integration/exchange.coffee
 #: app/assets/javascripts/app/controllers/_integration/pgp.coffee
 #: app/assets/javascripts/app/controllers/_profile/token_access.coffee
@@ -1982,6 +2019,12 @@ msgid "Attach another file"
 msgstr "Weitere Datei anhängen"
 
 #: app/frontend/apps/mobile/components/Form/fields/FieldFile/FieldFileInput.vue
+#, fuzzy
+#| msgid "Attach files"
+msgid "Attach file"
+msgstr "Dateien anhängen"
+
+#: app/frontend/apps/mobile/components/Form/fields/FieldFile/FieldFileInput.vue
 msgid "Attach files"
 msgstr "Dateien anhängen"
 
@@ -2077,6 +2120,13 @@ msgstr "Attribute"
 #: db/seeds/settings.rb
 msgid "Attributes to compare"
 msgstr "Attribute, die zu vergleichen sind"
+
+#: app/assets/javascripts/app/controllers/ticket_zoom/article_action/whatsapp_reply.coffee
+#: lib/validations/ticket_article_validator/whatsapp_message.rb
+#, fuzzy
+#| msgid "No filter."
+msgid "Audio file"
+msgstr "Kein Filter."
 
 #: app/assets/javascripts/app/controllers/_ui_element/basedate.coffee
 #: app/assets/javascripts/app/controllers/report.coffee
@@ -2197,6 +2247,10 @@ msgstr "Automatische Kontoverbindung bei der Erstanmeldung"
 msgid "Automatic account linking notification"
 msgstr "Automatische Benachrichtigung beim Verknüpfen von Accounts"
 
+#: app/assets/javascripts/app/controllers/_channel/whatsapp.coffee
+msgid "Automatic reminders"
+msgstr ""
+
 #: app/assets/javascripts/app/controllers/_integration/clearbit.coffee
 msgid ""
 "Automatically enrich your customers and organizations with fresh, up-to-date "
@@ -2315,6 +2369,7 @@ msgid "Base DN"
 msgstr "Base DN"
 
 #: app/assets/javascripts/app/views/import/otrs.jst.eco
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/otrs.ts
 msgid "Base Objects"
 msgstr "Basisobjekte"
 
@@ -2332,10 +2387,22 @@ msgstr "Grundeinstellungen"
 msgid "Before you mention a user, please select a group."
 msgstr "Bevor Sie einen Benutzer erwähnen, wählen Sie bitte eine Gruppe aus."
 
+#: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceStart.vue
+msgid ""
+"Before you start, make sure to check the following points to ensure a smooth "
+"migration and usage of your Zammad instance:"
+msgstr ""
+"Bevor Sie beginnen sollten Sie die folgenden Punkte überprüfen, um eine "
+"reibungslose Migration und Nutzung Ihrer Zammad-Instanz zu gewährleisten:"
+
 #: app/assets/javascripts/app/controllers/ticket_zoom/article_action/email_reply.coffee
 #: app/frontend/shared/entities/ticket-article/action/plugins/email/forward.ts
 msgid "Begin forwarded message"
 msgstr "Anfang der weitergeleiteten Nachricht"
+
+#: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupImport/GuidedSetupImportSelection.vue
+msgid "Beta"
+msgstr "Beta"
 
 #: app/assets/javascripts/app/views/integration/ldap.jst.eco
 #: app/assets/javascripts/app/views/integration/ldap_wizard.jst.eco
@@ -2542,6 +2609,7 @@ msgid "Call from %s for %s"
 msgstr "Anruf von %s für %s"
 
 #: app/assets/javascripts/app/models/application.coffee
+#: app/assets/javascripts/app/views/whatsapp/account_webhook.jst.eco
 msgid "Callback URL"
 msgstr "Callback-URL"
 
@@ -2669,6 +2737,18 @@ msgstr "Externe Datenquelle %s kann nicht verarbeitet werden. %s"
 msgid "Cannot set online notifications as seen"
 msgstr "Online-Benachrichtigungen können nicht als gelesen markiert werden"
 
+#: app/assets/javascripts/app/controllers/ticket_zoom/article_new.coffee
+msgid "Cannot upload file"
+msgstr "Hochladen von Datei fehlgeschlagen"
+
+#: app/frontend/shared/form/validation/rules/captionLength.ts
+msgid "Caption for %s is not allowed. Please clear text!"
+msgstr ""
+
+#: app/frontend/shared/form/validation/rules/captionLength.ts
+msgid "Caption for %s length is too long. Maximum allowed characters are %s"
+msgstr ""
+
 #: app/assets/javascripts/app/controllers/knowledge_base/sidebar/categories.coffee
 msgid "Categories"
 msgstr "Kategorien"
@@ -2698,6 +2778,7 @@ msgstr "Zertifikate & private Schlüssel"
 #: app/assets/javascripts/app/views/generic/login_preview.jst.eco
 #: app/assets/javascripts/app/views/integration/exchange.jst.eco
 #: app/assets/javascripts/app/views/integration/ldap.jst.eco
+#: app/frontend/apps/desktop/components/Form/fields/FieldGroupPermissions/FieldGroupPermissionsInput.vue
 msgid "Change"
 msgstr "Ändern"
 
@@ -2809,6 +2890,10 @@ msgstr "Kanal - Twitter"
 #: db/seeds/permissions.rb
 msgid "Channel - Web"
 msgstr "Kanal - Web"
+
+#: db/seeds/permissions.rb
+msgid "Channel - WhatsApp"
+msgstr "Kanal - WhatsApp"
 
 #: app/assets/javascripts/app/views/dashboard/stats/ticket_channel_distribution.jst.eco
 msgid "Channel Distribution"
@@ -2938,6 +3023,7 @@ msgstr ""
 
 #: app/assets/javascripts/app/views/telegram/bot_add.jst.eco
 #: app/assets/javascripts/app/views/telegram/bot_edit.jst.eco
+#: app/assets/javascripts/app/views/whatsapp/account_phone_number.jst.eco
 msgid "Choose the group to which messages will get added."
 msgstr ""
 "Wählen Sie die Gruppe, in der die Nachrichten zugeordnet werden sollen."
@@ -3199,6 +3285,7 @@ msgstr "Konfiguration wurde geändert"
 #: app/assets/javascripts/app/views/integration/exchange_wizard.jst.eco
 #: app/assets/javascripts/app/views/integration/ldap_wizard.jst.eco
 #: app/controllers/first_steps_controller.rb
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/otrs.ts
 msgid "Configuration"
 msgstr "Konfiguration"
 
@@ -3394,6 +3481,8 @@ msgstr "Kontext"
 #: app/assets/javascripts/app/views/getting_started/email_notification.jst.eco
 #: app/assets/javascripts/app/views/integration/exchange_wizard.jst.eco
 #: app/assets/javascripts/app/views/integration/ldap_wizard.jst.eco
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupActionFooter.vue
+#: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSource.vue
 #: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupManual/GuidedSetupManualChannelEmail.vue
 #: app/frontend/apps/mobile/pages/ticket/views/TicketCreate.vue
 msgid "Continue"
@@ -3446,6 +3535,10 @@ msgstr "Kopieren"
 msgid "Copy current object number (e. g. Ticket#) to clipboard"
 msgstr "Kopiert aktuelle Objekt-Nummer (z. B. Ticket#) in Zwischenablage"
 
+#: app/assets/javascripts/app/views/whatsapp/account_webhook.jst.eco
+msgid "Copy to clipboard"
+msgstr "In die Zwischenablage kopieren"
+
 #: db/seeds/permissions.rb
 msgid "Core Workflow"
 msgstr "Core Workflow"
@@ -3467,6 +3560,10 @@ msgstr ""
 "Core Workflows sind Aktionen oder Einschränken für Formular-Auswahlen. Je "
 "nach Aktion ist es möglich, Felder zu verstecken, Felder einzuschränken oder "
 "die Verpflichtung zum Ausfüllen zu ändern."
+
+#: app/services/service/channel/whatsapp/base.rb
+msgid "Could not fetch WhatsApp phone number details."
+msgstr "Die Details der WhatsApp-Telefonnummer konnten nicht abgerufen werden."
 
 #: app/assets/javascripts/app/controllers/user/manage_two_factor.coffee
 msgid ""
@@ -3523,6 +3620,7 @@ msgstr "Land"
 #: app/assets/javascripts/app/views/profile/token_access.jst.eco
 #: app/assets/javascripts/app/views/translation/todo.jst.eco
 #: app/assets/javascripts/app/views/widget/shared_draft.jst.eco
+#: app/frontend/apps/desktop/components/Form/fields/FieldGroupPermissions/FieldGroupPermissionsInput.vue
 #: app/frontend/apps/mobile/pages/ticket/views/TicketCreate.vue
 msgid "Create"
 msgstr "Erstellen"
@@ -5060,6 +5158,7 @@ msgstr ""
 #: app/assets/javascripts/app/views/tag/table.jst.eco
 #: app/assets/javascripts/app/views/telegram/index.jst.eco
 #: app/assets/javascripts/app/views/twitter/list.jst.eco
+#: app/assets/javascripts/app/views/whatsapp/index.jst.eco
 #: app/assets/javascripts/app/views/widget/text_module.jst.eco
 #: app/frontend/apps/mobile/components/Form/fields/FieldFile/FieldFileInput.vue
 #: app/frontend/apps/mobile/pages/account/views/AccountAvatar.vue
@@ -5286,6 +5385,7 @@ msgstr "Richtung"
 #: app/assets/javascripts/app/views/profile/out_of_office.jst.eco
 #: app/assets/javascripts/app/views/telegram/index.jst.eco
 #: app/assets/javascripts/app/views/twitter/list.jst.eco
+#: app/assets/javascripts/app/views/whatsapp/index.jst.eco
 msgid "Disable"
 msgstr "Deaktivieren"
 
@@ -5386,6 +5486,11 @@ msgstr ""
 "Wollen Sie die Sichtbarkeit dieses Artikels wirklich auf \"öffentlich\" "
 "ändern?"
 
+#: app/assets/javascripts/app/controllers/ticket_zoom/article_action/whatsapp_reply.coffee
+#: lib/validations/ticket_article_validator/whatsapp_message.rb
+msgid "Document file"
+msgstr ""
+
 #: db/seeds/object_manager_attributes.rb
 msgid "Domain"
 msgstr "Domain"
@@ -5426,6 +5531,7 @@ msgid "Download %s"
 msgstr "%s herunterladen"
 
 #: app/assets/javascripts/app/views/import/otrs.jst.eco
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceOTRS.vue
 msgid "Download %s Migration Plugin"
 msgstr "Herunterladen des %s Migrations-Plugins"
 
@@ -5452,10 +5558,17 @@ msgid "Download all records"
 msgstr "Alle Einträge herunterladen"
 
 #: app/assets/javascripts/app/views/import/otrs.jst.eco
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceOTRS.vue
 msgid "Download and install the %s Migration Plugin on your %s instance."
 msgstr ""
 "Laden Sie das %s Migrations-Plugin herunter und installieren Sie es in Ihrer "
 "%s Instanz."
+
+#: app/assets/javascripts/app/controllers/ticket_zoom/article_view.coffee
+#, fuzzy
+#| msgid "select attachment…"
+msgid "Downloading attachments…"
+msgstr "Dateien wählen…"
 
 #: app/assets/javascripts/app/controllers/knowledge_base/content_can_be_published_form.coffee
 #: app/assets/javascripts/app/views/ticket_zoom/attribute_bar.jst.eco
@@ -5500,10 +5613,25 @@ msgstr "Duplikaterkennung"
 msgid "Duration"
 msgstr "Dauer"
 
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/otrs.ts
+msgid ""
+"Dynamic fields are not that common in Zammad, as we take a different "
+"approach to ticket attributes. Zammad also uses tags in addition to custom "
+"fields to classify tickets. This difference can create a new philosophy of "
+"your ticket attributes/tags compared to your current use of dynamic fields "
+"in OTRS."
+msgstr ""
+"Dynamische Felder sind in Zammad nicht üblich, da wir einen anderen Ansatz "
+"für Ticket-Attribute verfolgen. Zammad verwendet zusätzlich zu "
+"benutzerdefinierten Feldern auch Tags, um Tickets zu klassifizieren. Dieser "
+"Unterschied kann zu einer neuen Strukturierung Ihrer Ticket-Attribute/Tags "
+"im Vergleich zu Ihrer derzeitigen Verwendung in OTRS führen."
+
 #: app/assets/javascripts/app/models/user.coffee
 msgid "Easter holiday"
 msgstr "Osterferien"
 
+#: app/assets/javascripts/app/controllers/_channel/whatsapp.coffee
 #: app/assets/javascripts/app/controllers/organization_profile/action_row.coffee
 #: app/assets/javascripts/app/controllers/tag.coffee
 #: app/assets/javascripts/app/controllers/user_profile/action_row.coffee
@@ -5519,6 +5647,7 @@ msgstr "Osterferien"
 #: app/assets/javascripts/app/views/sla/index.jst.eco
 #: app/assets/javascripts/app/views/telegram/index.jst.eco
 #: app/assets/javascripts/app/views/twitter/list.jst.eco
+#: app/assets/javascripts/app/views/whatsapp/index.jst.eco
 #: app/assets/javascripts/app/views/widget/text_module.jst.eco
 #: app/frontend/apps/mobile/pages/home/views/Home.vue
 #: app/frontend/apps/mobile/pages/organization/views/OrganizationDetailView.vue
@@ -5619,6 +5748,8 @@ msgstr "Elasticsearch muss konfiguriert werden!"
 #: app/assets/javascripts/app/views/import/kayako.jst.eco
 #: app/assets/javascripts/app/views/import/zendesk.jst.eco
 #: app/frontend/apps/desktop/composables/authentication/useSignupForm.ts
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceKayako.vue
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceZendesk.vue
 #: app/frontend/shared/entities/ticket-article/action/plugins/email.ts
 #: db/seeds/object_manager_attributes.rb public/assets/form/form.js
 msgid "Email"
@@ -5751,6 +5882,7 @@ msgstr "Leer"
 #: app/assets/javascripts/app/views/profile/out_of_office.jst.eco
 #: app/assets/javascripts/app/views/telegram/index.jst.eco
 #: app/assets/javascripts/app/views/twitter/list.jst.eco
+#: app/assets/javascripts/app/views/whatsapp/index.jst.eco
 msgid "Enable"
 msgstr "Aktivieren"
 
@@ -6111,6 +6243,12 @@ msgstr "Geben Sie die Subdomain Ihrer %s-Instanz ein"
 msgid "Enter the URL of your %s system"
 msgstr "Geben Sie die URL Ihres %s-Systems ein"
 
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceFreshdesk.vue
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceKayako.vue
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceZendesk.vue
+msgid "Enter the URL of your %s system."
+msgstr "Geben Sie die URL Ihres %s-Systems ein."
+
 #: app/assets/javascripts/app/lib/app_post/two_factor_methods/authenticator_app.coffee
 #: app/frontend/shared/entities/two-factor/plugins/authenticator_app.ts
 msgid "Enter the code from your two-factor authenticator app."
@@ -6123,6 +6261,14 @@ msgid ""
 msgstr ""
 "Geben Sie den Link des Plugins ein, welches am Ende der Installation "
 "erscheint, um die beiden Systeme miteinander zu verbinden"
+
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceOTRS.vue
+msgid ""
+"Enter the link provided by the plugin at the end of the installation to link "
+"the two systems."
+msgstr ""
+"Geben Sie den Link ein, den das Plugin am Ende der Installation "
+"bereitstellt, um die beiden Systeme zu verknüpfen."
 
 #: app/assets/javascripts/app/views/widget/two_factor_configuration/authenticator_app.jst.eco
 msgid "Enter the security code generated by the authenticator app:"
@@ -6152,6 +6298,19 @@ msgstr ""
 msgid "Enter your %s App Keys"
 msgstr "Geben Sie Ihre %s App-Keys ein"
 
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceFreshdesk.vue
+msgid ""
+"Enter your Freshdesk API token gained from your account profile settings."
+msgstr ""
+"Geben Sie Ihr Freshdesk-API-Token ein, das Sie in den Einstellungen Ihres "
+"Kontos erhalten haben."
+
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceZendesk.vue
+msgid "Enter your Zendesk API token gained from your admin interface."
+msgstr ""
+"Geben Sie Ihr Zendesk-API-Token ein, das Sie über Ihre Verwaltungsoberfläche "
+"erhalten haben."
+
 #: app/assets/javascripts/app/views/profile/password.jst.eco
 msgid "Enter your current password, insert a new one and confirm it."
 msgstr ""
@@ -6173,6 +6332,22 @@ msgid ""
 msgstr ""
 "Geben Sie Ihre E-Mail-Adresse und den %s-API-Token ein, welchen Sie von "
 "Ihrem Admin-Interface erhalten haben."
+
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceKayako.vue
+msgid ""
+"Enter your email address from your Kayako account which should be used for "
+"the import."
+msgstr ""
+"Geben Sie die E-Mail-Adresse Ihres Kayako Kontos ein, die für den Import "
+"verwendet werden soll."
+
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceKayako.vue
+msgid ""
+"Enter your password from your Kayako account which should be used for the "
+"import."
+msgstr ""
+"Geben Sie Ihr Passwort von Ihrem Kayako Konto ein, das für den Import "
+"verwendet werden soll."
 
 #: app/assets/javascripts/app/controllers/admin_password_auth.coffee
 #: app/assets/javascripts/app/controllers/password_reset.coffee
@@ -6533,11 +6708,34 @@ msgstr "Feedback-Formular"
 msgid "File '%s' is uploading"
 msgstr "Datei '%s' wird hochgeladen"
 
+#: app/assets/javascripts/app/controllers/ticket_zoom/article_new.coffee
+#: lib/validations/ticket_article_validator/whatsapp_message.rb
+#, fuzzy
+#| msgid "No file formats allowed."
+msgid "File format is not allowed: %s"
+msgstr "Keine Dateiformate erlaubt."
+
+#: app/frontend/apps/mobile/components/Form/fields/FieldFile/composables/useInstantValidation.ts
+#: app/frontend/shared/form/validation/rules/fileSizes.ts
+msgid "File is too big. %s file has to be %s or smaller."
+msgstr ""
+
+#: app/assets/javascripts/app/controllers/ticket_zoom/article_new.coffee
+#: lib/validations/ticket_article_validator/whatsapp_message.rb
+#, fuzzy
+#| msgid "File too big, max. %s MB allowed."
+msgid "File is too big. %s has to be %s or smaller."
+msgstr "Die Datei ist zu groß, maximal %s MB sind zulässig."
+
 #: app/assets/javascripts/app/controllers/_settings/area_logo.coffee
 #: app/assets/javascripts/app/controllers/getting_started/base.coffee
 #: app/frontend/apps/desktop/components/Form/fields/FieldImageUpload/FieldImageUploadInput.vue
 msgid "File too big, max. %s MB allowed."
 msgstr "Die Datei ist zu groß, maximal %s MB sind zulässig."
+
+#: app/frontend/shared/form/validation/rules/fileSizes.ts
+msgid "Files are too big. %s"
+msgstr ""
 
 #: app/assets/javascripts/app/views/settings/storage_provider.jst.eco
 #: db/seeds/settings.rb
@@ -6566,11 +6764,16 @@ msgstr "Finden Sie, wonach Sie suchen. Z. B. \"such ausdruck\""
 msgid "Fingerprint"
 msgstr "Fingerabdruck"
 
+#: app/assets/javascripts/app/controllers/_channel/whatsapp.coffee
 #: app/assets/javascripts/app/views/dashboard/first_steps_clues_content.jst.eco
 #: app/assets/javascripts/app/views/getting_started/email_pre_configured.jst.eco
 #: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupManual/GuidedSetupManualChannelEmailPreConfigured.vue
 msgid "Finish"
 msgstr "Abschließen"
+
+#: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupManual/GuidedSetupManualInviteColleagues.vue
+msgid "Finish Setup"
+msgstr "Einrichtung beenden"
 
 #: lib/excel_sheet/ticket.rb
 msgid "First Response At"
@@ -6665,6 +6868,10 @@ msgstr "Fußzeilen-Menü"
 #: app/assets/javascripts/app/models/knowledge_base.coffee
 msgid "Footer Note"
 msgstr "Fußzeilen-Notiz"
+
+#: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceStart.vue
+msgid "For additional support, consult our migration guide."
+msgstr "Weitere Unterstützung finden Sie in unserem Migrationsleitfaden."
 
 #: app/assets/javascripts/app/views/dashboard.jst.eco
 msgid "For example, recently changed tickets, users, or organizations."
@@ -6777,6 +6984,7 @@ msgid "Frequency"
 msgstr "Frequenz"
 
 #: app/assets/javascripts/app/controllers/import_freshdesk.coffee
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/freshdesk.ts
 msgid "Freshdesk"
 msgstr "Freshdesk"
 
@@ -6810,6 +7018,7 @@ msgid "Frontend"
 msgstr "Frontend"
 
 #: app/assets/javascripts/app/models/group.coffee
+#: app/frontend/apps/desktop/components/Form/fields/FieldGroupPermissions/FieldGroupPermissionsInput.vue
 msgid "Full"
 msgstr "Voll"
 
@@ -6998,6 +7207,10 @@ msgstr "Zurück"
 msgid "Go home"
 msgstr "Zur Startseite"
 
+#: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceStatus.vue
+msgid "Go to Login"
+msgstr "Zum Login"
+
 #: lib/secure_mailing/pgp/incoming.rb
 msgid "Good signature"
 msgstr "Gültige Signatur"
@@ -7060,6 +7273,7 @@ msgstr "Begrüßung"
 #: app/assets/javascripts/app/views/telegram/index.jst.eco
 #: app/assets/javascripts/app/views/twitter/account_edit.jst.eco
 #: app/assets/javascripts/app/views/twitter/list.jst.eco
+#: app/assets/javascripts/app/views/whatsapp/index.jst.eco
 #: app/graphql/gql/types/overview_type.rb
 #: app/views/mailer/ticket_create/fr.html.erb
 #: app/views/mailer/ticket_create/zh-cn.html.erb
@@ -7142,6 +7356,9 @@ msgstr "Gruppierungs-Reihenfolge"
 #: app/assets/javascripts/app/views/import/freshdesk.jst.eco
 #: app/assets/javascripts/app/views/import/kayako.jst.eco
 #: app/assets/javascripts/app/views/import/zendesk.jst.eco
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/freshdesk.ts
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/kayako.ts
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/zendesk.ts
 #: db/seeds/permissions.rb
 msgid "Groups"
 msgstr "Gruppen"
@@ -7258,6 +7475,12 @@ msgstr "Hallo! Ich benötige Hilfe zu Ihrem Produkt."
 #: app/assets/javascripts/app/views/customer_chat/setting.jst.eco
 msgid "Hello, my name is %s, what can I do for you?"
 msgstr "Hallo, mein Name ist %s, wie kann ich Ihnen helfen?"
+
+#: app/jobs/scheduled_whatsapp_reminder_job.rb
+msgid ""
+"Hello, the customer service window for this conversation is about to expire, "
+"please reply to keep it open."
+msgstr ""
 
 #: app/assets/javascripts/app/controllers/_plugin/translation_support.coffee
 msgid "Help to improve Zammad!"
@@ -7424,6 +7647,10 @@ msgstr "Stunden"
 msgid "How can we help you? Search for an answer or a topic…"
 msgstr ""
 "Wie können wir Ihnen helfen? Suchen Sie nach einer Antwort oder einem Thema…"
+
+#: app/assets/javascripts/app/views/whatsapp/account_phone_number.jst.eco
+msgid "How can we help?"
+msgstr "Wie können wir helfen?"
 
 #: app/assets/javascripts/app/controllers/_dashboard/stats/ticket_waiting_time.coffee
 msgid ""
@@ -7663,6 +7890,13 @@ msgstr "Bild"
 msgid "Image Service"
 msgstr "Bilder-Service"
 
+#: app/assets/javascripts/app/controllers/ticket_zoom/article_action/whatsapp_reply.coffee
+#: lib/validations/ticket_article_validator/whatsapp_message.rb
+#, fuzzy
+#| msgid "Image Service"
+msgid "Image file"
+msgstr "Bilder-Service"
+
 #: app/frontend/apps/mobile/components/CommonFilePreview/CommonFilePreview.vue
 msgid "Image of %s"
 msgstr "Bild von %s"
@@ -7681,6 +7915,7 @@ msgstr "Bildvorschau"
 #: app/assets/javascripts/app/controllers/widget/import.coffee
 #: app/assets/javascripts/app/controllers/widget/import_result.coffee
 #: app/assets/javascripts/app/controllers/widget/import_try_result.coffee
+#: app/frontend/apps/desktop/pages/guided-setup/routes.ts
 msgid "Import"
 msgstr "Import"
 
@@ -7771,9 +8006,22 @@ msgstr ""
 "Normal importieren: |Benachrichtigungen werden gesendet| und die |Tickets "
 "sind offen| - Sie finden die Tickets in der Übersicht der offenen Tickets."
 
+#: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceStatus.vue
+msgid "Import finished successfully!"
+msgstr "Import erfolgreich abgeschlossen!"
+
 #: app/assets/javascripts/app/views/import/index.jst.eco
+#: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupImport/GuidedSetupImportSelection.vue
 msgid "Import from"
 msgstr "Importieren von"
+
+#: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSource.vue
+msgid "Import from %s"
+msgstr "Import von %s"
+
+#: app/frontend/apps/desktop/pages/guided-setup/routes.ts
+msgid "Import from Source"
+msgstr "Import aus Quelle"
 
 #: app/assets/javascripts/app/models/ticket_priority.coffee
 msgid "Important"
@@ -7887,6 +8135,16 @@ msgstr "Info: %s"
 msgid "Information"
 msgstr "Information"
 
+#: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceStart.vue
+msgid ""
+"Initiate the import process to transfer your data into Zammad. Keep track of "
+"the migration progress on this page, and we'll notify you as soon as the "
+"import is successfully finished."
+msgstr ""
+"Starten Sie den Importprozess, um Ihre Daten in Zammad zu übertragen. "
+"Verfolgen Sie den Fortschritt der Migration auf dieser Seite. Wir "
+"benachrichtigen Sie, sobald der Import erfolgreich abgeschlossen ist."
+
 #: app/models/store.rb
 msgid "Inline content could not be generated."
 msgstr "Der Inline-Inhalt konnte nicht generiert werden."
@@ -7950,6 +8208,12 @@ msgstr "Integer-Feld"
 msgid "Integrations"
 msgstr "Integrationen"
 
+#: lib/whatsapp/incoming/media.rb
+msgid "Integrity verification of the downloaded WhatsApp media failed."
+msgstr ""
+"Die Integritätsprüfung der heruntergeladenen WhatsApp-Medien ist "
+"fehlgeschlagen."
+
 #: app/assets/javascripts/app/controllers/knowledge_base/content_can_be_published_form.coffee
 #: app/assets/javascripts/app/controllers/knowledge_base/content_controller.coffee
 #: app/frontend/apps/mobile/pages/ticket/composable/useTicketEditForm.ts
@@ -8001,6 +8265,10 @@ msgstr "Ungültiges GraphQL-API-Token für GitLab"
 #: lib/gitlab/linked_issue.rb
 msgid "Invalid GitLab issue link format"
 msgstr "Ungültiges Format für GitLab Issue-Link"
+
+#: app/frontend/shared/form/validation/rules/captionLength.ts
+msgid "Invalid arguments for caption validation"
+msgstr ""
 
 #: app/services/service/system/run_auto_wizard.rb
 msgid "Invalid auto wizard file."
@@ -8104,6 +8372,7 @@ msgid "Invalid video URL"
 msgstr "Ungültige Video-URL"
 
 #: app/assets/javascripts/app/controllers/getting_started/agent.coffee
+#: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupManual/GuidedSetupManualInviteColleagues.vue
 msgid "Invitation sent!"
 msgstr "Einladung versendet!"
 
@@ -8156,6 +8425,8 @@ msgstr "Agenten einladen"
 
 #: app/assets/javascripts/app/controllers/_dashboard/first_steps.coffee
 #: app/assets/javascripts/app/views/getting_started/agent.jst.eco
+#: app/frontend/apps/desktop/pages/guided-setup/routes.ts
+#: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupManual/GuidedSetupManualInviteColleagues.vue
 msgid "Invite Colleagues"
 msgstr "Kollegen einladen"
 
@@ -8252,6 +8523,10 @@ msgid ""
 "Just click into the highlighted area and update the words right there. Enjoy!"
 msgstr ""
 "Einfach in die Markierung klicken und den Text direkt bearbeiten. Viel Spaß!"
+
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/kayako.ts
+msgid "Kayako"
+msgstr "Kayako"
 
 #: app/assets/javascripts/app/controllers/_channel/email.coffee
 #: app/assets/javascripts/app/controllers/_channel/google.coffee
@@ -8485,6 +8760,7 @@ msgid "Link"
 msgstr "Link"
 
 #: app/assets/javascripts/app/views/import/otrs.jst.eco
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceOTRS.vue
 msgid "Link %s"
 msgstr "%s-Verbindung"
 
@@ -8871,6 +9147,24 @@ msgstr "Mai"
 msgid "Me"
 msgstr "Ich"
 
+#: app/frontend/apps/mobile/pages/ticket/components/TicketDetailView/ArticleWhatsappMediaBadge.vue
+#, fuzzy
+#| msgid "Download all records"
+msgid "Media Download Error"
+msgstr "Alle Einträge herunterladen"
+
+#: app/frontend/apps/mobile/pages/ticket/components/TicketDetailView/ArticleWhatsappMediaBadge.vue
+#, fuzzy
+#| msgid "Loading failed, please try again later."
+msgid "Media download failed. Please try again later."
+msgstr "Laden fehlgeschlagen, bitte versuchen Sie es später erneut."
+
+#: app/frontend/apps/mobile/pages/ticket/components/TicketDetailView/ArticleWhatsappMediaBadge.vue
+#, fuzzy
+#| msgid "Decryption was successful."
+msgid "Media download was successful."
+msgstr "Die Entschlüsselung war erfolgreich."
+
 #: app/assets/javascripts/app/views/organization_profile/object.jst.eco
 #: app/assets/javascripts/app/views/popover/organization.jst.eco
 #: app/assets/javascripts/app/views/widget/organization.jst.eco
@@ -8918,6 +9212,7 @@ msgid "Message for login page."
 msgstr "Nachricht für die Login-Seite."
 
 #: app/assets/javascripts/app/views/telegram/index.jst.eco
+#: app/assets/javascripts/app/views/whatsapp/index.jst.eco
 msgid "Messages"
 msgstr "Nachrichten"
 
@@ -8985,6 +9280,7 @@ msgid "Migrate now!"
 msgstr "Jetzt migrieren!"
 
 #: app/assets/javascripts/app/views/import/otrs.jst.eco
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceOTRSDownloadButtons.vue
 msgid "Migration Plugin for %s"
 msgstr "Migrations-Plugin für %s"
 
@@ -9019,6 +9315,10 @@ msgstr "Minute(n)"
 #: app/assets/javascripts/app/views/generic/timeplan.jst.eco
 msgid "Minutes"
 msgstr "Minuten"
+
+#: lib/whatsapp/webhook/payload.rb
+msgid "Mismatching phone number id."
+msgstr "Nicht übereinstimmende ID der Telefonnummer."
 
 #: app/assets/javascripts/app/views/channel/chat.jst.eco
 #: db/seeds/object_manager_attributes.rb
@@ -9075,6 +9375,11 @@ msgstr "Monat(e)"
 #: app/assets/javascripts/app/views/dashboard/stats/ticket_escalation.jst.eco
 msgid "Mood"
 msgstr "Stimmung"
+
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceFreshdesk.vue
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceZendesk.vue
+msgid "More information can be found here."
+msgstr "Weitere Informationen finden Sie hier."
 
 #: app/models/user.rb
 msgid "More than 250 secondary organizations are not allowed."
@@ -9256,6 +9561,7 @@ msgid "Need 'form_id' to add attachments to new form."
 msgstr "Benötigt 'form_id', um Anhänge zu einem neuen Formular hinzuzufügen."
 
 #: app/controllers/concerns/creates_ticket_articles.rb
+#: lib/validations/ticket_article_validator/default.rb
 msgid "Need at least an 'article body' field."
 msgstr "Mindestens ein Feld \"Artikeltext\" ist erforderlich."
 
@@ -9293,6 +9599,7 @@ msgstr "Netzwerk"
 
 #: app/assets/javascripts/app/controllers/_channel/_email_filter.coffee
 #: app/assets/javascripts/app/controllers/_channel/_email_signature.coffee
+#: app/assets/javascripts/app/controllers/_channel/whatsapp.coffee
 #: app/assets/javascripts/app/controllers/_default_navbar.coffee
 #: app/assets/javascripts/app/views/channel/email_account_overview.jst.eco
 #: app/assets/javascripts/app/views/channel/sms_account_overview.jst.eco
@@ -9412,6 +9719,10 @@ msgstr "Neue Version"
 msgid "New Webhook"
 msgstr "Neuer Webhook"
 
+#: lib/whatsapp/webhook/message.rb
+msgid "New WhatsApp message from %s"
+msgstr "Neue WhatsApp-Nachricht von %s"
+
 #: app/assets/javascripts/app/controllers/core_workflow.coffee
 msgid "New Workflow"
 msgstr "Neuer Workflow"
@@ -9495,6 +9806,7 @@ msgstr ""
 msgid "New user?"
 msgstr "Neuer Benutzer?"
 
+#: app/assets/javascripts/app/controllers/_channel/whatsapp.coffee
 #: app/assets/javascripts/app/controllers/webhook.coffee
 #: app/assets/javascripts/app/controllers/widget/two_factor_configuration/modal/password_check.coffee
 #: app/assets/javascripts/app/controllers/widget/two_factor_configuration/modal/security_keys.coffee
@@ -9640,6 +9952,10 @@ msgstr "Es wurde kein Filter konfiguriert."
 msgid "No folders were found for the given user credentials."
 msgstr "Keine Ordner für die übermittelten Benutzer-Zugangsdaten gefunden."
 
+#: app/services/service/system/import/check_status.rb
+msgid "No import in progress."
+msgstr "Kein Import im Gange."
+
 #: app/assets/javascripts/app/controllers/ticket_zoom/sidebar_git_issue.coffee
 msgid "No linked issues"
 msgstr "Keine verknüpften Issues"
@@ -9663,6 +9979,10 @@ msgstr "Kein Proxy für die folgenden Hosts."
 #: app/controllers/users_controller.rb
 msgid "No record found!"
 msgstr "Kein Eintrag gefunden!"
+
+#: lib/whatsapp/webhook/message/status.rb
+msgid "No related article found to process the status message on."
+msgstr ""
 
 #: app/assets/javascripts/app/lib/base/jquery.textmodule.js
 #: app/frontend/apps/desktop/components/CommonSelect/CommonSelect.vue
@@ -9936,8 +10256,17 @@ msgid "OK, I've saved my recovery codes"
 msgstr "Ja, ich habe meine Wiederherstellungs-Codes gesichert"
 
 #: app/assets/javascripts/app/controllers/import_otrs.coffee
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/otrs.ts
 msgid "OTRS"
 msgstr "OTRS"
+
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/otrs.ts
+msgid ""
+"OTRS BPM processes can't get imported into Zammad since we currently don't "
+"support this kind of workflows."
+msgstr ""
+"OTRS-BPM-Prozesse können nicht in Zammad importiert werden, da wir diese Art "
+"von Workflows derzeit nicht unterstützen."
 
 #: app/assets/javascripts/app/models/core_workflow.coffee
 #: app/assets/javascripts/app/models/job.coffee
@@ -10002,6 +10331,16 @@ msgstr "Online-Formulare"
 #: db/seeds/settings.rb
 msgid "Online Service"
 msgstr "Online-Dienst"
+
+#: lib/validations/ticket_article_validator/whatsapp_message.rb
+#, fuzzy
+#| msgid "%s attached files"
+msgid "Only %s attachment allowed"
+msgstr "%s anhängende Dateien"
+
+#: app/assets/javascripts/app/controllers/ticket_zoom/article_new.coffee
+msgid "Only %s attachment allowed."
+msgstr ""
 
 #: app/assets/javascripts/app/views/translation/support.jst.eco
 msgid ""
@@ -10071,6 +10410,10 @@ msgid "Oops.. I'm sorry, but you have insufficient rights to open this %s."
 msgstr ""
 "Ups. Entschuldigung, aber Sie haben nicht genug Rechte um folgendes zu "
 "öffnen: %s."
+
+#: app/frontend/shared/form/i18n/locales.ts
+msgid "Open"
+msgstr "Öffnen"
 
 #: app/frontend/apps/mobile/components/CommonFilePreview/CommonFilePreview.vue
 msgid "Open %s"
@@ -10222,6 +10565,9 @@ msgstr ""
 #: app/assets/javascripts/app/views/import/freshdesk.jst.eco
 #: app/assets/javascripts/app/views/import/kayako.jst.eco
 #: app/assets/javascripts/app/views/import/zendesk.jst.eco
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/freshdesk.ts
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/kayako.ts
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/zendesk.ts
 #: app/frontend/apps/mobile/pages/search/plugins/organization.ts
 #: db/seeds/permissions.rb
 msgid "Organizations"
@@ -10298,6 +10644,7 @@ msgstr "Veralteter Browser"
 #: app/assets/javascripts/app/controllers/overview.coffee
 #: app/assets/javascripts/app/models/group.coffee
 #: app/assets/javascripts/app/models/user_overview_sorting.coffee
+#: app/frontend/apps/desktop/components/Form/fields/FieldGroupPermissions/FieldGroupPermissionsInput.vue
 msgid "Overview"
 msgstr "Übersicht"
 
@@ -10412,6 +10759,7 @@ msgstr "Übergeordnete Gruppe"
 #: app/frontend/apps/desktop/entities/channel-email/composables/useEmailOutboundForm.ts
 #: app/frontend/apps/desktop/pages/authentication/views/Login.vue
 #: app/frontend/apps/desktop/pages/authentication/views/PasswordResetVerify.vue
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceKayako.vue
 #: app/frontend/apps/mobile/pages/authentication/components/LoginCredentialsForm.vue
 #: db/seeds/object_manager_attributes.rb db/seeds/permissions.rb
 msgid "Password"
@@ -10558,6 +10906,15 @@ msgstr "Telefon (ausgehend)"
 msgid "Phone Extension to Agent Mapping"
 msgstr "Zuordnung von Telefon-Extension zu Agent"
 
+#: app/assets/javascripts/app/views/whatsapp/account_phone_number.jst.eco
+msgid "Phone number"
+msgstr "Telefonnummer"
+
+#: app/models/channel/area/whatsapp.rb
+msgid "Phone number is already in use by another WhatsApp account."
+msgstr ""
+"Die Telefonnummer wird bereits von einem anderen WhatsApp Konto verwendet."
+
 #: app/assets/javascripts/app/views/profile/token_access.jst.eco
 msgid "Pick a name for the application, and we'll give you a unique token."
 msgstr ""
@@ -10616,6 +10973,10 @@ msgstr ""
 "Mail nicht sehen, überprüfen Sie andere Orte, an denen sie sich befinden "
 "könnte, z. B. Ihren Junk-, Spam-, Social- oder andere Ordner."
 
+#: app/services/service/system/import/run.rb
+msgid "Please configure import source before running."
+msgstr "Bitte konfigurieren Sie die Importquelle vor der Ausführung."
+
 #: app/assets/javascripts/app/controllers/_profile/out_of_office.coffee
 msgid "Please contact your administrator."
 msgstr "Bitte kontaktieren Sie Ihren Administrator."
@@ -10663,6 +11024,12 @@ msgstr "Bitte füllen Sie alle Felder aus"
 #: app/services/service/system/set_system_information.rb
 msgid "Please include a valid url."
 msgstr "Bitte fügen Sie eine gültige URL ein."
+
+#: app/services/service/system/import/apply_otrs_configuration.rb
+msgid "Please install the OTRS migrator plugin and provide a valid URL."
+msgstr ""
+"Bitte installieren Sie das OTRS-Migrator-Plugin und geben Sie eine gültige "
+"URL an."
 
 #: db/seeds/settings.rb
 msgid ""
@@ -11018,6 +11385,7 @@ msgid "Raw"
 msgstr "Rohdaten"
 
 #: app/assets/javascripts/app/models/group.coffee
+#: app/frontend/apps/desktop/components/Form/fields/FieldGroupPermissions/FieldGroupPermissionsInput.vue
 msgid "Read"
 msgstr "Lesen"
 
@@ -11248,12 +11616,19 @@ msgstr "Vertreter"
 #: app/frontend/shared/entities/ticket-article/action/plugins/sms.ts
 #: app/frontend/shared/entities/ticket-article/action/plugins/telegram.ts
 #: app/frontend/shared/entities/ticket-article/action/plugins/twitter.ts
+#: app/frontend/shared/entities/ticket-article/action/plugins/whatsapp.ts
 msgid "Reply"
 msgstr "Antworten"
 
 #: app/frontend/shared/entities/ticket-article/action/plugins/email.ts
 msgid "Reply All"
 msgstr "Allen antworten"
+
+#: lib/validations/ticket_article_validator/whatsapp_message.rb
+#, fuzzy
+#| msgid "Conditions for shown tickets"
+msgid "Reply allowed only for open tickets"
+msgstr "Bedingungen für angezeigte Tickets"
 
 #: app/assets/javascripts/app/controllers/_plugin/keyboard_shortcuts.coffee
 msgid "Reply to last article"
@@ -11498,8 +11873,18 @@ msgid "Retry"
 msgstr "Erneut versuchen"
 
 #: app/assets/javascripts/app/views/ticket_zoom/article_view.jst.eco
+#, fuzzy
+#| msgid "Add attachment option to upload."
+msgid "Retry attachment download"
+msgstr "Hinzufügen einer Option für Anhänge."
+
+#: app/assets/javascripts/app/views/ticket_zoom/article_view.jst.eco
 msgid "Retry security process"
 msgstr "Sicherheitsprozess erneut versuchen"
+
+#: lib/whatsapp/retry/media.rb
+msgid "Retrying to download the sent media via WhatsApp failed."
+msgstr ""
 
 #: app/assets/javascripts/app/views/twitter/account_edit.jst.eco
 #: app/assets/javascripts/app/views/twitter/list.jst.eco
@@ -11681,6 +12066,7 @@ msgstr "SSL-Zertifikate"
 #: app/assets/javascripts/app/views/integration/ldap_ssl_verify_row.jst.eco
 #: app/frontend/apps/desktop/entities/channel-email/composables/useEmailInboundForm.ts
 #: app/frontend/apps/desktop/entities/channel-email/composables/useEmailOutboundForm.ts
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceOTRS.vue
 msgid "SSL verification"
 msgstr "SSL-Verifizierung"
 
@@ -11750,6 +12136,7 @@ msgstr "Codes speichern"
 msgid "Save Draft"
 msgstr "Entwurf speichern"
 
+#: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSource.vue
 #: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupManual/GuidedSetupManualChannelEmail.vue
 #: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupManual/GuidedSetupManualEmailNotification.vue
 #: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupManual/GuidedSetupManualSystemInformation.vue
@@ -12134,6 +12521,10 @@ msgstr "Senden"
 msgid "Send Email"
 msgstr "E-Mail versenden"
 
+#: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupManual/GuidedSetupManualInviteColleagues.vue
+msgid "Send Invitation"
+msgstr "Einladung versenden"
+
 #: app/assets/javascripts/app/controllers/_channel/email.coffee
 #: app/assets/javascripts/app/controllers/getting_started/channel_email.coffee
 #: app/assets/javascripts/app/controllers/getting_started/email_notification.coffee
@@ -12144,6 +12535,12 @@ msgstr "Verschickt E-Mails über"
 #: app/assets/javascripts/app/views/maintenance.jst.eco
 msgid "Send a message to all logged in users."
 msgstr "Eine Nachricht an alle angemeldeten Benutzer senden."
+
+#: app/assets/javascripts/app/views/whatsapp/account_phone_number.jst.eco
+msgid ""
+"Send out automatic reminders to customers asking them for reply if the 24-"
+"hour window is about to expire."
+msgstr ""
 
 #: db/seeds/settings.rb
 msgid "Send postmaster mail if mail too large"
@@ -12822,6 +13219,18 @@ msgstr "Standard-Gruppe/Pool für Tickets."
 msgid "Start Editing"
 msgstr "Bearbeitung starten"
 
+#: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceStart.vue
+msgid "Start Import"
+msgstr "Import starten"
+
+#: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceStart.vue
+msgid "Start Import from %s"
+msgstr "Import von %s starten"
+
+#: app/frontend/apps/desktop/pages/guided-setup/routes.ts
+msgid "Start Import from Source"
+msgstr "Import aus Quelle starten"
+
 #: app/assets/javascripts/app/views/channel/form.jst.eco
 msgid "Start modal dialog for form."
 msgstr "Modal-Dialog für Formular starten."
@@ -12864,6 +13273,10 @@ msgstr "Zammad wird gestartet"
 msgid "Starting Zammad…"
 msgstr "Zammad wird gestartet…"
 
+#: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceStatus.vue
+msgid "Starting import…"
+msgstr "Import startet…"
+
 #: app/assets/javascripts/app/views/translation/index.jst.eco
 msgid ""
 "Starting with Zammad 5.1, translations can be contributed exclusively via "
@@ -12904,6 +13317,10 @@ msgstr "Status"
 msgid "Status Code:"
 msgstr "Status-Code:"
 
+#: app/frontend/apps/desktop/pages/guided-setup/routes.ts
+msgid "Status Import"
+msgstr "Import-Status"
+
 #: app/assets/javascripts/app/views/profile/calendar_subscriptions.jst.eco
 msgid "Status Type"
 msgstr "Status-Typ"
@@ -12921,6 +13338,31 @@ msgstr "Tab beibehalten"
 #: app/frontend/apps/mobile/components/CommonStepper/CommonStepperStep.vue
 msgid "Step %s is completed"
 msgstr "Schritt %s wurde fertiggestellt"
+
+#: app/assets/javascripts/app/views/whatsapp/account_cloud_api.jst.eco
+msgid "Step 1 of 3: WhatsApp Business Cloud API"
+msgstr "Schritt 1 von 3: WhatsApp Business Cloud API"
+
+#: app/assets/javascripts/app/views/whatsapp/account_phone_number.jst.eco
+msgid "Step 2 of 3: WhatsApp Business Phone Number"
+msgstr "Schritt 2 von 3: WhatsApp Business Telefonnummer"
+
+#: app/assets/javascripts/app/views/whatsapp/account_webhook.jst.eco
+msgid "Step 3 of 3: WhatsApp Business Webhook"
+msgstr "Schritt 3 von 3: WhatsApp Business Webhook"
+
+#: app/frontend/shared/utils/files.ts
+#, fuzzy
+#| msgid "ticket"
+msgid "Sticker"
+msgstr "Ticket"
+
+#: app/assets/javascripts/app/controllers/ticket_zoom/article_action/whatsapp_reply.coffee
+#: lib/validations/ticket_article_validator/whatsapp_message.rb
+#, fuzzy
+#| msgid "Ticket title"
+msgid "Sticker file"
+msgstr "Ticket-Titel"
 
 #: app/assets/javascripts/app/models/core_workflow.coffee
 msgid "Stop after match"
@@ -13135,6 +13577,10 @@ msgstr "Nutze \"Reply-To\"-Feld als Absender einer E-Mail."
 msgid "Target"
 msgstr "Ziel"
 
+#: app/assets/javascripts/app/views/whatsapp/account_phone_number.jst.eco
+msgid "Target Group"
+msgstr "Gruppe"
+
 #: app/assets/javascripts/app/controllers/_channel/telegram.coffee
 #: app/assets/javascripts/app/views/telegram/index.jst.eco
 #: app/frontend/shared/entities/ticket-article/action/plugins/telegram.ts
@@ -13265,6 +13711,18 @@ msgstr "Text Bausteine sind …"
 msgid "Text needed"
 msgstr "Text benötigt"
 
+#: app/frontend/shared/form/validation/rules/contentRequired.ts
+#, fuzzy
+#| msgid "at least one letter is required"
+msgid "Text or Attachment is required."
+msgstr "mindestens ein Buchstabe ist erforderlich"
+
+#: lib/validations/ticket_article_validator/whatsapp_message.rb
+#, fuzzy
+#| msgid "at least one letter is required"
+msgid "Text or attachment is required"
+msgstr "mindestens ein Buchstabe ist erforderlich"
+
 #: app/assets/javascripts/app/views/translation/index.jst.eco
 msgid "Text with disabled inline translations looks like"
 msgstr "Text mit deaktivierter Inline-Übersetzung sieht wie folgend aus"
@@ -13291,6 +13749,13 @@ msgstr "Vielen Dank und Willkommen. Eine E-Mail wurde an \"%s\" gesendet."
 msgid "The 'gpg-agent' process could not be stopped."
 msgstr "Der 'gpg-agent'-Prozess konnte nicht beendet werden."
 
+#: app/assets/javascripts/app/controllers/ticket_zoom/channel.coffee
+#: app/frontend/shared/entities/ticket/channel/plugins/whatsapp.ts
+msgid ""
+"The 24 hour customer service window is now closed, no further WhatsApp "
+"messages can be sent."
+msgstr ""
+
 #: app/controllers/user_access_token_controller.rb
 msgid "The API token could not be found."
 msgstr "Das API-Token konnte nicht gefunden werden."
@@ -13302,6 +13767,16 @@ msgstr "Die Knowledge Base konnte nicht erzeugt werden."
 #: app/services/service/avatar/image_validate.rb
 msgid "The MIME type of the image is invalid."
 msgstr "Der MIME-Typ des Bildes ist ungültig."
+
+#: app/graphql/gql/queries/system/import/state.rb
+msgid "The OTRS import failed."
+msgstr "Der OTRS-Import ist fehlgeschlagen."
+
+#: app/services/service/system/import/apply_otrs_configuration.rb
+msgid "The OTRS migrator plugin is not accessable. Please verify the API key."
+msgstr ""
+"Kein Zugriff auf das OTRS-Migrator-Plugin. Bitte überprüfen Sie den API-"
+"Schlüssel."
 
 #: lib/secure_mailing/pgp/tool/error.rb
 msgid "The PGP email recipient is invalid."
@@ -13382,6 +13857,27 @@ msgstr "Die URL dieser Installation von Zammad."
 #: app/assets/javascripts/app/views/getting_started/base.jst.eco
 msgid "The URL to this installation of Zammad."
 msgstr "Die URL Ihres Zammad-Systems."
+
+#: lib/whatsapp/webhook/configuration.rb
+msgid "The WhatsApp channel webhook configuration could not be verified."
+msgstr ""
+"Die Webhook-Konfiguration des WhatsApp-Kanals konnte nicht überprüft werden."
+
+#: app/assets/javascripts/app/controllers/_channel/whatsapp.coffee
+msgid "The WhatsApp connection could not be saved."
+msgstr "Die WhatsApp-Verbindung konnte nicht gespeichert werden."
+
+#: lib/whatsapp/webhook/concerns/has_channel.rb
+msgid "The WhatsApp webhook channel could not be found."
+msgstr "Der WhatsApp-Webhook-Kanal konnte nicht gefunden werden."
+
+#: lib/whatsapp/webhook/payload.rb
+msgid "The WhatsApp webhook payload could not be processed."
+msgstr "Die Nutzlast des WhatsApp-Webhooks konnte nicht verarbeitet werden."
+
+#: lib/whatsapp/webhook/payload.rb
+msgid "The WhatsApp webhook payload could not be validated."
+msgstr "Die Nutzlast des WhatsApp-Webhooks konnte nicht validiert werden."
 
 #: app/controllers/reports_controller.rb
 msgid "The active reporting profile could not be found."
@@ -13588,7 +14084,12 @@ msgstr "Die Verbindung zum Server wurde verloren."
 
 #: app/controllers/import_freshdesk_controller.rb
 #: app/controllers/import_otrs_controller.rb
-#: app/controllers/import_zendesk_controller.rb lib/email_helper/probe.rb
+#: app/controllers/import_zendesk_controller.rb
+#: app/services/service/system/import/apply_freshdesk_configuration.rb
+#: app/services/service/system/import/apply_kayako_configuration.rb
+#: app/services/service/system/import/apply_otrs_configuration.rb
+#: app/services/service/system/import/apply_zendesk_configuration.rb
+#: lib/email_helper/probe.rb
 msgid "The connection was refused."
 msgstr "Die Verbindung wurde abgelehnt."
 
@@ -13642,6 +14143,22 @@ msgid ""
 msgstr ""
 "Der verschlüsselte Teil dieser PGP-E-Mail hat gemäß RFC 3156 einen "
 "ungültigen MIME-Typ."
+
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceZendesk.vue
+msgid ""
+"The entered email and API token will become your Zammad login credentials "
+"after the import is completed."
+msgstr ""
+"Die eingegebene E-Mail-Adresse und das API-Token werden nach Abschluss des "
+"Imports zu Ihren Zugangsdaten für Zammad."
+
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceKayako.vue
+msgid ""
+"The entered email and password will become your Zammad login credentials "
+"after the import is completed."
+msgstr ""
+"Die eingegebene E-Mail-Adresse und das Passwort werden nach Abschluss des "
+"Imports zu Ihren Zugangsdaten für Zammad."
 
 #: app/assets/javascripts/app/views/microsoft365/user_mismatch.jst.eco
 msgid ""
@@ -13700,10 +14217,21 @@ msgstr ""
 msgid "The format of the subject."
 msgstr "Das Format für den Betreff."
 
+#: lib/whatsapp/retry/media.rb
+#, fuzzy
+#| msgid "This article is not part of the ticket."
+msgid "The given article is not a media article."
+msgstr "Dieser Artikel gehört nicht zum Ticket."
+
 #: app/controllers/import_freshdesk_controller.rb
 #: app/controllers/import_kayako_controller.rb
 #: app/controllers/import_otrs_controller.rb
-#: app/controllers/import_zendesk_controller.rb lib/email_helper/probe.rb
+#: app/controllers/import_zendesk_controller.rb
+#: app/services/service/system/import/apply_freshdesk_configuration.rb
+#: app/services/service/system/import/apply_kayako_configuration.rb
+#: app/services/service/system/import/apply_otrs_configuration.rb
+#: app/services/service/system/import/apply_zendesk_configuration.rb
+#: lib/email_helper/probe.rb
 msgid "The hostname could not be found."
 msgstr "Der Hostname konnte nicht gefunden werden."
 
@@ -13881,6 +14409,9 @@ msgstr "Die angegebene URL ist ungültig."
 #: app/controllers/import_freshdesk_controller.rb
 #: app/controllers/import_kayako_controller.rb
 #: app/controllers/import_zendesk_controller.rb
+#: app/services/service/system/import/apply_freshdesk_configuration.rb
+#: app/services/service/system/import/apply_kayako_configuration.rb
+#: app/services/service/system/import/apply_zendesk_configuration.rb
 msgid "The provided credentials are invalid."
 msgstr "Die angegebenen Zugangsdaten sind ungültig."
 
@@ -13988,6 +14519,10 @@ msgstr "Der erforderliche Parameter \"method\" fehlt."
 msgid "The required parameter \"payload\" is missing."
 msgstr "Der erforderliche Parameter \"payload\" fehlt."
 
+#: lib/whatsapp/client.rb
+msgid "The required parameter 'access_token' is missing."
+msgstr "Der erforderliche Parameter 'access_token' fehlt."
+
 #: lib/external_credential/facebook.rb
 msgid "The required parameter 'application_id' is missing."
 msgstr "Der erforderliche Parameter 'application_id' fehlt."
@@ -13999,6 +14534,10 @@ msgstr "Der erforderliche Parameter 'application_secret' fehlt."
 #: app/controllers/channels_sms_controller.rb
 msgid "The required parameter 'area' is missing."
 msgstr "Der erforderliche Parameter 'area' fehlt."
+
+#: lib/whatsapp/account/phone_numbers.rb
+msgid "The required parameter 'business_id' is missing."
+msgstr "Der erforderliche Parameter 'business_id' fehlt."
 
 #: lib/external_credential/exchange.rb lib/external_credential/google.rb
 #: lib/external_credential/microsoft365.rb
@@ -14132,6 +14671,12 @@ msgstr ""
 "Der erforderliche Wert external_credential konnte nicht im Cache gefunden "
 "werden."
 
+#: app/controllers/ticket_articles_controller.rb
+#, fuzzy
+#| msgid "The retried security process failed!"
+msgid "The retried attachment download failed."
+msgstr "Der erneute Versuch des Sicherheitsprozesses ist fehlgeschlagen!"
+
 #: app/assets/javascripts/app/controllers/ticket_zoom/article_view.coffee
 #: app/frontend/apps/mobile/pages/ticket/components/TicketDetailView/ArticleSecurityBadge.vue
 msgid "The retried security process failed!"
@@ -14140,6 +14685,12 @@ msgstr "Der erneute Versuch des Sicherheitsprozesses ist fehlgeschlagen!"
 #: app/frontend/shared/form/i18n/locales.ts
 msgid "The selected date is invalid."
 msgstr "Das ausgewählte Datum ist ungültig."
+
+#: app/services/service/system/import/apply_configuration_base.rb
+msgid "The server presented a certificate that could not be verified."
+msgstr ""
+"Der Server hat ein Zertifikat bereitgestellt, das nicht verifiziert werden "
+"konnte."
 
 #: app/assets/javascripts/app/controllers/_channel/email.coffee
 #: app/assets/javascripts/app/controllers/getting_started/channel_email.coffee
@@ -14419,7 +14970,12 @@ msgstr ""
 
 #: app/controllers/import_freshdesk_controller.rb
 #: app/controllers/import_otrs_controller.rb
-#: app/controllers/import_zendesk_controller.rb lib/email_helper/probe.rb
+#: app/controllers/import_zendesk_controller.rb
+#: app/services/service/system/import/apply_freshdesk_configuration.rb
+#: app/services/service/system/import/apply_kayako_configuration.rb
+#: app/services/service/system/import/apply_otrs_configuration.rb
+#: app/services/service/system/import/apply_zendesk_configuration.rb
+#: lib/email_helper/probe.rb
 msgid "There is no route to this host."
 msgstr "Es existiert keine Route zu diesem Host."
 
@@ -14542,6 +15098,12 @@ msgstr "Diese Funktion ist nicht aktiviert."
 #: config/initializers/activemodel_error.rb
 msgid "This field %s"
 msgstr "Dieses Feld %s"
+
+#: app/frontend/apps/mobile/components/Form/fields/FieldFile/features/multipleFilesError.ts
+#, fuzzy
+#| msgid "This field can only contain lowercase letters."
+msgid "This field allows only one file."
+msgstr "Dieses Feld darf nur Kleinbuchstaben enthalten."
 
 #: app/frontend/shared/form/i18n/locales.ts
 msgid "This field can only contain alphabetical characters."
@@ -14856,6 +15418,12 @@ msgstr ""
 msgid "This system is configured for automated setup."
 msgstr "Dieses System ist für die automatische Einrichtung konfiguriert."
 
+#: app/assets/javascripts/app/views/whatsapp/account_phone_number.jst.eco
+msgid ""
+"This text will be sent as an immediate reply to new incoming WhatsApp "
+"messages."
+msgstr ""
+
 #: app/assets/javascripts/app/views/widget/mention.jst.eco
 msgid "This user has no access and will not receive notifications."
 msgstr ""
@@ -15029,6 +15597,10 @@ msgstr "Ticket-Priorität"
 #: app/assets/javascripts/app/models/sla.coffee
 msgid "Ticket Selector"
 msgstr "Ticket-Auswahl"
+
+#: app/assets/javascripts/app/views/whatsapp/account_phone_number.jst.eco
+msgid "Ticket Settings"
+msgstr "Ticket-Einstellungen"
 
 #: app/assets/javascripts/app/controllers/ticket_state.coffee
 msgid "Ticket State"
@@ -15270,6 +15842,10 @@ msgstr "Ticket-ID"
 #: app/assets/javascripts/app/views/import/kayako.jst.eco
 #: app/assets/javascripts/app/views/import/otrs.jst.eco
 #: app/assets/javascripts/app/views/import/zendesk.jst.eco
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/freshdesk.ts
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/kayako.ts
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/otrs.ts
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/zendesk.ts
 #: app/frontend/apps/mobile/pages/search/plugins/ticket.ts
 #: app/frontend/apps/mobile/pages/ticket/routes.ts
 #: app/frontend/apps/mobile/pages/ticket/views/TicketOverview.vue
@@ -15473,6 +16049,10 @@ msgstr ""
 "Um %s für das Übermitteln von HTTP-Anfragen an %s zu aktivieren, muss eine "
 "zugehörige \"notification rule\" in %s eingerichtet werden."
 
+#: app/assets/javascripts/app/views/whatsapp/account_phone_number.jst.eco
+msgid "To find out more about the 24-hour customer service window see %l."
+msgstr ""
+
 #: app/frontend/apps/mobile/pages/account/views/AccountOverview.vue
 msgid ""
 "To install %s as an app, press the %s \"Share\" button and then the %s \"Add "
@@ -15653,6 +16233,7 @@ msgstr "Eine andere Methode verwenden"
 
 #: app/frontend/apps/desktop/pages/authentication/views/PasswordReset.vue
 #: app/frontend/apps/mobile/pages/ticket/components/TicketDetailView/ArticleSecurityBadge.vue
+#: app/frontend/apps/mobile/pages/ticket/components/TicketDetailView/ArticleWhatsappMediaBadge.vue
 msgid "Try again"
 msgstr "Erneut versuchen"
 
@@ -15836,6 +16417,10 @@ msgstr ""
 msgid "Type"
 msgstr "Typ"
 
+#: app/frontend/apps/mobile/components/Form/fields/FieldFile/composables/useInstantValidation.ts
+msgid "Type %s is not supported."
+msgstr ""
+
 #: app/assets/javascripts/app/views/ticket_zoom/sidebar_idoit.jst.eco
 msgid "Type:"
 msgstr "Typ:"
@@ -15856,6 +16441,7 @@ msgstr "UID Attribut-Name"
 #: app/assets/javascripts/app/views/knowledge_base/public_menu_form_item.jst.eco
 #: app/assets/javascripts/app/views/profile/calendar_subscriptions.jst.eco
 #: app/assets/javascripts/app/views/widget/http_log_show.jst.eco
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSourceOTRS.vue
 msgid "URL"
 msgstr "URL"
 
@@ -15916,6 +16502,18 @@ msgstr "Als Standard entfernen"
 #: app/frontend/apps/mobile/pages/ticket/components/TicketDetailView/TicketActionsDialog.vue
 msgid "Unsubscribe"
 msgstr "Abbestellen"
+
+#: lib/whatsapp/webhook/payload.rb
+msgid "Unsupported message type."
+msgstr "Nicht unterstützter Nachrichtentyp."
+
+#: lib/whatsapp/webhook/payload.rb
+msgid "Unsupported subscription type."
+msgstr "Nicht unterstützter Subscription-Typ."
+
+#: lib/whatsapp/webhook/payload.rb
+msgid "Unsupported webhook payload."
+msgstr "Nicht unterstützte Webhook-Nutzlast."
 
 #: app/assets/javascripts/app/views/translation/support.jst.eco
 msgid ""
@@ -16375,6 +16973,10 @@ msgstr "Benutzername für Verbindung zum Proxy."
 #: app/assets/javascripts/app/views/import/kayako.jst.eco
 #: app/assets/javascripts/app/views/import/otrs.jst.eco
 #: app/assets/javascripts/app/views/import/zendesk.jst.eco
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/freshdesk.ts
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/kayako.ts
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/otrs.ts
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/zendesk.ts
 #: app/frontend/apps/mobile/pages/search/plugins/user.ts db/seeds/groups.rb
 #: db/seeds/permissions.rb
 msgid "Users"
@@ -16460,6 +17062,10 @@ msgstr "Verifizierungs-E-Mail konnte im Postfach nicht gefunden werden."
 msgid "Verification email could not be sent."
 msgstr "Die Verifizierungs-E-Mail konnte nicht gesendet werden."
 
+#: app/assets/javascripts/app/views/whatsapp/account_webhook.jst.eco
+msgid "Verify Token"
+msgstr "Token verifizieren"
+
 #: app/assets/javascripts/app/views/channel/email_account_wizard.jst.eco
 #: app/assets/javascripts/app/views/getting_started/email.jst.eco
 msgid "Verify sending and receiving"
@@ -16469,6 +17075,10 @@ msgstr "Verifiziere Senden und Empfangen"
 #: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupManual/GuidedSetupManualEmailNotification.vue
 msgid "Verifying and saving your configuration…"
 msgstr "Überprüfen und Speichern Ihrer Konfiguration…"
+
+#: app/frontend/apps/desktop/pages/guided-setup/views/GuidedSetupImport/GuidedSetupImportSource/GuidedSetupImportSource.vue
+msgid "Verifying and saving your import configuration…"
+msgstr "Überprüfen und Speichern Ihrer Importkonfiguration…"
 
 #: app/assets/javascripts/app/views/widget/two_factor_login/security_keys.jst.eco
 #: app/frontend/shared/entities/two-factor/plugins/security_keys.ts
@@ -16499,6 +17109,13 @@ msgstr "Version"
 
 #: app/assets/javascripts/app/controllers/_ui_element/richtext_additions/embed_video_button.coffee
 msgid "Video"
+msgstr "Video"
+
+#: app/assets/javascripts/app/controllers/ticket_zoom/article_action/whatsapp_reply.coffee
+#: lib/validations/ticket_article_validator/whatsapp_message.rb
+#, fuzzy
+#| msgid "Video"
+msgid "Video file"
 msgstr "Video"
 
 #: app/assets/javascripts/app/controllers/api.coffee
@@ -16773,6 +17390,7 @@ msgid "Welcome Title shown on the closed chat. Can contain HTML."
 msgstr "Willkommens-Titel des geschlossenen Chats. Kann HTML enthalten."
 
 #: app/assets/javascripts/app/views/telegram/bot_add.jst.eco
+#: app/assets/javascripts/app/views/whatsapp/account_phone_number.jst.eco
 msgid "Welcome message"
 msgstr "Willkommens-Nachricht"
 
@@ -16810,6 +17428,23 @@ msgstr "Welche Werte von %s für Organisationen zu übernehmen sind."
 #: app/assets/javascripts/app/views/integration/clearbit.jst.eco
 msgid "What values of %s should be synced to users."
 msgstr "Welche Werte von %s für Benutzer zu übernehmen sind."
+
+#: app/assets/javascripts/app/controllers/_channel/whatsapp.coffee
+#: app/assets/javascripts/app/views/whatsapp/index.jst.eco
+msgid "WhatsApp"
+msgstr "WhatsApp"
+
+#: app/assets/javascripts/app/controllers/_channel/whatsapp.coffee
+msgid "WhatsApp Account"
+msgstr "WhatsApp Konto"
+
+#: app/assets/javascripts/app/views/whatsapp/account_cloud_api.jst.eco
+msgid "WhatsApp Business Account ID"
+msgstr "WhatsApp Business Konto ID"
+
+#: app/frontend/shared/entities/ticket-article/action/plugins/whatsapp.ts
+msgid "Whatsapp"
+msgstr "Whatsapp"
 
 #: app/assets/javascripts/app/models/trigger.coffee
 msgid ""
@@ -17023,6 +17658,10 @@ msgstr ""
 "Sie können %s mit Zammad verbinden. Dazu müssen Sie Ihr Zammad zuerst mit %s "
 "verbinden."
 
+#: app/assets/javascripts/app/views/whatsapp/index.jst.eco
+msgid "You can connect WhatsApp Business Accounts with Zammad."
+msgstr "Sie können WhatsApp Business Konten mit Zammad verbinden."
+
 #: app/assets/javascripts/app/models/overview.coffee
 msgid ""
 "You can create **overviews** for your agents and your customers. These have "
@@ -17083,6 +17722,9 @@ msgstr ""
 #: app/assets/javascripts/app/views/pre_defined_webhook.jst.eco
 #: app/assets/javascripts/app/views/telegram/bot_add.jst.eco
 #: app/assets/javascripts/app/views/twitter/app_config.jst.eco
+#: app/assets/javascripts/app/views/whatsapp/account_cloud_api.jst.eco
+#: app/assets/javascripts/app/views/whatsapp/account_phone_number.jst.eco
+#: app/assets/javascripts/app/views/whatsapp/account_webhook.jst.eco
 #: app/assets/javascripts/app/views/widget/payload_example.jst.eco
 msgid ""
 "You can find a tutorial on how to manage a %s in our online documentation %l."
@@ -17177,6 +17819,7 @@ msgstr ""
 "führen. Bitte prüfen Sie Ihre Bedingungen vor dem Speichern."
 
 #: app/controllers/import_freshdesk_controller.rb
+#: app/services/service/system/import/apply_freshdesk_configuration.rb
 msgid "You do not have administrator permission."
 msgstr "Sie haben keine Administrator-Berechtigung."
 
@@ -17184,6 +17827,13 @@ msgstr "Sie haben keine Administrator-Berechtigung."
 msgid "You don't have the necessary permissions to access this page."
 msgstr ""
 "Sie besitzen nicht die notwendigen Berechtigungen, um diese Seite aufzurufen."
+
+#: app/assets/javascripts/app/controllers/ticket_zoom/channel.coffee
+#: app/frontend/shared/entities/ticket/channel/plugins/whatsapp.ts
+msgid ""
+"You have a 24 hour window to send WhatsApp messages in this conversation. "
+"The customer service window closes %s."
+msgstr ""
 
 #: app/frontend/shared/components/Form/fields/FieldEditor/FieldEditorFooter.vue
 msgid "You have exceeded the character limit by %s"
@@ -17481,6 +18131,7 @@ msgstr ""
 "Informationen."
 
 #: app/assets/javascripts/app/controllers/import_zendesk.coffee
+#: app/frontend/apps/desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/zendesk.ts
 msgid "Zendesk"
 msgstr "Zendesk"
 
@@ -18535,6 +19186,7 @@ msgstr "Option entfernen"
 #: app/assets/javascripts/app/controllers/ticket_zoom/article_action/sms_reply.coffee
 #: app/assets/javascripts/app/controllers/ticket_zoom/article_action/telegram.coffee
 #: app/assets/javascripts/app/controllers/ticket_zoom/article_action/twitter_reply.coffee
+#: app/assets/javascripts/app/controllers/ticket_zoom/article_action/whatsapp_reply.coffee
 msgid "reply"
 msgstr "antworten"
 
@@ -18796,6 +19448,10 @@ msgstr "Web"
 msgid "welcome message"
 msgstr "Willkommens-Nachricht"
 
+#: db/seeds/ticket_article_types.rb
+msgid "whatsapp message"
+msgstr "Whatsapp-Nachricht"
+
 #: app/assets/javascripts/app/views/object_manager/index.jst.eco
 msgid "will be created"
 msgstr "wird erstellt"
@@ -18871,6 +19527,9 @@ msgstr "…des gesamten Textfelds"
 msgid "∅ Waiting time today"
 msgstr "∅ Wartezeit heute"
 
+#~ msgid "Have a nice day!"
+#~ msgstr "Einen schönen Tag!"
+
 #~ msgid "archive"
 #~ msgstr "archiviert"
 
@@ -18885,9 +19544,6 @@ msgstr "∅ Wartezeit heute"
 
 #~ msgid "Invalid!"
 #~ msgstr "Ungültig!"
-
-#~ msgid "The uploaded image could not be processed."
-#~ msgstr "Das hochgeladene Bild konnte nicht verarbeitet werden."
 
 #~ msgid "should look like this: https://zammad.example.com"
 #~ msgstr "sollte wie folgt aussehen: https://zammad.example.com"
@@ -19086,9 +19742,6 @@ msgstr "∅ Wartezeit heute"
 #~ msgid "Invalid payload, need data:image in logo param"
 #~ msgstr ""
 #~ "Ungültiger Datentyp, \"data:image\" wird im \"logo\"-Parameter benötigt"
-
-#~ msgid "The raw logo could not be read."
-#~ msgstr "Das Original-Logo konnte nicht gelesen werden."
 
 #~ msgid "skip"
 #~ msgstr "überspringen"
@@ -19386,9 +20039,6 @@ msgstr "∅ Wartezeit heute"
 #~ msgid "The full-size image is invalid."
 #~ msgstr "Das Bild in voller Größe ist ungültig."
 
-#~ msgid "Copied to clipboard!"
-#~ msgstr "In Zwischenablage kopiert!"
-
 #~ msgid "Copy to clipboard: Ctrl+C, Enter"
 #~ msgstr "In die Zwischenablage kopieren: Strg+C, Return"
 
@@ -19434,9 +20084,6 @@ msgstr "∅ Wartezeit heute"
 #~ "Übermitteln der Client Auswertung an einen zentralen Server um Fehler zu "
 #~ "beseitigen und die Benutzbarkeit zu erhöhen."
 
-#~ msgid "Cannot upload file"
-#~ msgstr "Hochladen von Datei fehlgeschlagen"
-
 #~ msgid "Could not find active reporting profile."
 #~ msgstr "Konnte kein aktives Berichts-Profil finden."
 
@@ -19481,9 +20128,6 @@ msgstr "∅ Wartezeit heute"
 
 #~ msgid "Min. one match rule needed!"
 #~ msgstr "Mindestens eine Regel erforderlich!"
-
-#~ msgid "No filter."
-#~ msgstr "Kein Filter."
 
 #~ msgid "Set"
 #~ msgstr "Einstellen"

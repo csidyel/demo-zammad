@@ -18,6 +18,7 @@ class Ticket::Article < ApplicationModel
   include Ticket::Article::EnqueueCommunicateSmsJob
   include Ticket::Article::EnqueueCommunicateTelegramJob
   include Ticket::Article::EnqueueCommunicateTwitterJob
+  include Ticket::Article::EnqueueCommunicateWhatsappJob
   include Ticket::Article::HasTicketContactAttributesImpact
   include Ticket::Article::ResetsTicketState
   include Ticket::Article::TriggersSubscriptions
@@ -26,6 +27,7 @@ class Ticket::Article < ApplicationModel
   include Ticket::Article::AddsMetadataOriginById
   include Ticket::Article::AddsMetadataGeneral
   include Ticket::Article::AddsMetadataEmail
+  include Ticket::Article::AddsMetadataWhatsapp
 
   include HasTransactionDispatcher
 
@@ -46,6 +48,8 @@ class Ticket::Article < ApplicationModel
   validates :ticket_id, presence: true
   validates :type_id, presence: true
   validates :sender_id, presence: true
+
+  validates_with Validations::TicketArticleValidator
 
   sanitized_html :body
 

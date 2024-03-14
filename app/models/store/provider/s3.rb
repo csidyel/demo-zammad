@@ -19,6 +19,8 @@ module Store::Provider::S3
     end
 
     def client
+      Certificate::ApplySSLCertificates.ensure_fresh_ssl_context
+
       @client.presence ||
         (Store::Provider::S3::Config.apply && @client = Aws::S3::Client.new)
     end
@@ -31,7 +33,7 @@ module Store::Provider::S3
 
     def get(sha)
       object = request(:get_object, key: sha)
-      object.body.read
+      object.body.binmode.read
     end
 
     def upload(data, sha)

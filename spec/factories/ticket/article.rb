@@ -290,6 +290,109 @@ FactoryBot.define do
       end
     end
 
+    factory :whatsapp_article do
+      inbound
+
+      transient do
+        type_name          { 'whatsapp message' }
+        channel            { Channel.find(ticket.preferences[:channel_id]) }
+        from_phone_number  { Faker::PhoneNumber.cell_phone_in_e164 }
+        from_name          { Faker::Name.unique.name }
+        timestamp_incoming { Time.zone.now.to_i.to_s }
+      end
+
+      ticket factory: %i[whatsapp_ticket]
+      to { "#{channel.options[:name]} (#{channel.options[:phone_number]})" }
+      subject { nil }
+      body { Faker::Lorem.sentence }
+      content_type { 'text/plain' }
+
+      before(:create) do |_article, context|
+        next if context.sender_name == 'Agent' && context.ticket.preferences[:whatsapp].present?
+
+        context.ticket.preferences.tap do |p|
+          p['whatsapp'] = {
+            from:               {
+              phone_number: context.from_phone_number.delete('+'),
+              display_name: context.from_name,
+            },
+            timestamp_incoming: context.timestamp_incoming,
+          }
+        end
+        context.ticket.title = "New WhatsApp message from #{context.from_name} (#{context.from_phone_number})"
+        context.ticket.save!
+      end
+
+      trait :inbound do
+        transient do
+          sender_name { 'Customer' }
+        end
+
+        message_id { "wamid.#{Faker::Number.unique.number}" }
+        from { "#{from_name} (#{from_phone_number})" }
+        created_by_id { ticket.customer_id } # NB: influences the value for the from field!
+
+        preferences do
+          {
+            whatsapp: {
+              entry_id:   channel[:options][:phone_number_id],
+              message_id: message_id,
+            }
+          }
+        end
+      end
+
+      trait :pending_delivery do
+        transient do
+          sender_name { 'Agent' }
+        end
+
+        preferences { {} }
+
+        created_by_id { create(:agent).id } # NB: influences the value for the from field!
+        in_reply_to { "wamid.#{Faker::Number.unique.number}" }
+      end
+
+      trait :outbound do
+        pending_delivery
+
+        message_id { "wamid.#{Faker::Number.unique.number}" }
+
+        preferences do
+          {
+            delivery_retry:          1,
+            whatsapp:                {
+              message_id:,
+            },
+            delivery_status_message: nil,
+            delivery_status:         'success',
+            delivery_status_date:    Time.current,
+          }
+        end
+      end
+
+      trait :with_attachment_media_document do
+        after(:create) do |article, _context|
+          create(:store,
+                 object:      article.class.name,
+                 o_id:        article.id,
+                 data:        Faker::Lorem.unique.sentence,
+                 filename:    'test.txt',
+                 preferences: { 'Content-Type' => 'text/plain' })
+
+          article.preferences.tap do |prefs|
+            prefs['whatsapp'] = {
+              entry_id:   Faker::Number.unique.number.to_s,
+              message_id: "wamid.#{Faker::Number.unique.number}",
+              type:       'document',
+              media_id:   Faker::Number.unique.number.to_s
+            }
+          end
+          article.save!
+        end
+      end
+    end
+
     factory :telegram_article do
       inbound
 
@@ -456,6 +559,30 @@ FactoryBot.define do
                data:        context.attachment.read,
                filename:    File.basename(context.attachment.path),
                preferences: {})
+      end
+    end
+
+    trait :with_prepended_attachment do
+      transient do
+        attachment            { File.open('spec/fixtures/files/upload/hello_world.txt') }
+        override_content_type { nil }
+        attachments_count     { 1 }
+      end
+
+      after(:build) do |article, context|
+        filename     = File.basename(context.attachment.path)
+        content_type = context.override_content_type || MIME::Types.type_for(filename).first&.content_type
+
+        attachments = []
+
+        context.attachments_count.times do
+          attachments << create(:store,
+                                data:        context.attachment.read,
+                                filename:    filename,
+                                preferences: { 'Content-Type' => content_type })
+        end
+
+        article.attachments = attachments
       end
     end
 

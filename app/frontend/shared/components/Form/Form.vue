@@ -118,12 +118,7 @@ export interface Props {
   ) => Promise<void | (() => void)> | void | (() => void)
 }
 
-// Zammad currently expects formIds to be BigInts. Maybe convert to UUIDs later.
-// const formId = `form-${getUuid()}`
-
-// This is the formId generation logic from the legacy desktop app.
-let formId = new Date().getTime() + Math.floor(Math.random() * 99999).toString()
-formId = formId.substr(formId.length - 9, 9)
+const formId = getUuid()
 
 const props = withDefaults(defineProps<Props>(), {
   schema: () => {
@@ -969,13 +964,15 @@ const buildStaticSchema = () => {
     }
 
     if ('isGroupOrList' in node && node.isGroupOrList) {
+      const nodeId = `${node.name}-${formId}`
+
       return {
         $cmp: 'FormKit',
         ...(node.if && { if: node.if }),
         props: {
           type: node.type,
           name: node.name,
-          id: node.name,
+          id: nodeId,
           key: node.name,
           plugins: node.plugins,
         },

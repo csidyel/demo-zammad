@@ -2,11 +2,15 @@
 
 class Channel < ApplicationModel
   include Channel::Assets
+  include Channel::Area::Whatsapp
 
   belongs_to :group, optional: true
 
   store :options
   store :preferences
+
+  scope :active, -> { where(active: true) }
+  scope :in_area, ->(area) { where(area: area) }
 
   validates_with Validations::EmailAccountUniquenessValidator
 
@@ -171,7 +175,7 @@ stream all accounts
         if @@channel_stream[channel_id].blank? && @@channel_stream_started_till_at[channel_id].present?
           wait_in_seconds = @@channel_stream_started_till_at[channel_id] - (Time.zone.now - local_delay_before_reconnect.seconds)
           if wait_in_seconds.positive?
-            logger.info "skipp channel (#{channel_id}) for streaming, already tried to connect or connection was active within the last #{local_delay_before_reconnect} seconds - wait another #{wait_in_seconds} seconds"
+            logger.info "skip channel (#{channel_id}) for streaming, already tried to connect or connection was active within the last #{local_delay_before_reconnect} seconds - wait another #{wait_in_seconds} seconds"
             next
           end
         end
@@ -256,20 +260,33 @@ send via account
 
     driver_class    = self.class.driver_class(adapter)
     driver_instance = driver_class.new
-    result = driver_instance.send(adapter_options, params, notification)
+    result = driver_instance.deliver(adapter_options, params, notification)
     self.status_out   = 'ok'
     self.last_log_out = ''
     save!
 
     result
   rescue => e
-    error = "Can't use Channel::Driver::#{adapter.to_classname}: #{e.inspect}"
-    logger.error error
-    logger.error e
-    self.status_out = 'error'
-    self.last_log_out = error
+    handle_delivery_error!(e, adapter)
+  end
+
+  def handle_delivery_error!(error, adapter)
+    message = "Can't use Channel::Driver::#{adapter.to_classname}: #{error.inspect}"
+
+    if error.respond_to?(:retryable?) && !error.retryable?
+      self.status_out = 'ok'
+      self.last_log_out = ''
+    else
+      logger.error message
+      logger.error error
+
+      self.status_out = 'error'
+      self.last_log_out = error
+    end
+
     save!
-    raise error
+
+    raise DeliveryError.new(message, error)
   end
 
 =begin
@@ -358,4 +375,19 @@ get instance of channel driver
     EmailAddress.channel_cleanup
   end
 
+  class DeliveryError < StandardError
+    attr_reader :original_error
+
+    def initialize(message, original_error)
+      super(message)
+
+      @original_error = original_error
+    end
+
+    def retryable?
+      return true if !original_error.respond_to?(:retryable?)
+
+      original_error.retryable?
+    end
+  end
 end

@@ -69,6 +69,8 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
       expect(json_response['updated_by_id']).to eq(agent.id)
       expect(json_response['created_by_id']).to eq(agent.id)
 
+      ticket.articles.reload
+
       expect(ticket.articles.count).to eq(3)
       expect(ticket.articles[0].attachments.count).to eq(0)
       expect(ticket.articles[1].attachments.count).to eq(0)
@@ -99,6 +101,8 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
       expect(json_response['content_type']).to eq('text/html')
       expect(json_response['updated_by_id']).to eq(agent.id)
       expect(json_response['created_by_id']).to eq(agent.id)
+
+      ticket.articles.reload
 
       expect(ticket.articles.count).to eq(4)
       expect(ticket.articles[0].attachments.count).to eq(0)
@@ -211,6 +215,8 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
       expect(json_response['updated_by_id']).to eq(customer.id)
       expect(json_response['created_by_id']).to eq(customer.id)
 
+      ticket.articles.reload
+
       ticket = Ticket.find(json_response['ticket_id'])
       expect(ticket.articles.count).to eq(3)
       expect(ticket.articles[2].sender.name).to eq('Customer')
@@ -236,6 +242,8 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
       expect(json_response['updated_by_id']).to eq(customer.id)
       expect(json_response['created_by_id']).to eq(customer.id)
 
+      ticket.articles.reload
+
       ticket = Ticket.find(json_response['ticket_id'])
       expect(ticket.articles.count).to eq(4)
       expect(ticket.articles[3].sender.name).to eq('Customer')
@@ -253,6 +261,9 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
         sender:    Ticket::Article::Sender.find_by(name: 'Agent'),
         type:      Ticket::Article::Type.find_by(name: 'note'),
       )
+
+      ticket.articles.reload
+
       expect(ticket.articles.count).to eq(5)
       expect(ticket.articles[4].sender.name).to eq('Agent')
       expect(ticket.articles[4].updated_by_id).to eq(1)
@@ -393,7 +404,7 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
              })
 
       params = {
-        form_id: 'new_form_id123',
+        form_id: 'b47ea422-1b96-49db-8399-aeffaa0e3fc9',
       }
       authenticated_as(agent)
       post "/api/v1/ticket_attachment_upload_clone_by_article/#{article.id}", params: params, as: :json
@@ -462,7 +473,7 @@ AAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO
              })
 
       params = {
-        form_id: 'new_form_id123',
+        form_id: 'b47ea422-1b96-49db-8399-aeffaa0e3fc9',
       }
       authenticated_as(agent)
       post "/api/v1/ticket_attachment_upload_clone_by_article/#{article.id}", params: params, as: :json

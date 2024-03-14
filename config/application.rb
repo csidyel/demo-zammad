@@ -12,25 +12,15 @@ Bundler.setup
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
-# EmailAddress gem clashes with EmailAddress model.
-# https://github.com/afair/email_address#namespace-conflict-resolution
-EmailAddressValidator = EmailAddress
-Object.send(:remove_const, :EmailAddress)
-
-# Only load gems for asset compilation if they are needed to avoid
-#   having unneeded runtime dependencies like NodeJS.
-if ArgvHelper.argv.any? { |e| e.start_with? 'assets:' } || Rails.groups.exclude?('production')
-  Bundler.load.current_dependencies.select do |dep|
-    require dep.name if dep.groups.include?(:assets)
-  end
+# Initializers for before the app gets set up.
+Pathname(__dir__).glob('pre_initializers/*.rb').each do |file|
+  require file
 end
-
-Zammad::SafeMode.hint
 
 module Zammad
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
-    config.load_defaults 6.1
+    config.load_defaults 7.0
 
     Rails.autoloaders.each do |autoloader|
       autoloader.ignore            "#{config.root}/app/frontend"
