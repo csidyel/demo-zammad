@@ -30,6 +30,8 @@ global_job_config:
       value: test
     - name: Z_LOCALES
       value: 'en-us:de-de'
+    - name: TZ
+      value: Europe/London
     - name: CI_SKIP_ASSETS_PRECOMPILE
       value: 'true'
     - name: CI_SKIP_DB_RESET
