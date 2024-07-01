@@ -2,6 +2,7 @@
 
 <script setup lang="ts">
 import { computed, type HTMLAttributes } from 'vue'
+
 import { type Props as IconProps } from '#shared/components/CommonIcon/CommonIcon.vue'
 import { useLocaleStore } from '#shared/stores/locale.ts'
 
@@ -35,7 +36,7 @@ const iconProps = computed<IconProps | null>(() => {
     :is="link ? 'CommonLink' : 'button'"
     :link="link"
     :external="link && linkExternal"
-    class="cursor-pointer border-b border-white/10 last:border-0 px-3 first:pt-1 last:pb-1"
+    class="cursor-pointer border-b border-white/10 px-3 first:pt-1 last:border-0 last:pb-1"
     data-test-id="section-menu-link"
   >
     <div

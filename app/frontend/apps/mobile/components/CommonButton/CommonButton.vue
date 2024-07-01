@@ -1,21 +1,15 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { startCase } from 'lodash-es'
-import type { ButtonVariant } from '#shared/components/Form/fields/FieldButton/types.ts'
+import { computed } from 'vue'
 
-interface Props {
-  form?: string
-  type?: 'button' | 'reset' | 'submit'
-  disabled?: boolean
-  variant?: ButtonVariant
-  transparentBackground?: boolean
-}
+import type { CommonButtonProps } from '#mobile/components/CommonButton/types.ts'
 
-const props = withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<CommonButtonProps>(), {
   type: 'button',
   variant: 'secondary',
+  size: 'medium',
 })
 
 const transparentBackgroundClasses = computed(() => {
@@ -40,6 +34,26 @@ const variantClasses = computed(() => {
       return ['bg-gray-500', 'text-white']
   }
 })
+
+const sizeClasses = computed(() => {
+  switch (props.size) {
+    case 'small':
+      return ['btn-sm', 'text-sm']
+    case 'medium':
+    default:
+      return ['btn-md', 'text-base']
+  }
+})
+
+const iconSizeClass = computed(() => {
+  switch (props.size) {
+    case 'small':
+      return 'tiny'
+    case 'medium':
+    default:
+      return 'small'
+  }
+})
 </script>
 
 <template>
@@ -47,15 +61,41 @@ const variantClasses = computed(() => {
     :type="type"
     :form="form"
     :disabled="disabled"
+    class="inline-flex flex-shrink-0 flex-nowrap items-center justify-center gap-x-1 border-0"
     :class="[
       ...transparentBackgroundClasses,
       ...variantClasses,
+      ...sizeClasses,
       {
         'opacity-50': disabled,
       },
     ]"
-    class="text-base"
   >
-    <slot>{{ $t(startCase(variant)) }}</slot>
+    <CommonIcon
+      v-if="prefixIcon"
+      class="shrink-0"
+      decorative
+      :size="iconSizeClass"
+      :name="prefixIcon"
+    />
+
+    <CommonIcon
+      v-if="icon"
+      class="shrink-0"
+      :size="iconSizeClass"
+      decorative
+      :name="icon"
+    />
+    <span v-else class="truncate"
+      ><slot>{{ $t(startCase(variant)) }}</slot></span
+    >
+
+    <CommonIcon
+      v-if="suffixIcon"
+      class="shrink-0"
+      decorative
+      :size="iconSizeClass"
+      :name="suffixIcon"
+    />
   </button>
 </template>

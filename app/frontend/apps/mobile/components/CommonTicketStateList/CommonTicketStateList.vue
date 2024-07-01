@@ -3,6 +3,7 @@
 <script setup lang="ts">
 import { TicketState } from '#shared/entities/ticket/types.ts'
 import { replaceTags } from '#shared/utils/formatter.ts'
+
 import CommonSectionMenu from '../CommonSectionMenu/CommonSectionMenu.vue'
 import CommonSectionMenuLink from '../CommonSectionMenu/CommonSectionMenuLink.vue'
 
@@ -56,7 +57,7 @@ const getTicketsLink = (stateIds: number[]) => {
     </CommonSectionMenuLink>
     <CommonLink
       v-if="createLink && createLabel"
-      class="flex min-h-[54px] items-center justify-center gap-2 text-blue"
+      class="text-blue flex min-h-[54px] items-center justify-center gap-2"
       :link="createLink"
     >
       <CommonIcon name="add" size="tiny" decorative />

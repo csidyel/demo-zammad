@@ -4,8 +4,8 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { useApplicationStore } from '#shared/stores/application.ts'
 import QueryHandler from '#shared/server/apollo/handler/QueryHandler.ts'
+import { useApplicationStore } from '#shared/stores/application.ts'
 
 import { useEmailAddressesQuery } from '#desktop/entities/email-addresses/graphql/queries/emailAddresses.api.ts'
 
@@ -60,7 +60,7 @@ const finish = () => {
     </CommonLabel>
 
     <ul
-      class="text-sm dark:text-neutral-400 text-gray-100 gap-1 list-disc ltr:ml-5 rtl:mr-5"
+      class="list-disc gap-1 text-sm text-gray-100 ltr:ml-5 rtl:mr-5 dark:text-neutral-400"
     >
       <li v-for="address in emailAddresses" :key="address.email">
         {{ address.name }} &lt;{{ address.email }}&gt;

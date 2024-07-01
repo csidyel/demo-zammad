@@ -3,31 +3,34 @@
 <script setup lang="ts">
 import { computed, ref, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useAuthenticationStore } from '#shared/stores/authentication.ts'
-import UserError from '#shared/errors/UserError.ts'
+
+import CommonLabel from '#shared/components/CommonLabel/CommonLabel.vue'
+import CommonLink from '#shared/components/CommonLink/CommonLink.vue'
 import Form from '#shared/components/Form/Form.vue'
-import { useApplicationStore } from '#shared/stores/application.ts'
 import type {
   FormSubmitData,
   FormSchemaField,
   FormValues,
 } from '#shared/components/Form/types.ts'
 import { useForm } from '#shared/components/Form/useForm.ts'
-import { useThirdPartyAuthentication } from '#shared/composables/authentication/useThirdPartyAuthentication.ts'
-import CommonLabel from '#shared/components/CommonLabel/CommonLabel.vue'
-import CommonLink from '#shared/components/CommonLink/CommonLink.vue'
-import CommonButton from '#desktop/components/CommonButton/CommonButton.vue'
-import LoginThirdParty from '#desktop/pages/authentication/components/LoginThirdParty.vue'
-import LayoutPublicPage from '#desktop/components/layout/LayoutPublicPage/LayoutPublicPage.vue'
-import CommonPublicLinks from '#desktop/components/CommonPublicLinks/CommonPublicLinks.vue'
-import { EnumPublicLinksScreen } from '#shared/graphql/types.ts'
-import type { LoginCredentials } from '#shared/entities/two-factor/types.ts'
 import useLoginTwoFactor from '#shared/composables/authentication/useLoginTwoFactor.ts'
+import { useThirdPartyAuthentication } from '#shared/composables/authentication/useThirdPartyAuthentication.ts'
+import type { LoginCredentials } from '#shared/entities/two-factor/types.ts'
+import UserError from '#shared/errors/UserError.ts'
+import { EnumPublicLinksScreen } from '#shared/graphql/types.ts'
+import { useApplicationStore } from '#shared/stores/application.ts'
+import { useAuthenticationStore } from '#shared/stores/authentication.ts'
+
+import CommonButton from '#desktop/components/CommonButton/CommonButton.vue'
+import CommonPublicLinks from '#desktop/components/CommonPublicLinks/CommonPublicLinks.vue'
+import LayoutPublicPage from '#desktop/components/layout/LayoutPublicPage/LayoutPublicPage.vue'
+import LoginThirdParty from '#desktop/pages/authentication/components/LoginThirdParty.vue'
+
+import { ensureAfterAuth } from '../after-auth/composable/useAfterAuthPlugins.ts'
+import LoginRecoveryCode from '../components/LoginRecoveryCode.vue'
 import LoginTwoFactor from '../components/LoginTwoFactor.vue'
 import LoginTwoFactorMethods from '../components/LoginTwoFactorMethods.vue'
-import LoginRecoveryCode from '../components/LoginRecoveryCode.vue'
 import { useAdminPasswordAuthVerify } from '../composables/useAdminPasswordAuthVerify.ts'
-import { ensureAfterAuth } from '../after-auth/composable/useAfterAuthPlugins.ts'
 
 const application = useApplicationStore()
 
@@ -159,7 +162,7 @@ const showPasswordLogin = computed(
   <LayoutPublicPage box-size="small" :title="loginPageTitle" show-logo>
     <div
       v-if="$c.maintenance_mode"
-      class="my-1 flex items-center rounded-xl bg-red px-4 py-2 text-white"
+      class="bg-red my-1 flex items-center rounded-xl px-4 py-2 text-white"
     >
       {{
         $t(
@@ -170,7 +173,7 @@ const showPasswordLogin = computed(
     <!-- eslint-disable vue/no-v-html -->
     <div
       v-if="$c.maintenance_login && $c.maintenance_login_message"
-      class="my-1 flex items-center rounded-xl bg-green px-4 py-2 text-white"
+      class="bg-green my-1 flex items-center rounded-xl px-4 py-2 text-white"
       v-html="$c.maintenance_login_message"
     ></div>
 
@@ -270,9 +273,9 @@ const showPasswordLogin = computed(
     <template #bottomContent>
       <div
         v-if="!showPasswordLogin"
-        class="p-2 inline-flex items-center justify-center flex-wrap text-sm"
+        class="inline-flex flex-wrap items-center justify-center p-2 text-sm"
       >
-        <CommonLabel class="text-stone-200 dark:text-neutral-500 text-center">
+        <CommonLabel class="text-center text-stone-200 dark:text-neutral-500">
           {{
             $t(
               'If you have problems with the third-party login you can request a one-time password login as an admin.',
@@ -286,7 +289,7 @@ const showPasswordLogin = computed(
 
       <CommonLabel
         v-if="loginFlow.state === '2fa-select'"
-        class="text-stone-200 dark:text-neutral-500 mt-3 mb-3"
+        class="mb-3 mt-3 text-stone-200 dark:text-neutral-500"
       >
         {{
           $t('Contact the administrator if you have any problems logging in.')

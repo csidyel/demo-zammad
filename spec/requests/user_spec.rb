@@ -345,7 +345,7 @@ RSpec.describe 'User', performs_jobs: true, type: :request do
       post '/api/v1/users', params: params, as: :json
       expect(response).to have_http_status(:unprocessable_entity)
       expect(json_response).to be_truthy
-      expect(json_response['error']).to eq('At least one identifier (firstname, lastname, phone or email) for user is required.')
+      expect(json_response['error']).to eq('At least one identifier (firstname, lastname, phone, mobile or email) for user is required.')
 
       # invalid email
       params = { firstname: 'newfirstname123', email: 'some_what', note: 'some note' }
@@ -884,7 +884,7 @@ RSpec.describe 'User', performs_jobs: true, type: :request do
       authenticated_as(customer)
       get '/api/v1/users/import_example', params: {}, as: :json
       expect(response).to have_http_status(:forbidden)
-      expect(json_response['error']).to eq('Not authorized (user)!')
+      expect(json_response['error']).to eq('User authorization failed.')
     end
 
     it 'does csv example - admin access (05.02)' do
@@ -1679,6 +1679,30 @@ RSpec.describe 'User', performs_jobs: true, type: :request do
       end
 
       include_examples 'ids requests'
+    end
+  end
+
+  describe 'GET /api/v1/users/search, with invalid attributes', authenticated_as: :agent do
+    let(:agent) { create(:agent) }
+    let(:customer_invalid) do
+      create(
+        :customer,
+        login:     'customer1@example.com',
+        firstname: 'Some',
+        lastname:  'Customer1',
+        email:     'customer1@example.com',
+      )
+    end
+
+    context 'when email address is invalid' do
+      before do
+        customer_invalid.update_attribute(:email, 'eee lala')
+        post '/api/v1/users/search', params: { term: 'Customer1' }, as: :json
+      end
+
+      it 'succeeds' do
+        expect(response).to have_http_status(:success)
+      end
     end
   end
 

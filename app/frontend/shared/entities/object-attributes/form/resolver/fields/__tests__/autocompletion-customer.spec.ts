@@ -1,6 +1,7 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { EnumObjectManagerObjects } from '#shared/graphql/types.ts'
+
 import { FieldResolverAutocompletionCustomer } from '../autocompletion-customer.ts'
 
 describe('FieldResolverAutocompletionCustomer', () => {
@@ -24,6 +25,7 @@ describe('FieldResolverAutocompletionCustomer', () => {
       required: false,
       props: {
         belongsToObjectField: 'customer',
+        clearable: true,
         noOptionsLabelTranslation: true,
       },
       type: 'customer',

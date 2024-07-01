@@ -1,31 +1,22 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
+import { clean, extendClasses } from '#shared/form/plugins/utils.ts'
+import type { Classes } from '#shared/form/plugins/utils.ts'
 import type {
   FormThemeClasses,
   FormThemeExtension,
 } from '#shared/types/form.ts'
-import type { Classes } from '#shared/form/plugins/utils.ts'
-import { clean, extendClasses } from '#shared/form/plugins/utils.ts'
-import { addAbsoluteFloatingLabel } from './addAbsoluteFloatingLabel.ts'
-import { addFloatingTextareaLabel } from './addFloatingTextareaLabel.ts'
-import { addBlockFloatingLabel } from './addBlockFloatingLabel.ts'
-import { addStaticFloatingLabel } from './addStaticFloatingLabel.ts'
 
-export const addDateLabel = (classes: Classes = {}): Classes => {
-  const newClasses = addAbsoluteFloatingLabel(classes)
-  // remove padding since we implement it differently for the calendar
-  const inner = newClasses.inner.replace(' ltr:pr-2 rtl:pl-2', '')
-  return {
-    ...newClasses,
-    inner: `${inner} flex-col items-center`,
-  }
-}
+import { addAbsoluteFloatingLabel } from './addAbsoluteFloatingLabel.ts'
+import { addBlockFloatingLabel } from './addBlockFloatingLabel.ts'
+import { addFloatingTextareaLabel } from './addFloatingTextareaLabel.ts'
+import { addStaticFloatingLabel } from './addStaticFloatingLabel.ts'
 
 export const addButtonVariants = (classes: Classes = {}): Classes => {
   return extendClasses(classes, {
     wrapper: 'relative',
     input:
-      'bg-transparent text-white formkit-variant-primary:bg-blue formkit-variant-submit:text-black formkit-variant-submit:bg-yellow formkit-variant-submit:font-semibold formkit-variant-danger:bg-red-dark formkit-variant-danger:text-red-bright',
+      'formkit-variant-primary:bg-blue formkit-variant-submit:text-black formkit-variant-submit:bg-yellow formkit-variant-submit:font-semibold formkit-variant-danger:bg-red-dark formkit-variant-danger:text-red-bright bg-transparent text-white',
   })
 }
 
@@ -37,11 +28,11 @@ const getCoreClasses: FormThemeExtension = (classes: FormThemeClasses) => {
       messages: 'px-2',
       message: 'text-red-bright pb-1',
       help: 'mt-0.5 px-2 pb-2',
-      arrow: 'formkit-arrow flex items-center formkit-disabled:opacity-30',
+      arrow: 'formkit-arrow formkit-disabled:opacity-30 flex items-center',
       prefixIcon:
-        'absolute top-1/2 transform -translate-y-1/2 rtl:right-3 ltr:left-3',
+        'absolute top-1/2 -translate-y-1/2 transform ltr:left-3 rtl:right-3',
       suffixIcon:
-        'absolute top-1/2 transform -translate-y-1/2 rtl:left-3 ltr:right-3 text-white fill-current flex justify-center items-center',
+        'absolute top-1/2 flex -translate-y-1/2 transform items-center justify-center fill-current text-white ltr:right-3 rtl:left-3',
     }),
     text: addAbsoluteFloatingLabel(classes.text),
     email: addAbsoluteFloatingLabel(classes.email),
@@ -54,8 +45,8 @@ const getCoreClasses: FormThemeExtension = (classes: FormThemeClasses) => {
     tel: addAbsoluteFloatingLabel(classes.tel),
     time: addAbsoluteFloatingLabel(classes.time),
     password: addAbsoluteFloatingLabel(classes.password),
-    date: addDateLabel(classes.date),
-    datetime: addDateLabel(classes.datetime),
+    date: addAbsoluteFloatingLabel(classes.date),
+    datetime: addAbsoluteFloatingLabel(classes.datetime),
     editor: addFloatingTextareaLabel(
       extendClasses(classes.editor, {
         input: 'min-h-[80px]',
@@ -67,19 +58,19 @@ const getCoreClasses: FormThemeExtension = (classes: FormThemeClasses) => {
       }),
     ),
     checkbox: extendClasses(classes.checkbox, {
-      wrapper: 'ltr:pl-2 rtl:pr-2 w-full select-none',
+      wrapper: 'w-full select-none ltr:pl-2 rtl:pr-2',
       inner: 'ltr:mr-2 rtl:ml-2',
       input:
-        'h-4 w-4 border-[1.5px] border-white rounded-sm bg-transparent focus:border-blue focus:bg-blue-highlight checked:focus:color-blue checked:bg-blue checked:border-blue checked:focus:bg-blue checked:hover:bg-blue',
+        'focus:border-blue focus:bg-blue-highlight checked:focus:color-blue checked:bg-blue checked:border-blue checked:focus:bg-blue checked:hover:bg-blue h-4 w-4 rounded-sm border-[1.5px] border-white bg-transparent',
     }),
     radio: extendClasses(classes.radio, {
       inner: 'ltr:mr-2 rtl:ml-2',
     }),
     toggle: extendClasses(classes.toggle, {
       outer: 'relative px-2',
-      wrapper: 'inline-flex w-full h-14 px-2',
-      label: 'flex items-center w-full h-full text-base cursor-pointer',
-      inner: 'flex items-center h-full',
+      wrapper: 'inline-flex h-14 w-full px-2',
+      label: 'flex h-full w-full cursor-pointer items-center text-base',
+      inner: 'flex h-full items-center',
     }),
     tags: addBlockFloatingLabel(classes.tags),
     select: addBlockFloatingLabel(classes.select),
@@ -93,11 +84,7 @@ const getCoreClasses: FormThemeExtension = (classes: FormThemeClasses) => {
     submit: addButtonVariants(classes.submit),
     security: addStaticFloatingLabel(
       extendClasses(classes.security, {
-        label: clean(`
-          -translate-y-[0.4rem]
-          scale-80
-          text-xs
-        `),
+        label: clean(`scale-80 -translate-y-[0.4rem] text-xs`),
       }),
     ),
     file: {

@@ -4,29 +4,34 @@ import { createApp } from 'vue'
 
 import '#desktop/styles/main.css'
 
-import { useSessionStore } from '#shared/stores/session.ts'
+import { initializeAppName } from '#shared/composables/useAppName.ts'
+import { initializeTwoFactorPlugins } from '#shared/entities/two-factor/composables/initializeTwoFactorPlugins.ts'
+import initializeGlobalComponents from '#shared/initializer/globalComponents.ts'
+import initializeGlobalProperties from '#shared/initializer/globalProperties.ts'
+import { initializeAbstracts } from '#shared/initializer/initializeAbstracts.ts'
 import initializeStoreSubscriptions from '#shared/initializer/storeSubscriptions.ts'
 import { useApplicationStore } from '#shared/stores/application.ts'
-import { useLocaleStore } from '#shared/stores/locale.ts'
-import { useAppTheme } from '#shared/stores/theme.ts'
 import { useAuthenticationStore } from '#shared/stores/authentication.ts'
 import initializeStore from '#shared/stores/index.ts'
-import initializeGlobalComponents from '#shared/initializer/globalComponents.ts'
-import { initializeAppName } from '#shared/composables/useAppName.ts'
-import initializeGlobalProperties from '#shared/initializer/globalProperties.ts'
+import { useLocaleStore } from '#shared/stores/locale.ts'
+import { useSessionStore } from '#shared/stores/session.ts'
 
+import { twoFactorConfigurationPluginLookup } from '#desktop/entities/two-factor-configuration/plugins/index.ts'
+import { initializeForm, initializeFormFields } from '#desktop/form/index.ts'
+import { initializeDesktopVisuals } from '#desktop/initializer/desktopVisuals.ts'
 import { initializeDesktopIcons } from '#desktop/initializer/initializeDesktopIcons.ts'
 import { initializeGlobalComponentStyles } from '#desktop/initializer/initializeGlobalComponentStyles.ts'
-import initializeApolloClient from '#desktop/server/apollo/index.ts'
+import initializeGlobalDirectives from '#desktop/initializer/initializeGlobalDirectives.ts'
+import { ensureAfterAuth } from '#desktop/pages/authentication/after-auth/composable/useAfterAuthPlugins.ts'
 import initializeRouter from '#desktop/router/index.ts'
-import { initializeForm, initializeFormFields } from '#desktop/form/index.ts'
-
-import { ensureAfterAuth } from './pages/authentication/after-auth/composable/useAfterAuthPlugins.ts'
+import initializeApolloClient from '#desktop/server/apollo/index.ts'
+import { useThemeStore } from '#desktop/stores/theme.ts'
 
 import App from './AppDesktop.vue'
 
 export const mountApp = async () => {
   const app = createApp(App)
+  initializeAppName('desktop')
 
   initializeApolloClient(app)
   const router = initializeRouter(app)
@@ -36,9 +41,14 @@ export const mountApp = async () => {
   initializeFormFields()
   initializeGlobalComponentStyles()
   initializeGlobalComponents(app)
-  initializeAppName('desktop')
   initializeGlobalProperties(app)
+  initializeGlobalDirectives(app)
   initializeStoreSubscriptions()
+  initializeDesktopVisuals()
+  initializeTwoFactorPlugins(twoFactorConfigurationPluginLookup)
+  initializeAbstracts({
+    durations: { normal: { enter: 300, leave: 200 } },
+  }) // :TODO move this argument to own config?
 
   const session = useSessionStore()
   const authentication = useAuthenticationStore()
@@ -70,7 +80,7 @@ export const mountApp = async () => {
   }
 
   // sync theme so the store is initialized and user (if exists) and DOM have the same value
-  useAppTheme().syncTheme()
+  useThemeStore().syncTheme()
 
   if (VITE_TEST_MODE) {
     await import('#shared/initializer/initializeFakeTimer.ts')

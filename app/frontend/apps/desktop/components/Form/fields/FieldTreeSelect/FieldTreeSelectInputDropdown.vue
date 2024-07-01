@@ -1,29 +1,34 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import type { Ref } from 'vue'
-import { onUnmounted, computed, nextTick, ref, toRef } from 'vue'
 import {
   type UseElementBoundingReturn,
   onClickOutside,
   onKeyDown,
   useVModel,
 } from '@vueuse/core'
-import { useFocusWhenTyping } from '#shared/composables/useFocusWhenTyping.ts'
-import { useLocaleStore } from '#shared/stores/locale.ts'
-import { useTrapTab } from '#shared/composables/useTrapTab.ts'
-import { useTraverseOptions } from '#shared/composables/useTraverseOptions.ts'
-import stopEvent from '#shared/utils/events.ts'
-import testFlags from '#shared/utils/testFlags.ts'
-import { i18n } from '#shared/i18n.ts'
+import { onUnmounted, computed, nextTick, ref, toRef } from 'vue'
+
 import CommonLabel from '#shared/components/CommonLabel/CommonLabel.vue'
-import { useCommonSelect } from '#desktop/components/CommonSelect/useCommonSelect.ts'
 import type {
   FlatSelectOption,
   MatchedFlatSelectOption,
 } from '#shared/components/Form/fields/FieldTreeSelect/types.ts'
-import type { FieldTreeSelectInputDropdownInternalInstance } from './types.ts'
+import { useFocusWhenTyping } from '#shared/composables/useFocusWhenTyping.ts'
+import { useTrapTab } from '#shared/composables/useTrapTab.ts'
+import { useTraverseOptions } from '#shared/composables/useTraverseOptions.ts'
+import { i18n } from '#shared/i18n.ts'
+import { useLocaleStore } from '#shared/stores/locale.ts'
+import stopEvent from '#shared/utils/events.ts'
+import testFlags from '#shared/utils/testFlags.ts'
+
+import { useCommonSelect } from '#desktop/components/CommonSelect/useCommonSelect.ts'
+import { useTransitionCollapse } from '#desktop/composables/useTransitionCollapse.ts'
+
 import FieldTreeSelectInputDropdownItem from './FieldTreeSelectInputDropdownItem.vue'
+
+import type { FieldTreeSelectInputDropdownInternalInstance } from './types.ts'
+import type { Ref } from 'vue'
 
 export interface Props {
   // we cannot move types into separate file, because Vue would not be able to
@@ -49,12 +54,12 @@ export interface Props {
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', option: string | number | (string | number)[]): void
-  (e: 'select', option: FlatSelectOption): void
-  (e: 'close'): void
-  (e: 'push', option: FlatSelectOption): void
-  (e: 'pop'): void
-  (e: 'clear-filter'): void
+  'update:modelValue': [option: string | number | (string | number)[]]
+  select: [option: FlatSelectOption]
+  close: []
+  push: [option: FlatSelectOption]
+  pop: []
+  'clear-filter': []
 }>()
 
 const locale = useLocaleStore()
@@ -391,7 +396,8 @@ const highlightedOptions = computed(() =>
   }),
 )
 
-const duration = VITE_TEST_MODE ? undefined : { enter: 300, leave: 200 }
+const { collapseDuration, collapseEnter, collapseAfterEnter, collapseLeave } =
+  useTransitionCollapse()
 </script>
 
 <template>
@@ -402,24 +408,23 @@ const duration = VITE_TEST_MODE ? undefined : { enter: 300, leave: 200 }
     :focus="moveFocusToDropdown"
   />
   <Teleport to="body">
-    <Transition :duration="duration">
+    <Transition
+      name="collapse"
+      :duration="collapseDuration"
+      @enter="collapseEnter"
+      @after-enter="collapseAfterEnter"
+      @leave="collapseLeave"
+    >
       <div
         v-if="showDropdown"
         id="field-tree-select-input-dropdown"
         ref="dropdownElement"
-        class="fixed z-10 min-h-9 flex antialiased"
+        class="fixed z-10 flex min-h-9 antialiased"
         :style="dropdownStyle"
       >
-        <div
-          class="select-dialog w-full"
-          role="menu"
-          :class="{
-            'select-dialog--up': hasDirectionUp,
-            'select-dialog--down': !hasDirectionUp,
-          }"
-        >
+        <div class="w-full" role="menu">
           <div
-            class="h-full flex flex-col items-start bg-white dark:bg-gray-500 border-x border-neutral-100 dark:border-gray-900"
+            class="flex h-full flex-col items-start border-x border-neutral-100 bg-white dark:border-gray-900 dark:bg-gray-500"
             :class="{
               'rounded-t-lg border-t': hasDirectionUp,
               'rounded-b-lg border-b': !hasDirectionUp,
@@ -429,19 +434,20 @@ const duration = VITE_TEST_MODE ? undefined : { enter: 300, leave: 200 }
               v-if="
                 currentPath.length || (multiple && hasMoreSelectableOptions)
               "
-              class="w-full px-2.5 py-1.5 flex justify-between gap-2"
+              class="flex w-full justify-between gap-2 px-2.5 py-1.5"
             >
               <CommonLabel
                 v-if="currentPath.length"
-                class="text-blue-800 dark:text-blue-800 focus-visible:outline focus-visible:rounded-sm focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800"
+                class="text-blue-800 hover:text-black focus-visible:rounded-sm focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800 dark:text-blue-800 dark:hover:text-white"
                 :prefix-icon="
                   locale.localeData?.dir === 'rtl'
                     ? 'chevron-right'
                     : 'chevron-left'
                 "
                 :aria-label="$t('Back to previous page')"
+                size="small"
                 role="button"
-                tabindex="1"
+                tabindex="0"
                 @click.stop="goToPreviousPage(true)"
                 @keypress.enter.prevent.stop="goToPreviousPage()"
                 @keypress.space.prevent.stop="goToPreviousPage()"
@@ -450,10 +456,11 @@ const duration = VITE_TEST_MODE ? undefined : { enter: 300, leave: 200 }
               </CommonLabel>
               <CommonLabel
                 v-if="multiple && hasMoreSelectableOptions"
-                class="ms-auto text-blue-800 dark:text-blue-800 focus-visible:outline focus-visible:rounded-sm focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800"
+                class="ms-auto text-blue-800 hover:text-black focus-visible:rounded-sm focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800 dark:text-blue-800 dark:hover:text-white"
                 prefix-icon="check-all"
+                size="small"
                 role="button"
-                tabindex="2"
+                tabindex="0"
                 @click.stop="selectAll(true)"
                 @keypress.enter.prevent.stop="selectAll()"
                 @keypress.space.prevent.stop="selectAll()"
@@ -507,6 +514,7 @@ const duration = VITE_TEST_MODE ? undefined : { enter: 300, leave: 200 }
                     disabled: true,
                   } as MatchedFlatSelectOption
                 "
+                no-selection-indicator
               />
               <slot name="footer" />
             </div>
@@ -516,41 +524,3 @@ const duration = VITE_TEST_MODE ? undefined : { enter: 300, leave: 200 }
     </Transition>
   </Teleport>
 </template>
-
-<style scoped>
-.select-dialog {
-  &--down {
-    @apply origin-top;
-  }
-
-  &--up {
-    @apply origin-bottom;
-  }
-}
-
-.v-enter-active {
-  .select-dialog {
-    @apply duration-200 ease-out;
-  }
-}
-
-.v-leave-active {
-  .select-dialog {
-    @apply duration-200 ease-in;
-  }
-}
-
-.v-enter-to,
-.v-leave-from {
-  .select-dialog {
-    @apply scale-y-100 opacity-100;
-  }
-}
-
-.v-enter-from,
-.v-leave-to {
-  .select-dialog {
-    @apply scale-y-50 opacity-0;
-  }
-}
-</style>

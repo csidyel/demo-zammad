@@ -4,7 +4,7 @@ set -e
 if [ "$1" = 'builder' ]; then
   PACKAGES="build-essential curl git libimlib2-dev libpq-dev shared-mime-info postgresql"
 elif [ "$1" = 'runner' ]; then
-  PACKAGES="curl libimlib2 libpq5 nginx gnupg"
+  PACKAGES="curl libimlib2 libpq5 nginx gnupg postgresql-client"
 fi
 
 apt-get update
@@ -20,7 +20,8 @@ if [ "$1" = 'builder' ]; then
   su - postgres bash -c "createdb --encoding=utf8 --owner=zammad zammad"
 
   cd "${ZAMMAD_DIR}"
-  bundle config set without 'test development mysql'
+  bundle config set --local without 'test development mysql'
+  bundle config set --local deployment 'true'
   bundle install
 
   touch db/schema.rb

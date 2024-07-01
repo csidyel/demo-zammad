@@ -4,15 +4,15 @@
 import { computed, toRef } from 'vue'
 import { type RouteLocationRaw, useRouter } from 'vue-router'
 
-import { useForm } from '#shared/components/Form/useForm.ts'
 import type { FormRef } from '#shared/components/Form/types.ts'
+import { useForm } from '#shared/components/Form/useForm.ts'
 
 import CommonButton from '#desktop/components/CommonButton/CommonButton.vue'
-import LayoutPublicPageBoxActions from '#desktop/components/layout/LayoutPublicPage/LayoutPublicPageBoxActions.vue'
 import type {
   ButtonType,
   ButtonVariant,
 } from '#desktop/components/CommonButton/types.ts'
+import LayoutPublicPageBoxActions from '#desktop/components/layout/LayoutPublicPage/LayoutPublicPageBoxActions.vue'
 
 interface Props {
   form?: FormRef
@@ -21,7 +21,7 @@ interface Props {
   goBackRoute?: RouteLocationRaw
   onSkip?: () => void
   onContinue?: () => void
-  onBack?: () => void
+  onGoBack?: () => void
   onSubmit?: () => void
   submitButtonText?: string
   submitButtonVariant?: ButtonVariant
@@ -35,10 +35,10 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  (e: 'submit'): void
-  (e: 'back'): void
-  (e: 'skip'): void
-  (e: 'continue'): void
+  submit: []
+  'go-back': []
+  skip: []
+  continue: []
 }>()
 
 const router = useRouter()
@@ -54,7 +54,7 @@ const localSubmitButtonText = computed(() => {
 })
 
 const goBack = () => {
-  if (props.onBack) emit('back')
+  if (props.onGoBack) emit('go-back')
 
   if (props.goBackRoute) router.push(props.goBackRoute)
 }
@@ -79,7 +79,7 @@ const submit = () => {
 <template>
   <LayoutPublicPageBoxActions>
     <CommonButton
-      v-if="goBackRoute || onBack"
+      v-if="goBackRoute || onGoBack"
       variant="secondary"
       size="large"
       :disabled="isDisabled"

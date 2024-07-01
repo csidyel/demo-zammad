@@ -1,9 +1,12 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { renderComponent } from '#tests/support/components/index.ts'
 import { flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
+
+import { renderComponent } from '#tests/support/components/index.ts'
+
 import CommonSectionPopup from '../CommonSectionPopup.vue'
+
 import type { PopupItemDescriptor } from '../types.ts'
 
 const html = String.raw
@@ -110,7 +113,7 @@ describe('popup behaviour', () => {
     await flushPromises()
 
     // auto focused on first item
-    expect(view.getByRole('link', { name: 'Link' })).toHaveFocus()
+    expect(view.getByText('Link')).toHaveFocus()
 
     await view.events.keyboard('{Tab}')
 
@@ -122,7 +125,7 @@ describe('popup behaviour', () => {
 
     await view.events.keyboard('{Tab}')
 
-    expect(view.getByRole('link', { name: 'Link' })).toHaveFocus()
+    expect(view.getByText('Link')).toHaveFocus()
   })
 
   it('refocuses on the last element that opened popup', async () => {

@@ -1,13 +1,13 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { App } from 'vue'
+import type { ImportGlobEagerOutput } from './utils.ts'
 import type { FormKitTypeDefinition } from '@formkit/core'
 import type {
   FormKitValidationRule,
   FormKitValidationMessages,
 } from '@formkit/validation'
+import type { App } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
-import type { ImportGlobEagerOutput } from './utils.ts'
 
 export type InitializeAppForm = (app: App) => void
 
@@ -50,7 +50,19 @@ export interface FormDefaultProps {
   disabled?: boolean
 }
 
-export type FormUpdaterTrigger = 'direct' | 'delayed' | 'blur' | 'form-reset'
+export type FormUpdaterTrigger =
+  | 'direct'
+  | 'delayed'
+  | 'blur'
+  | 'form-reset'
+  | 'manual'
+
+export type FormUpdaterAdditionalParams = Record<string, unknown>
+
+export interface FormUpdaterOptions {
+  includeDirtyFields?: boolean
+  additionalParams?: FormUpdaterAdditionalParams
+}
 
 export interface FormDecoratorIcons {
   checkboxDecorator?: string

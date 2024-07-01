@@ -1,15 +1,18 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import { loadImageIntoBase64 } from '#shared/utils/files.ts'
 import { NodeViewWrapper, nodeViewProps } from '@tiptap/vue-3'
 import { computed, reactive, ref } from 'vue'
 import DraggableResizable from 'vue3-draggable-resizable'
+
+import { loadImageIntoBase64 } from '#shared/utils/files.ts'
 import log from '#shared/utils/log.ts'
 import 'vue3-draggable-resizable/dist/Vue3DraggableResizable.css'
 import testFlags from '#shared/utils/testFlags.ts'
 
 const props = defineProps(nodeViewProps)
+const initialHeight = props.node.attrs.height
+const initialWidth = props.node.attrs.width
 
 const needBase64Convert = (src: string) => {
   return !(src.startsWith('data:') || src.startsWith('cid:'))
@@ -59,8 +62,9 @@ const onLoadImage = (e: Event) => {
 
   const img = e.target as HTMLImageElement
   const { naturalWidth, naturalHeight } = img
-  dimensions.width = naturalWidth
-  dimensions.height = naturalHeight
+
+  dimensions.width = initialWidth !== '100%' ? initialWidth : naturalWidth
+  dimensions.height = initialHeight !== 'auto' ? initialHeight : naturalWidth
   dimensions.maxHeight = naturalHeight
   dimensions.maxWidth = naturalWidth
   imageLoaded.value = true
@@ -94,17 +98,26 @@ const wrapperStyle = computed(() => {
 
 <template>
   <NodeViewWrapper as="div" class="inline-block" :style="wrapperStyle">
-    <img
+    <button
       v-if="!isResizing && src"
       class="inline-block"
-      :style="style"
-      :src="src"
-      :alt="node.attrs.alt"
-      :title="node.attrs.title"
-      :draggable="isDraggable"
-      @load="onLoadImage"
       @click="isResizing = true"
-    />
+      @keydown.space.prevent="isResizing = true"
+      @keydown.enter.prevent="isResizing = true"
+    >
+      <img
+        v-if="!isResizing && src"
+        class="inline-block"
+        :style="style"
+        :src="src"
+        :alt="node.attrs.alt"
+        :width="node.attrs.width"
+        :height="node.attrs.height"
+        :title="node.attrs.title"
+        :draggable="isDraggable"
+        @load="onLoadImage"
+      />
+    </button>
     <DraggableResizable
       v-else-if="src"
       v-model:active="isResizing"
@@ -116,7 +129,12 @@ const wrapperStyle = computed(() => {
       class="!relative !inline-block"
       @resize-end="stopResizing"
     >
-      <img class="inline-block" :src="src" :draggable="isDraggable" />
+      <img
+        class="inline-block"
+        :alt="$t('Resize frame')"
+        :src="src"
+        :draggable="isDraggable"
+      />
     </DraggableResizable>
   </NodeViewWrapper>
 </template>

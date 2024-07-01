@@ -20,11 +20,10 @@
       "#desktop/*": ["app/frontend/apps/desktop/*"],
       "#shared/*": ["app/frontend/shared/*"],
       "#tests/*": ["app/frontend/tests/*"],
-      "#cy/*": [".cypress/*"]
+      "#cy/*": [".dev/cypress/*"]
     },
     "types": [
       "vite/client",
-      "vite-plugin-svg-icons/client",
       "node",
       "vite-plugin-pwa/client"
     ],

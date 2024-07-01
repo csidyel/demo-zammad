@@ -6,27 +6,33 @@ export interface Props {
   max?: string
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 </script>
 
 <template>
-  <progress class="progress" :value="props.value" :max="props.max"></progress>
+  <progress
+    class="progress"
+    tabindex="0"
+    :aria-label="$t('Indicating progress')"
+    :value="value"
+    :max="max"
+  />
 </template>
 
 <style scoped>
 .progress {
-  @apply rounded-box bg-blue-200 dark:bg-gray-700 h-2;
+  @apply h-2 rounded-2xl bg-blue-200 dark:bg-gray-700;
 
   &::-moz-progress-bar {
-    @apply bg-blue-800 rounded-none;
+    @apply rounded-none bg-blue-800;
   }
 
   &::-webkit-progress-bar {
-    @apply rounded-box;
+    @apply rounded-2xl;
   }
 
   &::-webkit-progress-value {
-    @apply bg-blue-800 rounded-none;
+    @apply rounded-none bg-blue-800;
 
     transition: width 1s;
   }

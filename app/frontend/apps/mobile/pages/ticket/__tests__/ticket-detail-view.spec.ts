@@ -1,40 +1,44 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import {
-  EnumChannelArea,
-  EnumSecurityStateType,
-  type TicketArticleRetrySecurityProcessMutation,
-} from '#shared/graphql/types.ts'
-import { getNode } from '@formkit/core'
 import { ApolloError } from '@apollo/client/errors'
-import { TicketState } from '#shared/entities/ticket/types.ts'
-import { TicketArticleRetrySecurityProcessDocument } from '#shared/entities/ticket-article/graphql/mutations/ticketArticleRetrySecurityProcess.api.ts'
-import { convertToGraphQLId } from '#shared/graphql/utils.ts'
+import { getNode } from '@formkit/core'
 import { getAllByTestId, getByLabelText, getByRole } from '@testing-library/vue'
+import { flushPromises } from '@vue/test-utils'
+
 import { getByIconName } from '#tests/support/components/iconQueries.ts'
 import { getTestRouter } from '#tests/support/components/renderComponent.ts'
 import { visitView } from '#tests/support/components/visitView.ts'
-import { mockAccount } from '#tests/support/mock-account.ts'
 import {
   mockGraphQLApi,
   mockGraphQLSubscription,
 } from '#tests/support/mock-graphql-api.ts'
 import { mockPermissions } from '#tests/support/mock-permissions.ts'
+import { mockUserCurrent } from '#tests/support/mock-userCurrent.ts'
 import { nullableMock, waitUntil } from '#tests/support/utils.ts'
-import { flushPromises } from '@vue/test-utils'
-import { TicketLiveUserUpsertDocument } from '../graphql/mutations/live-user/ticketLiveUserUpsert.api.ts'
+
+import { TicketState } from '#shared/entities/ticket/types.ts'
+import { TicketArticleRetrySecurityProcessDocument } from '#shared/entities/ticket-article/graphql/mutations/ticketArticleRetrySecurityProcess.api.ts'
+import {
+  EnumChannelArea,
+  EnumSecurityStateType,
+  type TicketArticleRetrySecurityProcessMutation,
+} from '#shared/graphql/types.ts'
+import { convertToGraphQLId } from '#shared/graphql/utils.ts'
+
+import { clearTicketArticlesLoadedState } from '../composable/useTicketArticlesVariables.ts'
 import { TicketLiveUserDeleteDocument } from '../graphql/mutations/live-user/delete.api.ts'
-import { TicketDocument } from '../graphql/queries/ticket.api.ts'
+import { TicketLiveUserUpsertDocument } from '../graphql/mutations/live-user/ticketLiveUserUpsert.api.ts'
 import { TicketArticlesDocument } from '../graphql/queries/ticket/articles.api.ts'
+import { TicketDocument } from '../graphql/queries/ticket.api.ts'
 import { TicketArticleUpdatesDocument } from '../graphql/subscriptions/ticketArticlesUpdates.api.ts'
 import { TicketUpdatesDocument } from '../graphql/subscriptions/ticketUpdates.api.ts'
+
+import { mockArticleQuery } from './mocks/articles.ts'
 import {
   defaultArticles,
   defaultTicket,
   mockTicketDetailViewGql,
 } from './mocks/detail-view.ts'
-import { mockArticleQuery } from './mocks/articles.ts'
-import { clearTicketArticlesLoadedState } from '../composable/useTicketArticlesVariables.ts'
 
 vi.hoisted(() => {
   const now = new Date(2022, 1, 1, 0, 0, 0, 0)
@@ -214,6 +218,8 @@ describe('user avatars', () => {
       type: 'user',
       image: 'avatar.png',
       outOfOffice: false,
+      outOfOfficeStartAt: null,
+      outOfOfficeEndAt: null,
       vip: false,
       active: false,
     })
@@ -222,7 +228,10 @@ describe('user avatars', () => {
   it('renders article user when he is out of office', async () => {
     const articles = defaultArticles()
     const { author } = articles.description!.edges[0].node
+
     author.outOfOffice = true
+    author.outOfOfficeStartAt = '2021-12-01'
+    author.outOfOfficeEndAt = '2022-02-01'
     author.active = true
     author.vip = true
     author.firstname = 'Max'
@@ -240,6 +249,8 @@ describe('user avatars', () => {
     ).toBeAvatarElement({
       type: 'user',
       outOfOffice: true,
+      outOfOfficeStartAt: '2021-12-01',
+      outOfOfficeEndAt: '2022-02-01',
       vip: true,
       active: true,
     })
@@ -377,7 +388,7 @@ describe('calling API to retry encryption', () => {
       },
     })
 
-    await view.events.click(view.getByRole('button', { name: 'Try again' }))
+    await view.events.click(view.getByText('Try again'))
 
     expect(mutation.spies.resolve).toHaveBeenCalled()
 
@@ -436,7 +447,7 @@ describe('calling API to retry encryption', () => {
       },
     })
 
-    await view.events.click(view.getByRole('button', { name: 'Try again' }))
+    await view.events.click(view.getByText('Try again'))
 
     expect(mutation.spies.resolve).toHaveBeenCalled()
 
@@ -449,12 +460,47 @@ describe('calling API to retry encryption', () => {
   })
 })
 
+describe('remote content removal', () => {
+  it('shows blocked content badge', async () => {
+    const articlesQuery = defaultArticles()
+    const article = articlesQuery.description!.edges[0].node
+    article.preferences = {
+      remote_content_removed: true,
+    }
+    article.attachmentsWithoutInline = [
+      {
+        internalId: 1,
+        name: 'message',
+        preferences: {
+          'original-format': true,
+        },
+      },
+    ]
+
+    const { waitUntilTicketLoaded } = mockTicketDetailViewGql({
+      articles: articlesQuery,
+    })
+
+    const view = await visitView('/tickets/1')
+
+    await waitUntilTicketLoaded()
+
+    const blockedContent = view.getByRole('button', { name: 'Blocked Content' })
+
+    await view.events.click(blockedContent)
+
+    await view.events.click(view.getByText('Original Formatting'))
+
+    expect(view.queryByTestId('popupWindow')).not.toBeInTheDocument()
+  })
+})
+
 describe('ticket viewers inside a ticket', () => {
   it('displays information with newer last interaction (and without own entry)', async () => {
     const { waitUntilTicketLoaded, mockTicketLiveUsersSubscription } =
       mockTicketDetailViewGql()
 
-    mockAccount({
+    mockUserCurrent({
       lastname: 'Doe',
       firstname: 'John',
       fullname: 'John Doe',
@@ -596,7 +642,7 @@ describe('ticket viewers inside a ticket', () => {
     const { waitUntilTicketLoaded, mockTicketLiveUsersSubscription } =
       mockTicketDetailViewGql()
 
-    mockAccount({
+    mockUserCurrent({
       lastname: 'Doe',
       firstname: 'John',
       fullname: 'John Doe',
@@ -660,7 +706,7 @@ describe('ticket viewers inside a ticket', () => {
     const { waitUntilTicketLoaded, mockTicketLiveUsersSubscription } =
       mockTicketDetailViewGql()
 
-    mockAccount({
+    mockUserCurrent({
       lastname: 'Doe',
       firstname: 'John',
       fullname: 'John Doe',
@@ -721,7 +767,7 @@ describe('ticket viewers inside a ticket', () => {
   })
 
   it('customer should only add live user entry but not subscribe', async () => {
-    mockAccount({
+    mockUserCurrent({
       lastname: 'Braun',
       firstname: 'Nicole',
       fullname: 'Nicole Braun',

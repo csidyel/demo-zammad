@@ -1,28 +1,31 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
+import { getNode } from '@formkit/core'
+import { waitFor } from '@testing-library/vue'
+import { flushPromises } from '@vue/test-utils'
+
+import type { ExtendedRenderResult } from '#tests/support/components/index.ts'
+import { getTestRouter } from '#tests/support/components/renderComponent.ts'
+import { visitView } from '#tests/support/components/visitView.ts'
+import { mockApplicationConfig } from '#tests/support/mock-applicationConfig.ts'
+import { mockGraphQLApi } from '#tests/support/mock-graphql-api.ts'
+import { mockPermissions } from '#tests/support/mock-permissions.ts'
+import { setupView } from '#tests/support/mock-user.ts'
+import { mockUserCurrent } from '#tests/support/mock-userCurrent.ts'
+import { mockTicketOverviews } from '#tests/support/mocks/ticket-overviews.ts'
+import { nullableMock, waitUntil } from '#tests/support/utils.ts'
+
+import { AutocompleteSearchUserDocument } from '#shared/components/Form/fields/FieldCustomer/graphql/queries/autocompleteSearch/user.api.ts'
+import { FormUpdaterDocument } from '#shared/components/Form/graphql/queries/formUpdater.api.ts'
+import { ObjectManagerFrontendAttributesDocument } from '#shared/entities/object-attributes/graphql/queries/objectManagerFrontendAttributes.api.ts'
+import { TicketCreateDocument } from '#shared/entities/ticket/graphql/mutations/create.api.ts'
+
+import { defaultOrganization } from '#mobile/entities/organization/__tests__/mocks/organization-mocks.ts'
 import {
   ticketObjectAttributes,
   ticketArticleObjectAttributes,
   ticketPayload,
 } from '#mobile/entities/ticket/__tests__/mocks/ticket-mocks.ts'
-import { defaultOrganization } from '#mobile/entities/organization/__tests__/mocks/organization-mocks.ts'
-import { FormUpdaterDocument } from '#shared/components/Form/graphql/queries/formUpdater.api.ts'
-import { ObjectManagerFrontendAttributesDocument } from '#shared/entities/object-attributes/graphql/queries/objectManagerFrontendAttributes.api.ts'
-import { visitView } from '#tests/support/components/visitView.ts'
-import { mockGraphQLApi } from '#tests/support/mock-graphql-api.ts'
-import { mockPermissions } from '#tests/support/mock-permissions.ts'
-import { mockAccount } from '#tests/support/mock-account.ts'
-import type { ExtendedRenderResult } from '#tests/support/components/index.ts'
-import { mockApplicationConfig } from '#tests/support/mock-applicationConfig.ts'
-import { flushPromises } from '@vue/test-utils'
-import { nullableMock, waitUntil } from '#tests/support/utils.ts'
-import { getTestRouter } from '#tests/support/components/renderComponent.ts'
-import { getNode } from '@formkit/core'
-import { setupView } from '#tests/support/mock-user.ts'
-import { waitFor } from '@testing-library/vue'
-import { mockTicketOverviews } from '#tests/support/mocks/ticket-overviews.ts'
-import { AutocompleteSearchUserDocument } from '#shared/components/Form/fields/FieldCustomer/graphql/queries/autocompleteSearch/user.api.ts'
-import { TicketCreateDocument } from '../graphql/mutations/create.api.ts'
 
 const visitTicketCreate = async (path = '/tickets/create') => {
   const mockObjectAttributes = mockGraphQLApi(
@@ -277,9 +280,7 @@ describe('Creating new ticket as agent', () => {
 
     expect(view.queryByTestId('popupWindow')).toBeInTheDocument()
 
-    await expect(
-      view.findByRole('alert', { name: 'Confirm dialog' }),
-    ).resolves.toBeInTheDocument()
+    await expect(view.findByText('Confirm dialog')).resolves.toBeInTheDocument()
   })
 
   it('shows the CC field for type "Email"', async () => {
@@ -327,7 +328,7 @@ describe('Creating new ticket as customer', () => {
   })
 
   it('does not show the organization field without secondary organizations', async () => {
-    mockAccount({
+    mockUserCurrent({
       lastname: 'Doe',
       firstname: 'John',
       organization: defaultOrganization(),
@@ -347,7 +348,7 @@ describe('Creating new ticket as customer', () => {
   })
 
   it('does show the organization field with secondary organizations', async () => {
-    mockAccount({
+    mockUserCurrent({
       lastname: 'Doe',
       firstname: 'John',
       organization: defaultOrganization(),

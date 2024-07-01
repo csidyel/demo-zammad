@@ -3,45 +3,53 @@
 // import of these files takes 2.5 seconds for each test file!
 // need to optimize this somehow
 
-import type { Plugin, Ref } from 'vue'
-import { isRef, nextTick, ref, watchEffect, unref } from 'vue'
-import type { Router, RouteRecordRaw, NavigationGuard } from 'vue-router'
-import { createRouter, createWebHistory } from 'vue-router'
-import type { ComponentMountingOptions } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
-import type { Matcher, RenderResult } from '@testing-library/vue'
-import { render } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { merge, cloneDeep } from 'lodash-es'
 import { plugin as formPlugin } from '@formkit/vue'
-import { buildFormKitPluginConfig } from '#shared/form/index.ts'
-import applicationConfigPlugin from '#shared/plugins/applicationConfigPlugin.ts'
+import userEvent from '@testing-library/user-event'
+import { render } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
+import { merge, cloneDeep } from 'lodash-es'
+import { isRef, nextTick, ref, watchEffect, unref } from 'vue'
+import { createRouter, createWebHistory } from 'vue-router'
+
 import CommonAlert from '#shared/components/CommonAlert/CommonAlert.vue'
-import CommonIcon from '#shared/components/CommonIcon/CommonIcon.vue'
-import CommonLink from '#shared/components/CommonLink/CommonLink.vue'
-import CommonDateTime from '#shared/components/CommonDateTime/CommonDateTime.vue'
-import CommonLabel from '#shared/components/CommonLabel/CommonLabel.vue'
 import CommonBadge from '#shared/components/CommonBadge/CommonBadge.vue'
+import CommonDateTime from '#shared/components/CommonDateTime/CommonDateTime.vue'
+import CommonIcon from '#shared/components/CommonIcon/CommonIcon.vue'
+import { provideIcons } from '#shared/components/CommonIcon/useIcons.ts'
+import CommonLabel from '#shared/components/CommonLabel/CommonLabel.vue'
+import CommonLink from '#shared/components/CommonLink/CommonLink.vue'
+import DynamicInitializer from '#shared/components/DynamicInitializer/DynamicInitializer.vue'
 import { initializeAppName } from '#shared/composables/useAppName.ts'
 import { imageViewerOptions } from '#shared/composables/useImageViewer.ts'
-import DynamicInitializer from '#shared/components/DynamicInitializer/DynamicInitializer.vue'
-import { initializeWalker } from '#shared/router/walker.ts'
-import { i18n } from '#shared/i18n.ts'
 import {
   setupCommonVisualConfig,
   type SharedVisualConfig,
 } from '#shared/composables/useSharedVisualConfig.ts'
+import { initializeTwoFactorPlugins } from '#shared/entities/two-factor/composables/initializeTwoFactorPlugins.ts'
+import { buildFormKitPluginConfig } from '#shared/form/index.ts'
+import { i18n } from '#shared/i18n.ts'
+import applicationConfigPlugin from '#shared/plugins/applicationConfigPlugin.ts'
+import { initializeWalker } from '#shared/router/walker.ts'
 import type { AppName } from '#shared/types/app.ts'
-import type { ImportGlobEagerOutput } from '#shared/types/utils.ts'
 import type { FormFieldTypeImportModules } from '#shared/types/form.ts'
-import { provideIcons } from '#shared/components/CommonIcon/useIcons.ts'
-import mobileIconsAliases from '#mobile/initializer/mobileIconsAliasesMap.ts'
+import type { ImportGlobEagerOutput } from '#shared/types/utils.ts'
+
+import { twoFactorConfigurationPluginLookup } from '#desktop/entities/two-factor-configuration/plugins/index.ts'
 import desktopIconsAliases from '#desktop/initializer/desktopIconsAliasesMap.ts'
-import buildIconsQueries from './iconQueries.ts'
-import buildLinksQueries from './linkQueries.ts'
+import { directives } from '#desktop/initializer/initializeGlobalDirectives.ts'
+import mobileIconsAliases from '#mobile/initializer/mobileIconsAliasesMap.ts'
+
 import { setTestState, waitForNextTick } from '../utils.ts'
-import { cleanupStores, initializeStore } from './initializeStore.ts'
+
 import { getTestAppName } from './app.ts'
+import buildIconsQueries from './iconQueries.ts'
+import { cleanupStores, initializeStore } from './initializeStore.ts'
+import buildLinksQueries from './linkQueries.ts'
+
+import type { Matcher, RenderResult } from '@testing-library/vue'
+import type { ComponentMountingOptions } from '@vue/test-utils'
+import type { Plugin, Ref } from 'vue'
+import type { Router, RouteRecordRaw, NavigationGuard } from 'vue-router'
 
 const appName = getTestAppName()
 
@@ -80,11 +88,13 @@ if (isMobile) {
   ConformationComponent = CommonConfirmation
   formFields = mobileFormFieldModules
 } else if (isDesktop) {
-  const { desktopFormFieldModules } = await import('#desktop/form/index.ts')
+  const [{ initializeDesktopVisuals }, { desktopFormFieldModules }] =
+    await Promise.all([
+      import('#desktop/initializer/desktopVisuals.ts'),
+      import('#desktop/form/index.ts'),
+    ])
+  initDefaultVisuals = initializeDesktopVisuals
   formFields = desktopFormFieldModules
-  // TODO: Desktop visuals composable was not defined yet
-  initDefaultVisuals = () => {}
-  // TODO: conformation component is not implemented yet
 } else {
   throw new Error(`Was not able to detect the app type from ${filepath} test.`)
 }
@@ -102,9 +112,7 @@ export interface ExtendedMountingOptions<Props>
   formField?: boolean
   unmount?: boolean
   dialog?: boolean
-  /**
-   * @default 'mobile'
-   */
+  flyout?: boolean
   app?: AppName
   vModel?: {
     [prop: string]: unknown
@@ -148,6 +156,7 @@ const defaultWrapperOptions: ExtendedMountingOptions<unknown> = {
       CommonLabel,
       CommonBadge,
     },
+    directives,
     stubs: {},
     plugins,
   },
@@ -289,6 +298,10 @@ const initializeApplicationConfig = () => {
 
   plugins.push(applicationConfigPlugin)
 
+  if (isDesktop) {
+    initializeTwoFactorPlugins(twoFactorConfigurationPluginLookup)
+  }
+
   applicationConfigInitialized = true
 }
 
@@ -323,6 +336,22 @@ const mountDialog = () => {
   document.body.appendChild(element)
 
   dialogMounted = true
+}
+
+let flyoutMounted = false
+
+const mountFlyout = () => {
+  if (flyoutMounted) return
+
+  const Dialog = {
+    components: { DynamicInitializer },
+    template: '<DynamicInitializer name="flyout" />',
+  } as any
+
+  const { element } = mount(Dialog, defaultWrapperOptions)
+  document.body.appendChild(element)
+
+  flyoutMounted = true
 }
 
 setTestState({
@@ -418,6 +447,9 @@ const renderComponent = <Props>(
   }
   if (wrapperOptions?.dialog) {
     mountDialog()
+  }
+  if (wrapperOptions?.flyout) {
+    mountFlyout()
   }
   if (wrapperOptions?.confirmation) {
     mountConfirmation()

@@ -113,7 +113,7 @@ class ZammadFormFieldCapybaraElementDelegator < SimpleDelegator
   #   find_autocomplete('Tags').search_for_option(tag_1)
   #
   #   # To wait for a custom GraphQL response, you can provide expected `gql_filename` and/or `gql_number`.
-  #   find_autocomplete('Custom').search_for_option('foo', gql_filename: 'apps/mobile/entities/user/graphql/queries/user.graphql', gql_number: 4)
+  #   find_autocomplete('Custom').search_for_option('foo', gql_filename: 'shared/entities/user/graphql/queries/user.graphql', gql_number: 4)
   #
   #   # To select an autocomplete option with a different text than the query, provide an optional `label` parameter.
   #   find autocomplete('Customer').search_for_option(customer.email, label: customer.fullname)
@@ -314,7 +314,7 @@ class ZammadFormFieldCapybaraElementDelegator < SimpleDelegator
   #   find_datepicker('Date Picker').select_date(Date.today)
   #   find_datepicker('Date Picker').select_date('2023-01-01')
   #
-  def select_date(date, with_time: false)
+  def select_date(date)
     raise 'Field does not support selecting dates' if !type_date? && !type_datetime?
 
     element.click
@@ -323,18 +323,19 @@ class ZammadFormFieldCapybaraElementDelegator < SimpleDelegator
 
     date = Date.parse(date) if !date.is_a?(Date) && !date.is_a?(DateTime) && !date.is_a?(Time)
 
-    element.find('[aria-label="Year"]').fill_in with: date.year
-    element.find('[aria-label="Month"]').find('option', text: date.strftime('%B')).select_option
+    element.find('[aria-label="Open the years overlay"]').click
+    element.find('.dp__overlay_col', text: date.year).click
+    element.find('[aria-label="Open the months overlay"]').click
+    element.find('.dp__overlay_col', text: date.strftime('%b')).click
 
-    label = date.strftime('%m/%d/%Y')
-    label += ' 12:00 am' if with_time
-    element.find("[aria-label=\"#{label}\"]").click
+    id = date.strftime('%Y-%m-%d')
+    element.find_by_id(id).click # rubocop:disable Rails/DynamicFindBy
 
     yield if block_given?
 
-    close_date_picker(element)
+    # close_date_picker(element)
 
-    wait_for_test_flag("field-date-time-#{field_id}.closed")
+    # wait_for_test_flag("field-date-time-#{field_id}.closed")
 
     maybe_wait_for_form_updater
 
@@ -352,11 +353,16 @@ class ZammadFormFieldCapybaraElementDelegator < SimpleDelegator
 
     datetime = DateTime.parse(datetime) if !datetime.is_a?(DateTime) && !datetime.is_a?(Time)
 
-    select_date(datetime, with_time: true) do
-      element.find('[aria-label="Hour"]').fill_in with: datetime.hour
-      element.find('[aria-label="Minute"]').fill_in with: datetime.min
+    select_date(datetime) do
+      element.find('[aria-label="Open the time picker"]').click
 
-      meridian_indicator = element.find('[title="Click to toggle"]')
+      element.find('[aria-label="Open the hours overlay"]').click
+      element.find('.dp__overlay_col', text: format('%02d', datetime.hour)).click
+
+      element.find('[aria-label="Open the minutes overlay"]').click
+      element.find('.dp__overlay_col', text: format('%02d', datetime.min)).click
+
+      meridian_indicator = element.find('[aria-label="Toggle AM/PM mode"]')
       meridian_indicator.click if meridian_indicator.text != datetime.strftime('%p')
     end
   end
@@ -372,14 +378,17 @@ class ZammadFormFieldCapybaraElementDelegator < SimpleDelegator
 
     date = Date.parse(date) if !date.is_a?(Date)
 
-    # NB: For some reason, Flatpickr does not support localized date input, only ISO date works ATM.
-    input_element.fill_in with: date.strftime('%Y-%m-%d')
+    # TODO: Support locales other than `en`, depending on the language of the current user.
+    input_element.fill_in with: date.strftime('%m/%d/%Y')
+    input_element.send_keys :return
 
-    wait_for_test_flag("field-date-time-#{field_id}.opened")
+    # wait_for_test_flag("field-date-time-#{field_id}.opened")
 
-    close_date_picker(element)
+    # close_date_picker(element)
 
-    wait_for_test_flag("field-date-time-#{field_id}.closed")
+    # wait_for_test_flag("field-date-time-#{field_id}.closed")
+
+    maybe_wait_for_form_updater
 
     self # support chaining
   end
@@ -395,14 +404,17 @@ class ZammadFormFieldCapybaraElementDelegator < SimpleDelegator
 
     datetime = DateTime.parse(datetime) if !datetime.is_a?(DateTime) && !datetime.is_a?(Time)
 
-    # NB: For some reason, Flatpickr does not support localized date with time input, only ISO date works ATM.
-    input_element.fill_in with: datetime.strftime('%Y-%m-%d %H:%M')
+    # TODO: Support locales other than `en`, depending on the language of the current user.
+    input_element.fill_in with: datetime.strftime('%m/%d/%Y %-l:%M %P')
+    input_element.send_keys :return
 
-    wait_for_test_flag("field-date-time-#{field_id}.opened")
+    # wait_for_test_flag("field-date-time-#{field_id}.opened")
 
-    close_date_picker(element)
+    # close_date_picker(element)
 
-    wait_for_test_flag("field-date-time-#{field_id}.closed")
+    # wait_for_test_flag("field-date-time-#{field_id}.closed")
+
+    maybe_wait_for_form_updater
 
     self # support chaining
   end
@@ -478,14 +490,14 @@ class ZammadFormFieldCapybaraElementDelegator < SimpleDelegator
 
   private
 
-  def method_missing(method_name, *args, &)
+  def method_missing(method_name, *, &)
 
     # Simulate pseudo-methods in format of `#type_[name]?` in order to determine the internal type of the field.
     if method_name.to_s =~ %r{^type_(.+)\?$}
       return element['data-type'] == $1
     end
 
-    super(method_name, *args, &)
+    super
   end
 
   def respond_to_missing?(method_name, include_private = false)
@@ -834,7 +846,7 @@ class ZammadFormFieldCapybaraElementDelegator < SimpleDelegator
   end
 
   def clear_date
-    input_element.send_keys(:backspace)
+    element.find('[role="button"][aria-label="Clear Selection"]').click
 
     maybe_wait_for_form_updater
 

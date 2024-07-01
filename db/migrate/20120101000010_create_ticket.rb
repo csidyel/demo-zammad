@@ -313,6 +313,8 @@ class CreateTicket < ActiveRecord::Migration[4.2]
       t.column :condition,                :text, limit: 500.kilobytes + 1, null: false
       t.column :perform,                  :text, limit: 500.kilobytes + 1, null: false
       t.column :disable_notification,     :boolean,               null: false, default: true
+      t.column :localization,             :string, limit: 20,     null: true # thx to ApplicationModel::CanCreatesAndUpdates ...
+      t.column :timezone,                 :string, limit: 250,    null: true
       t.column :note,                     :string, limit: 250,    null: true
       t.column :activator,                :string, limit: 50,     null: false, default: 'action'
       t.column :execution_condition_mode, :string, limit: 50,     null: false, default: 'selective'
@@ -402,15 +404,6 @@ class CreateTicket < ActiveRecord::Migration[4.2]
     add_index :templates, [:name]
     add_foreign_key :templates, :users, column: :created_by_id
     add_foreign_key :templates, :users, column: :updated_by_id
-
-    create_table :templates_groups, id: false do |t|
-      t.references :template
-      t.references :group
-    end
-    add_index :templates_groups, [:template_id]
-    add_index :templates_groups, [:group_id]
-    add_foreign_key :templates_groups, :templates
-    add_foreign_key :templates_groups, :groups
 
     create_table :channels do |t|
       t.references :group,                             null: true
@@ -580,7 +573,6 @@ class CreateTicket < ActiveRecord::Migration[4.2]
     drop_table :macros
     drop_table :slas
     drop_table :channels
-    drop_table :templates_groups
     drop_table :templates
     drop_table :text_modules_groups
     drop_table :text_modules

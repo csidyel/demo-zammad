@@ -1,11 +1,12 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { startCase } from 'lodash-es'
+import { computed } from 'vue'
+
 import type { ButtonSize, ButtonType, ButtonVariant } from './types.ts'
 
-interface Props {
+export interface Props {
   variant?: ButtonVariant
   type?: ButtonType
   disabled?: boolean
@@ -26,10 +27,9 @@ const props = withDefaults(defineProps<Props>(), {
 const variantClasses = computed(() => {
   switch (props.variant) {
     case 'primary':
-      return ['btn-primary', 'bg-blue-800', 'hover:bg-blue-800', 'text-white']
+      return ['bg-blue-800', 'hover:bg-blue-800', 'text-white']
     case 'tertiary':
       return [
-        'btn-neutral',
         'bg-green-200',
         'hover:bg-green-200',
         'dark:bg-gray-600',
@@ -38,15 +38,9 @@ const variantClasses = computed(() => {
         'dark:text-neutral-400',
       ]
     case 'submit':
-      return [
-        'btn-accent',
-        'bg-yellow-300',
-        'hover:bg-yellow-300',
-        'text-black',
-      ]
+      return ['bg-yellow-300', 'hover:bg-yellow-300', 'text-black']
     case 'danger':
       return [
-        'btn-error',
         'bg-pink-100',
         'hover:bg-pink-100',
         'dark:bg-red-900',
@@ -55,21 +49,31 @@ const variantClasses = computed(() => {
       ]
     case 'remove':
       return [
-        'btn-info',
         'bg-red-400',
         'hover:bg-red-400',
         'dark:bg-red-600',
         'dark:hover:bg-red-600',
         'text-white',
       ]
-    case 'secondary':
-    default:
+    case 'subtle':
       return [
-        'btn-secondary',
+        'bg-blue-600',
+        'dark:bg-blue-900',
+        'hover:bg-blue-600',
+        'dark:hover:bg-blue-900',
+        'text-black',
+        'dark:text-white',
+      ]
+    case 'neutral':
+      return [
         'bg-transparent',
         'hover:bg-transparent',
-        'text-blue-800',
+        'text-gray-100',
+        'dark:text-neutral-400',
       ]
+    case 'secondary':
+    default:
+      return ['bg-transparent', 'hover:bg-transparent', 'text-blue-800']
   }
 })
 
@@ -133,7 +137,7 @@ const iconSizeClass = computed(() => {
 
 <template>
   <button
-    class="btn h-min min-h-min border-0 shadow-none font-normal flex-nowrap gap-x-2.5 hover:outline hover:outline-1 hover:outline-offset-1 hover:outline-blue-600 dark:hover:outline-blue-900 focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800"
+    class="-:inline-flex -:focus:outline-none -:focus:outline-0 -:focus:outline-offset-0 h-min min-h-min flex-shrink-0 flex-nowrap items-center justify-center gap-x-1 border-0 font-normal shadow-none transition duration-200 hover:outline hover:outline-1 hover:outline-offset-1 hover:outline-blue-600 focus:hover:outline focus:hover:outline-1 focus:hover:outline-offset-1 focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800 focus:active:scale-[95%] dark:hover:outline-blue-900"
     :class="[
       ...variantClasses,
       ...sizeClasses,
@@ -141,7 +145,7 @@ const iconSizeClass = computed(() => {
       ...disabledClasses,
       borderRadiusClass,
       {
-        'btn-block': block,
+        'w-full': block,
         'w-min': !block,
       },
     ]"

@@ -2,9 +2,11 @@
 
 import { shallowRef } from 'vue'
 
-import Form from '#shared/components/Form/Form.vue'
 import { renderComponent } from '#tests/support/components/index.ts'
 import { waitForNextTick } from '#tests/support/utils.ts'
+
+import Form from '#shared/components/Form/Form.vue'
+
 import GuidedSetupActionFooter from '../GuidedSetupActionFooter.vue'
 
 const wrapperParameters = {
@@ -116,10 +118,11 @@ describe('GuidedSetupActionFooter.vue', () => {
   })
 
   it('renders back button when event registration exists', async () => {
-    const onBack = vi.fn()
+    const onGoBack = vi.fn()
+
     const view = renderComponent(GuidedSetupActionFooter, {
       props: {
-        onBack,
+        onGoBack,
       },
       ...wrapperParameters,
     })
@@ -130,7 +133,7 @@ describe('GuidedSetupActionFooter.vue', () => {
 
     await view.events.click(goBackButton)
 
-    expect(onBack).toHaveBeenCalledOnce()
+    expect(onGoBack).toHaveBeenCalledOnce()
   })
 
   it('renders skip button when route is given', () => {

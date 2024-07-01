@@ -1,14 +1,15 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
+import { visitView } from '#tests/support/components/visitView.ts'
+import { mockApplicationConfig } from '#tests/support/mock-applicationConfig.ts'
+import { mockGraphQLApi } from '#tests/support/mock-graphql-api.ts'
+
 import {
   mockPublicLinks,
   mockPublicLinksSubscription,
 } from '#shared/entities/public-links/__tests__/mocks/mockPublicLinks.ts'
 import { LoginDocument } from '#shared/graphql/mutations/login.api.ts'
 import { EnumTwoFactorAuthenticationMethod } from '#shared/graphql/types.ts'
-import { visitView } from '#tests/support/components/visitView.ts'
-import { mockApplicationConfig } from '#tests/support/mock-applicationConfig.ts'
-import { mockGraphQLApi } from '#tests/support/mock-graphql-api.ts'
 
 describe('testing login error handling', () => {
   beforeEach(() => {
@@ -20,9 +21,14 @@ describe('testing login error handling', () => {
   it('check required login fields', async () => {
     const view = await visitView('/login')
     await view.events.click(view.getByText('Sign in'))
-    const error = view.getAllByText('This field is required.')
 
-    expect(error).toHaveLength(2)
+    expect(view.getByLabelText('Username / Email')).toBeDescribedBy(
+      'This field is required.',
+    )
+
+    expect(view.getByLabelText('Password')).toBeDescribedBy(
+      'This field is required.',
+    )
   })
 
   it('check that login request error is visible', async () => {

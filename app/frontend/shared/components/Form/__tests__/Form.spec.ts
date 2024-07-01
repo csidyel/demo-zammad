@@ -1,26 +1,27 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { Ref } from 'vue'
-import { nextTick, onMounted, ref } from 'vue'
-import type { FormKitNode } from '@formkit/core'
 import { getNode } from '@formkit/core'
 import { waitFor, within } from '@testing-library/vue'
+import { nextTick, onMounted, ref } from 'vue'
+
+import { renderComponent } from '#tests/support/components/index.ts'
 import type {
   ExtendedMountingOptions,
   ExtendedRenderResult,
 } from '#tests/support/components/index.ts'
-import { renderComponent } from '#tests/support/components/index.ts'
 import { mockGraphQLApi } from '#tests/support/mock-graphql-api.ts'
 import { waitForNextTick, waitUntil } from '#tests/support/utils.ts'
+
 import Form from '#shared/components/Form/Form.vue'
 import type { Props } from '#shared/components/Form/Form.vue'
+import { ObjectManagerFrontendAttributesDocument } from '#shared/entities/object-attributes/graphql/queries/objectManagerFrontendAttributes.api.ts'
+import frontendObjectAttributes from '#shared/entities/ticket/__tests__/mocks/frontendObjectAttributes.json'
 import UserError from '#shared/errors/UserError.ts'
 import {
   EnumFormUpdaterId,
   EnumObjectManagerObjects,
 } from '#shared/graphql/types.ts'
-import { ObjectManagerFrontendAttributesDocument } from '#shared/entities/object-attributes/graphql/queries/objectManagerFrontendAttributes.api.ts'
-import frontendObjectAttributes from '#shared/entities/ticket/__tests__/mocks/frontendObjectAttributes.json'
+
 import { FormUpdaterDocument } from '../graphql/queries/formUpdater.api.ts'
 import {
   type FormRef,
@@ -28,6 +29,9 @@ import {
   type FormSchemaField,
   FormHandlerExecution,
 } from '../types.ts'
+
+import type { FormKitNode } from '@formkit/core'
+import type { Ref } from 'vue'
 
 const wrapperParameters = {
   form: true,
@@ -145,6 +149,36 @@ describe('Form.vue', () => {
     // we depend on this attributes, so we test it
     expect(error).toHaveAttribute('data-message-type', 'error')
     expect(error.closest('[data-errors="true"]')).toBeInTheDocument()
+  })
+
+  it('stops submit handler when false is returned', async () => {
+    const wrapper = await renderForm({
+      props: {
+        clearValuesAfterSubmit: true,
+        onSubmit: (data: FormValues) => {
+          if (data.title === 'Other title') return () => {}
+
+          return false
+        },
+      },
+    })
+
+    const title = wrapper.getByLabelText('Title')
+    await wrapper.events.type(title, 'Example title')
+    await wrapper.events.type(title, '{Enter}')
+
+    expect(wrapper.emitted().submit).toBeTruthy()
+
+    expect(title).toHaveDisplayValue('Example title')
+
+    // For the other value it should run the complete submit flow,
+    // so also the reset of the values.
+    await wrapper.events.clear(title)
+    await wrapper.events.type(title, 'Other title')
+    await wrapper.events.type(title, '{Enter}')
+
+    expect(wrapper.emitted().submit).toBeTruthy()
+    expect(title).toHaveDisplayValue('')
   })
 
   it('implements changed event', async () => {
@@ -538,7 +572,7 @@ describe('Form.vue - Edge Cases', () => {
   it('focuses the first focusable input, if autofocus is enabled', async () => {
     const view = await renderForm({
       props: {
-        autofocus: true,
+        shouldAutofocus: true,
       },
     })
 
@@ -655,7 +689,7 @@ describe('Form.vue - with object attributes', () => {
     const view = renderComponent(Form, {
       ...wrapperParameters,
       props: {
-        autofocus: true,
+        shouldAutofocus: true,
         useObjectAttributes: true,
         schema: [
           {

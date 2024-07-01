@@ -1,13 +1,16 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { MutationHandler } from '#shared/server/apollo/handler/index.ts'
-import { useTicketArticleDeleteMutation } from '#shared/entities/ticket-article/graphql/mutations/delete.api.ts'
-import { useSessionStore } from '#shared/stores/session.ts'
+import { useConfirmation } from '#shared/composables/useConfirmation.ts'
 import type { TicketArticle } from '#shared/entities/ticket/types.ts'
-import { waitForConfirmation } from '#shared/utils/confirmation.ts'
+import { useTicketArticleDeleteMutation } from '#shared/entities/ticket-article/graphql/mutations/delete.api.ts'
+import { MutationHandler } from '#shared/server/apollo/handler/index.ts'
+import { useSessionStore } from '#shared/stores/session.ts'
+
 import type { TicketArticleActionPlugin, TicketArticleAction } from './types.ts'
 
 const deleteAction = async (article: TicketArticle) => {
+  const { waitForConfirmation } = useConfirmation()
+
   const confirmed = await waitForConfirmation(
     __('Are you sure to remove this article?'),
   )

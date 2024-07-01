@@ -1,18 +1,19 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { computed, ref, reactive } from 'vue'
+
 import { useTwoFactorPlugins } from '#shared/entities/two-factor/composables/useTwoFactorPlugins.ts'
-import type {
-  EnumTwoFactorAuthenticationMethod,
-  UserTwoFactorMethods,
-} from '#shared/graphql/types.ts'
 import type {
   LoginFlow,
   LoginCredentials,
 } from '#shared/entities/two-factor/types.ts'
+import type {
+  EnumTwoFactorAuthenticationMethod,
+  UserLoginTwoFactorMethods,
+} from '#shared/graphql/types.ts'
 import { useApplicationStore } from '#shared/stores/application.ts'
 
-const { twoFactorPlugins, twoFactorMethods } = useTwoFactorPlugins()
+const { twoFactorMethodLookup, twoFactorMethods } = useTwoFactorPlugins()
 
 const useLoginTwoFactor = (clearErrors: () => void) => {
   const application = useApplicationStore()
@@ -42,7 +43,7 @@ const useLoginTwoFactor = (clearErrors: () => void) => {
   }
 
   const askTwoFactor = (
-    twoFactor: UserTwoFactorMethods,
+    twoFactor: UserLoginTwoFactorMethods,
     formData: LoginCredentials,
   ) => {
     clearErrors()
@@ -64,7 +65,7 @@ const useLoginTwoFactor = (clearErrors: () => void) => {
 
   const twoFactorPlugin = computed(() => {
     return loginFlow.twoFactor
-      ? twoFactorPlugins[loginFlow.twoFactor]
+      ? twoFactorMethodLookup[loginFlow.twoFactor]
       : undefined
   })
 

@@ -278,13 +278,16 @@ RSpec.describe 'Sessions endpoints', type: :request do
     end
   end
 
-  describe 'POST /auth/two_factor_initiate_authentication/:method' do
+  describe 'POST /auth/two_factor_itwo_factor_method_enablednitiate_authentication/:method' do
     let(:user)                       { create(:user, password: 'dummy') }
     let(:params)                     { {} }
     let(:method)                     { 'security_keys' }
     let(:user_two_factor_preference) { nil }
+    let(:two_factor_method_enabled)  { true }
 
     before do
+      Setting.set('two_factor_authentication_method_security_keys', two_factor_method_enabled)
+
       if defined?(user_two_factor_preference)
         user_two_factor_preference
         user.reload
@@ -317,6 +320,14 @@ RSpec.describe 'Sessions endpoints', type: :request do
         it 'returns options for initiation phase', :aggregate_failures do
           expect(response).to have_http_status(:ok)
           expect(json_response).to include('challenge')
+        end
+
+        context 'with disabled authenticator method' do
+          let(:two_factor_method_enabled) { false }
+
+          it 'returns an error' do
+            expect(response).to have_http_status(:unprocessable_entity)
+          end
         end
       end
     end

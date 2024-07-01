@@ -32,11 +32,6 @@
   extends:
     - .template_lint_rails
   cache: !reference [.cache, read_only_full]
-  artifacts:
-    expire_in: 1 week
-    paths:
-      - tmp/brakeman-report.html
-    when: on_failure
   script:
     - !reference [.scripts, yarn_install]
     - echo "Checking .po file syntax…"
@@ -45,11 +40,11 @@
     - bundle exec rails generate zammad:translation_catalog --check
     - echo "Checking consistency of Settings types file…"
     - bundle exec rails generate zammad:setting_types --check
-    - echo "Brakeman security check…"
-    - bundle exec brakeman -o /dev/stdout -o tmp/brakeman-report.html
     - echo "Rails zeitwerk:check autoloader check…"
     - bundle exec rails zeitwerk:check
     - .gitlab/check_graphql_api_consistency.sh
+    - echo "Checking consistency of setting types API"
+    - bundle exec rails generate zammad:setting_types --check
 
 'lint: ruby & security':
   extends:
@@ -57,24 +52,29 @@
   before_script:
     - !reference [.scripts, source_rvm]
     - !reference [.scripts, bundle_install]
+  after_script: []
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - tmp/brakeman-report.html
+    when: on_failure
   script:
     - echo "Rubocop check…"
-    - bundle exec .rubocop/validate_todos.rb
+    - bundle exec .dev/rubocop/validate_todos.rb
     - bundle exec rubocop --parallel
     - echo "bundler-audit security check…"
     - gem install bundler-audit
     - bundle-audit update
     - bundle-audit
-    - echo "Checking if chat assets need a rebuild…"
-    - echo "Please see public/assets/chat/README.md for build instructions."
-    - cp public/assets/chat/chat.js tmp/chat.js
-    - yarn install --cwd public/assets/chat
-    - (cd public/assets/chat && npx gulp build)
-    - echo "First characters of public/assets/chat/chat.js"
-    - head -c300 public/assets/chat/chat.js; echo # Insert newline after chat content
-    - echo "First characters of tmp/chat.js"
-    - head -c300 tmp/chat.js; echo # Insert newline after chat content
-    - cmp public/assets/chat/chat.js tmp/chat.js
+    - echo "Brakeman security check…"
+    - bundle exec brakeman -o /dev/stdout -o tmp/brakeman-report.html
+    - echo "Checking if yard can generate documentation…"
+    - bundle exec yard --no-output --no-progress
+    - echo "Verify that vendored gems are not world writable"
+    - GEM_FILES=$(find vendor/ -name "*.rb" -perm -002)
+    - if [[ ! -z "$GEM_FILES" ]]; then echo $GEM_FILES; exit 1; fi # Raise error if files were found.
+    - echo "Finally, ensure cleanup.sh passes…"
+    - script/build/cleanup.sh
 
 'lint: coffee & css':
   extends:
@@ -84,9 +84,15 @@
     - !reference [.scripts, yarn_install]
   script:
     - echo "Coffeelint check…"
-    - coffeelint --rules ./.coffeelint/rules/* app/
+    - coffeelint --rules ./.dev/coffeelint/rules/* app/
     - echo "Stylelint check…"
     - yarn lint:css
+    - echo "Checking if chat assets need a rebuild…"
+    - echo "Please see public/assets/chat/README.md for build instructions."
+    - cp public/assets/chat/chat.js tmp/chat.js
+    - yarn install --cwd public/assets/chat
+    - (cd public/assets/chat && npx gulp build)
+    - cmp public/assets/chat/chat.js tmp/chat.js
 
 'lint: js':
   extends:
@@ -97,11 +103,22 @@
   before_script:
     - cp yarn.lock tmp/yarn.lock  # Save original state of yarn.lock
     - !reference [.scripts, yarn_install]
+    - !reference [.scripts, source_rvm]
   script:
     - echo "Checking if yarn.lock is up-to-date"
     - "if ! diff yarn.lock tmp/yarn.lock; then echo 'Error: yarn.lock is not up-to-date'; exit 1; fi"
+    - echo "TypeScript compiler check…"
+    - yarn lint:ts
     - echo "ESLint check…"
-    - yarn lint
+    - yarn lint:js app/frontend/ .eslint-plugin-zammad/
+    - yarn analyse:vite-bundle -t list -o ./tmp/vite-bundle-stats.yml
+    - .gitlab/verify_vite_bundle_size.rb
+    # Artifacts are stored for failed jobs
+  artifacts:
+    expire_in: 1 week
+    when: on_failure
+    paths:
+      - tmp/vite-bundle-stats.yml
 
 # Must be a separate job because it may fail and is only executed manually.
 'lint: orphaned ruby gems':

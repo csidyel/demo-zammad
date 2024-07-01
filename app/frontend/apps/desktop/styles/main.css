@@ -1,3 +1,4 @@
+@import './transitions.css';
 @config './tailwind.desktop.js';
 @tailwind base;
 @tailwind components;
@@ -30,6 +31,11 @@
     animation-name: onAutoFillEnd;
   }
 
+  /* Better-looking typography on high-density screens. */
+  body {
+    @apply antialiased;
+  }
+
   @keyframes onAutoFillStart {
     from {
     }
@@ -54,7 +60,7 @@
   }
 
   .required::after {
-    @apply inline-block font-extrabold content-['•'] ltr:ml-1 rtl:mr-1 text-yellow-600;
+    @apply inline-block font-extrabold text-yellow-600 content-['•'] ltr:ml-1 rtl:mr-1;
   }
 
   /* Compatibility layer for object attributes and form columns. */
@@ -71,10 +77,90 @@
 
     .form-group.form-group-mark-dirty .formkit-outer[data-dirty]::before {}
   */
+
+  .tooltip {
+    @apply fixed w-fit -translate-y-2 select-none text-wrap rounded-md border border-neutral-100 bg-blue-200 px-2 py-1 text-xs leading-snug text-gray-100 opacity-0 transition-all dark:border-gray-900 dark:bg-gray-700 dark:text-neutral-400;
+
+    &-animate {
+      @apply translate-y-0 opacity-100;
+    }
+  }
+
+  /*
+    Editor content styles
+  */
+  .Content,
+  .ProseMirror {
+    div[data-signature-marker] {
+      display: none;
+    }
+
+    &:focus-visible {
+      outline: none;
+    }
+
+    blockquote {
+      @apply border-l-4 border-l-gray-200 px-3 py-2;
+    }
+
+    ol {
+      list-style: decimal;
+    }
+
+    ul {
+      list-style: disc;
+    }
+
+    ol,
+    ul {
+      @apply pb-2;
+
+      padding-inline-start: theme('spacing.2');
+      list-style-position: inside;
+
+      p {
+        display: inline;
+      }
+    }
+
+    h1 {
+      @apply mb-1 mt-2 text-2xl font-bold;
+    }
+
+    h2 {
+      @apply mb-1 mt-2 text-xl font-bold;
+    }
+
+    h3 {
+      @apply mb-1 mt-2 text-lg font-bold;
+    }
+
+    a {
+      @apply text-blue-800;
+    }
+
+    [dir='rtl'] {
+      text-align: right;
+    }
+
+    [dir='ltr'] {
+      text-align: left;
+    }
+  }
 }
 
 @layer utilities {
   .group-block {
-    @apply p-5 bg-white dark:bg-gray-500 text-black dark:text-white rounded-3xl;
+    @apply rounded-3xl bg-white p-5 text-black dark:bg-gray-500 dark:text-white;
+  }
+
+  @media print {
+    [data-print-mode='true'] body {
+      @apply invisible;
+
+      .print-area {
+        @apply visible fixed inset-0;
+      }
+    }
   }
 }

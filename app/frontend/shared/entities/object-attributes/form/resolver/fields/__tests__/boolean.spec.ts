@@ -1,6 +1,7 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { EnumObjectManagerObjects } from '#shared/graphql/types.ts'
+
 import { FieldResolverBoolean } from '../boolean.ts'
 
 describe('FieldResolverBoolean', () => {
@@ -31,6 +32,7 @@ describe('FieldResolverBoolean', () => {
       value: false,
       type: 'toggle',
       internal: true,
+      wrapperClass: 'mt-6',
     })
   })
 })

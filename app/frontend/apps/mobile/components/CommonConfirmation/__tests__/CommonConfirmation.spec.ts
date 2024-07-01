@@ -1,15 +1,18 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { confirmationOptions } from '#shared/utils/confirmation.ts'
 import {
   renderComponent,
   type ExtendedRenderResult,
 } from '#tests/support/components/index.ts'
 import { waitForNextTick } from '#tests/support/utils.ts'
 
+import { useConfirmation } from '#shared/composables/useConfirmation.ts'
+
 import CommonConfirmation from '../CommonConfirmation.vue'
 
 let wrapper: ExtendedRenderResult
+
+const { confirmationOptions } = useConfirmation()
 
 beforeEach(() => {
   confirmationOptions.value = undefined
@@ -22,8 +25,9 @@ describe('popup confirm behaviour', () => {
     const confirmCallbackSpy = vi.fn()
 
     confirmationOptions.value = {
-      heading: 'Test heading',
+      text: 'Test heading',
       confirmCallback: confirmCallbackSpy,
+      cancelCallback: vi.fn(),
     }
 
     await waitForNextTick()
@@ -39,18 +43,19 @@ describe('popup confirm behaviour', () => {
     const confirmCallbackSpy = vi.fn()
 
     confirmationOptions.value = {
-      heading: 'Test heading',
-      buttonTitle: 'Custom button title',
+      text: 'Test heading',
+      buttonLabel: 'Custom button title',
       buttonVariant: 'danger',
       confirmCallback: confirmCallbackSpy,
+      cancelCallback: vi.fn(),
     }
 
     await waitForNextTick()
 
-    expect(wrapper.getByText('Custom button title')).toBeInTheDocument()
-    expect(wrapper.getByText('Custom button title')).toHaveClass(
-      'text-red-bright',
-    )
+    const button = wrapper.getByRole('button', { name: 'Custom button title' })
+
+    expect(button).toBeInTheDocument()
+    expect(button).toHaveClass('text-red-bright')
   })
 
   it('closes the confirmation dialog by using cancel', async () => {
@@ -58,7 +63,7 @@ describe('popup confirm behaviour', () => {
     const cancelCallbackSpy = vi.fn()
 
     confirmationOptions.value = {
-      heading: 'Test heading',
+      text: 'Test heading',
       confirmCallback: confirmCallbackSpy,
       cancelCallback: cancelCallbackSpy,
     }

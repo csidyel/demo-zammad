@@ -860,7 +860,7 @@ class App.TicketZoomArticleNew extends App.Controller
 
     if !sizeConfig
       return App.i18n.translateContent(
-        __('File format is not allowed: %s'),
+        __('The file type %s is not allowed.'),
         @attachmentContentType(file)
       )
 
@@ -880,13 +880,17 @@ class App.TicketZoomArticleNew extends App.Controller
     file.type || file.contentType || file.preferences?['Content-Type'] || file.preferences?['Mime-Type']
 
   checkBodyEnsureNoCaption: =>
-    @bodyEnsureNoCaption?(@attachments.map (file) => @attachmentContentType(file))
+    return false if !@bodyEnsureNoCaption
+
+    @bodyEnsureNoCaption(@attachments.map (file) => @attachmentContentType(file))
 
   checkBodyAllowNoCaption: =>
-    @bodyAllowNoCaption?(@attachments)
+    return false if !@bodyAllowNoCaption
+
+    @bodyAllowNoCaption(@attachments)
 
   checkBodyAllowEmpty: =>
-    !!@checkBodyEnsureNoCaption() || @checkBodyAllowNoCaption()
+    @checkBodyEnsureNoCaption() || @checkBodyAllowNoCaption()
 
   evaluateAttachmentsList: =>
     @toggleBodyEnsureNoCaption @checkBodyEnsureNoCaption()

@@ -2,7 +2,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+
 import type { FormStep } from '#shared/components/Form/types.ts'
+
 import CommonStepperStep from './CommonStepperStep.vue'
 
 interface Props {
@@ -13,7 +15,7 @@ interface Props {
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string): void
+  'update:modelValue': [string]
 }>()
 
 const localSteps = computed(() => {

@@ -1,9 +1,14 @@
 # Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Token < ApplicationModel
+  include Token::Permissions
+  include Token::TriggersSubscriptions
+
   before_create :generate_token
   belongs_to    :user, optional: true
   store         :preferences
+
+  scope :without_sensitive_columns, -> { select(column_names - %w[persistent token]) }
 
 =begin
 
@@ -54,13 +59,13 @@ returns
 
 =end
 
-  def self.check(data)
+  def self.check(action:, token:, permission: nil, inactive_user: false)
     # fetch token
-    token = Token.find_by(action: data[:action], token: data[:token])
+    token = Token.find_by(action:, token:)
 
     return if !token
 
-    token.user if token.check?(data)
+    token.user if token.check?(permission:, inactive_user:)
   end
 
   # Check token instance validity
@@ -72,17 +77,17 @@ returns
   #
   # @return [Boolean]
 
-  def check?(data = {})
+  def check?(permission: nil, inactive_user: false)
     if !persistent && created_at < 1.day.ago
       destroy
       return false
     end
 
     # persistent token not valid if user is inactive
-    return false if !data[:inactive_user] && persistent && user.active == false
+    return false if !inactive_user && persistent && user.active == false
 
     # add permission check
-    return false if data[:permission] && !permissions?(data[:permission])
+    return false if permission && !permissions?(permission)
 
     true
   end
@@ -96,28 +101,9 @@ cleanup old token
 =end
 
   def self.cleanup
-    Token.where('persistent IS ? AND created_at < ?', nil, 30.days.ago).delete_all
+    Token.where(persistent: false, created_at: ...30.days.ago).delete_all
+
     true
-  end
-
-  def permissions
-    Permission.where(
-      name:   Array(preferences[:permission]),
-      active: true,
-    )
-  end
-
-  def permissions?(permissions)
-    permissions!(permissions)
-    true
-  rescue Exceptions::Forbidden
-    false
-  end
-
-  def permissions!(auth_query)
-    return true if effective_user.permissions?(auth_query) && Auth::RequestCache.permissions?(self, auth_query)
-
-    raise Exceptions::Forbidden, __('Not authorized (token)!')
   end
 
   # allows to evaluate token permissions in context of given user instead of owner
@@ -138,8 +124,8 @@ cleanup old token
   # @param [Integer, User] user
   #
   # @return [Token, nil]
-  def self.fetch(action_name, user_id = UserInfo.current_user_id)
-    token = where(action: action_name, user_id: user_id).first
+  def self.fetch(action, user_id = UserInfo.current_user_id)
+    token = find_by(action: action, user_id: user_id)
 
     token if token&.check?
   end
@@ -150,12 +136,12 @@ cleanup old token
   # @param [Integer, User] user
   #
   # @return [String]
-  def self.ensure_token!(action_name, user_id = UserInfo.current_user_id, persistent: false)
-    instance = fetch(action_name, user_id)
+  def self.ensure_token!(action, user_id = UserInfo.current_user_id, persistent: false)
+    instance = fetch(action, user_id)
 
     return instance.token if instance.present?
 
-    create!(action: action_name, user_id: user_id, persistent: persistent).token
+    create!(action: action, user_id: user_id, persistent: persistent).token
   end
 
   # regenerates an existing token
@@ -164,10 +150,10 @@ cleanup old token
   # @param [Integer, User] user
   #
   # @return [String]
-  def self.renew_token!(action_name, user_id = UserInfo.current_user_id, persistent: false)
-    instance = fetch(action_name, user_id)
+  def self.renew_token!(action, user_id = UserInfo.current_user_id, persistent: false)
+    instance = fetch(action, user_id)
 
-    return create(action: action_name, user_id: user_id, persistent: persistent).token if !instance
+    return create(action: action, user_id: user_id, persistent: persistent).token if !instance
 
     instance.renew_token!
   end
@@ -180,6 +166,10 @@ cleanup old token
     save!
 
     token
+  end
+
+  def visible_in_frontend?
+    action == 'api' && persistent
   end
 
   private

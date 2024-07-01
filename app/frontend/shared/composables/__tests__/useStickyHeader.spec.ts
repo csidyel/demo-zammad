@@ -1,9 +1,11 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { flushPromises } from '@vue/test-utils'
-import type { Ref } from 'vue'
 import { ref } from 'vue'
+
 import { useStickyHeader } from '../useStickyHeader.ts'
+
+import type { Ref } from 'vue'
 
 const fixedHeaderStyle = {
   left: '0',
@@ -14,10 +16,11 @@ const fixedHeaderStyle = {
   zIndex: 9,
 }
 
-test('can pass down custom element', () => {
-  const element = ref()
+test('can pass down custom html element', () => {
+  const header = document.createElement('header')
+  const element = ref(header)
   const { headerElement } = useStickyHeader([], element)
-  expect(headerElement).toBe(element)
+  expect(headerElement.value).toBe(header)
 })
 
 test('reevaluates styles when dependencies change', async () => {

@@ -26,7 +26,7 @@ returns if user has no permissions to search
 =end
 
     def search_preferences(current_user)
-      return false if !current_user.permissions?('ticket.agent') && !current_user.permissions?('ticket.customer')
+      return false if !current_user.permissions?(['ticket.agent', 'ticket.customer'])
 
       {
         prio:                3000,
@@ -176,12 +176,9 @@ returns
                                                            sort_by:         sort_by,
                                                            order_by:        order_by)
         if !full
-          ids = []
-          items.each do |item|
-            ids.push item[:id]
-          end
-          return ids
+          return items.pluck(:id)
         end
+
         tickets = []
         items.each do |item|
           ticket = Ticket.lookup(id: item[:id])

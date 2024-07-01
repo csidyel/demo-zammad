@@ -1,26 +1,28 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+
 import {
   useNotifications,
   NotificationTypes,
 } from '#shared/components/CommonNotifications/index.ts'
-import { useApplicationStore } from '#shared/stores/application.ts'
-import { computed } from 'vue'
+import useLoginTwoFactor from '#shared/composables/authentication/useLoginTwoFactor.ts'
 import { useThirdPartyAuthentication } from '#shared/composables/authentication/useThirdPartyAuthentication.ts'
 import { useForceDesktop } from '#shared/composables/useForceDesktop.ts'
+import { usePublicLinks } from '#shared/composables/usePublicLinks.ts'
 import type UserError from '#shared/errors/UserError.ts'
 import { EnumPublicLinksScreen } from '#shared/graphql/types.ts'
-import { usePublicLinks } from '#shared/composables/usePublicLinks.ts'
-import useLoginTwoFactor from '#shared/composables/authentication/useLoginTwoFactor.ts'
-import LoginThirdParty from '../components/LoginThirdParty.vue'
+import { useApplicationStore } from '#shared/stores/application.ts'
+
 import LoginCredentialsForm from '../components/LoginCredentialsForm.vue'
+import LoginFooter from '../components/LoginFooter.vue'
 import LoginHeader from '../components/LoginHeader.vue'
+import LoginRecoveryCode from '../components/LoginRecoveryCode.vue'
+import LoginThirdParty from '../components/LoginThirdParty.vue'
 import LoginTwoFactor from '../components/LoginTwoFactor.vue'
 import LoginTwoFactorMethods from '../components/LoginTwoFactorMethods.vue'
-import LoginRecoveryCode from '../components/LoginRecoveryCode.vue'
-import LoginFooter from '../components/LoginFooter.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -31,6 +33,7 @@ const { notify, clearAllNotifications } = useNotifications()
 // This could happen because the session was deleted on the server.
 if (route.query.invalidatedSession === '1') {
   notify({
+    id: 'invalid-session',
     message: __('The session is no longer valid. Please log in again.'),
     type: NotificationTypes.Warn,
   })
@@ -75,6 +78,7 @@ const finishLogin = () => {
 
 const showError = (error: UserError) => {
   notify({
+    id: 'login-error',
     message: error.generalErrors[0],
     type: NotificationTypes.Error,
   })
@@ -139,7 +143,7 @@ const showError = (error: UserError) => {
       >
         {{ $t('Having problems?') }}
         <button
-          class="cursor-pointer pb-2 font-semibold leading-4 text-gray"
+          class="text-gray cursor-pointer pb-2 font-semibold leading-4"
           @click.prevent="updateState('2fa-select')"
         >
           {{ $t('Try another method') }}
@@ -160,7 +164,7 @@ const showError = (error: UserError) => {
       </p>
       <CommonLink
         link="/#admin_password_auth"
-        class="font-semibold text-gray"
+        class="text-gray font-semibold"
         @click="forceDesktop"
       >
         {{ $t('Request the password login here.') }}
@@ -168,13 +172,13 @@ const showError = (error: UserError) => {
     </section>
     <div
       v-if="loginFlow.state !== 'credentials' && !hasAlternativeLoginMethod"
-      class="pb-2 font-medium leading-4 text-gray"
+      class="text-gray pb-2 font-medium leading-4"
     >
       {{ $t('Contact the administrator if you have any problems logging in.') }}
     </div>
     <CommonLink
       link="/#login"
-      class="font-medium leading-4 text-gray"
+      class="text-gray font-medium leading-4"
       @click="forceDesktop"
     >
       {{ $t('Continue to desktop') }}
@@ -188,7 +192,7 @@ const showError = (error: UserError) => {
           :link="link.link"
           :title="link.description"
           :open-in-new-tab="link.newTab"
-          class="font-semibold leading-4 tracking-wide text-gray after:ml-1 after:font-medium after:text-gray-200 after:content-['|'] last:after:content-none"
+          class="text-gray font-semibold leading-4 tracking-wide after:ml-1 after:font-medium after:text-gray-200 after:content-['|'] last:after:content-none"
         >
           {{ $t(link.title) }}
         </CommonLink>

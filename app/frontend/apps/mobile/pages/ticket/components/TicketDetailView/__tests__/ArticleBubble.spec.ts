@@ -1,14 +1,18 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { convertToGraphQLId } from '#shared/graphql/utils.ts'
-import { waitForAnimationFrame } from '#shared/utils/helpers.ts'
 import { getByAltText, queryByAltText } from '@testing-library/vue'
+
 import { renderComponent } from '#tests/support/components/index.ts'
 import { getTestRouter } from '#tests/support/components/renderComponent.ts'
-import { mockAccount } from '#tests/support/mock-account.ts'
-import { routes } from '#mobile/router/index.ts'
-import { isStandalone } from '#shared/utils/pwa.ts'
 import { mockApplicationConfig } from '#tests/support/mock-applicationConfig.ts'
+import { mockUserCurrent } from '#tests/support/mock-userCurrent.ts'
+
+import { convertToGraphQLId } from '#shared/graphql/utils.ts'
+import { waitForAnimationFrame } from '#shared/utils/helpers.ts'
+import { isStandalone } from '#shared/utils/pwa.ts'
+
+import { routes } from '#mobile/router/index.ts'
+
 import ArticleBubble from '../ArticleBubble.vue'
 
 const mainRoutes = routes.at(-1)?.children || []
@@ -53,7 +57,7 @@ const renderArticleBubble = (props = {}) => {
 
 describe('component for displaying text article', () => {
   beforeEach(() => {
-    mockAccount({
+    mockUserCurrent({
       id: '2',
     })
 
@@ -250,10 +254,13 @@ describe('component for displaying text article', () => {
     )
     expect(attachment1).toHaveTextContent('Zammad 1.png')
     expect(attachment1).toHaveTextContent('236 KB')
-    expect(getByAltText(attachment1, 'Image of Zammad 1.png')).toHaveAttribute(
-      'src',
-      '/api/ticket_attachment/6/12/1?view=preview',
-    )
+
+    const previewButton = view.getByRole('button', {
+      name: 'Preview Zammad 1.png',
+    })
+    expect(
+      getByAltText(previewButton, 'Image of Zammad 1.png'),
+    ).toHaveAttribute('src', '/api/ticket_attachment/6/12/1?view=preview')
 
     expect(attachment2).toHaveAttribute(
       'href',
@@ -281,7 +288,9 @@ describe('component for displaying text article', () => {
       ],
     })
 
-    const attachment = view.getByRole('link', { name: /Zammad 1.png/ })
+    const attachment = view.getByRole('button', {
+      name: 'Preview Zammad 1.png',
+    })
     await view.events.click(attachment)
 
     expect(view).toHaveImagePreview('/api/ticket_attachment/6/12/1?view=inline')

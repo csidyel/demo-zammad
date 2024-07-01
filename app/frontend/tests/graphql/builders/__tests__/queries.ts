@@ -1,14 +1,15 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
+import gql from 'graphql-tag'
+
 import type {
   UserError,
   UserInput,
   UserSignupInput,
 } from '#shared/graphql/types.ts'
-import gql from 'graphql-tag'
 
 export interface TestAvatarQuery {
-  accountAvatarActive: {
+  userCurrentAvatarActive: {
     id: string
     imageFull: string
     createdAt: string
@@ -46,8 +47,8 @@ export interface TestUserQueryVariables {
 }
 
 export const TestAvatarDocument = gql`
-  query accountAvatarActive {
-    accountAvatarActive {
+  query userCurrentAvatarActive {
+    userCurrentAvatarActive {
       id
       imageFull
       createdAt
@@ -138,7 +139,7 @@ export const TestUserUpdateDocument = gql`
 `
 
 export interface TestAvatarMutation {
-  accountAvatarAdd: {
+  userCurrentAvatarAdd: {
     avatar: {
       id: string
       imageFull: string
@@ -148,8 +149,8 @@ export interface TestAvatarMutation {
 }
 
 export const TestAvatarActiveMutationDocument = gql`
-  mutation accountAvatarAdd($images: AvatarInput!) {
-    accountAvatarAdd(images: $images) {
+  mutation userCurrentAvatarAdd($images: AvatarInput!) {
+    userCurrentAvatarAdd(images: $images) {
       avatar {
         id
         imageFull

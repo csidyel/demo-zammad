@@ -346,7 +346,7 @@ remove whole data from index
     condition = {
       'query_string' => {
         'query'            => append_wildcard_to_simple_query(query),
-        'time_zone'        => Setting.get('timezone_default_sanitized'),
+        'time_zone'        => Setting.get('timezone_default'),
         'default_operator' => 'AND',
         'analyze_wildcard' => true,
       }
@@ -501,7 +501,16 @@ example for aggregations within one year
 
     response = make_request(url, data: data, method: :post)
 
+    with_interval = aggs_interval.present? && aggs_interval[:interval].present?
+
     if !response.success?
+      # Work around a bug with ES versions <= 8.5.0, where invalid date range conditions caused an error response from the server.
+      # https://github.com/zammad/zammad/issues/5105, https://github.com/elastic/elasticsearch/issues/88131
+      # This can probably be removed when the required minimum ES version is >= 8.5.0.
+      if with_interval && response.code.to_i == 400 && response.body&.include?('illegal_argument_exception')
+        return fake_empty_es_aggregation_response
+      end
+
       raise humanized_error(
         verb:     'GET',
         url:      url,
@@ -511,11 +520,8 @@ example for aggregations within one year
     end
     Rails.logger.debug { response.data.to_json }
 
-    if aggs_interval.blank? || aggs_interval[:interval].blank?
-      object_ids = []
-      response.data['hits']['hits'].each do |item|
-        object_ids.push item['_id']
-      end
+    if !with_interval
+      object_ids = response.data['hits']['hits'].pluck('_id')
 
       # in lower ES 6 versions, we get total count directly, in higher
       # versions we need to pick it from total has
@@ -1003,5 +1009,13 @@ helper method for making HTTP calls and raising error if response was not succes
         },
       ]
     )
+  end
+
+  # Simulate an empty response from ES.
+  def self.fake_empty_es_aggregation_response
+    {
+      'hits'         => { 'total' => { 'value' => 0, 'relation' => 'eq' }, 'max_score' => nil, 'hits' => [] },
+      'aggregations' => { 'time_buckets' => { 'buckets' => [] } }
+    }
   end
 end

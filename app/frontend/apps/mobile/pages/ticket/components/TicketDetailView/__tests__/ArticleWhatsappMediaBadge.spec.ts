@@ -1,8 +1,10 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { convertToGraphQLId } from '#shared/graphql/utils.ts'
-import { mockTicketArticleRetryMediaDownloadMutation } from '#shared/entities/ticket-article/graphql/mutations/ticketArticleRetryMediaDownload.mocks.ts'
 import { renderComponent } from '#tests/support/components/index.ts'
+
+import { mockTicketArticleRetryMediaDownloadMutation } from '#shared/entities/ticket-article/graphql/mutations/ticketArticleRetryMediaDownload.mocks.ts'
+import { convertToGraphQLId } from '#shared/graphql/utils.ts'
+
 import ArticleWhatsappMediaBadge, {
   type Props,
 } from '../ArticleWhatsappMediaBadge.vue'
@@ -21,13 +23,11 @@ describe('rendering media error badge for Whatsapp', () => {
     })
 
     expect(view.getByIconName('update')).toBeInTheDocument()
-    expect(
-      view.getByRole('button', { name: 'Media Download Error' }),
-    ).toBeInTheDocument()
+    expect(view.getByText('Media Download Error')).toBeInTheDocument()
 
     await view.events.click(view.getByRole('button'))
 
-    expect(view.getByRole('button', { name: 'Try again' })).toBeInTheDocument()
+    expect(view.getByText('Try again')).toBeInTheDocument()
 
     mockTicketArticleRetryMediaDownloadMutation({
       ticketArticleRetryMediaDownload: {
@@ -35,7 +35,7 @@ describe('rendering media error badge for Whatsapp', () => {
       },
     })
 
-    await view.events.click(view.getByRole('button', { name: 'Try again' }))
+    await view.events.click(view.getByText('Try again'))
 
     expect(
       view.queryByRole('button', { name: 'Try again' }),

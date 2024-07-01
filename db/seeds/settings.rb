@@ -191,11 +191,12 @@ Setting.create_if_not_exists(
       }
     ],
   },
-  state:       '',
+  state:       'UTC',
   preferences: {
-    prio:       9,
-    controller: 'SettingsAreaItemDefaultTimezone',
-    permission: ['admin.system'],
+    prio:        9,
+    controller:  'SettingsAreaItemDefaultTimezone',
+    permission:  ['admin.system'],
+    validations: ['Setting::Validation::TimeZone'],
   },
   frontend:    true
 )
@@ -337,7 +338,7 @@ Setting.create_if_not_exists(
 )
 
 Setting.create_if_not_exists(
-  title:       __('Storage Mechanism'),
+  title:       __('Storage Method'),
   name:        'storage_provider',
   area:        'System::Storage',
   description: __('"Database" stores all attachments in the database (not recommended for storing large amounts of data). "Filesystem" stores the data in the filesystem. "Simple Storage (S3)" stores the data in a remote S3 compatible object filesystem. You can switch between the modules even on a system that is already in production without any loss of data.'),
@@ -381,7 +382,7 @@ Setting.create_if_not_exists(
         tag:     'select',
         options: {
           ''                       => '-',
-          'Service::Image::Zammad' => __('Zammad Image Service'),
+          'Service::Image::Zammad' => 'Zammad Image Service', # rubocop:disable Zammad/DetectTranslatableString
         },
       },
     ],
@@ -408,7 +409,7 @@ Setting.create_if_not_exists(
         tag:     'select',
         options: {
           ''                       => '-',
-          'Service::GeoIp::Zammad' => __('Zammad GeoIP Service'),
+          'Service::GeoIp::Zammad' => 'Zammad GeoIP Service', # rubocop:disable Zammad/DetectTranslatableString
         },
       },
     ],
@@ -434,13 +435,13 @@ Setting.create_if_not_exists(
         name:    'geo_location_backend',
         tag:     'select',
         options: {
-          ''                            => '-',
-          'Service::GeoLocation::Gmaps' => __('Google Maps'),
+          ''                          => '-',
+          'Service::GeoLocation::Osm' => 'OpenStreetMap (ODbL 1.0, http://osm.org/copyright)', # rubocop:disable Zammad/DetectTranslatableString
         },
       },
     ],
   },
-  state:       'Service::GeoLocation::Gmaps',
+  state:       'Service::GeoLocation::Osm',
   preferences: {
     prio:       3,
     permission: ['admin.system'],
@@ -462,7 +463,7 @@ Setting.create_if_not_exists(
         tag:     'select',
         options: {
           ''                             => '-',
-          'Service::GeoCalendar::Zammad' => __('Zammad GeoCalendar Service'),
+          'Service::GeoCalendar::Zammad' => 'Zammad GeoCalendar Service', # rubocop:disable Zammad/DetectTranslatableString
         },
       },
     ],
@@ -844,10 +845,10 @@ Setting.create_if_not_exists(
 )
 
 Setting.create_if_not_exists(
-  title:       __('Set notes for ticket create types.'),
+  title:       __('Additional notes for ticket create types.'),
   name:        'ui_ticket_create_notes',
   area:        'UI::TicketCreate',
-  description: __('Set notes for ticket create types by selecting type.'),
+  description: __('Show additional notes for ticket creation depending on the selected type.'),
   options:     {},
   state:       {
     # 'email-out' => __('Attention: When creating a ticket an email is sent.'),
@@ -2774,7 +2775,7 @@ Setting.create_if_not_exists(
   frontend:    false
 )
 Setting.create_if_not_exists(
-  title:       __('Recursive Ticket Triggers Loop Max.'),
+  title:       __('Maximum Recursive Ticket Triggers Depth'),
   name:        'ticket_trigger_recursive_max_loop',
   area:        'Ticket::Core',
   description: __('Maximum number of recursively executed triggers.'),
@@ -5712,10 +5713,10 @@ Setting.create_if_not_exists(
 )
 
 Setting.create_if_not_exists(
-  title:       __('Enforce the set up of the two-factor authentication'),
+  title:       __('Enforce the setup of the two-factor authentication'),
   name:        'two_factor_authentication_enforce_role_ids',
   area:        'Security::TwoFactorAuthentication',
-  description: __('Requires the set up of the two-factor authentication for certain user roles.'),
+  description: __('Requires the setup of the two-factor authentication for certain user roles.'),
   options:     {
     form: [
       {

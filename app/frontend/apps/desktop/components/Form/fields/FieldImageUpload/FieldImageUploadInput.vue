@@ -1,12 +1,14 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 <script setup lang="ts">
-import { computed, ref, toRef } from 'vue'
 import { useDropZone } from '@vueuse/core'
+import { computed, ref, toRef } from 'vue'
+
+import useValue from '#shared/components/Form/composables/useValue.ts'
+import type { FormFieldContext } from '#shared/components/Form/types/field.ts'
+import { i18n } from '#shared/i18n.ts'
+
 import CommonButton from '#desktop/components/CommonButton/CommonButton.vue'
 import CommonDivider from '#desktop/components/CommonDivider/CommonDivider.vue'
-import useValue from '#shared/components/Form/composables/useValue.ts'
-import { i18n } from '#shared/i18n.ts'
-import type { FormFieldContext } from '#shared/components/Form/types/field.ts'
 
 export interface Props {
   context: FormFieldContext<{
@@ -90,12 +92,12 @@ const { isOverDropZone } = useDropZone(dropZoneRef, {
 <template>
   <div
     ref="dropZoneRef"
-    class="w-full flex flex-col items-center gap-2 p-2"
+    class="flex w-full flex-col items-center gap-2 p-2"
     :class="context.classes.input"
   >
     <div
       v-if="isOverDropZone"
-      class="w-full rounded outline-dashed outline-1 outline-blue-800 text-center"
+      class="w-full rounded text-center outline-dashed outline-1 outline-blue-800"
     >
       <CommonLabel
         class="py-2 text-blue-800 dark:text-blue-800"
@@ -107,10 +109,10 @@ const { isOverDropZone } = useDropZone(dropZoneRef, {
     <template v-else>
       <template v-if="imageUploadOrPlaceholder">
         <div
-          class="w-full p-2.5 grid grid-cols-[20px_auto_20px] gap-2.5 justify-items-center items-center"
+          class="grid w-full grid-cols-[20px_auto_20px] items-center justify-items-center gap-2.5 p-2.5"
         >
           <img
-            class="max-h-32 col-start-2"
+            class="col-start-2 max-h-32"
             :src="imageUploadOrPlaceholder"
             :alt="$t('Image preview')"
           />
@@ -146,6 +148,7 @@ const { isOverDropZone } = useDropZone(dropZoneRef, {
       :class="context.classes.input"
       tabindex="-1"
       aria-hidden="true"
+      :aria-describedby="context.describedBy"
       accept="image/*"
       v-bind="context.attrs"
       @change="!context.disabled && onFileChanged($event)"

@@ -3,11 +3,9 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable no-use-before-define */
 
+import { createRequire } from 'node:module'
+
 import { faker } from '@faker-js/faker'
-import {
-  convertToGraphQLId,
-  getIdFromGraphQLId,
-} from '#shared/graphql/utils.ts'
 import {
   Kind,
   type DocumentNode,
@@ -17,12 +15,17 @@ import {
   type TypeNode,
   type NamedTypeNode,
 } from 'graphql'
-import { createRequire } from 'node:module'
-import type { DeepPartial, DeepRequired } from '#shared/types/utils.ts'
 import { uniqBy } from 'lodash-es'
+
+import {
+  convertToGraphQLId,
+  getIdFromGraphQLId,
+} from '#shared/graphql/utils.ts'
+import type { DeepPartial, DeepRequired } from '#shared/types/utils.ts'
 import getUuid from '#shared/utils/getUuid.ts'
-import { generateGraphqlMockId, hasNodeParent, setNodeParent } from './utils.ts'
+
 import logger from './logger.ts'
+import { generateGraphqlMockId, hasNodeParent, setNodeParent } from './utils.ts'
 
 const _require = createRequire(import.meta.url)
 const introspection = _require('../../../../graphql/graphql_introspection.json')
@@ -198,6 +201,8 @@ const getScalarValue = (
       return commonStringGenerators[fieldName]?.() || faker.lorem.word()
     case 'JSON':
       return {}
+    case 'UriHttpString':
+      return faker.internet.url()
     default:
       throw new Error(`not implemented for ${definition.name}`)
   }
@@ -275,7 +280,14 @@ const deepMerge = (target: any, source: any): any => {
     if (typeof value === 'object' && value !== null) {
       if (Array.isArray(value)) {
         target[key] = value.map((v, index) => {
-          return deepMerge(target[key]?.[index] || {}, v)
+          if (
+            typeof target[key]?.[index] === 'object' &&
+            target[key]?.[index] !== null
+          ) {
+            return deepMerge(target[key]?.[index] || {}, v)
+          }
+
+          return v
         })
       } else {
         target[key] = deepMerge(target[key] || {}, value)
@@ -382,7 +394,10 @@ const generateObject = (
   if (defaults === null) return null
   const type = definition.name
   const value = defaults ? { ...defaults } : {}
-  value.__typename = type
+
+  // Set the typename, if not already set by mocked value.
+  value.__typename = value.__typename ?? type
+
   populateObjectFromVariables(value, meta)
   setNodeParent(value, parent)
   const cached = getFromCache(value, meta)
@@ -810,7 +825,30 @@ export const mockOperation = (
   }
   const { operation, name, selectionSet } = definition
   const operationName = name!.value!
-  const operationType = getOperationDefinition(operation, operationName)
+
+  let operationType = getOperationDefinition(operation, operationName)
+
+  // In case the operation cannot be inferred from the operation name, switch to selection name instead.
+  //   E.g. `currentUserUpdates` vs `userUpdates`
+  if (!operationType && selectionSet.selections.length === 1) {
+    const selection = selectionSet.selections[0]
+
+    if (selection.kind !== Kind.FIELD) {
+      throw new Error(
+        `unsupported selection kind ${selectionSet.selections[0].kind}`,
+      )
+    }
+
+    operationType = getOperationDefinition(operation, selection.name.value)
+
+    if (!operationType)
+      throw new Error(
+        `unsupported operation named ${operationName} or ${selection.name.value}`,
+      )
+  } else if (!operationType) {
+    throw new Error(`unsupported operation named ${operationName}`)
+  }
+
   const query: any = { __typename: queriesTypes[operation] }
   const rootName = operationType.name
   logger.log(`[MOCKER] mocking "${rootName}" ${operation}`)

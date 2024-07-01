@@ -2,17 +2,18 @@
 
 <script setup lang="ts">
 import Form from '#shared/components/Form/Form.vue'
-import { useForm } from '#shared/components/Form/useForm.ts'
 import type {
   FormSubmitData,
   FormSchemaNode,
 } from '#shared/components/Form/types.ts'
-import UserError from '#shared/errors/UserError.ts'
-import { useAuthenticationStore } from '#shared/stores/authentication.ts'
+import { useForm } from '#shared/components/Form/useForm.ts'
 import type {
   RecoveryCodeFormData,
   LoginCredentials,
 } from '#shared/entities/two-factor/types.ts'
+import UserError from '#shared/errors/UserError.ts'
+import { useAuthenticationStore } from '#shared/stores/authentication.ts'
+
 import CommonButton from '#desktop/components/CommonButton/CommonButton.vue'
 
 const props = defineProps<{
@@ -20,9 +21,9 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'finish'): void
-  (e: 'error', error: UserError): void
-  (e: 'clear-error'): void
+  finish: []
+  error: [error: UserError]
+  'clear-error': []
 }>()
 
 const schema: FormSchemaNode[] = [

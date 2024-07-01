@@ -1,8 +1,10 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-const colors = require('tailwindcss/colors')
-const formKitTailwind = require('@formkit/themes/tailwindcss')
 const path = require('path')
+
+const formKitTailwind = require('@formkit/themes/tailwindcss')
+const colors = require('tailwindcss/colors')
+
 const zammadTailwind = require('../../../build/zammadTailwindPlugin.js')
 
 const mobileDir = path.resolve(__dirname, '..')
@@ -14,26 +16,7 @@ module.exports = {
     `${mobileDir}/**/*.{js,jsx,ts,tsx,vue,css}`,
     `${sharedDir}/**/*.{js,jsx,ts,tsx,vue,css}`,
   ],
-  plugins: [
-    formKitTailwind,
-    zammadTailwind,
-    ({ addComponents, theme }) => {
-      addComponents({
-        // NB: Used by FieldDateTimeInput.vue component, within its style section.
-        //   Since all component styles are processed in isolation, we have to provide the classes below within the
-        //   configuration, otherwise we risk running into build issues since class definitions in imported stylesheets
-        //   might not be available.
-        '.date-selection': {
-          borderColor: theme('colors.blue.DEFAULT'),
-          backgroundColor: theme('colors.blue.DEFAULT'),
-          backgroundImage: 'none',
-        },
-        '.date-navigation': {
-          color: theme('colors.blue.DEFAULT'),
-        },
-      })
-    },
-  ],
+  plugins: [formKitTailwind, zammadTailwind],
   theme: {
     colors: {
       pink: {

@@ -1,6 +1,7 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { renderComponent } from '#tests/support/components/index.ts'
+
 import CommonButton from '../CommonButton.vue'
 
 describe('CommonButton.vue', () => {
@@ -10,7 +11,7 @@ describe('CommonButton.vue', () => {
     const button = view.getByRole('button')
 
     expect(button).toHaveAttribute('type', 'button')
-    expect(button).toHaveClasses(['btn', 'btn-secondary', 'btn-sm'])
+    expect(button).toHaveClasses(['-:inline-flex', 'bg-transparent', 'btn-sm'])
   })
 
   it('renders default slot as the button label', async () => {
@@ -60,33 +61,41 @@ describe('CommonButton.vue', () => {
       },
     })
 
-    expect(view.getByRole('button')).toHaveClasses(['btn-block'])
+    expect(view.getByRole('button')).toHaveClasses(['w-full'])
   })
 
   it.each([
     {
       variant: 'primary',
-      classes: ['btn-primary'],
+      classes: ['bg-blue-800'],
     },
     {
       variant: 'secondary',
-      classes: ['btn-secondary'],
+      classes: ['bg-transparent'],
     },
     {
       variant: 'tertiary',
-      classes: ['btn-neutral'],
+      classes: ['bg-green-200'],
     },
     {
       variant: 'submit',
-      classes: ['btn-accent'],
+      classes: ['bg-yellow-300'],
     },
     {
       variant: 'danger',
-      classes: ['btn-error'],
+      classes: ['bg-pink-100'],
     },
     {
       variant: 'remove',
-      classes: ['btn-info'],
+      classes: ['bg-red-400'],
+    },
+    {
+      variant: 'subtle',
+      classes: ['bg-blue-600'],
+    },
+    {
+      variant: 'neutral',
+      classes: ['bg-transparent'],
     },
   ])('supports $variant variant', async ({ variant, classes }) => {
     const view = renderComponent(CommonButton, {

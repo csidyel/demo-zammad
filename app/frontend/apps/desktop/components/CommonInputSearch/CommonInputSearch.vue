@@ -12,10 +12,6 @@ export interface CommonInputSearchProps {
   alternativeBackground?: boolean
 }
 
-export interface CommonInputSearchEmits {
-  (e: 'update:modelValue', filter: string): void
-}
-
 export interface CommonInputSearchExpose {
   focus(): void
 }
@@ -23,7 +19,11 @@ export interface CommonInputSearchExpose {
 const props = withDefaults(defineProps<CommonInputSearchProps>(), {
   placeholder: __('Search…'),
 })
-const emit = defineEmits<CommonInputSearchEmits>()
+
+const emit = defineEmits<{
+  'update:modelValue': [filter: string]
+  keydown: [event: KeyboardEvent]
+}>()
 
 const filter = useVModel(props, 'modelValue', emit)
 
@@ -58,6 +58,10 @@ const maybeAcceptSuggestion = (event: Event) => {
   event.preventDefault()
   filter.value = props.suggestion
 }
+
+const onKeydown = (event: KeyboardEvent) => {
+  emit('keydown', event)
+}
 </script>
 
 <script lang="ts">
@@ -68,7 +72,7 @@ export default {
 
 <template>
   <div
-    class="grow inline-flex justify-start items-center gap-1"
+    class="inline-flex grow items-center justify-start gap-1"
     :class="wrapperClass"
   >
     <CommonIcon
@@ -77,14 +81,15 @@ export default {
       name="search"
       decorative
     />
-    <div class="relative grow inline-flex overflow-clip">
+    <div class="relative inline-flex grow overflow-clip">
       <div class="grow">
         <input
           ref="filterInput"
           v-model="filter"
           v-bind="$attrs"
           :placeholder="i18n.t(placeholder)"
-          class="w-full min-w-16 text-black dark:text-white outline-none"
+          :aria-label="$t('Search…')"
+          class="w-full min-w-16 text-black outline-none dark:text-white"
           :class="{
             'bg-blue-200 dark:bg-gray-700': !alternativeBackground,
             'bg-white dark:bg-gray-500': alternativeBackground,
@@ -94,11 +99,12 @@ export default {
           @keydown.right="maybeAcceptSuggestion"
           @keydown.end="maybeAcceptSuggestion"
           @keydown.tab="maybeAcceptSuggestion"
+          @keydown="onKeydown"
         />
       </div>
       <div
         v-if="suggestionVisiblePart?.length"
-        class="absolute top-0 flex whitespace-pre pointer-events-none"
+        class="pointer-events-none absolute top-0 flex whitespace-pre"
         data-test-id="suggestion"
       >
         <span class="invisible">{{ filter }}</span>
@@ -110,13 +116,13 @@ export default {
     <div class="flex shrink-0 items-center gap-1">
       <slot name="controls" />
       <CommonIcon
-        class="fill-stone-200 dark:fill-neutral-500 hover:fill-black dark:hover:fill-white focus-visible:outline focus-visible:rounded-sm focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800"
+        class="fill-stone-200 hover:fill-black focus-visible:rounded-sm focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800 dark:fill-neutral-500 dark:hover:fill-white"
         :class="{
           invisible: !filter?.length,
         }"
         :aria-label="i18n.t('Clear Search')"
         :aria-hidden="!filter?.length ? 'true' : undefined"
-        name="backspace"
+        name="backspace2"
         size="tiny"
         role="button"
         :tabindex="!filter?.length ? '-1' : '0'"

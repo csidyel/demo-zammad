@@ -1,13 +1,13 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { FormKitNode } from '@formkit/core'
 import { computed, shallowRef } from 'vue'
-import type { ShallowRef, Ref } from 'vue'
 
 import type { MutationSendError } from '#shared/types/error.ts'
+import type { FormUpdaterOptions } from '#shared/types/form.ts'
 import type { ObjectLike } from '#shared/types/utils.ts'
 
 import { setErrors } from './utils.ts'
+
 import type {
   FormRef,
   FormResetOptions,
@@ -15,6 +15,8 @@ import type {
   FormValues,
   FormSchemaField,
 } from './types.ts'
+import type { FormKitNode } from '@formkit/core'
+import type { ShallowRef, Ref } from 'vue'
 
 export const useForm = <T = FormValues>(formRef?: Ref<FormRef | undefined>) => {
   const form: ShallowRef<FormRef | undefined> = formRef || shallowRef()
@@ -88,6 +90,29 @@ export const useForm = <T = FormValues>(formRef?: Ref<FormRef | undefined>) => {
     })
   }
 
+  const onChangedField = (
+    name: string,
+    callback: (
+      newValue: FormFieldValue,
+      oldValue: FormFieldValue,
+      node: FormKitNode,
+    ) => void,
+  ) => {
+    const registerChangeEvent = (node: FormKitNode) => {
+      node.on(`changed:${name}`, ({ payload }) => {
+        callback(payload.newValue, payload.oldValue, payload.fieldNode)
+      })
+    }
+
+    if (node.value) {
+      registerChangeEvent(node.value)
+    } else {
+      waitForFormSettled().then((node) => {
+        registerChangeEvent(node)
+      })
+    }
+  }
+
   const updateFieldValues = (fieldValues: Record<string, FormFieldValue>) => {
     const changedFieldValues: Record<
       string,
@@ -113,6 +138,10 @@ export const useForm = <T = FormValues>(formRef?: Ref<FormRef | undefined>) => {
     setErrors(node.value, errors)
   }
 
+  const triggerFormUpdater = (options?: FormUpdaterOptions) => {
+    form.value?.triggerFormUpdater(options)
+  }
+
   return {
     form,
     node,
@@ -133,5 +162,7 @@ export const useForm = <T = FormValues>(formRef?: Ref<FormRef | undefined>) => {
     formSubmit,
     waitForFormSettled,
     updateFieldValues,
+    onChangedField,
+    triggerFormUpdater,
   }
 }

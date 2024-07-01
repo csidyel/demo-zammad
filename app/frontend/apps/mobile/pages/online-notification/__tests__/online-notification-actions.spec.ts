@@ -6,13 +6,14 @@ import {
   mockGraphQLSubscription,
 } from '#tests/support/mock-graphql-api.ts'
 import type { ExtendedIMockSubscription } from '#tests/support/mock-graphql-api.ts'
+import { mockUserCurrent } from '#tests/support/mock-userCurrent.ts'
+import { waitUntil } from '#tests/support/utils.ts'
+
+import { mockOnlineNotificationQuery } from '#shared/entities/online-notification/__tests__/mocks/online-notification-mocks.ts'
+import { OnlineNotificationDeleteDocument } from '#shared/entities/online-notification/graphql/mutations/delete.api.ts'
+import { OnlineNotificationMarkAllAsSeenDocument } from '#shared/entities/online-notification/graphql/mutations/markAllAsSeen.api.ts'
 import { OnlineNotificationsDocument } from '#shared/entities/online-notification/graphql/queries/onlineNotifications.api.ts'
 import { OnlineNotificationsCountDocument } from '#shared/entities/online-notification/graphql/subscriptions/onlineNotificationsCount.api.ts'
-import { OnlineNotificationMarkAllAsSeenDocument } from '#shared/entities/online-notification/graphql/mutations/markAllAsSeen.api.ts'
-import { OnlineNotificationDeleteDocument } from '#shared/entities/online-notification/graphql/mutations/delete.api.ts'
-import { mockOnlineNotificationQuery } from '#shared/entities/online-notification/__tests__/mocks/online-notification-mocks.ts'
-import { waitUntil } from '#tests/support/utils.ts'
-import { mockAccount } from '#tests/support/mock-account.ts'
 
 let onlineNotificationCountSubscription: ExtendedIMockSubscription
 
@@ -29,7 +30,7 @@ const triggerNextOnlineNotificationCount = async (newCount = 0) => {
 
 describe('selecting a online notification', () => {
   beforeEach(async () => {
-    mockAccount({
+    mockUserCurrent({
       firstname: 'John',
       lastname: 'Doe',
     })

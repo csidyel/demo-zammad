@@ -1,8 +1,6 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import type { FormFieldContext } from '#shared/components/Form/types/field.ts'
-import type { Editor } from '@tiptap/vue-3'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import { useEventListener } from '@vueuse/core'
 import {
@@ -14,15 +12,27 @@ import {
   watch,
   nextTick,
 } from 'vue'
-import testFlags from '#shared/utils/testFlags.ts'
+
+import { getFieldEditorClasses } from '#shared/components/Form/initializeFieldEditor.ts'
+import type { FormFieldContext } from '#shared/components/Form/types/field.ts'
 import { htmlCleanup } from '#shared/utils/htmlCleanup.ts'
 import log from '#shared/utils/log.ts'
+import testFlags from '#shared/utils/testFlags.ts'
+
 import useValue from '../../composables/useValue.ts'
+import { getNodeByName } from '../../utils.ts'
+
 import {
   getCustomExtensions,
   getHtmlExtensions,
   getPlainExtensions,
-} from './extensions/list.ts'
+} from './extensions/List.ts'
+import FieldEditorActionBar from './FieldEditorActionBar.vue'
+import FieldEditorFooter from './FieldEditorFooter.vue'
+import FieldEditorTableMenu from './FieldEditorTableMenu.vue'
+import { PLUGIN_NAME as userMentionPluginName } from './suggestions/UserMention.ts'
+import { convertInlineImages } from './utils.ts'
+
 import type {
   EditorContentType,
   EditorCustomPlugins,
@@ -30,11 +40,7 @@ import type {
   FieldEditorProps,
   PossibleSignature,
 } from './types.ts'
-import FieldEditorActionBar from './FieldEditorActionBar.vue'
-import FieldEditorFooter from './FieldEditorFooter.vue'
-import { PLUGIN_NAME as userMentionPluginName } from './suggestions/UserMention.ts'
-import { getNodeByName } from '../../utils.ts'
-import { convertInlineImages } from './utils.ts'
+import type { Editor } from '@tiptap/vue-3'
 
 interface Props {
   context: FormFieldContext<FieldEditorProps>
@@ -44,8 +50,6 @@ const props = defineProps<Props>()
 
 const reactiveContext = toRef(props, 'context')
 const { currentValue } = useValue(reactiveContext)
-
-// TODO: add maybe something to extract the props from the context, instead of using context.XYZ (or props.context.XYZ)
 
 const disabledPlugins = Object.entries(props.context.meta || {})
   .filter(([, value]) => value.disabled)
@@ -106,7 +110,7 @@ const addFilesToAttachments = (files: File[]) => {
 // there is also a gif, but desktop only inlines these two for now
 const imagesMimeType = ['image/png', 'image/jpeg']
 const loadFiles = (
-  files: FileList | null | undefined,
+  files: FileList | File[] | null | undefined,
   editor: Editor | undefined,
   options: LoadImagesOptions,
 ) => {
@@ -146,20 +150,32 @@ const editor = useEditor({
       name: props.context.node.name,
       id: props.context.id,
       class: props.context.classes.input,
-      'data-value': editorValue.value,
+      'data-value': editorValue.value, // TODO: for which purpose?
     },
     // add inlined files
     handlePaste(view, event) {
       if (!hasImageExtension) {
         return
       }
-      const loaded = loadFiles(event.clipboardData?.files, editor.value, {
-        attachNonInlineFiles: false,
-      })
 
-      if (loaded) {
-        event.preventDefault()
-        return true
+      const items = Array.from(event.clipboardData?.items || [])
+      for (const item of items) {
+        if (item.type.startsWith('image')) {
+          const file = item.getAsFile()
+
+          if (file) {
+            const loaded = loadFiles([file], editor.value, {
+              attachNonInlineFiles: false,
+            })
+
+            if (loaded) {
+              event.preventDefault()
+              return true
+            }
+          }
+        } else {
+          return false
+        }
       }
 
       return false
@@ -387,10 +403,12 @@ onMounted(() => {
     )
   }
 })
+
+const classes = getFieldEditorClasses()
 </script>
 
 <template>
-  <div class="p-2">
+  <div :class="classes.input.container">
     <EditorContent
       ref="editorVueInstance"
       class="text-base ltr:text-left rtl:text-right"
@@ -401,6 +419,12 @@ onMounted(() => {
       v-if="context.meta?.footer && !context.meta.footer.disabled && editor"
       :footer="context.meta.footer"
       :characters="characters"
+    />
+
+    <FieldEditorTableMenu
+      v-if="editor"
+      :editor="editor"
+      :content-type="contentType"
     />
   </div>
 
@@ -414,3 +438,94 @@ onMounted(() => {
     @blur="focusEditor"
   />
 </template>
+
+<style>
+.tiptap {
+  pre {
+    background-color: #ced4da;
+    border-radius: 6px;
+    padding: 5px;
+    margin-bottom: 6px;
+    color: #111;
+  }
+
+  pre > code {
+    background-color: transparent;
+    padding: 0;
+    margin: 0;
+  }
+
+  code {
+    background-color: #ced4da;
+    border-radius: 4px;
+    padding: 1px 2px;
+    color: #111;
+  }
+
+  table {
+    border-collapse: collapse;
+    table-layout: fixed;
+    width: 100px;
+    max-width: 200px;
+    margin: 0;
+    overflow: hidden;
+
+    td,
+    th {
+      min-width: 1em;
+      border: 2px solid #ced4da;
+      padding: 3px 5px;
+      vertical-align: top;
+      box-sizing: border-box;
+      position: relative;
+
+      > * {
+        margin-bottom: 0;
+      }
+    }
+
+    th {
+      font-weight: bold;
+      text-align: left;
+      background-color: #f1f3f5;
+    }
+
+    .selectedCell::after {
+      z-index: 2;
+      position: absolute;
+      content: '';
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      background: rgba(200, 200, 255, 0.4);
+      pointer-events: none;
+    }
+
+    .column-resize-handle {
+      position: absolute;
+      right: -2px;
+      top: 0;
+      bottom: -2px;
+      width: 4px;
+      background-color: #adf;
+      pointer-events: none;
+    }
+
+    p {
+      margin: 0;
+    }
+  }
+}
+
+.tableWrapper {
+  padding: 1rem 0;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.resize-cursor {
+  cursor: ew-resize;
+  cursor: col-resize;
+}
+</style>

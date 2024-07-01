@@ -7,6 +7,13 @@ class Translation < ApplicationModel
 
   validates :locale, presence: true
 
+  scope :sources, -> { where(locale: 'en-us', is_synchronized_from_codebase: true) }
+
+  scope :details, -> { select(:id, :locale, :source, :target, :target_initial, :is_synchronized_from_codebase) }
+
+  scope :customized, -> { where('target_initial != target OR is_synchronized_from_codebase = false').reorder(locale: :asc, source: :asc) }
+  scope :not_customized, -> { where('target_initial = target AND is_synchronized_from_codebase = true').reorder(source: :asc) }
+
 =begin
 
 reset translations to origin
@@ -39,50 +46,25 @@ get list of translations
 
 =end
 
-  def self.lang(locale, admin = false)
-    Rails.cache.fetch("#{self}/#{latest_change}/lang/#{locale}/#{admin}") do
+  def self.lang(locale)
+    locale = locale.downcase
 
-      # show total translations as reference count
-      data = {
-        'total' => Translation.where(locale: 'de-de').count,
-      }
-      list = []
-      translations = if admin
-                       Translation.where(locale: locale.downcase).reorder(:source)
-                     else
-                       Translation.where(locale: locale.downcase).where.not(target: '').reorder(:source)
-                     end
-      translations.each do |item|
-        translation_item = if admin
-                             [
-                               item.id,
-                               item.source,
-                               item.target,
-                               item.target_initial,
-                             ]
-                           else
-                             [
-                               item.id,
-                               item.source,
-                               item.target,
-                             ]
-                           end
-        list.push translation_item
-      end
-
-      # add presorted on top
-      presorted_list = []
-      %w[yes no or Year Years Month Months Day Days Hour Hours Minute Minutes Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec January February March April May June July August September October November December Mon Tue Wed Thu Fri Sat Sun Monday Tuesday Wednesday Thursday Friday Saturday Sunday].each do |presort|
-        list.each do |item|
-          next if item[1] != presort
-
-          presorted_list.push item
-          list.delete item
-          # list.unshift presort
+    Rails.cache.fetch("#{self}/#{latest_change}/lang/#{locale}") do
+      list = Translation
+        .where(locale: locale).where.not(target: '')
+        .reorder(:source)
+        .map do |item|
+          [
+            item.id,
+            item.source,
+            item.target,
+          ]
         end
-      end
-      data['list'] = presorted_list.concat list
-      data
+
+      {
+        'total' => Translation.where(locale: locale).count,
+        'list'  => list
+      }
     end
   end
 
@@ -95,7 +77,7 @@ translate strings in Ruby context, e. g. for notifications
 =end
 
   def self.translate(locale, string, *args)
-    translated = find_source(locale, string)&.target || string
+    translated = find_source(locale, string)&.target.presence || string
 
     translated %= args if args.any?
 
@@ -208,16 +190,11 @@ or
     record
   end
 
-  def self.remote_translation_need_update?(raw, translations)
-    translations.each do |row|
-      next if row[1] != raw['locale']
-      next if row[2] != raw['source']
-      return false if row[3] == raw['target'] # no update if target is still the same
-      return false if row[3] != row[4] # no update if translation has already changed
+  def reset
+    return if !is_synchronized_from_codebase || target_initial == target
 
-      return [true, Translation.find(row[0])]
-    end
-    [true, nil]
+    self.target = target_initial
+    save!
   end
 
   private

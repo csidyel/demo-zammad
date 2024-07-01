@@ -1,11 +1,13 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import type { ComputedRef } from 'vue'
 import { computed } from 'vue'
+
 import { i18n } from '#shared/i18n.ts'
 import { useApplicationStore } from '#shared/stores/application.ts'
+
 import type { DateTimeType, DateTimeAbsoluteFormat } from './types.ts'
+import type { ComputedRef } from 'vue'
 
 export interface Props {
   dateTime: string
@@ -42,7 +44,7 @@ const outputAbsoluteDate = computed(() => {
   </time>
   <time
     v-else
-    :title="i18n.dateTime(dateTime)"
+    v-tooltip="i18n.dateTime(dateTime)"
     :datetime="dateTime"
     data-test-id="date-time-relative"
   >

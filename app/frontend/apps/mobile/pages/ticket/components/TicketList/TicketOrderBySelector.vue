@@ -1,15 +1,17 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import CommonSelect from '#mobile/components/CommonSelect/CommonSelect.vue'
-import type { CommonSelectInstance } from '#mobile/components/CommonSelect/types.ts'
+import { useVModel } from '@vueuse/core'
+import { computed, ref } from 'vue'
+
 import type { Sizes } from '#shared/components/CommonIcon/types.ts'
 import type { SelectOption } from '#shared/components/CommonSelect/types.ts'
 import { EnumOrderDirection } from '#shared/graphql/types.ts'
 import { i18n } from '#shared/i18n.ts'
 import stopEvent from '#shared/utils/events.ts'
-import { useVModel } from '@vueuse/core'
-import { computed, ref } from 'vue'
+
+import CommonSelect from '#mobile/components/CommonSelect/CommonSelect.vue'
+import type { CommonSelectInstance } from '#mobile/components/CommonSelect/types.ts'
 
 interface Props {
   orderBy?: string
@@ -21,8 +23,8 @@ interface Props {
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  (e: 'update:orderBy', value: string): void
-  (e: 'update:direction', value: EnumOrderDirection): void
+  'update:orderBy': [string]
+  'update:direction': [EnumOrderDirection]
 }>()
 
 const localOrderBy = useVModel(props, 'orderBy', emit)
@@ -109,7 +111,7 @@ const advanceFocus = (event: KeyboardEvent, idx: number) => {
         aria-haspopup="dialog"
         :aria-expanded="expanded"
         :aria-label="accessibilityLabel"
-        class="flex cursor-pointer items-center gap-1 overflow-hidden whitespace-nowrap text-blue"
+        class="text-blue flex cursor-pointer items-center gap-1 overflow-hidden whitespace-nowrap"
         data-test-id="column"
         @click="open"
         @keydown.space.prevent="open"

@@ -7,9 +7,9 @@ import CommonButtonGroup from '#desktop/components/CommonButtonGroup/CommonButto
 import type { CommonButtonItem } from '#desktop/components/CommonButtonGroup/types.ts'
 import { guidedSetupImportSourcePlugins } from '#desktop/pages/guided-setup/components/GuidedSetupImport/GuidedSetupImportSource/plugins/index.ts'
 
-import { useSystemSetupInfoStore } from '../../stores/systemSetupInfo.ts'
 import GuidedSetupActionFooter from '../../components/GuidedSetupActionFooter.vue'
 import { useSystemSetup } from '../../composables/useSystemSetup.ts'
+import { useSystemSetupInfoStore } from '../../stores/systemSetupInfo.ts'
 
 const { setTitle } = useSystemSetup()
 
@@ -48,13 +48,13 @@ const unlockCallback = () => {
         {{ $t(label) }}
       </span>
       <CommonBadge
-        class="dark:bg-pink-300 bg-pink-300 text-white"
+        class="bg-pink-300 text-white dark:bg-pink-300"
         variant="custom"
         >{{ $t('Beta') }}</CommonBadge
       >
     </template>
   </CommonButtonGroup>
   <GuidedSetupActionFooter
-    @back="systemSetupInfoStore.systemSetupUnlock(unlockCallback)"
+    @go-back="systemSetupInfoStore.systemSetupUnlock(unlockCallback)"
   />
 </template>

@@ -7,8 +7,8 @@ import {
   NotificationTypes,
   useNotifications,
 } from '#shared/components/CommonNotifications/index.ts'
-import { MutationHandler } from '#shared/server/apollo/handler/index.ts'
 import { useTicketArticleRetryMediaDownloadMutation } from '#shared/entities/ticket-article/graphql/mutations/ticketArticleRetryMediaDownload.api.ts'
+import { MutationHandler } from '#shared/server/apollo/handler/index.ts'
 
 import CommonSectionPopup from '#mobile/components/CommonSectionPopup/CommonSectionPopup.vue'
 
@@ -39,6 +39,7 @@ const tryAgain = async () => {
 
   if (result?.ticketArticleRetryMediaDownload?.success) {
     notify({
+      id: 'media-download-success',
       type: NotificationTypes.Success,
       message: __('Media download was successful.'),
     })
@@ -46,6 +47,7 @@ const tryAgain = async () => {
     showPopup.value = false
   } else {
     notify({
+      id: 'media-download-failed',
       type: NotificationTypes.Error,
       message: __('Media download failed. Please try again later.'),
     })
@@ -72,7 +74,7 @@ const popupItems = computed(() =>
   <button
     v-if="props.mediaError"
     type="button"
-    class="inline-flex h-7 grow items-center gap-1 rounded-lg bg-yellow px-2 py-1 text-xs font-bold text-black"
+    class="bg-yellow inline-flex h-7 grow items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-black"
     @click.prevent="showPopup = !showPopup"
     @keydown.space.prevent="showPopup = !showPopup"
   >
@@ -86,7 +88,7 @@ const popupItems = computed(() =>
       >
         <div
           v-if="props.mediaError"
-          class="flex w-full items-center justify-center gap-1 text-yellow"
+          class="text-yellow flex w-full items-center justify-center gap-1"
         >
           <CommonIcon name="update" size="tiny" />
           {{ $t('Media Download Error') }}

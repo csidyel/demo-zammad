@@ -302,9 +302,15 @@ class App.TicketCreate extends App.Controller
   buildScreen: (params) =>
 
     if _.isEmpty(params.ticket_id) && _.isEmpty(params.article_id)
-      if !_.isEmpty(params.customer_id)
-        @renderQueue(options: _.omit(params, 'id'))
+
+      # remove not form relevant options
+      localOptions = _.omit(params, 'id', 'query', 'shown', 'taskKey', 'ticket_id', 'article_id', 'appEl', 'el', 'type')
+      localOptions = _.omit(localOptions, _.isUndefined)
+
+      if !_.isEmpty(localOptions)
+        @renderQueue(options: localOptions)
         return
+
       @renderQueue()
       return
 
@@ -609,6 +615,19 @@ class App.TicketCreate extends App.Controller
     # update params with new customer selection
     # to replace in text modules properly
     params.customer = App.User.find(params.customer_id) || {}
+
+    # if customer is given in params (e. g. from CTI integration) show selected customer
+    # display name with email address (if exists) in customer attribute in UI
+    fillCompletionIfRequiredCallback = =>
+      return if !_.isEmpty(@el.find('input[name=customer_id_completion]').val())
+      return if !params.customer
+      return if !params.customer.displayName
+      completion = params.customer.displayName()
+      if params.customer.email
+        completion = App.Utils.buildEmailAddress(params.customer.displayName(), params.customer.email)
+      return if !completion
+      @el.find('input[name=customer_id_completion]').val(completion)
+    @delay(fillCompletionIfRequiredCallback, 10)
 
     @sidebarWidget.render(params)
     @textModule.reload(

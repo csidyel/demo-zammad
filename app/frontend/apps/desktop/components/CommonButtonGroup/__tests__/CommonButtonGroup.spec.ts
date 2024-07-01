@@ -1,9 +1,10 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { renderComponent } from '#tests/support/components/index.ts'
 import { getByIconName } from '#tests/support/components/iconQueries.ts'
+import { renderComponent } from '#tests/support/components/index.ts'
 
 import CommonButtonGroup from '../CommonButtonGroup.vue'
+
 import type { CommonButtonItem } from '../types.ts'
 
 const onActionClick = vi.fn()
@@ -48,7 +49,7 @@ describe('CommonButtonGroup.vue', () => {
 
     const primaryButton = buttons[0]
     expect(primaryButton).toHaveAttribute('type', 'button')
-    expect(primaryButton).toHaveClasses(['btn-primary', 'bg-blue-800'])
+    expect(primaryButton).toHaveClasses(['bg-blue-800', 'bg-blue-800'])
     expect(getByIconName(primaryButton, 'logo-flat')).toBeInTheDocument()
 
     await view.events.click(primaryButton)
@@ -58,6 +59,6 @@ describe('CommonButtonGroup.vue', () => {
     expect(submitButton).toHaveAttribute('type', 'submit')
 
     const dangerButton = buttons[4]
-    expect(dangerButton).toHaveClasses(['btn-error', 'text-red-500'])
+    expect(dangerButton).toHaveClasses(['bg-pink-100', 'text-red-500'])
   })
 })

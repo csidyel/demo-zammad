@@ -1,9 +1,12 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { convertToGraphQLId } from '#shared/graphql/utils.ts'
-import { getByRole, getByText } from '@testing-library/vue'
+import { within } from '@testing-library/vue'
+
 import { renderComponent } from '#tests/support/components/index.ts'
+
 import { EnumSecurityStateType } from '#shared/graphql/types.ts'
+import { convertToGraphQLId } from '#shared/graphql/utils.ts'
+
 import ArticleSecurityBadge, { type Props } from '../ArticleSecurityBadge.vue'
 
 const renderBadge = (propsData: Props) => {
@@ -65,11 +68,9 @@ describe('rendering security badge', () => {
       await view.events.click(icon)
 
       const popup = view.getByTestId('popupWindow')
-      expect(getByText(popup, 'Security Error')).toBeInTheDocument()
-      expect(getByText(popup, 'Encryption: error!')).toBeInTheDocument()
-      expect(
-        getByRole(popup, 'button', { name: 'Try again' }),
-      ).toBeInTheDocument()
+      expect(within(popup).getByText('Security Error')).toBeInTheDocument()
+      expect(within(popup).getByText('Encryption: error!')).toBeInTheDocument()
+      expect(within(popup).getByText('Try again')).toBeInTheDocument()
     })
   })
 
@@ -116,11 +117,9 @@ describe('rendering security badge', () => {
       await view.events.click(icon)
 
       const popup = view.getByTestId('popupWindow')
-      expect(getByText(popup, 'Security Error')).toBeInTheDocument()
-      expect(getByText(popup, 'Sign: error!')).toBeInTheDocument()
-      expect(
-        getByRole(popup, 'button', { name: 'Try again' }),
-      ).toBeInTheDocument()
+      expect(within(popup).getByText('Security Error')).toBeInTheDocument()
+      expect(within(popup).getByText('Sign: error!')).toBeInTheDocument()
+      expect(within(popup).getByText('Try again')).toBeInTheDocument()
     })
   })
 
@@ -162,13 +161,13 @@ describe('rendering security badge', () => {
     await view.events.click(icon)
 
     const popup = view.getByTestId('popupWindow')
-    expect(getByText(popup, 'Security Error')).toBeInTheDocument()
-    expect(getByText(popup, 'Encryption: encryption error')).toBeInTheDocument()
-    expect(getByText(popup, 'Sign: sign error')).toBeInTheDocument()
-
+    expect(within(popup).getByText('Security Error')).toBeInTheDocument()
     expect(
-      getByRole(popup, 'button', { name: 'Try again' }),
+      within(popup).getByText('Encryption: encryption error'),
     ).toBeInTheDocument()
+    expect(within(popup).getByText('Sign: sign error')).toBeInTheDocument()
+
+    expect(within(popup).getByText('Try again')).toBeInTheDocument()
   })
 
   it('renders no information available, if article is secure, but there are no messages', async () => {

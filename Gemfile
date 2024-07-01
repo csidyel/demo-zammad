@@ -3,7 +3,7 @@
 source 'https://rubygems.org'
 
 # core - base
-ruby '3.2.3'
+ruby '3.2.4'
 gem 'rails', '~> 7.0.8'
 
 # core - rails additions
@@ -197,12 +197,15 @@ gem 'pry-rescue'
 gem 'pry-stack_explorer'
 gem 'pry-theme'
 
+# monitoring / system report
+gem 'macaddr'
+
+# watch file changes (also relevant for graphql generation in context of CDs)
+gem 'listen'
+
 # Gems used only for develop/test and not required
 # in production environments by default.
 group :development, :test do
-
-  # watch file changes
-  gem 'listen'
 
   # test frameworks
   gem 'minitest-profile', require: false
@@ -223,12 +226,15 @@ group :development, :test do
   gem 'brakeman', require: false
   gem 'overcommit'
   gem 'rubocop'
+  gem 'rubocop-capybara'
+  gem 'rubocop-factory_bot'
   gem 'rubocop-faker'
   gem 'rubocop-graphql'
   gem 'rubocop-inflector'
   gem 'rubocop-performance'
   gem 'rubocop-rails'
   gem 'rubocop-rspec'
+  gem 'rubocop-rspec_rails'
 
   # generate random test data
   gem 'factory_bot_rails'

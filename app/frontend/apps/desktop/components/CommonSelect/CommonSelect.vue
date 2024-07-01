@@ -1,34 +1,54 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import type { Ref } from 'vue'
-import { onUnmounted, computed, nextTick, ref, toRef } from 'vue'
-import { useFocusWhenTyping } from '#shared/composables/useFocusWhenTyping.ts'
-import { useTrapTab } from '#shared/composables/useTrapTab.ts'
-import { useTraverseOptions } from '#shared/composables/useTraverseOptions.ts'
-import stopEvent from '#shared/utils/events.ts'
 import {
   type UseElementBoundingReturn,
   onClickOutside,
   onKeyDown,
   useVModel,
 } from '@vueuse/core'
+import {
+  computed,
+  type ConcreteComponent,
+  nextTick,
+  onUnmounted,
+  ref,
+  type Ref,
+  toRef,
+} from 'vue'
+
+import CommonLabel from '#shared/components/CommonLabel/CommonLabel.vue'
 import type {
   MatchedSelectOption,
   SelectOption,
+  SelectValue,
 } from '#shared/components/CommonSelect/types.ts'
-import testFlags from '#shared/utils/testFlags.ts'
-import CommonLabel from '#shared/components/CommonLabel/CommonLabel.vue'
+import type { AutoCompleteOption } from '#shared/components/Form/fields/FieldAutocomplete/types.ts'
+import { useFocusWhenTyping } from '#shared/composables/useFocusWhenTyping.ts'
+import { useTrapTab } from '#shared/composables/useTrapTab.ts'
+import { useTraverseOptions } from '#shared/composables/useTraverseOptions.ts'
 import { i18n } from '#shared/i18n.ts'
+import { useLocaleStore } from '#shared/stores/locale.ts'
+import stopEvent from '#shared/utils/events.ts'
+import testFlags from '#shared/utils/testFlags.ts'
+
+import { useTransitionCollapse } from '#desktop/composables/useTransitionCollapse.ts'
+
 import CommonSelectItem from './CommonSelectItem.vue'
 import { useCommonSelect } from './useCommonSelect.ts'
-import type { CommonSelectInternalInstance } from './types.ts'
+
+import type {
+  CommonSelectInternalInstance,
+  DropdownOptionsAction,
+} from './types.ts'
 
 export interface Props {
-  // we cannot move types into separate file, because Vue would not be able to
-  // transform these into runtime types
-  modelValue?: string | number | boolean | (string | number | boolean)[] | null
-  options: SelectOption[]
+  modelValue?:
+    | SelectValue
+    | SelectValue[]
+    | { value: SelectValue; label: string }
+    | null
+  options: AutoCompleteOption[] | SelectOption[]
   /**
    * Do not modify local value
    */
@@ -39,14 +59,24 @@ export interface Props {
   owner?: string
   noOptionsLabelTranslation?: boolean
   filter?: string
+  optionIconComponent?: ConcreteComponent
+  initiallyEmpty?: boolean
+  emptyInitialLabelText?: string
+  actions?: DropdownOptionsAction[]
+  isChildPage?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  emptyInitialLabelText: __('Start typing to search…'),
+})
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', option: string | number | (string | number)[]): void
-  (e: 'select', option: SelectOption): void
-  (e: 'close'): void
+  'update:modelValue': [option: string | number | (string | number)[]]
+  select: [option: SelectOption]
+  push: [option: AutoCompleteOption]
+  pop: []
+  close: []
+  focusFilterInput: []
 }>()
 
 const dropdownElement = ref<HTMLElement>()
@@ -111,6 +141,8 @@ const closeDropdown = () => {
   deactivateTabTrap()
   showDropdown.value = false
   emit('close')
+
+  // TODO: move to existing nextTick.
   if (!props.noRefocus) {
     nextTick(() => lastFocusableOutsideElement?.focus())
   }
@@ -127,7 +159,7 @@ const openDropdown = (
   inputElementBounds = bounds
   windowHeight = toRef(height)
   instances.value.forEach((instance) => {
-    if (instance.isOpen) instance.closeDropdown()
+    if (instance.isOpen.value) instance.closeDropdown()
   })
   showDropdown.value = true
   lastFocusableOutsideElement = getActiveElement()
@@ -243,10 +275,26 @@ const hasMoreSelectableOptions = computed(
     ).length > 0,
 )
 
-const selectAll = () => {
+const focusFirstOption = () => {
+  const focusableElements = getFocusableOptions()
+  if (!focusableElements?.length) return
+
+  const focusElement = focusableElements[0]
+
+  focusElement?.focus()
+}
+
+const selectAll = (focusInput = false) => {
   props.options
     .filter((option) => !option.disabled && !isCurrentValue(option.value))
     .forEach((option) => select(option))
+
+  if (focusInput === true) {
+    emit('focusFilterInput')
+    return
+  }
+
+  focusFirstOption()
 }
 
 const highlightedOptions = computed(() =>
@@ -285,7 +333,67 @@ const highlightedOptions = computed(() =>
   }),
 )
 
-const duration = VITE_TEST_MODE ? undefined : { enter: 300, leave: 200 }
+const emptyLabelText = computed(() => {
+  if (!props.initiallyEmpty) return __('No results found')
+  return props.filter ? __('No results found') : props.emptyInitialLabelText
+})
+
+const { collapseDuration, collapseEnter, collapseAfterEnter, collapseLeave } =
+  useTransitionCollapse()
+
+const dropdownActions = computed(() => {
+  return [
+    ...(props.actions || []),
+    ...(props.multiple && hasMoreSelectableOptions.value
+      ? [
+          {
+            key: 'selectAll',
+            label: __('select all options'),
+            icon: 'check-all',
+            onClick: selectAll,
+          },
+        ]
+      : []),
+  ]
+})
+
+const locale = useLocaleStore()
+
+const parentPageCallback = (noFocus?: boolean) => {
+  emit('pop')
+
+  if (noFocus) return
+
+  nextTick(() => {
+    focusFirstOption()
+  })
+}
+
+const goToParentPage = (noFocus?: boolean) => {
+  parentPageCallback(noFocus)
+}
+
+const childPageCallback = (option?: AutoCompleteOption, noFocus?: boolean) => {
+  if (option?.children) {
+    emit('push', option)
+
+    if (noFocus) return
+
+    nextTick(() => {
+      focusFirstOption()
+    })
+  }
+}
+
+const goToChildPage = ({
+  option,
+  noFocus,
+}: {
+  option: AutoCompleteOption
+  noFocus?: boolean
+}) => {
+  childPageCallback(option, noFocus)
+}
 </script>
 
 <template>
@@ -296,44 +404,69 @@ const duration = VITE_TEST_MODE ? undefined : { enter: 300, leave: 200 }
     :focus="moveFocusToDropdown"
   />
   <Teleport to="body">
-    <Transition :duration="duration">
+    <Transition
+      name="collapse"
+      :duration="collapseDuration"
+      @enter="collapseEnter"
+      @after-enter="collapseAfterEnter"
+      @leave="collapseLeave"
+    >
       <div
         v-if="showDropdown"
         id="common-select"
         ref="dropdownElement"
-        class="fixed z-10 min-h-9 flex antialiased"
+        class="fixed z-10 flex min-h-9 antialiased"
         :style="dropdownStyle"
       >
-        <div
-          class="select-dialog w-full"
-          role="menu"
-          :class="{
-            'select-dialog--up': hasDirectionUp,
-            'select-dialog--down': !hasDirectionUp,
-          }"
-        >
+        <div class="w-full" role="menu">
           <div
-            class="h-full flex flex-col items-start bg-white dark:bg-gray-500 border-x border-neutral-100 dark:border-gray-900"
+            class="flex h-full flex-col items-start border-x border-neutral-100 bg-white dark:border-gray-900 dark:bg-gray-500"
             :class="{
               'rounded-t-lg border-t': hasDirectionUp,
               'rounded-b-lg border-b': !hasDirectionUp,
             }"
           >
             <div
-              v-if="multiple && hasMoreSelectableOptions"
-              class="w-full px-2.5 py-1.5 flex justify-between gap-2"
+              v-if="isChildPage || dropdownActions.length"
+              class="flex w-full justify-between gap-2 px-2.5 py-1.5"
             >
               <CommonLabel
-                class="ms-auto text-blue-800 dark:text-blue-800 focus-visible:outline focus-visible:rounded-sm focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800"
-                prefix-icon="check-all"
+                v-if="isChildPage"
+                class="text-blue-800 hover:text-black focus-visible:rounded-sm focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800 dark:text-blue-800 dark:hover:text-white"
+                :aria-label="$t('Back to previous page')"
+                :prefix-icon="
+                  locale.localeData?.dir === 'rtl'
+                    ? 'chevron-right'
+                    : 'chevron-left'
+                "
+                size="small"
                 role="button"
-                tabindex="1"
-                @click.stop="selectAll()"
-                @keypress.enter.prevent.stop="selectAll()"
-                @keypress.space.prevent.stop="selectAll()"
+                tabindex="0"
+                @click.stop="goToParentPage(true)"
+                @keypress.enter.prevent.stop="goToParentPage()"
+                @keypress.space.prevent.stop="goToParentPage()"
               >
-                {{ $t('select all options') }}
+                {{ $t('Back') }}
               </CommonLabel>
+              <div
+                v-if="dropdownActions.length"
+                class="flex grow justify-end gap-2"
+              >
+                <CommonLabel
+                  v-for="action of dropdownActions"
+                  :key="action.key"
+                  :prefix-icon="action.icon"
+                  class="text-blue-800 hover:text-black focus-visible:rounded-sm focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800 dark:text-blue-800 dark:hover:text-white"
+                  size="small"
+                  role="button"
+                  tabindex="0"
+                  @click.stop="action.onClick(true)"
+                  @keypress.enter.prevent.stop="action.onClick"
+                  @keypress.space.prevent.stop="action.onClick"
+                >
+                  {{ $t(action.label) }}
+                </CommonLabel>
+              </div>
             </div>
             <div
               :aria-label="$t('Select…')"
@@ -347,7 +480,9 @@ const duration = VITE_TEST_MODE ? undefined : { enter: 300, leave: 200 }
                 :key="String(option.value)"
                 :class="{
                   'first:rounded-t-lg':
-                    hasDirectionUp && (!multiple || !hasMoreSelectableOptions),
+                    hasDirectionUp &&
+                    !isChildPage &&
+                    (!multiple || !hasMoreSelectableOptions),
                   'last:rounded-b-lg': !hasDirectionUp,
                 }"
                 :selected="isCurrentValue(option.value)"
@@ -355,15 +490,18 @@ const duration = VITE_TEST_MODE ? undefined : { enter: 300, leave: 200 }
                 :option="option"
                 :no-label-translate="noOptionsLabelTranslation"
                 :filter="filter"
+                :option-icon-component="optionIconComponent"
                 @select="select($event)"
+                @next="goToChildPage($event)"
               />
               <CommonSelectItem
                 v-if="!options.length"
                 :option="{
-                  label: __('No results found'),
+                  label: emptyLabelText,
                   value: '',
                   disabled: true,
                 }"
+                no-selection-indicator
               />
               <slot name="footer" />
             </div>
@@ -373,41 +511,3 @@ const duration = VITE_TEST_MODE ? undefined : { enter: 300, leave: 200 }
     </Transition>
   </Teleport>
 </template>
-
-<style scoped>
-.select-dialog {
-  &--down {
-    @apply origin-top;
-  }
-
-  &--up {
-    @apply origin-bottom;
-  }
-}
-
-.v-enter-active {
-  .select-dialog {
-    @apply duration-200 ease-out;
-  }
-}
-
-.v-leave-active {
-  .select-dialog {
-    @apply duration-200 ease-in;
-  }
-}
-
-.v-enter-to,
-.v-leave-from {
-  .select-dialog {
-    @apply scale-y-100 opacity-100;
-  }
-}
-
-.v-enter-from,
-.v-leave-to {
-  .select-dialog {
-    @apply scale-y-50 opacity-0;
-  }
-}
-</style>

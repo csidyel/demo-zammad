@@ -1,8 +1,11 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { ref } from 'vue'
+
 import getUuid from '#shared/utils/getUuid.ts'
+
 import { NotificationTypes } from './types.ts'
+
 import type { NewNotification, Notification } from './types.ts'
 
 const notifications = ref<Notification[]>([])
@@ -21,13 +24,15 @@ const clearAllNotifications = () => {
 const useNotifications = () => {
   const notify = (notification: NewNotification): string => {
     let { id } = notification
+    const { unique = true } = notification
+
     if (!id) {
       id = getUuid()
     }
 
     const newNotification: Notification = { id, timeout: 0, ...notification }
 
-    if (notification.unique) {
+    if (unique) {
       notifications.value = notifications.value.filter(
         (notification: Notification) => {
           const isSame = notification.id === id

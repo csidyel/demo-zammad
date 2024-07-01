@@ -23,6 +23,8 @@ class User < ApplicationModel
   include User::TriggersSubscriptions
   include User::PerformsGeoLookup
   include User::UpdatesTicketOrganization
+  include User::OutOfOffice
+  include User::Permissions
 
   has_and_belongs_to_many :organizations,          after_add: %i[cache_update create_organization_add_history], after_remove: %i[cache_update create_organization_remove_history], class_name: 'Organization'
   has_and_belongs_to_many :overviews,              dependent: :nullify
@@ -40,15 +42,14 @@ class User < ApplicationModel
   has_many                :owner_tickets,          class_name: 'Ticket', foreign_key: :owner_id, inverse_of: :owner
   has_many                :overview_sortings,      dependent: :destroy
   has_many                :created_recent_views,   class_name: 'RecentView', foreign_key: :created_by_id, dependent: :destroy, inverse_of: :created_by
-  has_many                :permissions,            -> { where(roles: { active: true }, active: true) }, through: :roles
   has_many                :data_privacy_tasks,     as: :deletable
   belongs_to              :organization,           inverse_of: :members, optional: true
 
   before_validation :check_name, :check_email, :check_login, :ensure_password, :ensure_roles, :ensure_organizations, :ensure_organizations_limit
   before_validation :check_mail_delivery_failed, on: :update
   before_save       :ensure_notification_preferences, if: :reset_notification_config_before_save
-  before_create     :validate_preferences, :validate_ooo, :domain_based_assignment, :set_locale
-  before_update     :validate_preferences, :validate_ooo, :reset_login_failed_after_password_change, :validate_agent_limit_by_attributes, :last_admin_check_by_attribute
+  before_create     :validate_preferences, :domain_based_assignment, :set_locale
+  before_update     :validate_preferences, :reset_login_failed_after_password_change, :validate_agent_limit_by_attributes, :last_admin_check_by_attribute
   before_destroy    :destroy_longer_required_objects, :destroy_move_dependency_ownership
   after_commit      :update_caller_id
 
@@ -80,8 +81,7 @@ class User < ApplicationModel
                                  :chat_agents,
                                  :data_privacy_tasks,
                                  :overviews,
-                                 :mentions,
-                                 :permissions
+                                 :mentions
 
   activity_stream_permission 'admin.user'
 
@@ -137,20 +137,21 @@ returns
 
 =end
 
-  def fullname
-    name = ''
-    if firstname.present?
-      name = firstname
+  def fullname(email_fallback: true)
+    name = "#{firstname} #{lastname}".strip
+
+    if name.blank? && email.present? && email_fallback
+      return email
     end
-    if lastname.present?
-      if name != ''
-        name += ' '
-      end
-      name += lastname
+
+    return name if name.present?
+
+    %w[phone mobile].each do |item|
+      next if self[item].blank?
+
+      return self[item]
     end
-    if name.blank? && email.present?
-      name = email
-    end
+
     name
   end
 
@@ -199,105 +200,6 @@ returns
 
   def role?(role_name)
     roles.where(name: role_name).any?
-  end
-
-=begin
-
-check if user is in role
-
-  user = User.find(123)
-  result = user.out_of_office?
-
-returns
-
-  result = true|false
-
-=end
-
-  def out_of_office?
-    return false if out_of_office != true
-    return false if out_of_office_start_at.blank?
-    return false if out_of_office_end_at.blank?
-
-    Time.use_zone(Setting.get('timezone_default_sanitized')) do
-      start  = out_of_office_start_at.beginning_of_day
-      finish = out_of_office_end_at.end_of_day
-
-      Time.zone.now.between? start, finish
-    end
-  end
-
-=begin
-
-check if user is in role
-
-  user = User.find(123)
-  result = user.out_of_office_agent
-
-returns
-
-  result = user_model
-
-=end
-
-  def out_of_office_agent(loop_user_ids: [], stack_depth: 10)
-    return if !out_of_office?
-    return if out_of_office_replacement_id.blank?
-
-    if stack_depth.zero?
-      Rails.logger.warn("Found more than 10 replacement levels for agent #{self}.")
-      return self
-    end
-
-    user = User.find_by(id: out_of_office_replacement_id)
-
-    # stop if users are occuring multiple times to prevent endless loops
-    return user if loop_user_ids.include?(out_of_office_replacement_id)
-
-    loop_user_ids |= [out_of_office_replacement_id]
-
-    ooo_agent = user.out_of_office_agent(loop_user_ids: loop_user_ids, stack_depth: stack_depth - 1)
-    return ooo_agent if ooo_agent.present?
-
-    user
-  end
-
-=begin
-
-gets users where user is replacement
-
-  user = User.find(123)
-  result = user.out_of_office_agent_of
-
-returns
-
-  result = [user_model1, user_model2]
-
-=end
-
-  def out_of_office_agent_of
-    User.where(id: out_of_office_agent_of_recursive(user_id: id))
-  end
-
-  scope :out_of_office, lambda { |user, interval_start = Time.zone.today, interval_end = Time.zone.today|
-    where(active: true, out_of_office: true, out_of_office_replacement_id: user)
-      .where('out_of_office_start_at <= ? AND out_of_office_end_at >= ?', interval_start, interval_end)
-  }
-
-  def someones_out_of_office_replacement?
-    self.class.out_of_office(self).exists?
-  end
-
-  def out_of_office_agent_of_recursive(user_id:, result: [])
-    self.class.out_of_office(user_id).each do |user|
-
-      # stop if users are occuring multiple times to prevent endless loops
-      break if result.include?(user.id)
-
-      result |= [user.id]
-      result |= out_of_office_agent_of_recursive(user_id: user.id, result: result)
-    end
-    result
   end
 
 =begin
@@ -417,102 +319,6 @@ returns
       logger.error e
       raise Exceptions::UnprocessableEntity, e.message
     end
-  end
-
-=begin
-
-returns all accessable permission ids of user
-
-  user = User.find(123)
-  user.permissions_with_child_ids
-
-returns
-
-  [permission1_id, permission2_id, permission3_id]
-
-=end
-
-  def permissions_with_child_ids
-    permissions_with_child_elements.pluck(:id)
-  end
-
-=begin
-
-returns all accessable permission names of user
-
-  user = User.find(123)
-  user.permissions_with_child_names
-
-returns
-
-  [permission1_name, permission2_name, permission3_name]
-
-=end
-
-  def permissions_with_child_names
-    permissions_with_child_elements.pluck(:name)
-  end
-
-  def permissions?(permissions)
-    permissions!(permissions)
-    true
-  rescue Exceptions::Forbidden
-    false
-  end
-
-  def permissions!(auth_query)
-    return true if Auth::RequestCache.permissions?(self, auth_query)
-
-    raise Exceptions::Forbidden, __('Not authorized (user)!')
-  end
-
-=begin
-
-get all users with permission
-
-  users = User.with_permissions('ticket.agent')
-
-get all users with permission "admin.session" or "ticket.agent"
-
-  users = User.with_permissions(['admin.session', 'ticket.agent'])
-
-returns
-
-  [user1, user2, ...]
-
-=end
-
-  def self.with_permissions(keys)
-    if keys.class != Array
-      keys = [keys]
-    end
-    total_role_ids = []
-    permission_ids = []
-    keys.each do |key|
-      role_ids = []
-      ::Permission.with_parents(key).each do |local_key|
-        permission = ::Permission.lookup(name: local_key)
-        next if !permission
-
-        permission_ids.push permission.id
-      end
-      next if permission_ids.blank?
-
-      Role.joins(:permissions_roles).joins(:permissions).where('permissions_roles.permission_id IN (?) AND roles.active = ? AND permissions.active = ?', permission_ids, true, true).distinct.pluck(:id).each do |role_id|
-        role_ids.push role_id
-      end
-      total_role_ids.push role_ids
-    end
-    return [] if total_role_ids.blank?
-
-    condition = ''
-    total_role_ids.each do |_role_ids|
-      if condition != ''
-        condition += ' OR '
-      end
-      condition += 'roles_users.role_id IN (?)'
-    end
-    User.joins(:roles_users).where("(#{condition}) AND users.active = ?", *total_role_ids, true).distinct.reorder(:id)
   end
 
   # Find a user by mobile number, either directly or by number variants stored in the Cti::CallerIds.
@@ -1011,9 +817,9 @@ try to find correct name
 
   def ensure_identifier
     return if login.present? && !login.start_with?('auto-')
-    return if [email, firstname, lastname, phone].any?(&:present?)
+    return if [email, firstname, lastname, phone, mobile].any?(&:present?)
 
-    errors.add :base, __('At least one identifier (firstname, lastname, phone or email) for user is required.')
+    errors.add :base, __('At least one identifier (firstname, lastname, phone, mobile or email) for user is required.')
   end
 
   def ensure_uniq_email
@@ -1039,20 +845,6 @@ try to find correct name
     errors.add :base, __('More than 250 secondary organizations are not allowed.')
   end
 
-  def permissions_with_child_elements
-    where = ''
-    where_bind = [true]
-    permissions.pluck(:name).each do |permission_name|
-      where += ' OR ' if where != ''
-      where += 'permissions.name = ? OR permissions.name LIKE ?'
-      where_bind.push permission_name
-      where_bind.push "#{SqlHelper.quote_like(permission_name)}.%"
-    end
-    return [] if where == ''
-
-    ::Permission.where("permissions.active = ? AND (#{where})", *where_bind)
-  end
-
   def validate_roles(role)
     return true if !role_ids # we need role_ids for checking in role_ids below, in this method
     return true if role.preferences[:not].blank?
@@ -1064,17 +856,6 @@ try to find correct name
 
       raise "Role #{role.name} conflicts with #{local_role.name}"
     end
-    true
-  end
-
-  def validate_ooo
-    return true if out_of_office != true
-    raise Exceptions::UnprocessableEntity, 'out of office start is required' if out_of_office_start_at.blank?
-    raise Exceptions::UnprocessableEntity, 'out of office end is required' if out_of_office_end_at.blank?
-    raise Exceptions::UnprocessableEntity, 'out of office end is before start' if out_of_office_start_at > out_of_office_end_at
-    raise Exceptions::UnprocessableEntity, 'out of office replacement user is required' if out_of_office_replacement_id.blank?
-    raise Exceptions::UnprocessableEntity, 'out of office no such replacement user' if !User.exists?(id: out_of_office_replacement_id)
-
     true
   end
 
@@ -1290,14 +1071,14 @@ raise 'At least one user need to have admin permissions'
     true
   end
 
-  # When adding/removing a phone number from the User table,
+  # When adding/removing a phone/mobile number from the User table,
   # update caller ID table
   # to adopt/orphan matching Cti::Logs accordingly
   # (see https://github.com/zammad/zammad/issues/2057)
   def update_caller_id
     # skip if "phone/mobile" does not change, or changes like [nil, ""]
     return if persisted? && previous_changes.slice(:phone, :mobile).values.flatten.none?(&:present?)
-    return if destroyed? && phone.blank?
+    return if destroyed? && phone.blank? && mobile.blank?
 
     Cti::CallerId.build(self)
   end

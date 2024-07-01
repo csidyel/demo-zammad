@@ -29,7 +29,7 @@ const { fingerprint } = useFingerprint()
       <form
         v-for="provider of props.providers"
         :key="provider.name"
-        class="flex min-w-1/2 grow"
+        class="min-w-1/2 flex grow"
         method="post"
         :action="`${provider.url}?fingerprint=${fingerprint}`"
       >
@@ -44,7 +44,7 @@ const { fingerprint } = useFingerprint()
             class="shrink-0 ltr:mr-2.5 rtl:ml-2.5"
           />
           <span class="truncate text-xl leading-7">
-            {{ $t(provider.name) }}
+            {{ $t(provider.label) }}
           </span>
         </button>
       </form>

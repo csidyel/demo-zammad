@@ -2,8 +2,10 @@
 
 <script setup lang="ts">
 // TODO: check external data input output
-import { phoneify } from '#shared/utils/formatter.ts'
 import { computed } from 'vue'
+
+import { phoneify } from '#shared/utils/formatter.ts'
+
 import type { ObjectAttributeInput } from './attributeInputTypes.ts'
 
 const props = defineProps<{
@@ -38,7 +40,7 @@ const link = computed(() => {
   <span v-if="!link">{{ title }}</span>
   <CommonLink
     v-else
-    class="cursor-pointer text-blue"
+    class="text-blue cursor-pointer"
     :external="attribute.dataOption.type !== 'url'"
     open-in-new-tab
     :link="link"

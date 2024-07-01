@@ -96,7 +96,7 @@ RSpec.describe 'Caller log', authenticated_as: :authenticate, type: :system do
   context 'when a customer call is answered' do
     let(:second_params) { params.merge(event: 'answer', answeringNumber: agent_phone) }
 
-    context 'without active tickets' do
+    context 'with known customer and without active tickets' do
       before do
         travel(-2.months)
         create(:ticket, customer: customer)
@@ -109,11 +109,34 @@ RSpec.describe 'Caller log', authenticated_as: :authenticate, type: :system do
       it 'opens a new ticket after phone call inbound' do
         within(:active_content) do
           expect(page).to have_text('New Ticket')
+          expect(page).to have_css('input[name="title"][value="Call from 0190333"]', visible: :all)
+          expect(page).to have_css('.tabsSidebar-tab[data-tab="customer"]', visible: :all)
+          expect(page).to have_css("input[name=customer_id][value='#{customer.id}']", visible: :hide)
+          expect(find('[name=customer_id_completion]').value).to eq "#{customer.fullname} <#{customer.email}>"
         end
       end
     end
 
-    context 'with active tickets' do
+    context 'without known customer and without active tickets' do
+      let(:first_params) { params.merge(event: 'newCall', direction: 'out', from: '001', to: '002') }
+      let(:second_params) { params.merge(event: 'answer', answeringNumber: agent_phone) }
+
+      before do
+        visit_cti
+        place_call
+      end
+
+      it 'opens a new ticket after phone call inbound' do
+        within(:active_content) do
+          expect(page).to have_text('New Ticket')
+          expect(page).to have_css("input[name='title'][value='Call from 0190333']", visible: :all)
+          expect(page).to have_no_css('.tabsSidebar-tab[data-tab="customer"]')
+          expect(find('[name=customer_id_completion]').value).to eq ''
+        end
+      end
+    end
+
+    context 'with known customer and with active tickets' do
       before do
         create(:ticket, customer: customer)
         visit_cti
@@ -126,6 +149,31 @@ RSpec.describe 'Caller log', authenticated_as: :authenticate, type: :system do
         end
       end
     end
+
+    context 'with phone number only known customer and without active tickets' do
+      let(:customer_phone) { '0190444' }
+      let(:customer)       { create(:customer, phone: customer_phone, email: nil, firstname: nil, lastname: nil) }
+
+      before do
+        travel(-2.months)
+        create(:ticket, customer: customer)
+        travel_back
+
+        visit_cti
+        place_call
+      end
+
+      it 'opens a new ticket after phone call inbound' do
+        within(:active_content) do
+          expect(page).to have_text('New Ticket')
+          expect(page).to have_css('input[name="title"][value="Call from 0190444"]', visible: :all)
+          expect(page).to have_css('.tabsSidebar-tab[data-tab="customer"]', visible: :all)
+          expect(page).to have_css("input[name=customer_id][value='#{customer.id}']", visible: :hide)
+          expect(find('[name=customer_id_completion]').value).to eq '0190444'
+        end
+      end
+    end
+
   end
 
   context 'with incoming call' do

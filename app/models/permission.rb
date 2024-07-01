@@ -6,33 +6,37 @@ class Permission < ApplicationModel
   include HasCollectionUpdate
 
   has_and_belongs_to_many :roles
-  validates               :name, presence: true
   store                   :preferences
 
-  validates :note, length: { maximum: 500 }
-  sanitized_html :note
+  validates :name, presence: true
 
-=begin
+  # This is added to handle migrations from before the columns were modified.
+  # For example when upgrading from pre-6.4.
+  # Otherwise older migrations fail since those columnsa are not yet available.
+  with_options if: -> { respond_to?(:label) && respond_to?(:description) } do
+    validates :label, length: { maximum: 255 }
+    validates :description, length: { maximum: 500 }
+  end
 
-  permissions = Permission.with_parents('some_key.sub_key')
+  sanitized_html :description
 
-returns
-
-  ['some_key.sub_key', 'some_key']
-
-=end
-
+  # Returns permission name with parent permission names
+  #
+  # @return [String]
+  #
+  # @example
+  #   Permission.with_parents('some_key.sub_key')
+  #   #=> ['some_key.sub_key', 'some_key']
   def self.with_parents(key)
-    names = []
-    part = ''
-    key.split('.').each do |local_part|
-      if part != ''
-        part += '.'
+    key
+      .split('.')
+      .each_with_object([]) do |elem, memo|
+        memo << if (previous = memo.last)
+                  "#{previous}.#{elem}"
+                else
+                  elem
+                end
       end
-      part += local_part
-      names.push part
-    end
-    names
   end
 
   def to_s
@@ -44,7 +48,8 @@ returns
 
     permissions = with_parents(permissions)
 
-    object.joins(roles: :permissions)
-                .where(roles: { active: true }, permissions: { name: permissions, active: true })
+    object
+      .joins(roles: :permissions)
+      .where(roles: { active: true }, permissions: { name: permissions, active: true })
   end
 end

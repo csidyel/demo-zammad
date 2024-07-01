@@ -1,7 +1,7 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-const path = require('path')
 const fs = require('fs')
+const path = require('path')
 
 const mobilePagesDir = path.resolve(__dirname, 'app/frontend/apps/mobile/pages')
 const mobilePagesFolder = fs.readdirSync(mobilePagesDir)
@@ -21,14 +21,17 @@ module.exports = {
   plugins: [
     '@typescript-eslint',
     'vue',
+    'vuejs-accessibility',
     'prettier',
     'sonarjs',
     'security',
     'zammad',
+    'import',
   ],
   extends: [
     'airbnb-base',
     'plugin:vue/vue3-recommended',
+    'plugin:vuejs-accessibility/recommended',
     'plugin:@typescript-eslint/eslint-recommended',
     'plugin:@typescript-eslint/recommended',
     'plugin:prettier/recommended',
@@ -150,6 +153,53 @@ module.exports = {
       },
     ],
 
+    // Enforce ordering for imports
+    'import/order': [
+      'error',
+      {
+        groups: [
+          'builtin',
+          'external',
+          'internal',
+          'parent',
+          'sibling',
+          'index',
+          'object',
+          'type',
+        ],
+        pathGroups: [
+          {
+            pattern: '#tests/**',
+            group: 'internal',
+            position: 'before',
+          },
+          {
+            pattern: '#shared/**',
+            group: 'internal',
+            position: 'before',
+          },
+          {
+            pattern: '#desktop/**',
+            group: 'internal',
+          },
+          {
+            pattern: '#mobile/**',
+            group: 'internal',
+          },
+          {
+            pattern: '**/types.ts',
+            group: 'type',
+            position: 'after',
+          },
+        ],
+        'newlines-between': 'always',
+        alphabetize: { order: 'asc', caseInsensitive: true },
+      },
+    ],
+
+    // Enforce Vue v3.3+ tuple syntax for defineEmits.
+    'vue/define-emits-declaration': ['error', 'type-literal'],
+
     'vue/script-setup-uses-vars': 'error',
 
     // Don't require a default value for the props.
@@ -176,6 +226,9 @@ module.exports = {
     'sonarjs/prefer-immediate-return': 'off',
 
     'sonarjs/prefer-single-boolean-return': 'off',
+
+    // Consider prettier offenses as errors.
+    'prettier/prettier': ['error'],
   },
   overrides: [
     {

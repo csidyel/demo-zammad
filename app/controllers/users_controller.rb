@@ -21,10 +21,7 @@ class UsersController < ApplicationController
     users = policy_scope(User).reorder(id: :asc).offset(pagination.offset).limit(pagination.limit)
 
     if response_expand?
-      list = []
-      users.each do |user|
-        list.push user.attributes_with_association_names
-      end
+      list = users.map(&:attributes_with_association_names)
       render json: list, status: :ok
       return
     end
@@ -43,9 +40,8 @@ class UsersController < ApplicationController
       return
     end
 
-    users_all = []
-    users.each do |user|
-      users_all.push User.lookup(id: user.id).attributes_with_association_ids
+    users_all = users.map do |user|
+      User.lookup(id: user.id).attributes_with_association_ids
     end
     render json: users_all, status: :ok
   end
@@ -250,10 +246,7 @@ class UsersController < ApplicationController
     user_all = User.search(query_params)
 
     if response_expand?
-      list = []
-      user_all.each do |user|
-        list.push user.attributes_with_association_names
-      end
+      list = user_all.map(&:attributes_with_association_names)
       render json: list, status: :ok
       return
     end
@@ -263,8 +256,14 @@ class UsersController < ApplicationController
       users = []
       user_all.each do |user|
         realname = user.fullname
+
+        # improve realname, if possible
         if user.email.present? && realname != user.email
-          realname = Channel::EmailBuild.recipient_line realname, user.email
+          begin
+            realname = Channel::EmailBuild.recipient_line(realname, user.email)
+          rescue Mail::Field::IncompleteParseError
+            # mute if parsing of recipient_line was not successful / #5166
+          end
         end
         a = if params[:term]
               { id: user.id, label: realname, value: user.email, inactive: !user.active }
@@ -295,10 +294,7 @@ class UsersController < ApplicationController
       return
     end
 
-    list = []
-    user_all.each do |user|
-      list.push user.attributes_with_association_ids
-    end
+    list = user_all.map(&:attributes_with_association_ids)
     render json: list, status: :ok
   end
 
@@ -587,16 +583,9 @@ curl http://localhost/api/v1/users/password_change -v -u #{login}:#{password} -H
 =end
 
   def password_change
-
     # check old password
     if !params[:password_old] || !PasswordPolicy::MaxLength.valid?(params[:password_old])
       render json: { message: 'failed', notice: [__('Please provide your current password.')] }, status: :unprocessable_entity
-      return
-    end
-
-    current_password_verified = PasswordHash.verified?(current_user.password, params[:password_old])
-    if !current_password_verified
-      render json: { message: 'failed', notice: [__('The current password you provided is incorrect.')] }, status: :unprocessable_entity
       return
     end
 
@@ -606,22 +595,18 @@ curl http://localhost/api/v1/users/password_change -v -u #{login}:#{password} -H
       return
     end
 
-    result = PasswordPolicy.new(params[:password_new])
-    if !result.valid?
-      render json: { message: 'failed', notice: result.error }, status: :unprocessable_entity
+    begin
+      Service::User::ChangePassword.new(
+        user:             current_user,
+        current_password: params[:password_old],
+        new_password:     params[:password_new]
+      ).execute
+    rescue PasswordPolicy::Error => e
+      render json: { message: 'failed', notice: [e.message] }, status: :unprocessable_entity
       return
-    end
-
-    current_user.update!(password: params[:password_new])
-
-    if current_user.email.present?
-      NotificationFactory::Mailer.notification(
-        template: 'password_change',
-        user:     current_user,
-        objects:  {
-          user: current_user,
-        }
-      )
+    rescue PasswordHash::Error
+      render json: { message: 'failed', notice: [__('The current password you provided is incorrect.')] }, status: :unprocessable_entity
+      return
     end
 
     render json: { message: 'ok', user_login: current_user.login }, status: :ok
@@ -630,13 +615,9 @@ curl http://localhost/api/v1/users/password_change -v -u #{login}:#{password} -H
   def password_check
     raise Exceptions::UnprocessableEntity, __("The required parameter 'password' is missing.") if params[:password].blank?
 
-    begin
-      Auth.new(current_user.login, params[:password], only_verify_password: true).valid!
+    password_check = Service::User::PasswordCheck.new(user: current_user, password: params[:password])
 
-      render json: { success: true }, status: :ok
-    rescue Auth::Error::AuthenticationFailed
-      render json: { success: false }, status: :ok
-    end
+    render json: { success: password_check.execute }, status: :ok
   end
 
 =begin
@@ -722,16 +703,16 @@ curl http://localhost/api/v1/users/out_of_office -v -u #{login}:#{password} -H "
 
   def out_of_office
     user = User.find(current_user.id)
-    user.with_lock do
-      user.assign_attributes(
-        out_of_office:                params[:out_of_office],
-        out_of_office_start_at:       params[:out_of_office_start_at],
-        out_of_office_end_at:         params[:out_of_office_end_at],
-        out_of_office_replacement_id: params[:out_of_office_replacement_id],
-      )
-      user.preferences[:out_of_office_text] = params[:out_of_office_text]
-      user.save!
-    end
+
+    Service::User::OutOfOffice
+      .new(user,
+           enabled:     params[:out_of_office],
+           start_at:    params[:out_of_office_start_at],
+           end_at:      params[:out_of_office_end_at],
+           replacement: User.find_by(id: params[:out_of_office_replacement_id]),
+           text:        params[:out_of_office_text])
+      .execute
+
     render json: { message: 'ok' }, status: :ok
   end
 
@@ -761,15 +742,8 @@ curl http://localhost/api/v1/users/account -v -u #{login}:#{password} -H "Conten
     raise Exceptions::UnprocessableEntity, 'provider needed!' if !params[:provider]
     raise Exceptions::UnprocessableEntity, 'uid needed!' if !params[:uid]
 
-    # remove from database
-    record = Authorization.where(
-      user_id:  current_user.id,
-      provider: params[:provider],
-      uid:      params[:uid],
-    )
-    raise Exceptions::UnprocessableEntity, __('No record found!') if !record.first
+    Service::User::RemoveLinkedAccount.new(provider: params[:provider], uid: params[:uid], current_user:).execute
 
-    record.destroy_all
     render json: { message: 'ok' }, status: :ok
   end
 

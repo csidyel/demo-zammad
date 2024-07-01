@@ -25,6 +25,8 @@ export default {
   'sign-enabled': 'signed',
   'sign-disabled': 'not-signed',
 
+  'remove-attachment': 'close-small',
+
   // editor, some of them are the same
   'text-style-underline': 'text-style-underline',
   'text-style-bold': 'text-style-bold',
@@ -32,6 +34,7 @@ export default {
   'text-style-strikethrough': 'text-style-strikethrough',
   'editor-inline-image': 'photos',
   'editor-inline-link': 'link',
+  'text-style-h': 'text-style-h',
   'text-style-h1': 'text-style-h1',
   'text-style-h2': 'text-style-h2',
   'text-style-h3': 'text-style-h3',
@@ -41,11 +44,21 @@ export default {
   'editor-mention-user': 'at-sign',
   'editor-mention-knowledge-base': 'mention-kb',
   'editor-mention-text-module': 'snippet',
+  'editor-table': 'table',
+  'editor-code': 'code',
+  'editor-code-block': 'code-square',
+  'editor-code-slash': 'code-slash',
+  'editor-indent-right': 'text-indent-right',
+  'editor-indent-left': 'text-indent-left',
+  'editor-text-color': 'text-style-color',
+  'editor-action-checkmark': 'check',
 
   '2fa-security-keys': 'security-key',
   '2fa-authenticator-app': 'mobile-code',
 
   'form-field-link': 'external-link',
+
+  'mail-file': 'mail-out',
 
   // these aliases are used in shared context, but they refer to the same name
   search: 'search',

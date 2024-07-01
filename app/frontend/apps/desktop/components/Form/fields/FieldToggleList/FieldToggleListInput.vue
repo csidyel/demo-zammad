@@ -1,12 +1,14 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import { computed, toRef } from 'vue'
 import { cloneDeep } from 'lodash-es'
+import { computed, toRef } from 'vue'
+
 import useValue from '#shared/components/Form/composables/useValue.ts'
-import { i18n } from '#shared/i18n.ts'
-import { useDelegateFocus } from '#shared/composables/useDelegateFocus.ts'
 import type { FormFieldContext } from '#shared/components/Form/types/field.ts'
+import { useDelegateFocus } from '#shared/composables/useDelegateFocus.ts'
+import { i18n } from '#shared/i18n.ts'
+
 import type { ToggleListOption, ToggleListOptionValue } from './types.ts'
 
 const props = defineProps<{
@@ -52,11 +54,12 @@ const { delegateFocus } = useDelegateFocus(
 <template>
   <output
     :id="context.id"
-    class="block bg-blue-200 dark:bg-gray-700 rounded-lg focus:outline focus:outline-1 focus:outline-offset-1 focus:outline-blue-800 hover:focus:outline-blue-800"
+    class="block rounded-lg bg-blue-200 focus:outline focus:outline-1 focus:outline-offset-1 focus:outline-blue-800 hover:focus:outline-blue-800 dark:bg-gray-700"
     role="list"
     :class="context.classes.input"
     :name="context.node.name"
     :aria-disabled="context.disabled"
+    :aria-describedby="context.describedBy"
     :tabindex="context.disabled ? '-1' : '0'"
     v-bind="context.attrs"
     @focus="delegateFocus"
@@ -64,8 +67,8 @@ const { delegateFocus } = useDelegateFocus(
     <div
       v-for="(option, index) in context.options"
       :key="`option-${option.value}`"
-      class="flex gap-2.5 items-center px-3 py-2.5"
-      role="option"
+      class="flex items-center gap-2.5 px-3 py-2.5"
+      role="listitem"
     >
       <FormKit
         :id="`toggle_list_toggle_${context.id}_${option.value}`"
@@ -81,8 +84,9 @@ const { delegateFocus } = useDelegateFocus(
         :sections-schema="{
           label: {
             attrs: {
-              class: 'flex flex-col',
+              class: 'flex flex-col cursor-pointer',
               for: `toggle_list_toggle_${context.id}_${option.value}`,
+              tabindex: '-1',
             },
             children: [
               {

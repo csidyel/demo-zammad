@@ -4,7 +4,9 @@ class Job extends App.ControllerSubContent
   constructor: ->
     super
 
-    @genericController = new App.ControllerGenericIndex(
+    @fetchTimezones()
+
+    @genericController = new Index(
       el: @el
       id: @id
       genericObject: 'Job'
@@ -34,5 +36,38 @@ class Job extends App.ControllerSubContent
         @[key] = value
 
     @genericController.paginate( @page || 1 )
+
+  fetchTimezones: =>
+    @ajax(
+      id:    'calendar_timezones'
+      type:  'GET'
+      url:   "#{@apiPath}/calendars/timezones"
+      success: (data) ->
+        App.Config.set('timezones', data.timezones)
+    )
+
+class Index extends App.ControllerGenericIndex
+  newControllerClass: -> New
+  editControllerClass: -> Edit
+
+ModalContentFormModelMixin =
+  events:
+    'change input[name="execution_localization"]': 'executionLocalizationChanged'
+
+  contentFormModel: ->
+    params = @contentFormParams() or {}
+    attrs = _.clone(App[ @genericObject ].configure_attributes)
+
+    attrs = @prepareExecutionLocalizationAttributes(params, attrs)
+
+    { configure_attributes: attrs }
+
+class Edit extends App.ControllerGenericEdit
+  @include App.ExecutionLocalizationMixin
+  @include ModalContentFormModelMixin
+
+class New extends App.ControllerGenericNew
+  @include App.ExecutionLocalizationMixin
+  @include ModalContentFormModelMixin
 
 App.Config.set('Job', { prio: 3400, name: __('Scheduler'), parent: '#manage', target: '#manage/job', controller: Job, permission: ['admin.scheduler'] }, 'NavBarAdmin')

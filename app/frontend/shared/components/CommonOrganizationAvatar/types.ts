@@ -5,3 +5,8 @@ export interface AvatarOrganization {
   active?: Maybe<boolean>
   vip?: Maybe<boolean>
 }
+
+export interface OrganizationAvatarClassMap {
+  base: string
+  inactive: string
+}

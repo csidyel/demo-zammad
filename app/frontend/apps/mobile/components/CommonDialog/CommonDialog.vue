@@ -1,14 +1,16 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import { useTrapTab } from '#shared/composables/useTrapTab.ts'
-import type { EventHandlers } from '#shared/types/utils.ts'
-import { getFirstFocusableElement } from '#shared/utils/getFocusableElements.ts'
 import { onKeyUp, usePointerSwipe } from '@vueuse/core'
 import { nextTick, onMounted, ref, type Events } from 'vue'
-import { closeDialog } from '#shared/composables/useDialog.ts'
+
+import { useTrapTab } from '#shared/composables/useTrapTab.ts'
+import type { EventHandlers } from '#shared/types/utils.ts'
 import stopEvent from '#shared/utils/events.ts'
+import { getFirstFocusableElement } from '#shared/utils/getFocusableElements.ts'
+
 import CommonButton from '#mobile/components/CommonButton/CommonButton.vue'
+import { closeDialog } from '#mobile/composables/useDialog.ts'
 
 const props = defineProps<{
   name: string
@@ -23,7 +25,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'close'): void
+  close: []
 }>()
 
 const PX_SWIPE_CLOSE = -150
@@ -112,7 +114,7 @@ export default {
       :class="{ 'transition-all duration-200 ease-linear': !isSwiping }"
       :style="{ transform: `translateY(${top})` }"
     >
-      <div class="mx-4 h-2.5 shrink-0 rounded-t-xl bg-gray-150/40" />
+      <div class="bg-gray-150/40 mx-4 h-2.5 shrink-0 rounded-t-xl" />
       <div
         class="relative flex h-16 shrink-0 select-none items-center justify-center rounded-t-xl bg-gray-600/80"
       >

@@ -317,30 +317,23 @@ returns
   end
 
   def self.waiting_chat_count_by_chat(chat_ids)
-    list = {}
-    Chat.where(active: true, id: chat_ids).pluck(:id).each do |chat_id|
-      list[chat_id] = Chat::Session.where(chat_id: chat_id, state: ['waiting']).count
-    end
-    list
+    where(active: true, id: chat_ids)
+      .pluck(:id)
+      .index_with { |chat_id| waiting_chat_count(chat_id) }
   end
 
   def self.waiting_chat_session_list(chat_ids)
-    sessions = []
-    Chat::Session.where(state: ['waiting'], chat_id: chat_ids).each do |session|
-      sessions.push session.attributes
-    end
-    sessions
+    Chat::Session
+      .where(state: ['waiting'], chat_id: chat_ids)
+      .map(&:attributes)
   end
 
   def self.waiting_chat_session_list_by_chat(chat_ids)
-    sessions = {}
-    Chat.where(active: true, id: chat_ids).pluck(:id).each do |chat_id|
-      Chat::Session.where(chat_id: chat_id, state: ['waiting']).each do |session|
-        sessions[chat_id] ||= []
-        sessions[chat_id].push session.attributes
-      end
-    end
-    sessions
+    active_chats = Chat.where(active: true, id: chat_ids).pluck(:id)
+
+    Chat::Session
+      .where(chat_id: active_chats, state: ['waiting'])
+      .group_by(&:chat_id)
   end
 
 =begin
@@ -356,15 +349,15 @@ returns
 =end
 
   def self.running_chat_count(chat_ids)
-    Chat::Session.where(state: ['running'], chat_id: chat_ids).count
+    Chat::Session
+      .where(state: ['running'], chat_id: chat_ids)
+      .count
   end
 
   def self.running_chat_session_list(chat_ids)
-    sessions = []
-    Chat::Session.where(state: ['running'], chat_id: chat_ids).each do |session|
-      sessions.push session.attributes
-    end
-    sessions
+    Chat::Session
+      .where(state: ['running'], chat_id: chat_ids)
+      .map(&:attributes)
   end
 
 =begin
@@ -564,10 +557,9 @@ optional you can put the max oldest chat entries
 =end
 
   def self.cleanup(diff = 12.months)
-    Chat::Session.where(state: 'closed').where('updated_at < ?', Time.zone.now - diff).each do |chat_session|
-      Chat::Message.where(chat_session_id: chat_session.id).delete_all
-      chat_session.destroy
-    end
+    Chat::Session
+      .where(state: 'closed', updated_at: ...diff.ago)
+      .each(&:destroy)
 
     true
   end
@@ -585,20 +577,25 @@ optional you can put the max oldest chat sessions as argument
 =end
 
   def self.cleanup_close(diff = 5.minutes)
-    Chat::Session.where.not(state: 'closed').where('updated_at < ?', Time.zone.now - diff).each do |chat_session|
-      next if chat_session.recipients_active?
+    Chat::Session
+      .where.not(state: 'closed')
+      .where(updated_at: ...diff.ago)
+      .each do |chat_session|
+        next if chat_session.recipients_active?
 
-      chat_session.state = 'closed'
-      chat_session.save
-      message = {
-        event: 'chat_session_closed',
-        data:  {
-          session_id: chat_session.session_id,
-          realname:   'System',
-        },
-      }
-      chat_session.send_to_recipients(message)
-    end
+        chat_session.state = 'closed'
+        chat_session.save
+
+        message = {
+          event: 'chat_session_closed',
+          data:  {
+            session_id: chat_session.session_id,
+            realname:   'System',
+          },
+        }
+        chat_session.send_to_recipients(message)
+      end
+
     true
   end
 

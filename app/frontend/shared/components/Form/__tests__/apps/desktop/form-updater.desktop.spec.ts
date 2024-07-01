@@ -1,20 +1,25 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { cloneDeep } from 'lodash-es'
 import {
   getAllByRole,
   getByRole,
   queryByRole,
   waitFor,
 } from '@testing-library/vue'
-import Form from '#shared/components/Form/Form.vue'
-import type { Props } from '#shared/components/Form/Form.vue'
+import { cloneDeep } from 'lodash-es'
+
+import { renderComponent } from '#tests/support/components/index.ts'
 import type {
   ExtendedMountingOptions,
   ExtendedRenderResult,
 } from '#tests/support/components/index.ts'
-import { renderComponent } from '#tests/support/components/index.ts'
+import { mockGraphQLApi } from '#tests/support/mock-graphql-api.ts'
 import { waitForNextTick, waitUntil } from '#tests/support/utils.ts'
+
+import Form from '#shared/components/Form/Form.vue'
+import type { Props } from '#shared/components/Form/Form.vue'
+import { ObjectManagerFrontendAttributesDocument } from '#shared/entities/object-attributes/graphql/queries/objectManagerFrontendAttributes.api.ts'
+import frontendObjectAttributes from '#shared/entities/ticket/__tests__/mocks/frontendObjectAttributes.json'
 import {
   EnumFormUpdaterId,
   EnumObjectManagerObjects,
@@ -22,12 +27,11 @@ import {
   type ObjectManagerFrontendAttributesPayload,
   type FormUpdaterQuery,
 } from '#shared/graphql/types.ts'
-import { mockGraphQLApi } from '#tests/support/mock-graphql-api.ts'
-import frontendObjectAttributes from '#shared/entities/ticket/__tests__/mocks/frontendObjectAttributes.json'
-import { ObjectManagerFrontendAttributesDocument } from '#shared/entities/object-attributes/graphql/queries/objectManagerFrontendAttributes.api.ts'
+
 import { FormUpdaterDocument } from '../../../graphql/queries/formUpdater.api.ts'
-import type { FormSchemaField, FormValues } from '../../../types.ts'
 import additionalFrontendObjectAttributes from '../../mocks/additionalFrontendObjectAttributes.json'
+
+import type { FormSchemaField, FormValues } from '../../../types.ts'
 
 const wrapperParameters = {
   form: true,
@@ -1422,5 +1426,123 @@ describe('Form.vue - Form Updater - special situtations', () => {
 
     await checkSelectOptions(wrapper, 'Multi Select', ['Key 1', 'Key 4', '-'])
     await checkDisplayValue(wrapper, 'Multi Select', ['-', 'Key 1', 'Key 4'])
+  })
+
+  test('check dependent fields, e.g. "Cc" is shown + contains the correct value when "Email outbound" got selected', async () => {
+    const { wrapper } = await renderForm(
+      {
+        formUpdater: {
+          articleSenderType: {
+            value: 'email-out',
+          },
+          cc: {
+            value: ['Nicole Braun'],
+            options: [
+              {
+                value: 'Nicole Braun',
+                label: 'Nicole Braun',
+                heading: null,
+              },
+            ],
+          },
+        },
+      },
+      {
+        props: {
+          schema: [
+            {
+              name: 'articleSenderType',
+              type: 'toggleButtons',
+              required: true,
+              value: 'phone-in',
+              props: {
+                options: [
+                  {
+                    value: 'phone-in',
+                    label: 'Phone in',
+                  },
+                  {
+                    value: 'phone-out',
+                    label: 'Phone outbound',
+                  },
+                  {
+                    value: 'email-out',
+                    label: 'Email outbound',
+                  },
+                ],
+              },
+            },
+            {
+              if: '$values.articleSenderType === "email-out"',
+              name: 'cc',
+              label: 'CC',
+              type: 'recipient',
+              props: {
+                multiple: true,
+                clearable: true,
+              },
+            },
+            {
+              type: 'submit',
+              name: 'submit',
+            },
+          ],
+        },
+      },
+    )
+
+    expect(
+      wrapper.getByRole('tab', { selected: true, name: 'Email outbound' }),
+    ).toBeInTheDocument()
+
+    expect(wrapper.getByLabelText('CC')).toBeInTheDocument()
+    expect(wrapper.getByLabelText('CC')).toHaveValue('Nicole Braun')
+  })
+})
+
+describe('Form.vue - Form Updater - reacts not on updates when it is in initial form updater', () => {
+  const formFields = {
+    type: 'Type',
+    multiselect: 'Multi Select',
+    treeselect: 'Treeselect',
+    example: 'Example',
+  }
+
+  test('only calls form updater for initial request', async () => {
+    const { wrapper, mockFormUpdaterApi } = await renderForm(
+      [
+        {
+          formUpdater: Object.keys(formFields).reduce(
+            (
+              showFields: Record<string, Partial<FormSchemaField>>,
+              fieldName,
+            ) => {
+              showFields[fieldName] = {
+                show: true,
+              }
+              return showFields
+            },
+            {},
+          ),
+        },
+      ],
+      {
+        props: {
+          formUpdaterInitialOnly: true,
+        },
+      },
+    )
+
+    Object.values(formFields).forEach((fieldLabel) => {
+      expect(wrapper.getByLabelText(fieldLabel)).toBeInTheDocument()
+    })
+
+    await selectValue(wrapper, 'Type', 'Incident')
+
+    await waitUntil(() => mockFormUpdaterApi.calls.resolve === 1)
+
+    Object.values(formFields).forEach((fieldLabel) => {
+      expect(wrapper.queryByLabelText(fieldLabel)).toBeInTheDocument()
+    })
   })
 })

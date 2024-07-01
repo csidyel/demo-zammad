@@ -13,9 +13,15 @@ RSpec.describe Setting, type: :model do
       end
     end
 
-    context 'when given a processed setting key' do
-      it 'returns processed value' do
-        expect(described_class.get('timezone_default_sanitized')).to be_present
+    context 'when interpolated value was set and cache is still valid' do
+      it 'stores interpolated value' do
+        create(:setting, name: 'broadcast_test', state: 'test')
+        described_class.send(:load) # prewarm cache
+
+        described_class.set('broadcast_test', 'test #{config.fqdn}') # rubocop:disable Lint/InterpolationCheck
+
+        expect(described_class.get('broadcast_test'))
+          .to eq("test #{described_class.get('fqdn')}")
       end
     end
   end
@@ -52,6 +58,60 @@ RSpec.describe Setting, type: :model do
     end
   end
 
+  describe '.cache_valid?' do
+    context 'when loading first time' do
+      before do
+        # ensure no cache checks are set
+        described_class.class_variable_set(:@@lookup_at, nil) # rubocop:disable Style/ClassVars
+        described_class.class_variable_set(:@@query_cache_key, nil) # rubocop:disable Style/ClassVars
+      end
+
+      it 'cache is not valid' do
+        expect(described_class).not_to be_cache_valid
+      end
+    end
+
+    context 'when cache is valid' do
+      before do
+        # ensure cache is warm
+        described_class.send(:load)
+
+        # ensure cache is not touched by broadcasting the new value
+        allow_any_instance_of(described_class).to receive(:broadcast_frontend)
+      end
+
+      it 'cache is valid' do
+        expect(described_class).to be_cache_valid
+      end
+
+      it 'cache is still valid after some time' do
+        travel 1.minute
+        expect(described_class).to be_cache_valid
+      end
+
+      context 'when Setting is updated in the same process' do
+        before { described_class.set('maintenance_login', 'sample message') }
+
+        it 'cache is not valid' do
+          expect(described_class).not_to be_cache_valid
+        end
+      end
+
+      context 'when Setting updated outside of the process and class variables were not touched' do
+        before { described_class.find_by(name: 'maintenance_login').touch }
+
+        it 'cache is seen as valid' do
+          expect(described_class).to be_cache_valid
+        end
+
+        it 'cache is seen as invalid after some time' do
+          travel 1.minute
+          expect(described_class).not_to be_cache_valid
+        end
+      end
+    end
+  end
+
   describe 'attributes' do
     describe '#state_initial' do
       subject(:setting) { build(:setting, state: 'foo') }
@@ -63,34 +123,84 @@ RSpec.describe Setting, type: :model do
     end
   end
 
-  describe 'check_broadcast' do
+  describe 'broadcast_frontend' do
+    subject(:setting) do
+      build(:setting, name: 'broadcast_test', state: value, frontend: frontend)
+        .tap { |setting| setting.preferences = { authentication: true } if authentication_required }
+    end
+
+    let(:value)                   { 'foo' }
+    let(:frontend)                { true }
+    let(:authentication_required) { false }
+
     context 'when setting is non-frontend' do
-      subject(:setting) { build(:setting, name: 'broadcast_test', state: 'foo', frontend: false) }
+      let(:frontend) { false }
 
       it 'does not broadcast' do
         allow(Sessions).to receive(:broadcast)
         setting.save
         expect(Sessions).not_to have_received(:broadcast)
       end
+
+      it 'does not trigger subscription' do
+        allow(Gql::Subscriptions::ConfigUpdates).to receive(:trigger)
+        setting.save
+        expect(Gql::Subscriptions::ConfigUpdates).not_to have_received(:trigger).with(setting)
+      end
     end
 
     context 'when setting is public' do
-      subject(:setting) { build(:setting, name: 'broadcast_test', state: 'foo', frontend: true) }
-
       it 'broadcasts to public' do
         allow(Sessions).to receive(:broadcast)
         setting.save
-        expect(Sessions).to have_received(:broadcast).with({ data: { name: 'broadcast_test', value: 'foo' }, event: 'config_update' }, 'public')
+        expect(Sessions).to have_received(:broadcast)
+          .with({ data: { name: 'broadcast_test', value: 'foo' }, event: 'config_update' }, 'public')
+      end
+
+      it 'triggers subscription' do
+        allow(Gql::Subscriptions::ConfigUpdates).to receive(:trigger)
+        setting.save
+        expect(Gql::Subscriptions::ConfigUpdates).to have_received(:trigger).with(setting)
       end
     end
 
     context 'when setting requires authentication' do
-      subject(:setting) { build(:setting, name: 'broadcast_test', state: 'foo', frontend: true, preferences: { authentication: true }) }
+      let(:authentication_required) { true }
 
       it 'broadcasts to authenticated only' do
         allow(Sessions).to receive(:broadcast)
         setting.save
-        expect(Sessions).to have_received(:broadcast).with({ data: { name: 'broadcast_test', value: 'foo' }, event: 'config_update' }, 'authenticated')
+        expect(Sessions).to have_received(:broadcast)
+          .with({ data: { name: 'broadcast_test', value: 'foo' }, event: 'config_update' }, 'authenticated')
+      end
+
+      it 'triggers subscription' do
+        allow(Gql::Subscriptions::ConfigUpdates).to receive(:trigger)
+        setting.save
+        expect(Gql::Subscriptions::ConfigUpdates).to have_received(:trigger).with(setting)
+      end
+    end
+
+    context 'when setting uses interpolation' do
+      let(:value) { 'test #{config.fqdn}' } # rubocop:disable Lint/InterpolationCheck
+
+      it 'broadcasts to authenticated only' do
+        allow(Sessions).to receive(:broadcast)
+
+        setting.save
+
+        expect(Sessions)
+          .to have_received(:broadcast)
+          .with(
+            { data: { name: 'broadcast_test', value: "test #{described_class.get('fqdn')}" }, event: 'config_update' },
+            'public'
+          )
+      end
+
+      it 'triggers subscription' do
+        allow(Gql::Subscriptions::ConfigUpdates).to receive(:trigger)
+        setting.save
+        expect(Gql::Subscriptions::ConfigUpdates).to have_received(:trigger).with(setting)
       end
     end
   end

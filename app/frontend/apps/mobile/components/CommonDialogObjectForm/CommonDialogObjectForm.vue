@@ -1,28 +1,29 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import type { ObjectLike } from '#shared/types/utils.ts'
-import { useForm } from '#shared/components/Form/useForm.ts'
-import { closeDialog } from '#shared/composables/useDialog.ts'
-import type {
-  EnumFormUpdaterId,
-  EnumObjectManagerObjects,
-  ObjectAttributeValue,
-} from '#shared/graphql/types.ts'
+import Form from '#shared/components/Form/Form.vue'
 import type {
   FormFieldValue,
   FormSchemaField,
   FormSchemaNode,
   FormSubmitData,
 } from '#shared/components/Form/types.ts'
-import type { OperationMutationFunction } from '#shared/types/server/apollo/handler.ts'
-import { MutationHandler } from '#shared/server/apollo/handler/index.ts'
-import Form from '#shared/components/Form/Form.vue'
-import { useObjectAttributes } from '#shared/entities/object-attributes/composables/useObjectAttributes.ts'
+import { useForm } from '#shared/components/Form/useForm.ts'
+import { useConfirmation } from '#shared/composables/useConfirmation.ts'
 import { useObjectAttributeFormData } from '#shared/entities/object-attributes/composables/useObjectAttributeFormData.ts'
+import { useObjectAttributes } from '#shared/entities/object-attributes/composables/useObjectAttributes.ts'
+import type {
+  EnumFormUpdaterId,
+  EnumObjectManagerObjects,
+  ObjectAttributeValue,
+} from '#shared/graphql/types.ts'
+import { MutationHandler } from '#shared/server/apollo/handler/index.ts'
+import type { OperationMutationFunction } from '#shared/types/server/apollo/handler.ts'
+import type { ObjectLike } from '#shared/types/utils.ts'
+
 import CommonButton from '#mobile/components/CommonButton/CommonButton.vue'
 import CommonDialog from '#mobile/components/CommonDialog/CommonDialog.vue'
-import { waitForConfirmation } from '#shared/utils/confirmation.ts'
+import { closeDialog } from '#mobile/composables/useDialog.ts'
 
 export interface Props {
   name: string
@@ -38,14 +39,13 @@ export interface Props {
 
 const props = defineProps<Props>()
 const emit = defineEmits<{
-  (e: 'success', data: unknown): void
-  (e: 'error'): void
-  (
-    e: 'changedField',
+  success: [data: unknown]
+  error: []
+  changedField: [
     fieldName: string,
     newValue: FormFieldValue,
     oldValue: FormFieldValue,
-  ): void
+  ]
 }>()
 
 const updateMutation = new MutationHandler(props.mutation({}), {
@@ -70,12 +70,15 @@ const initialFlatObject = {
 const { attributesLookup: objectAttributesLookup } = useObjectAttributes(
   props.type,
 )
+
+const { waitForConfirmation } = useConfirmation()
+
 const cancelDialog = async () => {
   if (isDirty.value) {
     const confirmed = await waitForConfirmation(
       __('Are you sure? You have unsaved changes that will get lost.'),
       {
-        buttonTitle: __('Discard changes'),
+        buttonLabel: __('Discard changes'),
         buttonVariant: 'danger',
       },
     )
@@ -137,7 +140,7 @@ const saveObject = async (formData: FormSubmitData) => {
       :id="name"
       ref="form"
       class="w-full p-4"
-      autofocus
+      should-autofocus
       :schema="schema"
       :initial-entity-object="initialFlatObject"
       :change-fields="formChangeFields"

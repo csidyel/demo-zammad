@@ -1,23 +1,27 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
+import { useLocalStorage } from '@vueuse/core'
+import { ignorableWatch } from '@vueuse/shared'
+import { debounce } from 'lodash-es'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
 import type { CommonInputSearchExpose } from '#shared/components/CommonInputSearch/CommonInputSearch.vue'
 import CommonInputSearch from '#shared/components/CommonInputSearch/CommonInputSearch.vue'
+import { useStickyHeader } from '#shared/composables/useStickyHeader.ts'
+import { QueryHandler } from '#shared/server/apollo/handler/index.ts'
+
+import CommonButtonGroup from '#mobile/components/CommonButtonGroup/CommonButtonGroup.vue'
+import type { CommonButtonOption } from '#mobile/components/CommonButtonGroup/types.ts'
 import CommonSectionMenu from '#mobile/components/CommonSectionMenu/CommonSectionMenu.vue'
 import type { MenuItem } from '#mobile/components/CommonSectionMenu/index.ts'
-import { ignorableWatch } from '@vueuse/shared'
-import { useLocalStorage } from '@vueuse/core'
-import { QueryHandler } from '#shared/server/apollo/handler/index.ts'
-import type { LocationQueryRaw } from 'vue-router'
-import { useRoute, useRouter } from 'vue-router'
-import { debounce } from 'lodash-es'
-import type { CommonButtonOption } from '#mobile/components/CommonButtonGroup/types.ts'
-import CommonButtonGroup from '#mobile/components/CommonButtonGroup/CommonButtonGroup.vue'
-import { useStickyHeader } from '#shared/composables/useStickyHeader.ts'
+
 import SearchResults from '../components/SearchResults.vue'
-import { useSearchPlugins } from '../plugins/index.ts'
 import { useSearchLazyQuery } from '../graphql/queries/searchOverview.api.ts'
+import { useSearchPlugins } from '../plugins/index.ts'
+
+import type { LocationQueryRaw } from 'vue-router'
 
 interface SearchTypeItem extends MenuItem {
   value: string
@@ -218,7 +222,7 @@ export default {
         />
         <CommonLink
           link="/"
-          class="flex items-center justify-center text-base text-blue ltr:pl-3 rtl:pr-3"
+          class="text-blue flex items-center justify-center text-base ltr:pl-3 rtl:pr-3"
         >
           {{ $t('Cancel') }}
         </CommonLink>
@@ -273,17 +277,20 @@ export default {
             v-for="searchItem in [...lastSearches].reverse()"
             :key="searchItem"
             class="pb-4"
-            @click="selectLastSearch(searchItem)"
           >
-            <button type="button" class="flex items-center">
-              <div>
+            <button
+              type="button"
+              class="flex items-center"
+              @click="selectLastSearch(searchItem)"
+            >
+              <span>
                 <CommonIcon
                   name="clock"
                   size="small"
                   class="mx-2 text-white/50"
                   decorative
                 />
-              </div>
+              </span>
               <span class="text-left text-base">{{ searchItem }}</span>
             </button>
           </li>

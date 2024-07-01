@@ -68,25 +68,11 @@ class Service::Ticket::Article::Create < Service::BaseWithCurrentUser
 
   def transform_article(article, attachments_raw, subtype)
     transform_attachments(article, attachments_raw)
-    # transform_to_from(article)
     transform_subtype(article, subtype)
   end
 
   def transform_subtype(article, subtype)
     article.preferences[:subtype] = subtype if subtype.present?
-  end
-
-  def transform_to_from(article)
-    customer_display_name = display_name(article.ticket.customer)
-    group_name = article.ticket.group.fullname
-
-    if article.sender.name.eql?('Customer')
-      article.from = customer_display_name
-      article.to   = group_name
-    else
-      article.to   = customer_display_name if article.to.blank?
-      article.from = group_name
-    end
   end
 
   def transform_attachments(article, attachments_raw)
@@ -174,6 +160,6 @@ class Service::Ticket::Article::Create < Service::BaseWithCurrentUser
   end
 
   def display_name_fallback(user)
-    user.email.presence || user.phone.presence || user.login.presence || '-'
+    user.email.presence || user.phone.presence || user.mobile.presence || user.login.presence || '-'
   end
 end

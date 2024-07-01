@@ -2,9 +2,9 @@
 
 <script setup lang="ts">
 import useFingerprint from '#shared/composables/useFingerprint.ts'
-import { getCSRFToken } from '#shared/server/apollo/utils/csrfToken.ts'
 import type { ThirdPartyAuthProvider } from '#shared/types/authentication.ts'
-import CommonButton from '#desktop/components/CommonButton/CommonButton.vue'
+
+import CommonThirdPartyAuthenticationButton from '#desktop/components/CommonThirdPartyAuthenticationButton/CommonThirdPartyAuthenticationButton.vue'
 
 export interface Props {
   providers: ThirdPartyAuthProvider[]
@@ -12,14 +12,12 @@ export interface Props {
 
 const props = defineProps<Props>()
 
-const csrfToken = getCSRFToken()
-
 const { fingerprint } = useFingerprint()
 </script>
 
 <template>
-  <section class="w-full mt-2.5" data-test-id="loginThirdParty">
-    <div class="flex justify-center mb-2.5">
+  <section class="mt-2.5 w-full" data-test-id="loginThirdParty">
+    <div class="mb-2.5 flex justify-center">
       <CommonLabel>
         {{
           $c.user_show_password_login
@@ -29,24 +27,19 @@ const { fingerprint } = useFingerprint()
       </CommonLabel>
     </div>
     <div class="flex flex-wrap gap-2">
-      <form
+      <CommonThirdPartyAuthenticationButton
         v-for="provider of props.providers"
         :key="provider.name"
         class="flex min-w-[calc(50%-theme(spacing.2))] grow"
-        method="post"
-        :action="`${provider.url}?fingerprint=${fingerprint}`"
+        :url="`${provider.url}?fingerprint=${fingerprint}`"
+        :button-prefix-icon="provider.icon"
+        button-size="large"
+        button-block
+        button-variant="primary"
+        :button-label="provider.name"
       >
-        <input type="hidden" name="authenticity_token" :value="csrfToken" />
-        <CommonButton
-          type="submit"
-          variant="primary"
-          size="large"
-          block
-          :prefix-icon="provider.icon"
-        >
-          {{ $t(provider.name) }}
-        </CommonButton>
-      </form>
+        {{ $t(provider.label) }}
+      </CommonThirdPartyAuthenticationButton>
     </div>
   </section>
 </template>

@@ -74,9 +74,8 @@ class Selector::Sql < Selector::Base
   end
 
   def run_block(block, level)
-    block_query = []
-    block[:conditions].each do |sub_block|
-      block_query << run(sub_block, level + 1)
+    block_query = block[:conditions].map do |sub_block|
+      run(sub_block, level + 1)
     end
 
     block_query = block_query.compact
@@ -546,7 +545,7 @@ class Selector::Sql < Selector::Base
         query << sql_helper.array_contains_one(attribute_name, block_condition[:value], negated: true)
       end
     elsif block_condition[:operator] == 'today'
-      Time.use_zone(Setting.get('timezone_default_sanitized').presence) do
+      Time.use_zone(Setting.get('timezone_default')) do
         day_start = Time.zone.now.beginning_of_day.utc
         day_end   = Time.zone.now.end_of_day.utc
 

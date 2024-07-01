@@ -1,8 +1,10 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { TestingPinia } from '@pinia/testing'
 import { createTestingPinia } from '@pinia/testing'
+
 import { useApplicationStore } from '#shared/stores/application.ts'
+
+import type { TestingPinia } from '@pinia/testing'
 import type { Store } from 'pinia'
 
 let storeInitialized = false
@@ -24,6 +26,7 @@ export const initializeStore = () => {
   app.config.ui_ticket_overview_ticket_limit = 5
   app.config.product_name = 'Zammad'
   app.config.api_path = '/api'
+  app.config.pretty_date_format = 'relative'
   return pinia
 }
 

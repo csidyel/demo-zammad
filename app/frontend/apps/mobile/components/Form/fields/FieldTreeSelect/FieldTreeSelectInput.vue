@@ -2,19 +2,21 @@
 
 <script setup lang="ts">
 import { computed, nextTick, ref, toRef } from 'vue'
-import { i18n } from '#shared/i18n.ts'
-import { useDialog } from '#shared/composables/useDialog.ts'
+
+import type { SelectValue } from '#shared/components/CommonSelect/types.ts'
 import CommonTicketStateIndicator from '#shared/components/CommonTicketStateIndicator/CommonTicketStateIndicator.vue'
-import { useFormBlock } from '#shared/form/useFormBlock.ts'
-import useSelectOptions from '#shared/composables/useSelectOptions.ts'
-import useSelectPreselect from '#shared/composables/useSelectPreselect.ts'
 import useValue from '#shared/components/Form/composables/useValue.ts'
 import type {
   FlatSelectOption,
   TreeSelectContext,
   TreeSelectOption,
 } from '#shared/components/Form/fields/FieldTreeSelect/types.ts'
-import type { SelectValue } from '#shared/components/CommonSelect/types.ts'
+import useSelectOptions from '#shared/composables/useSelectOptions.ts'
+import useSelectPreselect from '#shared/composables/useSelectPreselect.ts'
+import { useFormBlock } from '#shared/form/useFormBlock.ts'
+import { i18n } from '#shared/i18n.ts'
+
+import { useDialog } from '#mobile/composables/useDialog.ts'
 
 interface Props {
   context: TreeSelectContext
@@ -168,8 +170,8 @@ setupMissingOrDisabledOptionHandling()
       ref="outputElement"
       role="combobox"
       :name="context.node.name"
-      class="flex grow items-center focus:outline-none formkit-disabled:pointer-events-none"
-      :tabindex="context.disabled ? '-1' : '0'"
+      class="formkit-disabled:pointer-events-none flex grow items-center focus:outline-none"
+      tabindex="0"
       :aria-labelledby="`label-${context.id}`"
       :aria-disabled="context.disabled ? 'true' : undefined"
       v-bind="context.attrs"
@@ -216,7 +218,7 @@ setupMissingOrDisabledOptionHandling()
       <CommonIcon
         v-if="context.clearable && hasValue && !context.disabled"
         :label="__('Clear Selection')"
-        class="absolute -mt-5 shrink-0 text-gray ltr:right-2 rtl:left-2"
+        class="text-gray absolute -mt-5 shrink-0 ltr:right-2 rtl:left-2"
         name="close-small"
         size="base"
         role="button"

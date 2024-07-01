@@ -1,8 +1,8 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-const formKitTailwind = require('@formkit/themes/tailwindcss')
 const path = require('path')
-const daisyTailwind = require('daisyui')
+
+const formKitTailwind = require('@formkit/themes/tailwindcss')
 const unimportantTailwind = require('tailwindcss-unimportant')
 
 const zammadTailwind = require('../../../build/zammadTailwindPlugin.js')
@@ -17,28 +17,7 @@ module.exports = {
     `${desktopDir}/**/*.{js,jsx,ts,tsx,vue,css}`,
     `${sharedDir}/**/*.{js,jsx,ts,tsx,vue,css}`,
   ],
-  plugins: [
-    formKitTailwind,
-    zammadTailwind,
-    daisyTailwind,
-    unimportantTailwind,
-    ({ addComponents, theme }) => {
-      addComponents({
-        // NB: Used by FieldDateTimeInput.vue component, within its style section.
-        //   Since all component styles are processed in isolation, we have to provide the classes below within the
-        //   configuration, otherwise we risk running into build issues since class definitions in imported stylesheets
-        //   might not be available.
-        '.date-selection': {
-          borderColor: theme('colors.blue.800'),
-          backgroundColor: theme('colors.blue.800'),
-          backgroundImage: 'none',
-        },
-        '.date-navigation': {
-          color: theme('colors.blue.800'),
-        },
-      })
-    },
-  ],
+  plugins: [formKitTailwind, zammadTailwind, unimportantTailwind],
   theme: {
     colors: {
       alpha: {
@@ -107,28 +86,26 @@ module.exports = {
         300: '#EA4D84',
         500: '#FF006B',
       },
-    },
-    extend: {
-      // NB: daisyUI overrides `neutral` color as a last step.
-      //   Here we apply our original theme values by using the same way they were overridden (via full class name).
-      //   https://github.com/saadeghi/daisyui/issues/2368
-      colors: {
-        'neutral-100': '#E5E5E5',
-        'neutral-200': '#E3E3E3',
-        'neutral-300': '#DCDCDC',
-        'neutral-400': '#D1D1D1',
-        'neutral-500': '#999999',
-        'neutral-950': '#191919',
+      neutral: {
+        100: '#E5E5E5',
+        200: '#E3E3E3',
+        300: '#DCDCDC',
+        400: '#D1D1D1',
+        500: '#999999',
+        950: '#191919',
       },
     },
-  },
-  // XXX: daisyUI is used only in desktop view, so its classes CANNOT be used in "shared" components.
-  daisyui: {
-    base: false,
-    // Do not show info about daisyUI version and used config in the console when building CSS.
-    logs: false,
-    // Disable all daisyUI themes which in turn disables all built-in colors.
-    //   https://daisyui.com/docs/themes/#-2
-    themes: [],
+    extend: {
+      width: {
+        150: '600px',
+      },
+      minWidth: {
+        58: '232px',
+        150: '600px',
+      },
+      maxWidth: {
+        150: '600px',
+      },
+    },
   },
 }

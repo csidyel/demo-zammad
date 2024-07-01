@@ -1,21 +1,24 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import { computed, nextTick, ref, toRef, watch } from 'vue'
 import { useElementBounding, useWindowSize } from '@vueuse/core'
 import { escapeRegExp } from 'lodash-es'
-import { i18n } from '#shared/i18n.ts'
-import CommonInputSearch from '#desktop/components/CommonInputSearch/CommonInputSearch.vue'
-import { useTrapTab } from '#shared/composables/useTrapTab.ts'
-import { useFormBlock } from '#shared/form/useFormBlock.ts'
-import useSelectOptions from '#shared/composables/useSelectOptions.ts'
-import useSelectPreselect from '#shared/composables/useSelectPreselect.ts'
+import { computed, nextTick, ref, toRef, watch } from 'vue'
+
 import useValue from '#shared/components/Form/composables/useValue.ts'
-import type { CommonSelectInstance } from '#desktop/components/CommonSelect/types.ts'
 import type {
   FlatSelectOption,
   TreeSelectContext,
 } from '#shared/components/Form/fields/FieldTreeSelect/types.ts'
+import useSelectOptions from '#shared/composables/useSelectOptions.ts'
+import useSelectPreselect from '#shared/composables/useSelectPreselect.ts'
+import { useTrapTab } from '#shared/composables/useTrapTab.ts'
+import { useFormBlock } from '#shared/form/useFormBlock.ts'
+import { i18n } from '#shared/i18n.ts'
+
+import CommonInputSearch from '#desktop/components/CommonInputSearch/CommonInputSearch.vue'
+import type { CommonSelectInstance } from '#desktop/components/CommonSelect/types.ts'
+
 import FieldTreeSelectInputDropdown from './FieldTreeSelectInputDropdown.vue'
 import useFlatSelectOptions from './useFlatSelectOptions.ts'
 
@@ -206,7 +209,7 @@ setupMissingOrDisabledOptionHandling()
 <template>
   <div
     ref="input"
-    class="flex h-auto min-h-10 hover:outline hover:outline-1 hover:outline-offset-1 hover:outline-blue-600 dark:hover:outline-blue-900 has-[output:focus,input:focus]:outline has-[output:focus,input:focus]:outline-1 has-[output:focus,input:focus]:outline-offset-1 has-[output:focus,input:focus]:outline-blue-800 dark:has-[output:focus,input:focus]:outline-blue-800"
+    class="flex h-auto min-h-10 hover:outline hover:outline-1 hover:outline-offset-1 hover:outline-blue-600 has-[output:focus,input:focus]:outline has-[output:focus,input:focus]:outline-1 has-[output:focus,input:focus]:outline-offset-1 has-[output:focus,input:focus]:outline-blue-800 dark:hover:outline-blue-900 dark:has-[output:focus,input:focus]:outline-blue-800"
     :class="[
       context.classes.input,
       {
@@ -246,8 +249,8 @@ setupMissingOrDisabledOptionHandling()
         ref="outputElement"
         role="combobox"
         :name="context.node.name"
-        class="px-2.5 py-2 flex grow gap-2.5 items-center text-black dark:text-white focus:outline-none"
-        :tabindex="context.disabled ? '-1' : '0'"
+        class="flex grow items-center gap-2.5 px-2.5 py-2 text-black focus:outline-none dark:text-white"
+        tabindex="0"
         :aria-labelledby="`label-${context.id}`"
         :aria-disabled="context.disabled ? 'true' : undefined"
         v-bind="context.attrs"
@@ -257,6 +260,7 @@ setupMissingOrDisabledOptionHandling()
         aria-owns="field-tree-select-input-dropdown"
         aria-haspopup="menu"
         :aria-expanded="expanded"
+        :aria-describedby="context.describedBy"
         @keydown.escape.prevent="closeDropdown()"
         @keypress.enter.prevent="openSelectDropdown()"
         @keydown.down.prevent="openOrMoveFocusToDropdown()"
@@ -276,7 +280,7 @@ setupMissingOrDisabledOptionHandling()
             role="listitem"
           >
             <div
-              class="inline-flex items-center px-1.5 py-0.5 gap-1 rounded text-black dark:text-white text-xs cursor-default"
+              class="inline-flex cursor-default items-center gap-1 rounded px-1.5 py-0.5 text-xs text-black dark:text-white"
               :class="{
                 'bg-white dark:bg-gray-200': !context.alternativeBackground,
                 'bg-neutral-100 dark:bg-gray-200':
@@ -298,7 +302,7 @@ setupMissingOrDisabledOptionHandling()
               </span>
               <CommonIcon
                 :aria-label="i18n.t('Unselect Option')"
-                class="shrink-0 fill-stone-200 dark:fill-neutral-500 hover:fill-black dark:hover:fill-white focus-visible:outline focus-visible:rounded-sm focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800"
+                class="shrink-0 fill-stone-200 hover:fill-black focus:outline-none focus-visible:rounded-sm focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800 dark:fill-neutral-500 dark:hover:fill-white"
                 name="x-lg"
                 size="xs"
                 role="button"
@@ -346,7 +350,7 @@ setupMissingOrDisabledOptionHandling()
         <CommonIcon
           v-if="context.clearable && hasValue && !context.disabled"
           :aria-label="i18n.t('Clear Selection')"
-          class="shrink-0 fill-stone-200 dark:fill-neutral-500 hover:fill-black dark:hover:fill-white focus-visible:outline focus-visible:rounded-sm focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800"
+          class="shrink-0 fill-stone-200 hover:fill-black focus:outline-none focus-visible:rounded-sm focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800 dark:fill-neutral-500 dark:hover:fill-white"
           name="x-lg"
           size="xs"
           role="button"

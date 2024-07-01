@@ -1,16 +1,17 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { computed, ref, watch } from 'vue'
-import {
-  consumer,
-  reopenWebSocketConnection,
-} from '#shared/server/action_cable/consumer.ts'
-import log from '#shared/utils/log.ts'
+
 import {
   NotificationTypes,
   useNotifications,
 } from '#shared/components/CommonNotifications/index.ts'
 import { useApplicationLoaded } from '#shared/composables/useApplicationLoaded.ts'
+import {
+  consumer,
+  reopenWebSocketConnection,
+} from '#shared/server/action_cable/consumer.ts'
+import log from '#shared/utils/log.ts'
 
 const wsConnectionState = ref(true)
 const wsReopening = ref(false)
@@ -80,6 +81,7 @@ watch(
     } else {
       log.debug('Application connection just went down.')
       connectionNotificationId = notifications.notify({
+        id: 'connection-lost',
         message: __('The connection to the server was lost.'),
         type: NotificationTypes.Error,
         persistent: true,

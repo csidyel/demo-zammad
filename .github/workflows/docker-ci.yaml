@@ -25,7 +25,7 @@ jobs:
 
       - name: Build Docker image
         id: docker_build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           labels: ${{ steps.meta.outputs.labels }}
@@ -43,6 +43,6 @@ jobs:
         run: |
           cd zammad-docker-compose
           docker load --input /tmp/zammad-local.tar
-          docker-compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.override-local.yml up --detach
-          docker cp .github/auto_wizard.json zammad-docker-compose_zammad-railsserver_1:/opt/zammad/var
+          docker-compose -f docker-compose.yml -f docker-compose.override-local.yml up --detach
+          docker cp .github/auto_wizard.json zammad-docker-compose_zammad-railsserver_1:/opt/zammad/tmp
           .github/tests.sh

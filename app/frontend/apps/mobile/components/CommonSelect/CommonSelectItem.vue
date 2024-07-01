@@ -1,10 +1,11 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import CommonTicketStateIndicator from '#shared/components/CommonTicketStateIndicator/CommonTicketStateIndicator.vue'
 import { computed } from 'vue'
-import { i18n } from '#shared/i18n.ts'
+
 import type { SelectOption } from '#shared/components/CommonSelect/types.ts'
+import CommonTicketStateIndicator from '#shared/components/CommonTicketStateIndicator/CommonTicketStateIndicator.vue'
+import { i18n } from '#shared/i18n.ts'
 
 const props = defineProps<{
   option: SelectOption
@@ -14,7 +15,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'select', option: SelectOption): void
+  select: [option: SelectOption]
 }>()
 
 const select = (option: SelectOption) => {
@@ -39,9 +40,9 @@ const label = computed(() => {
     :class="{
       'pointer-events-none': option.disabled,
     }"
-    :tabindex="option.disabled ? '-1' : '0'"
+    tabindex="0"
     :aria-selected="selected"
-    class="flex h-[58px] cursor-pointer items-center self-stretch px-4 py-5 text-base leading-[19px] text-white first:rounded-t-xl last:rounded-b-xl focus:bg-blue-highlight focus:outline-none"
+    class="focus:bg-blue-highlight flex h-[58px] cursor-pointer items-center self-stretch px-4 py-5 text-base leading-[19px] text-white first:rounded-t-xl last:rounded-b-xl focus:outline-none"
     role="option"
     :data-value="option.value"
     @click="select(option)"

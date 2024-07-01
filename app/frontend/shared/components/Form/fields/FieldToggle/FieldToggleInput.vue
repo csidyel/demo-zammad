@@ -2,9 +2,13 @@
 
 <script setup lang="ts">
 import { computed, nextTick, toRef, watch } from 'vue'
+
 import stopEvent from '#shared/utils/events.ts'
+
 import useValue from '../../composables/useValue.ts'
+
 import { getToggleClasses } from './initializeToggleClasses.ts'
+
 import type { FormFieldContext } from '../../types/field.ts'
 
 const props = defineProps<{
@@ -79,6 +83,8 @@ const updateLocalValue = (e: Event) => {
   }
 }
 
+const ariaChecked = computed(() => (localValue.value ? 'true' : 'false'))
+
 const buttonSizeClasses = computed(() => {
   if (context.value.size === 'small') return 'w-8 h-5'
 
@@ -106,7 +112,7 @@ const classMap = getToggleClasses()
     :id="context.id"
     type="button"
     role="switch"
-    class="relative inline-flex items-center flex-shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out formkit-disabled:pointer-events-none"
+    class="formkit-disabled:pointer-events-none relative inline-flex flex-shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ease-in-out"
     :class="[
       context.classes.input,
       classMap.track,
@@ -117,7 +123,8 @@ const classMap = getToggleClasses()
     ]"
     :aria-labelledby="`label-${context.id}`"
     :aria-disabled="disabled"
-    :aria-checked="localValue"
+    :aria-checked="ariaChecked"
+    :aria-describedby="context.describedBy"
     :tabindex="context.disabled ? '-1' : '0'"
     :v-bind="context.attrs"
     @click="updateLocalValue"

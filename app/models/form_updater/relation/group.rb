@@ -4,7 +4,7 @@ class FormUpdater::Relation::Group < FormUpdater::Relation
   attr_accessor :lookup_parent_child_groups, :root_groups
 
   def initialize(...)
-    super(...)
+    super
 
     @root_groups = []
     @lookup_parent_child_groups = {}
@@ -14,13 +14,9 @@ class FormUpdater::Relation::Group < FormUpdater::Relation
     # If we have no child groups in the current list, we can handle it in a easy way, because
     # we have only a flat structure.
     if items.none? { |item| item.parent_id.present? }
-      options = []
-
-      items.each do |item|
-        options.push({ value: item.id, label: display_name(item) })
+      return items.map do |item|
+        { value: item.id, label: display_name(item) }
       end
-
-      return options
     end
 
     options_tree_preparation

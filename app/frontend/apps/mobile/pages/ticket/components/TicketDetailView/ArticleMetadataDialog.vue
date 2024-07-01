@@ -1,13 +1,16 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
+import type { TicketArticle } from '#shared/entities/ticket/types.ts'
 import { getArticleChannelIcon } from '#shared/entities/ticket-article/composables/getArticleChannelIcon.ts'
+import { translateArticleSecurity } from '#shared/entities/ticket-article/composables/translateArticleSecurity.ts'
+
 import CommonDialog from '#mobile/components/CommonDialog/CommonDialog.vue'
 import CommonSectionMenu from '#mobile/components/CommonSectionMenu/CommonSectionMenu.vue'
 import CommonSectionMenuItem from '#mobile/components/CommonSectionMenu/CommonSectionMenuItem.vue'
-import { computed } from 'vue'
-import type { TicketArticle } from '#shared/entities/ticket/types.ts'
-import { translateArticleSecurity } from '#shared/entities/ticket-article/composables/translateArticleSecurity.ts'
+
 import ArticleMetadataAddress from './ArticleMetadataAddress.vue'
 
 interface Props {
@@ -21,6 +24,24 @@ const props = defineProps<Props>()
 const channelIcon = computed(() => {
   const name = props.article.type?.name
   if (name) return getArticleChannelIcon(name)
+  return undefined
+})
+
+const articleDeliveryStatus = computed(() => {
+  const { article } = props
+
+  if (article.preferences?.whatsapp?.timestamp_read) {
+    return { message: __('read by the customer'), icon: 'check-double-circle' }
+  }
+
+  if (article.preferences?.whatsapp?.timestamp_delivered) {
+    return { message: __('delivered to the customer'), icon: 'check-double' }
+  }
+
+  if (article.preferences?.whatsapp?.timestamp_sent) {
+    return { message: __('sent to the customer'), icon: 'check' }
+  }
+
   return undefined
 })
 
@@ -109,7 +130,18 @@ const hasSecurityAttribute = computed(
           </CommonLink>
         </div>
       </CommonSectionMenuItem>
-      <CommonSectionMenuItem :label="__('Sent')">
+      <CommonSectionMenuItem
+        v-if="articleDeliveryStatus"
+        :label="__('Message Status')"
+      >
+        <CommonIcon
+          :name="articleDeliveryStatus.icon"
+          size="tiny"
+          class="inline"
+        />
+        {{ $t(articleDeliveryStatus.message) }}
+      </CommonSectionMenuItem>
+      <CommonSectionMenuItem :label="__('Created')">
         <CommonDateTime :date-time="article.createdAt" type="absolute" />
       </CommonSectionMenuItem>
       <CommonSectionMenuItem

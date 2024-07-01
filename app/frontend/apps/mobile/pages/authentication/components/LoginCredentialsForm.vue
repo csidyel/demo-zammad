@@ -1,28 +1,29 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import Form from '#shared/components/Form/Form.vue'
-import { useForm } from '#shared/components/Form/useForm.ts'
-import type { FormSubmitData } from '#shared/components/Form/types.ts'
-import { defineFormSchema } from '#shared/form/defineFormSchema.ts'
-import { useApplicationStore } from '#shared/stores/application.ts'
-import UserError from '#shared/errors/UserError.ts'
-import { useNotifications } from '#shared/components/CommonNotifications/index.ts'
-import { useAuthenticationStore } from '#shared/stores/authentication.ts'
-import type { UserTwoFactorMethods } from '#shared/graphql/types.ts'
 import { useRouter } from 'vue-router'
+
+import { useNotifications } from '#shared/components/CommonNotifications/index.ts'
+import Form from '#shared/components/Form/Form.vue'
+import type { FormSubmitData } from '#shared/components/Form/types.ts'
+import { useForm } from '#shared/components/Form/useForm.ts'
 import { useForceDesktop } from '#shared/composables/useForceDesktop.ts'
 import type { LoginCredentials } from '#shared/entities/two-factor/types.ts'
+import UserError from '#shared/errors/UserError.ts'
+import { defineFormSchema } from '#shared/form/defineFormSchema.ts'
+import type { UserLoginTwoFactorMethods } from '#shared/graphql/types.ts'
+import { useApplicationStore } from '#shared/stores/application.ts'
+import { useAuthenticationStore } from '#shared/stores/authentication.ts'
+
 import { ensureAfterAuth } from '../after-auth/composable/useAfterAuthPlugins.ts'
 
 const emit = defineEmits<{
-  (e: 'error', error: UserError): void
-  (e: 'finish'): void
-  (
-    e: 'askTwoFactor',
-    twoFactor: Required<UserTwoFactorMethods>,
+  error: [UserError]
+  finish: []
+  askTwoFactor: [
+    twoFactor: Required<UserLoginTwoFactorMethods>,
     formData: FormSubmitData<LoginCredentials>,
-  ): void
+  ]
 }>()
 
 const application = useApplicationStore()
@@ -110,7 +111,7 @@ const sendCredentials = (formData: FormSubmitData<LoginCredentials>) => {
       } else {
         emit(
           'askTwoFactor',
-          twoFactor as Required<UserTwoFactorMethods>,
+          twoFactor as Required<UserLoginTwoFactorMethods>,
           formData,
         )
       }
@@ -139,7 +140,7 @@ const sendCredentials = (formData: FormSubmitData<LoginCredentials>) => {
         <span class="ltr:mr-1 rtl:ml-1">{{ $t('New user?') }}</span>
         <CommonLink
           link="/#signup"
-          class="cursor-pointer select-none !text-yellow underline"
+          class="!text-yellow cursor-pointer select-none underline"
           @click="forceDesktop"
         >
           {{ $t('Register') }}

@@ -88,7 +88,7 @@ RSpec.describe CalendarSubscriptions, :aggregate_failures do
       expect(vtimezone).to be_present
 
       tzid = $1 if vtimezone =~ %r{TZID:(.+)}
-      expect(tzid).to match(Setting.get('timezone_default_sanitized'))
+      expect(tzid).to match(Setting.get('timezone_default'))
     end
   end
 
@@ -125,7 +125,7 @@ RSpec.describe CalendarSubscriptions, :aggregate_failures do
   end
 
   def verify_offset(dtstart, dtend, tstart)
-    time_zone = Setting.get('timezone_default_sanitized')
+    time_zone = Setting.get('timezone_default')
     tz = ActiveSupport::TimeZone.find_tzinfo(time_zone)
 
     expect(dtstart.utc_offset).to match(tz.utc_to_local(tstart).utc_offset)
@@ -265,6 +265,42 @@ RSpec.describe CalendarSubscriptions, :aggregate_failures do
       include_examples 'verify calendar', {
         count:  1,
         events: 8,
+      }
+      include_examples 'verify events', { alarm: false }
+      include_examples 'verify timestamps'
+    end
+
+    context 'with pending only' do
+      before do
+        Setting.set('timezone_default', 'Europe/Berlin')
+
+        agent.preferences[:calendar_subscriptions] ||= {}
+
+        agent.preferences[:calendar_subscriptions][:tickets] = {
+          escalation: {
+            own:          false,
+            not_assigned: false,
+          },
+          new_open:   {
+            own:          false,
+            not_assigned: false,
+          },
+          pending:    {
+            own:          true,
+            not_assigned: true,
+          },
+          alarm:      false,
+        }
+        agent.save!
+
+        tickets
+        calendars
+      end
+
+      include_examples 'verify ical'
+      include_examples 'verify calendar', {
+        count:  1,
+        events: 2,
       }
       include_examples 'verify events', { alarm: false }
       include_examples 'verify timestamps'

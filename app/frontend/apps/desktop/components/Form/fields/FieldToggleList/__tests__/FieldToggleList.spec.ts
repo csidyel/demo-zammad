@@ -1,12 +1,14 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
+import { getNode } from '@formkit/core'
 import { FormKit } from '@formkit/vue'
 import { waitFor } from '@testing-library/vue'
-import { getNode } from '@formkit/core'
-import type { SetRequired } from 'type-fest'
+
 import { renderComponent } from '#tests/support/components/index.ts'
 import { waitForNextTick } from '#tests/support/utils.ts'
+
 import type { ToggleListOption } from '../types.ts'
+import type { SetRequired } from 'type-fest'
 
 const testOptions: SetRequired<ToggleListOption, 'label'>[] = [
   {
@@ -61,7 +63,7 @@ describe('Form - Field - Toggle List', () => {
   it('renders given options', async () => {
     const wrapper = await renderToggleListInput()
 
-    const selectOptions = wrapper.getAllByRole('option')
+    const selectOptions = wrapper.getAllByRole('listitem')
 
     expect(selectOptions).toHaveLength(testOptions.length)
 
@@ -75,7 +77,7 @@ describe('Form - Field - Toggle List', () => {
       options: testOptionsWithDescription,
     })
 
-    const selectOptions = wrapper.getAllByRole('option')
+    const selectOptions = wrapper.getAllByRole('listitem')
 
     expect(selectOptions).toHaveLength(testOptionsWithDescription.length)
 
@@ -148,13 +150,13 @@ describe('Fields - Field Toggle List - Input Checklist', () => {
     })
 
     const toggle1 = wrapper.getByLabelText(testOptions[0].label)
-    expect(toggle1).not.toHaveAttribute('aria-checked')
+    expect(toggle1).not.toBeChecked()
 
     const toggle2 = wrapper.getByLabelText(testOptions[1].label)
-    expect(toggle2).toHaveAttribute('aria-checked', 'true')
+    expect(toggle2).toBeChecked()
 
     const toggle3 = wrapper.getByLabelText(testOptions[2].label)
-    expect(toggle3).not.toHaveAttribute('aria-checked')
+    expect(toggle3).not.toBeChecked()
   })
 
   it('implements disabled', async () => {

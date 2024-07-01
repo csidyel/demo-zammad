@@ -5,6 +5,8 @@ class Trigger extends App.ControllerSubContent
   constructor: ->
     super
 
+    @fetchTimezones()
+
     @genericController = new Index(
       el: @el
       id: @id
@@ -33,36 +35,54 @@ class Trigger extends App.ControllerSubContent
 
     @genericController.paginate( @page || 1 )
 
+  fetchTimezones: =>
+    @ajax(
+      id:    'calendar_timezones'
+      type:  'GET'
+      url:   "#{@apiPath}/calendars/timezones"
+      success: (data) ->
+        App.Config.set('timezones', data.timezones)
+    )
+
 class Index extends App.ControllerGenericIndex
   newControllerClass: -> New
   editControllerClass: -> Edit
 
-ActivatorMixin =
+ModalContentFormModelMixin =
   events:
     'change select[name="activator"]': 'activatorChanged'
+    'change input[name="execution_localization"]': 'executionLocalizationChanged'
 
   contentFormModel: ->
     params = @contentFormParams()
-    attrs = App[ @genericObject ].configure_attributes
+    attrs = _.clone(App[ @genericObject ].configure_attributes)
 
+    attrs = @prepareActivatorAttributes(params, attrs)
+    attrs = @prepareExecutionLocalizationAttributes(params, attrs)
+
+    { configure_attributes: attrs }
+
+  prepareActivatorAttributes: (params, attrs) ->
     _.findWhere(attrs, { name: 'execution_condition_mode'}).hide = params.activator isnt 'action'
     _.findWhere(attrs, { name: 'condition'}).hasReached = params.activator is 'time'
     _.findWhere(attrs, { name: 'condition'}).action = params.activator is 'action'
 
-    { configure_attributes: attrs }
-
-  contentFormParams: ->
-    @intermediaryParams || @item || { activator: 'action', execution_condition_mode: 'selective' }
+    attrs
 
   activatorChanged: (e) ->
     e.preventDefault()
     @intermediaryParams = App.ControllerForm.params(@el)
     @update()
 
+  contentFormParams: ->
+    @intermediaryParams || @item || { activator: 'action', execution_condition_mode: 'selective' }
+
 class Edit extends App.ControllerGenericEdit
-  @include ActivatorMixin
+  @include App.ExecutionLocalizationMixin
+  @include ModalContentFormModelMixin
 
 class New extends App.ControllerGenericNew
-  @include ActivatorMixin
+  @include App.ExecutionLocalizationMixin
+  @include ModalContentFormModelMixin
 
 App.Config.set('Trigger', { prio: 3300, name: __('Trigger'), parent: '#manage', target: '#manage/trigger', controller: Trigger, permission: ['admin.trigger'] }, 'NavBarAdmin')

@@ -1,14 +1,18 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { defaultArticles } from '#mobile/pages/ticket/__tests__/mocks/detail-view.ts'
-import type { TicketArticle } from '#shared/entities/ticket/types.ts'
 import { getAllByRole } from '@testing-library/vue'
-import { renderComponent } from '#tests/support/components/index.ts'
+
 import { getByIconName } from '#tests/support/components/iconQueries.ts'
+import { renderComponent } from '#tests/support/components/index.ts'
+
+import type { TicketArticle } from '#shared/entities/ticket/types.ts'
 import {
   EnumSecurityStateType,
   type TicketArticleSecurityState,
 } from '#shared/graphql/types.ts'
+
+import { defaultArticles } from '#mobile/pages/ticket/__tests__/mocks/detail-view.ts'
+
 import ArticleMetadata from '../ArticleMetadataDialog.vue'
 
 // parsed is tested in unit test
@@ -72,7 +76,7 @@ describe('visuals for metadata', () => {
     expect(view.getByRole('region', { name: 'Reply-To' })).toHaveTextContent(
       /Arthur Miller <arthur.miller@zammad.org/,
     )
-    expect(view.getByRole('region', { name: 'Sent' })).toHaveTextContent(
+    expect(view.getByRole('region', { name: 'Created' })).toHaveTextContent(
       /2022-02-01 00:00$/,
     )
     const channel = view.getByRole('region', { name: 'Channel' })
@@ -247,5 +251,76 @@ describe('rendering security field', () => {
     expect(security).toHaveTextContent('Encrypted Signed')
     expect(getByIconName(security, 'lock')).toBeInTheDocument()
     expect(getByIconName(security, 'signed')).toBeInTheDocument()
+  })
+})
+
+describe('rendering WhatsApp metadata', () => {
+  const mockArticle = (whatsappPreferences: object): TicketArticle => ({
+    ...defaultArticles().description!.edges[0].node,
+    internalId: 1,
+    preferences: {
+      whatsapp: whatsappPreferences,
+    },
+  })
+
+  describe('renders message status', () => {
+    it('renders correct icon + text for "sent"', () => {
+      const view = renderComponent(ArticleMetadata, {
+        props: {
+          name: 'article',
+          article: mockArticle({
+            timestamp_sent: new Date(2022, 1, 1, 0, 0, 0, 0).toISOString(),
+          }),
+          ticketInternalId: 2,
+        },
+        router: true,
+        store: true,
+      })
+
+      const messageStatus = view.getByRole('region', { name: 'Message Status' })
+      expect(messageStatus).toHaveTextContent('sent to the customer')
+      expect(getByIconName(messageStatus, 'check')).toBeInTheDocument()
+    })
+
+    it('renders correct icon + text for "delivered"', () => {
+      const view = renderComponent(ArticleMetadata, {
+        props: {
+          name: 'article',
+          article: mockArticle({
+            timestamp_sent: new Date(2022, 1, 1, 0, 0, 0, 0).toISOString(),
+            timestamp_delivered: new Date(2022, 1, 1, 0, 0, 0, 0).toISOString(),
+          }),
+          ticketInternalId: 2,
+        },
+        router: true,
+        store: true,
+      })
+
+      const messageStatus = view.getByRole('region', { name: 'Message Status' })
+      expect(messageStatus).toHaveTextContent('delivered to the customer')
+      expect(getByIconName(messageStatus, 'check-double')).toBeInTheDocument()
+    })
+
+    it('renders correct icon + text for "read"', () => {
+      const view = renderComponent(ArticleMetadata, {
+        props: {
+          name: 'article',
+          article: mockArticle({
+            timestamp_sent: new Date(2022, 1, 1, 0, 0, 0, 0).toISOString(),
+            timestamp_delivered: new Date(2022, 1, 1, 0, 0, 0, 0).toISOString(),
+            timestamp_read: new Date(2022, 1, 1, 0, 0, 0, 0).toISOString(),
+          }),
+          ticketInternalId: 2,
+        },
+        router: true,
+        store: true,
+      })
+
+      const messageStatus = view.getByRole('region', { name: 'Message Status' })
+      expect(messageStatus).toHaveTextContent('read by the customer')
+      expect(
+        getByIconName(messageStatus, 'check-double-circle'),
+      ).toBeInTheDocument()
+    })
   })
 })

@@ -2,6 +2,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+
 import { useArticleSeen } from '../../composable/useArticleSeen.ts'
 
 interface Props {
@@ -12,7 +13,7 @@ interface Props {
 defineProps<Props>()
 
 const emit = defineEmits<{
-  (e: 'seen'): void
+  seen: []
 }>()
 
 const articleElement = ref<HTMLDivElement>()
@@ -21,7 +22,7 @@ useArticleSeen(articleElement, emit)
 </script>
 
 <template>
-  <div ref="articleElement" class="text-center text-gray">
+  <div ref="articleElement" class="text-gray text-center">
     "{{ subject }}" -&gt; "{{ to }}"
   </div>
 </template>

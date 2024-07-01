@@ -1,15 +1,19 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
+import { nextTick } from 'vue'
+
+import { mockApplicationConfig } from '#tests/support/mock-applicationConfig.ts'
+import { setupView } from '#tests/support/mock-user.ts'
+import { mockUserCurrent } from '#tests/support/mock-userCurrent.ts'
+
 import type {
   TicketArticle,
   TicketById,
 } from '#shared/entities/ticket/types.ts'
 import { convertToGraphQLId } from '#shared/graphql/utils.ts'
-import { mockAccount } from '#tests/support/mock-account.ts'
-import { mockApplicationConfig } from '#tests/support/mock-applicationConfig.ts'
-import { setupView } from '#tests/support/mock-user.ts'
-import { nextTick } from 'vue'
+
 import { createArticleTypes } from '../index.ts'
+
 import {
   createEligibleTicketArticleReplyData,
   createTestArticleActions,
@@ -219,7 +223,7 @@ describe('twitter article action', () => {
         mockApplicationConfig({
           ui_ticket_zoom_article_twitter_initials: true,
         })
-        mockAccount({
+        mockUserCurrent({
           firstname: 'John',
           lastname: 'Doe',
         })
@@ -235,7 +239,7 @@ describe('twitter article action', () => {
         mockApplicationConfig({
           ui_ticket_zoom_article_twitter_initials: true,
         })
-        mockAccount({
+        mockUserCurrent({
           firstname: 'John',
           lastname: 'Doe',
         })

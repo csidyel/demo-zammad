@@ -5,15 +5,15 @@ import { useRouter } from 'vue-router'
 
 import Form from '#shared/components/Form/Form.vue'
 import type { FormSubmitData } from '#shared/components/Form/types.ts'
+import { useDebouncedLoading } from '#shared/composables/useDebouncedLoading.ts'
 import { EnumFormUpdaterId } from '#shared/graphql/types.ts'
 import MutationHandler from '#shared/server/apollo/handler/MutationHandler.ts'
-import { useDebouncedLoading } from '#shared/composables/useDebouncedLoading.ts'
 
-import { useChannelEmailValidateConfigurationOutboundMutation } from '#desktop/entities/channel-email/graphql/mutations/channelEmailValidateConfigurationOutbound.api.ts'
-import { useChannelEmailSetNotificationConfigurationMutation } from '#desktop/entities/channel-email/graphql/mutations/channelEmailSetNotificationConfiguration.api.ts'
-import { useSSLVerificationWarningHandler } from '#desktop/form/composables/useSSLVerificationWarningHandler.ts'
 import { useEmailOutboundForm } from '#desktop/entities/channel-email/composables/useEmailOutboundForm.ts'
+import { useChannelEmailSetNotificationConfigurationMutation } from '#desktop/entities/channel-email/graphql/mutations/channelEmailSetNotificationConfiguration.api.ts'
+import { useChannelEmailValidateConfigurationOutboundMutation } from '#desktop/entities/channel-email/graphql/mutations/channelEmailValidateConfigurationOutbound.api.ts'
 import type { EmailNotificationData } from '#desktop/entities/channel-email/types/email-notification.ts'
+import { useSSLVerificationWarningHandler } from '#desktop/form/composables/useSSLVerificationWarningHandler.ts'
 
 import GuidedSetupActionFooter from '../../components/GuidedSetupActionFooter.vue'
 import GuidedSetupStatusMessage from '../../components/GuidedSetupStatusMessage.vue'
@@ -33,7 +33,6 @@ const {
   formEmailOutbound,
   emailOutboundSchema,
   emailOutboundFormChangeFields,
-  emailOutboundFormOnChanged,
 } = useEmailOutboundForm()
 
 const emailNotificationSchema = [
@@ -105,7 +104,6 @@ const probeEmailNotification = async (data: EmailNotificationData) => {
       :schema="emailNotificationSchema"
       :handlers="[useSSLVerificationWarningHandler()]"
       :change-fields="emailOutboundFormChangeFields"
-      @changed="emailOutboundFormOnChanged"
       @submit="
         probeEmailNotification($event as FormSubmitData<EmailNotificationData>)
       "

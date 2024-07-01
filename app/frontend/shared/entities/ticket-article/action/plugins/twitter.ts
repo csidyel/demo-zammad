@@ -1,12 +1,14 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { FormValues } from '#shared/components/Form/types.ts'
+import { isArray, isObject, uniq } from 'lodash-es'
+
 import type { FieldEditorProps } from '#shared/components/Form/fields/FieldEditor/types.ts'
+import type { FormValues } from '#shared/components/Form/types.ts'
 import { useSessionStore } from '#shared/stores/session.ts'
 import type { ConfigList } from '#shared/types/store.ts'
 import type { ConfidentTake } from '#shared/types/utils.ts'
 import { getInitials } from '#shared/utils/formatter.ts'
-import { isArray, isObject, uniq } from 'lodash-es'
+
 import type {
   TicketArticleAction,
   TicketArticleActionPlugin,
@@ -123,7 +125,12 @@ const actionPlugin: TicketArticleActionPlugin = {
       view: {
         agent: ['change'],
       },
-      attributes: [],
+      fields: {
+        body: {
+          required: true,
+        },
+        to: {},
+      },
       internal: false,
       contentType: 'text/plain',
       updateForm(values) {
@@ -136,22 +143,18 @@ const actionPlugin: TicketArticleActionPlugin = {
       },
     }
 
-    let footer: ConfidentTake<FieldEditorProps, 'meta.footer'>
+    let footer: ConfidentTake<FieldEditorProps, 'meta.footer'> = {}
 
-    if (descriptionType === 'twitter status') {
-      type.validation = {
-        body: 'length:1,280',
-      }
+    if (descriptionType === 'twitter status' && type.fields.body) {
+      type.fields.body.validation = 'length:1,280'
       footer = {
         maxlength: 280,
         warningLength: 30,
       }
-    } else {
-      type.attributes = ['to']
-      type.validation = {
-        to: 'required',
-        body: 'length:1,10000',
-      }
+    } else if (type.fields.to && type.fields.body) {
+      type.fields.to.required = true
+      type.fields.body.validation = 'length:1,10000'
+
       footer = {
         maxlength: 10000,
         warningLength: 500,

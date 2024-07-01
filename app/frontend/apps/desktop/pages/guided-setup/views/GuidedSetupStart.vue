@@ -3,17 +3,22 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 
-import MutationHandler from '#shared/server/apollo/handler/MutationHandler.ts'
 import {
   EnumSystemSetupInfoStatus,
   EnumSystemSetupInfoType,
 } from '#shared/graphql/types.ts'
+import MutationHandler from '#shared/server/apollo/handler/MutationHandler.ts'
 
-import LayoutPublicPage from '#desktop/components/layout/LayoutPublicPage/LayoutPublicPage.vue'
 import CommonButton from '#desktop/components/CommonButton/CommonButton.vue'
-import { useSystemSetupLockMutation } from '../graphql/mutations/systemSetupLock.api.ts'
+import LayoutPublicPage from '#desktop/components/layout/LayoutPublicPage/LayoutPublicPage.vue'
 
+import { useSystemSetupLockMutation } from '../graphql/mutations/systemSetupLock.api.ts'
+import { systemSetupBeforeRouteEnterGuard } from '../router/guards/systemSetupBeforeRouteEnterGuard.ts'
 import { useSystemSetupInfoStore } from '../stores/systemSetupInfo.ts'
+
+defineOptions({
+  beforeRouteEnter: systemSetupBeforeRouteEnterGuard,
+})
 
 const router = useRouter()
 
@@ -50,7 +55,7 @@ const startSetup = (type: EnumSystemSetupInfoType) => {
     >
 
     <template v-if="!systemSetupInfoStore.systemSetupAlreadyStarted">
-      <div class="text-center mb-14 mt-10">
+      <div class="mb-14 mt-10 text-center">
         <CommonButton
           type="submit"
           variant="primary"

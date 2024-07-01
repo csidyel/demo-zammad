@@ -3,16 +3,18 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+
+import useFingerprint from '#shared/composables/useFingerprint.ts'
 import { MutationHandler } from '#shared/server/apollo/handler/index.ts'
 import { useApplicationStore } from '#shared/stores/application.ts'
-import useFingerprint from '#shared/composables/useFingerprint.ts'
 import { useAuthenticationStore } from '#shared/stores/authentication.ts'
 
 import CommonLoader from '#desktop/components/CommonLoader/CommonLoader.vue'
 import LayoutPublicPage from '#desktop/components/layout/LayoutPublicPage/LayoutPublicPage.vue'
 
-import { useUserSignupVerifyMutation } from '../graphql/mutations/userSignupVerify.api.ts'
 import { ensureAfterAuth } from '../after-auth/composable/useAfterAuthPlugins.ts'
+import { useUserSignupVerifyMutation } from '../graphql/mutations/userSignupVerify.api.ts'
+
 import type { VerifyState } from '../types/signup.ts'
 
 defineOptions({
@@ -112,19 +114,19 @@ onMounted(() => {
 
 <template>
   <LayoutPublicPage box-size="small" :title="__('Email Verification')">
-    <div class="text-center mt-1">
+    <div class="mt-1 text-center">
       <CommonLabel>
         {{ $t(message) }}
       </CommonLabel>
-      <CommonLoader v-if="state === 'loading'" class="mt-9 mb-3" loading />
+      <CommonLoader v-if="state === 'loading'" class="mb-3 mt-9" loading />
       <CommonIcon
         v-else-if="state === 'success'"
-        class="mx-auto mt-9 mb-3 fill-green-500"
+        class="mx-auto mb-3 mt-9 fill-green-500"
         name="check-circle-outline"
       />
       <CommonIcon
         v-else-if="state === 'error'"
-        class="mx-auto mt-9 mb-3 fill-red-500"
+        class="mx-auto mb-3 mt-9 fill-red-500"
         name="x-circle"
       />
     </div>

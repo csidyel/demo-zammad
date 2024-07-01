@@ -2,6 +2,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+
 import type { TicketOverview } from '#mobile/entities/ticket/stores/ticketOverviews.ts'
 
 const props = defineProps<{
@@ -11,7 +12,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'action'): void
+  action: []
 }>()
 
 const icon = computed(() => {
@@ -37,6 +38,9 @@ const icon = computed(() => {
     <div
       class="shrink-0 cursor-pointer items-center justify-center ltr:mr-2 rtl:ml-2"
       :class="icon.class"
+      role="button"
+      tabindex="0"
+      @keydown.enter="emit('action')"
       @click="emit('action')"
     >
       <CommonIcon :name="icon.name" size="base" />
@@ -48,7 +52,7 @@ const icon = computed(() => {
       v-if="draggable"
       name="change-order"
       size="small"
-      class="handler shrink-0 cursor-move text-gray ltr:mr-4 rtl:ml-4"
+      class="handler text-gray shrink-0 cursor-move ltr:mr-4 rtl:ml-4"
     />
   </div>
 </template>

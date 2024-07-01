@@ -2,16 +2,18 @@
 
 <script setup lang="ts">
 /* eslint-disable zammad/zammad-detect-translatable-string */
+import { computed, reactive, ref } from 'vue'
 
+import { EnumSecurityStateType } from '#shared/components/Form/fields/FieldSecurity/types.ts'
 import Form from '#shared/components/Form/Form.vue'
 import { defineFormSchema } from '#shared/form/defineFormSchema.ts'
-import { useDialog } from '#shared/composables/useDialog.ts'
+
 import CommonButton from '#mobile/components/CommonButton/CommonButton.vue'
 import CommonButtonGroup from '#mobile/components/CommonButtonGroup/CommonButtonGroup.vue'
-import { useUserCreate } from '#mobile/entities/user/composables/useUserCreate.ts'
 import CommonStepper from '#mobile/components/CommonStepper/CommonStepper.vue'
-import { computed, reactive, ref } from 'vue'
-import { EnumSecurityStateType } from '#shared/components/Form/fields/FieldSecurity/types.ts'
+import LayoutHeader from '#mobile/components/layout/LayoutHeader.vue'
+import { useDialog } from '#mobile/composables/useDialog.ts'
+import { useUserCreate } from '#mobile/entities/user/composables/useUserCreate.ts'
 
 const linkSchemaRaw = [
   {
@@ -83,17 +85,14 @@ const linkSchemaRaw = [
     },
   },
   {
-    type: 'date',
+    type: 'datetime',
     name: 'some_input_date',
     label: 'Date',
     props: {
       link: '/',
+      clearable: true,
     },
-  },
-  {
-    type: 'date',
-    name: 'some_input_2',
-    label: 'Date 2',
+    required: true,
   },
   {
     type: 'tags',
@@ -319,6 +318,9 @@ const schema = defineFormSchema([
         type: 'file',
         name: 'file',
         // label: 'File',
+        props: {
+          multiple: true,
+        },
       },
     ],
   },
@@ -403,6 +405,14 @@ const logSubmit = console.log
 
 <template>
   <div class="p-4">
+    <LayoutHeader title="Playground">
+      <template #before>1 / 3</template>
+      <template #after>
+        <CommonButton class="flex-1 px-4 py-2" variant="secondary"
+          >Click
+        </CommonButton>
+      </template>
+    </LayoutHeader>
     <h2 class="text-xl font-bold">Buttons</h2>
     <div class="mt-2 flex gap-3">
       <CommonButton class="flex-1 py-2" variant="primary" />
@@ -412,7 +422,7 @@ const logSubmit = console.log
       <CommonButton class="flex-1 py-2" variant="submit" />
       <CommonButton class="flex-1 py-2" variant="danger" />
     </div>
-    <h3 class="mb-2 mt-2 text-lg font-semibold text-gray">
+    <h3 class="text-gray mb-2 mt-2 text-lg font-semibold">
       With transparent background
     </h3>
     <div class="flex gap-3">
@@ -454,7 +464,7 @@ const logSubmit = console.log
 
     <button @click="openCreateUserDialog()">Create user</button>
 
-    <Form id="form" :schema="editorSchema" @submit="logSubmit" />
+    <Form :schema="editorSchema" @submit="logSubmit" />
 
     <CommonButtonGroup
       class="py-4"
@@ -467,7 +477,7 @@ const logSubmit = console.log
       ]"
     />
 
-    <Form :schema="linkSchemas" />
+    <Form id="form" :schema="linkSchemas" />
     <Form :schema="schema" />
 
     <FormKit

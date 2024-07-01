@@ -1,13 +1,15 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { cloneDeep, keyBy } from 'lodash-es'
-import { getByText, waitFor } from '@testing-library/vue'
-import { FormKit } from '@formkit/vue'
-import { renderComponent } from '#tests/support/components/index.ts'
-import { i18n } from '#shared/i18n.ts'
 import { getNode } from '@formkit/core'
-import { useLocaleStore } from '#shared/stores/locale.ts'
+import { FormKit } from '@formkit/vue'
+import { getByText, waitFor } from '@testing-library/vue'
+import { cloneDeep, keyBy } from 'lodash-es'
+
+import { renderComponent } from '#tests/support/components/index.ts'
+
 import { EnumTextDirection } from '#shared/graphql/types.ts'
+import { i18n } from '#shared/i18n.ts'
+import { useLocaleStore } from '#shared/stores/locale.ts'
 
 const testOptions = [
   {
@@ -1128,7 +1130,7 @@ describe('Form - Field - TreeSelect - Accessibility', () => {
     })
   })
 
-  it('prevents focusing of disabled field', async () => {
+  it('allows focusing of disabled field for a11y', async () => {
     const wrapper = renderComponent(FormKit, {
       ...wrapperParameters,
       props: {
@@ -1139,7 +1141,7 @@ describe('Form - Field - TreeSelect - Accessibility', () => {
       },
     })
 
-    expect(wrapper.getByLabelText('Select…')).toHaveAttribute('tabindex', '-1')
+    expect(wrapper.getByLabelText('Select…')).toHaveAttribute('tabindex', '0')
   })
 
   it('restores focus on close', async () => {

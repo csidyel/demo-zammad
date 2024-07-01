@@ -17,10 +17,7 @@ describe('getValidationRuleMessages', () => {
     const validationRuleMessages = getValidationRuleMessages()
 
     expect(validationRuleMessages).toEqual({
-      file_types: expect.any(Function),
-      file_sizes: expect.any(Function),
-      caption_length: expect.any(Function),
-      content_required: expect.any(Function),
+      date_range: expect.any(Function),
     })
   })
 })

@@ -4,23 +4,26 @@
 /* eslint-disable vue/attribute-hyphenation */
 
 import { computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
-import ObjectAttributes from '#shared/components/ObjectAttributes/ObjectAttributes.vue'
-import { useObjectAttributes } from '#shared/entities/object-attributes/composables/useObjectAttributes.ts'
-import { EnumObjectManagerObjects } from '#shared/graphql/types.ts'
-import CommonSectionMenu from '#mobile/components/CommonSectionMenu/CommonSectionMenu.vue'
-import CommonUsersList from '#mobile/components/CommonUsersList/CommonUsersList.vue'
+
 import CommonUserAvatar from '#shared/components/CommonUserAvatar/CommonUserAvatar.vue'
-import { useSessionStore } from '#shared/stores/session.ts'
-import CommonShowMoreButton from '#mobile/components/CommonShowMoreButton/CommonShowMoreButton.vue'
-import CommonSectionMenuItem from '#mobile/components/CommonSectionMenu/CommonSectionMenuItem.vue'
+import ObjectAttributes from '#shared/components/ObjectAttributes/ObjectAttributes.vue'
+import { useConfirmation } from '#shared/composables/useConfirmation.ts'
+import { useObjectAttributes } from '#shared/entities/object-attributes/composables/useObjectAttributes.ts'
 import { useTicketView } from '#shared/entities/ticket/composables/useTicketView.ts'
+import { EnumObjectManagerObjects } from '#shared/graphql/types.ts'
+import { useSessionStore } from '#shared/stores/session.ts'
+
 import CommonLoader from '#mobile/components/CommonLoader/CommonLoader.vue'
-import { waitForConfirmation } from '#shared/utils/confirmation.ts'
+import CommonSectionMenu from '#mobile/components/CommonSectionMenu/CommonSectionMenu.vue'
+import CommonSectionMenuItem from '#mobile/components/CommonSectionMenu/CommonSectionMenuItem.vue'
+import CommonShowMoreButton from '#mobile/components/CommonShowMoreButton/CommonShowMoreButton.vue'
+import CommonUsersList from '#mobile/components/CommonUsersList/CommonUsersList.vue'
+
+import TicketEscalationTimeMenuItem from '../../components/TicketDetailView/TicketEscalationTimeMenuItem.vue'
 import TicketObjectAttributes from '../../components/TicketDetailView/TicketObjectAttributes.vue'
 import TicketTags from '../../components/TicketDetailView/TicketTags.vue'
 import { useTicketInformation } from '../../composable/useTicketInformation.ts'
 import { useTicketSubscribe } from '../../composable/useTicketSubscribe.ts'
-import TicketEscalationTimeMenuItem from '../../components/TicketDetailView/TicketEscalationTimeMenuItem.vue'
 
 const { attributes: objectAttributes } = useObjectAttributes(
   EnumObjectManagerObjects.Ticket,
@@ -39,13 +42,15 @@ const ticketFormGroupNode = computed(() => {
   return form.value?.formNode?.at('ticket')
 })
 
+const { waitForConfirmation } = useConfirmation()
+
 const discardTicketEditDialog = async () => {
   if (!ticketFormGroupNode.value) return
 
   const confirmed = await waitForConfirmation(
     __('Are you sure? You have unsaved changes that will get lost.'),
     {
-      buttonTitle: __('Discard changes'),
+      buttonLabel: __('Discard changes'),
       buttonVariant: 'danger',
     },
   )
@@ -221,6 +226,8 @@ const hasEscalation = computed(() => {
       @input-raw="handleToggleInput"
     >
       <template #label="context">
+        <!-- id is available on the toggle element  -->
+        <!-- eslint-disable vuejs-accessibility/label-has-for -->
         <label :for="context.id" :class="context.classes.label">
           <CommonUserAvatar
             v-if="session.user"

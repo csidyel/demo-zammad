@@ -1,20 +1,23 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
+import { waitFor } from '@testing-library/vue'
+
+import {
+  mockGraphQLResult,
+  waitForGraphQLMockCalls,
+} from '#tests/graphql/builders/mocks.ts'
+import renderComponent from '#tests/support/components/renderComponent.ts'
+import { mockApplicationConfig } from '#tests/support/mock-applicationConfig.ts'
+
+import securityKeys from '#shared/entities/two-factor/plugins/security-keys.ts'
 import type {
   TwoFactorPlugin,
   TwoFactorSetupResult,
 } from '#shared/entities/two-factor/types.ts'
 import { TwoFactorMethodInitiateAuthenticationDocument } from '#shared/graphql/mutations/twoFactorMethodInitiateAuthentication.api.ts'
 import type { TwoFactorMethodInitiateAuthenticationMutation } from '#shared/graphql/types.ts'
-import renderComponent from '#tests/support/components/renderComponent.ts'
-import {
-  mockGraphQLResult,
-  waitForGraphQLMockCalls,
-} from '#tests/graphql/builders/mocks.ts'
-import SecurityKeys from '#shared/entities/two-factor/plugins/security_keys.ts'
 import { createDeferred } from '#shared/utils/helpers.ts'
-import { waitFor } from '@testing-library/vue'
-import { mockApplicationConfig } from '#tests/support/mock-applicationConfig.ts'
+
 import LoginTwoFactor from '../LoginTwoFactor.vue'
 
 const prepareInitialData = (
@@ -74,8 +77,11 @@ describe('non-form two factor', () => {
     })
 
     const view = await renderTwoFactor({
-      ...SecurityKeys,
-      setup: () => Promise.resolve(securitySuccess()),
+      ...securityKeys,
+      loginOptions: {
+        ...securityKeys.loginOptions,
+        setup: () => Promise.resolve(securitySuccess()),
+      },
     })
 
     await expect(view.findByText(error)).resolves.toBeInTheDocument()
@@ -85,8 +91,11 @@ describe('non-form two factor', () => {
     prepareInitialData(null)
 
     const view = await renderTwoFactor({
-      ...SecurityKeys,
-      setup: () => Promise.resolve(securitySuccess()),
+      ...securityKeys,
+      loginOptions: {
+        ...securityKeys.loginOptions,
+        setup: () => Promise.resolve(securitySuccess()),
+      },
     })
 
     await expect(
@@ -103,8 +112,11 @@ describe('non-form two factor', () => {
     })
 
     const view = await renderTwoFactor({
-      ...SecurityKeys,
-      setup: () => Promise.resolve({ success: false, retry: false, error }),
+      ...securityKeys,
+      loginOptions: {
+        ...securityKeys.loginOptions,
+        setup: () => Promise.resolve({ success: false, retry: false, error }),
+      },
     })
 
     await expect(view.findByText(error)).resolves.toBeInTheDocument()
@@ -117,8 +129,11 @@ describe('non-form two factor', () => {
     })
 
     const view = await renderTwoFactor({
-      ...SecurityKeys,
-      setup: () => promise,
+      ...securityKeys,
+      loginOptions: {
+        ...securityKeys.loginOptions,
+        setup: () => promise,
+      },
     })
 
     await expect(view.findByRole('status')).resolves.toBeInTheDocument()
@@ -144,8 +159,11 @@ describe('non-form two factor', () => {
     })
 
     const view = await renderTwoFactor({
-      ...SecurityKeys,
-      setup: () => Promise.resolve({ success: false, retry: false, error }),
+      ...securityKeys,
+      loginOptions: {
+        ...securityKeys.loginOptions,
+        setup: () => Promise.resolve({ success: false, retry: false, error }),
+      },
     })
 
     await expect(view.findByText(error)).resolves.toBeInTheDocument()
@@ -162,8 +180,11 @@ describe('non-form two factor', () => {
     })
 
     const view = await renderTwoFactor({
-      ...SecurityKeys,
-      setup: () => Promise.resolve({ success: false, retry: true, error }),
+      ...securityKeys,
+      loginOptions: {
+        ...securityKeys.loginOptions,
+        setup: () => Promise.resolve({ success: false, retry: true, error }),
+      },
     })
 
     await expect(view.findByText(error)).resolves.toBeInTheDocument()
@@ -183,8 +204,11 @@ describe('non-form two factor', () => {
       .mockResolvedValue({ success: false, retry: true, error })
 
     const view = await renderTwoFactor({
-      ...SecurityKeys,
-      setup,
+      ...securityKeys,
+      loginOptions: {
+        ...securityKeys.loginOptions,
+        setup,
+      },
     })
 
     await expect(view.findByText(error)).resolves.toBeInTheDocument()

@@ -41,6 +41,15 @@
         <div class="article-meta-value flex contain-text"><%= @article.subject %></div>
       </div>
     <% end %>
+    <% if @article.delivery_status_icon: %>
+      <div class="horizontal article-meta-row">
+        <div class="article-meta-key u-textTruncate"><%- @T('Message Status') %></div>
+        <div class="article-meta-value flex contain-text">
+          <%- @Icon(@article.delivery_status_icon, 'article-meta-icon') %>
+          <%- @T(@article.delivery_status_message) %>
+        </div>
+      </div>
+    <% end %>
       <% if encryptionSuccess || signSuccess || encryptionWarning || signWarning: %>
         <div class="horizontal article-meta-row">
           <div class="article-meta-key u-textTruncate"><%- @T('Security') %></div>
@@ -104,6 +113,7 @@
       </div>
     </div>
   <% end %>
+
   </div>
 <% end %>
 <div class="article-content">
@@ -123,6 +133,11 @@
             <div class="textBubble-overflowContainer hide">
               <div class="btn btn--text js-toggleFold"><%- @T('See more') %></div>
             </div>
+          </div>
+        <% end %>
+        <% if @article.preferences?.remote_content_removed: %>
+          <div class="remote-content-message js-fetchOriginalFormatting" role="button">
+            <%- @Icon('danger') %> <%- @T('This message contains images or other content hosted by an external source. We blocked it, but you can download the original formatting here.') %>
           </div>
         <% end %>
         <%- @attachments %>

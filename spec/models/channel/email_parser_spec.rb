@@ -206,6 +206,22 @@ RSpec.describe Channel::EmailParser, type: :model do
           end
         end
       end
+
+      describe 'handle database failures' do
+        subject(:instance) { described_class.new }
+
+        let(:mail_data)    { attributes_for(:failed_email)[:data] }
+
+        before do
+          allow(instance).to receive(:process_with_timeout).and_raise('error')
+          allow_any_instance_of(FailedEmail).to receive(:valid?).and_return(false)
+        end
+
+        it 'raises error even if exception is false' do
+          expect { instance.process({}, mail_data, false) }
+            .to raise_error(ActiveRecord::ActiveRecordError)
+        end
+      end
     end
 
     describe 'creating new tickets' do
@@ -1581,6 +1597,25 @@ RSpec.describe Channel::EmailParser, type: :model do
         end
       end
     end
+
+    context 'when an unprocessable mail is received' do
+      let(:parser) { described_class.new }
+      let(:mail)   { attributes_for(:failed_email)[:data] }
+
+      before do
+        allow(parser).to receive(:_process).and_raise(Timeout::Error)
+      end
+
+      it 'saves the unprocessable email' do
+        begin
+          parser.process({}, mail)
+        rescue RuntimeError
+          # expected
+        end
+
+        expect(FailedEmail).to be_exist
+      end
+    end
   end
 
   describe '#compose_postmaster_reply' do
@@ -1598,7 +1633,7 @@ RSpec.describe Channel::EmailParser, type: :model do
 
     context 'for English locale (en)' do
       include_examples 'postmaster reply' do
-        let(:locale) { 'en' }
+        let(:locale)           { 'en' }
         let(:expected_subject) { '[undeliverable] Message too large' }
         let(:expected_body) do
           body = <<~BODY

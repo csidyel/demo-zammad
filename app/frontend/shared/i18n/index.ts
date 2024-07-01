@@ -1,10 +1,13 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { reactive } from 'vue'
+
 import { useReactiveNow } from '#shared/composables/useReactiveNow.ts'
-import type { TranslationMap } from './translator.ts'
-import { Translator } from './translator.ts'
+
 import * as dates from './dates.ts'
+import { Translator } from './translator.ts'
+
+import type { TranslationMap } from './translator.ts'
 
 const reactiveNow = useReactiveNow()
 
@@ -35,12 +38,6 @@ export class I18N {
     return dates.absoluteDateTime(dateTimeString, template)
   }
 
-  timeFormat() {
-    const datetimeFormat = dates.getDateTimeFormat(this.translator)
-    const time24hour = !datetimeFormat.includes('P') // P means AM/PM
-    return time24hour ? '24hour' : '12hour'
-  }
-
   relativeDateTime(dateTimeString: string, baseDate?: Date): string {
     return dates.relativeDateTime(
       dateTimeString,
@@ -51,6 +48,19 @@ export class I18N {
 
   setTranslationMap(map: TranslationMap): void {
     this.translator.setTranslationMap(map)
+  }
+
+  getDateFormat(): string {
+    return dates.getDateFormat(this.translator)
+  }
+
+  getDateTimeFormat(): string {
+    return dates.getDateTimeFormat(this.translator)
+  }
+
+  getTimeFormatType() {
+    const time24hour = !this.getDateTimeFormat().includes('P') // P means AM/PM
+    return time24hour ? '24hour' : '12hour'
   }
 }
 

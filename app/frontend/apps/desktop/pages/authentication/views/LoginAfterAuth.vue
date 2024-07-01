@@ -1,11 +1,14 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import { ref, nextTick, watch } from 'vue'
-import type { RouteLocationRaw } from 'vue-router'
+import { onBeforeRouteLeave, useRouter } from 'vue-router'
+
 import LayoutPublicPage from '#desktop/components/layout/LayoutPublicPage/LayoutPublicPage.vue'
+
 import { useAfterAuthPlugins } from '../after-auth/composable/useAfterAuthPlugins.ts'
+
+import type { RouteLocationRaw } from 'vue-router'
 
 defineOptions({
   beforeRouteEnter(to) {
@@ -45,7 +48,7 @@ const redirect = async (route: RouteLocationRaw) => {
 
 <template>
   <LayoutPublicPage box-size="small" :title="currentPlugin?.title">
-    <main data-test-id="loginAfterAuth" class="m-auto w-full max-w-md">
+    <div class="m-auto w-full max-w-md">
       <div class="flex grow flex-col justify-center">
         <div v-if="currentPlugin" class="grow">
           <component
@@ -55,6 +58,6 @@ const redirect = async (route: RouteLocationRaw) => {
           />
         </div>
       </div>
-    </main>
+    </div>
   </LayoutPublicPage>
 </template>

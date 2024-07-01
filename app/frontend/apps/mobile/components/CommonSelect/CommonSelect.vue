@@ -1,18 +1,21 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
+import { onClickOutside, onKeyDown, useVModel } from '@vueuse/core'
+import { onUnmounted, computed, nextTick, ref } from 'vue'
+
+import type { SelectOption } from '#shared/components/CommonSelect/types.ts'
 import { useFocusWhenTyping } from '#shared/composables/useFocusWhenTyping.ts'
 import { useTrapTab } from '#shared/composables/useTrapTab.ts'
 import { useTraverseOptions } from '#shared/composables/useTraverseOptions.ts'
 import stopEvent from '#shared/utils/events.ts'
-import { onClickOutside, onKeyDown, useVModel } from '@vueuse/core'
-import type { Ref } from 'vue'
-import { onUnmounted, computed, nextTick, ref } from 'vue'
-import type { SelectOption } from '#shared/components/CommonSelect/types.ts'
 import testFlags from '#shared/utils/testFlags.ts'
+
 import CommonSelectItem from './CommonSelectItem.vue'
 import { useCommonSelect } from './useCommonSelect.ts'
+
 import type { CommonSelectInternalInstance } from './types.ts'
+import type { Ref } from 'vue'
 
 export interface Props {
   // we cannot move types into separate file, because Vue would not be able to
@@ -33,9 +36,9 @@ export interface Props {
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', option: string | number | (string | number)[]): void
-  (e: 'select', option: SelectOption): void
-  (e: 'close'): void
+  'update:modelValue': [option: string | number | (string | number)[]]
+  select: [option: SelectOption]
+  close: []
 }>()
 
 const dialogElement = ref<HTMLElement>()
@@ -186,6 +189,7 @@ const duration = VITE_TEST_MODE ? undefined : { enter: 300, leave: 200 }
         <div
           class="select-overlay fixed inset-0 flex h-full w-full bg-gray-500 opacity-60"
           data-test-id="dialog-overlay"
+          role="presentation"
           @click="void 0"
         ></div>
         <div class="select-dialog relative m-auto">

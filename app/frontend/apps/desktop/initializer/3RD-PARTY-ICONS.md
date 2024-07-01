@@ -1,37 +1,91 @@
 # Third Party Icons (`desktop`)
 
-- `assets/backspace.svg`
+- `assets/arrow-bar-left.svg`
+- `assets/arrow-bar-right.svg`
+- `assets/arrow-repeat.svg`
+- `assets/arrows-collapse.svg`
+- `assets/arrows-expand.svg`
+- `assets/box-arrow-in-right.svg`
 - `assets/box-arrow-up-right.svg`
+- `assets/brightness-alt-high.svg`
+- `assets/buildings-slash.svg`
+- `assets/buildings.svg`
+- `assets/calendar-event.svg`
+- `assets/calendar-range.svg`
+- `assets/calendar.svg`
+- `assets/camera-video-off.svg`
+- `assets/camera-video.svg`
+- `assets/camera.svg`
 - `assets/check-all.svg`
 - `assets/check-circle-outline.svg`
 - `assets/check-square.svg`
+- `assets/check2-all.svg`
 - `assets/check2.svg`
 - `assets/chevron-down.svg`
 - `assets/chevron-left.svg`
 - `assets/chevron-right.svg`
+- `assets/chevron-up.svg`
+- `assets/clock.svg`
+- `assets/code-slash.svg`
+- `assets/code-square.svg`
+- `assets/code.svg`
+- `assets/crown-right.svg`
+- `assets/crown-silver.svg`
 - `assets/dash-circle.svg`
 - `assets/download.svg`
+- `assets/envelope.svg`
 - `assets/exclamation-triangle.svg`
 - `assets/eye-slash.svg`
 - `assets/eye.svg`
+- `assets/files.svg`
+- `assets/filter.svg`
+- `assets/file-image.svg`
+- `assets/file-music.svg`
+- `assets/file-play.svg`
+- `assets/file-text.svg`
+- `assets/file.svg`
+- `assets/grip-vertical.svg`
 - `assets/image.svg`
 - `assets/info-circle.svg`
 - `assets/key.svg`
-- `assets/moon.svg`
+- `assets/keyboard.svg`
+- `assets/lock.svg`
+- `assets/paperclip.svg`
+- `assets/patch-check.svg`
+- `assets/pencil.svg`
 - `assets/person-add.svg`
+- `assets/person-gear.svg`
 - `assets/phone.svg`
 - `assets/plus-circle.svg`
+- `assets/printer.svg`
+- `assets/question-circle.svg`
+- `assets/radio-no.svg`
+- `assets/radio-yes.svg`
 - `assets/search.svg`
+- `assets/shield-lock.svg`
+- `assets/speedometer2.svg`
 - `assets/spinner.svg`
 - `assets/square.svg`
 - `assets/sun.svg`
+- `assets/telephone-inbound.svg`
+- `assets/telephone-outbound.svg`
+- `assets/three-dots-vertical.svg`
+- `assets/trash3.svg`
+- `assets/unlock.svg`
 - `assets/upload.svg`
+- `assets/upload.svg`
+- `assets/wrench.svg`
 - `assets/x-circle.svg`
 - `assets/x-lg.svg`
 
   - Author: The Bootstrap Authors
   - License: MIT
   - URL: https://github.com/twbs/icons
+
+- `assets/crown.svg`
+
+  - Author: Felix Niklas
+  - License: MIT
 
 - `assets/github.svg`
 
@@ -75,6 +129,7 @@
   - URL: https://weibo.com
 
 - `assets/twitter.svg`
+
   - Author: Twitter
   - URL: https://about.twitter.com/en/who-we-are/brand-toolkit
 

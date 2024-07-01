@@ -295,7 +295,7 @@ class Download extends App.Controller
     @tableUpdate()
 
   tableRender: (tickets, count) =>
-    if _.isEmpty(tickets)
+    if !@params.downloadBackendSelected
       @$('.js-dataDownloadButton').html('')
       @$('.js-dataDownloadTable').html('')
       return
@@ -305,10 +305,14 @@ class Download extends App.Controller
       if value
         profile_id = key
     downloadUrl = "#{@apiPath}/reports/sets?sheet=true;metric=#{@params.metric};year=#{@params.year};month=#{@params.month};week=#{@params.week};day=#{@params.day};timeRange=#{@params.timeRange};profile_id=#{profile_id};downloadBackendSelected=#{@params.downloadBackendSelected}"
-    @$('.js-dataDownloadButton').html(App.view('report/download_button')(
-      count: count
-      downloadUrl: downloadUrl
-    ))
+
+    if count > 0
+      @$('.js-dataDownloadButton').html(App.view('report/download_button')(
+        count: count
+        downloadUrl: downloadUrl
+      ))
+    else
+      @$('.js-dataDownloadButton').html('')
 
     openTicket = (id,e) =>
       ticket = App.Ticket.findNative(id)
@@ -355,27 +359,30 @@ class Download extends App.Controller
         number:
           [ callbackLinkToTicket, callbackTicketTitleAdd ]
 
-    if !@table
-      @table = new App.ControllerTable(params)
-    else
-      @table.update(objects: tickets)
+    @table.releaseController() if @table
+    @table = new App.ControllerTable(params)
 
   tableUpdate: =>
+    return @tableRender([], 0) if !@params.downloadBackendSelected
+
+    state = {
+      metric:                  @params.metric
+      year:                    @params.year
+      month:                   @params.month
+      week:                    @params.week
+      day:                     @params.day
+      timeRange:               @params.timeRange
+      profiles:                @params.profileSelected
+      downloadBackendSelected: @params.downloadBackendSelected
+    }
+    return if _.isEqual(@lastState, state)
+    @lastState = $.extend(true, {}, state)
+
     @ajax(
       id: 'report_download'
       type:  'POST'
       url:   @apiPath + '/reports/sets'
-      data: JSON.stringify(
-        metric:                  @params.metric
-        year:                    @params.year
-        month:                   @params.month
-        week:                    @params.week
-        day:                     @params.day
-        timeRange:               @params.timeRange
-        profiles:                @params.profileSelected
-        backends:                @params.backendSelected
-        downloadBackendSelected: @params.downloadBackendSelected
-      )
+      data: JSON.stringify(state)
       processData: true
       success: (data) =>
         App.Collection.loadAssets(data.assets)
@@ -582,7 +589,8 @@ class Sidebar extends App.Controller
     return if $(e.target).closest('.panel').find('.collapse.in').get(0)
     metric = $(e.target).closest('.panel').data('metric')
     return if @params.metric is metric
-    @params.metric = metric
+    @params.metric                  = metric
+    @params.downloadBackendSelected = undefined
     App.Event.trigger('ui:report:rerender')
     @ui.storeParams()
 

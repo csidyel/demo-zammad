@@ -5,14 +5,12 @@
 class Channel::EmailParser
   include Channel::EmailHelper
 
-  PROZESS_TIME_MAX = 180
+  PROCESS_TIME_MAX = 180
   EMAIL_REGEX = %r{.+@.+}
   RECIPIENT_FIELDS = %w[to cc delivered-to x-original-to envelope-to].freeze
   SENDER_FIELDS = %w[from reply-to return-path sender].freeze
   EXCESSIVE_LINKS_MSG = __('This message cannot be displayed because it contains over 5,000 links. Download the raw message below and open it via an Email client if you still wish to view it.').freeze
   MESSAGE_STRUCT = Struct.new(:from_display_name, :subject, :msg_size).freeze
-
-  UNPROCESSABLE_MAIL_DIRECTORY = Rails.root.join('var/spool/unprocessable_mail')
 
 =begin
 
@@ -120,24 +118,29 @@ returns
 =end
 
   def process(channel, msg, exception = true)
-
-    Timeout.timeout(PROZESS_TIME_MAX) do
-      _process(channel, msg)
-    end
+    process_with_timeout(channel, msg)
   rescue => e
-    # store unprocessable email for bug reporting
-    filename = archive_mail(UNPROCESSABLE_MAIL_DIRECTORY, msg)
+    failed_email = ::FailedEmail.create!(data: msg, parsing_error: e)
 
-    message = "Can't process email, you will find it for bug reporting under #{filename}, please create an issue at https://github.com/zammad/zammad/issues"
+    message = <<~MESSAGE.chomp
+      Can't process email. Run the following command to get the message for issue report at https://github.com/zammad/zammad/issues:
+        zammad run rails r "puts FailedEmail.find(#{failed_email.id}).data"
+    MESSAGE
 
-    p "ERROR: #{message}" # rubocop:disable Rails/Output
-    p "ERROR: #{e.inspect}" # rubocop:disable Rails/Output
+    puts "ERROR: #{message}" # rubocop:disable Rails/Output
+    puts "ERROR: #{e.inspect}" # rubocop:disable Rails/Output
     Rails.logger.error message
     Rails.logger.error e
 
     return false if exception == false
 
-    raise %(#{e.inspect}\n#{e.backtrace.join("\n")})
+    raise failed_email.parsing_error
+  end
+
+  def process_with_timeout(channel, msg)
+    Timeout.timeout(PROCESS_TIME_MAX) do
+      _process(channel, msg)
+    end
   end
 
   def _process(channel, msg)
@@ -222,6 +225,13 @@ returns
             ticket.save!
           end
         end
+
+        # apply tags to ticket
+        if mail[:'x-zammad-ticket-followup-tags'].present?
+          mail[:'x-zammad-ticket-followup-tags'].each do |tag|
+            ticket.tag_add(tag, sourceable: mail[:'x-zammad-ticket-followup-tags-source'])
+          end
+        end
       end
 
       # create new ticket
@@ -264,12 +274,11 @@ returns
         # create ticket
         ticket.save!
 
-      end
-
-      # apply tags to ticket
-      if mail[:'x-zammad-ticket-tags'].present?
-        mail[:'x-zammad-ticket-tags'].each do |tag|
-          ticket.tag_add(tag, sourceable: mail[:'x-zammad-ticket-tags-source'])
+        # apply tags to ticket
+        if mail[:'x-zammad-ticket-tags'].present?
+          mail[:'x-zammad-ticket-tags'].each do |tag|
+            ticket.tag_add(tag, sourceable: mail[:'x-zammad-ticket-tags-source'])
+          end
         end
       end
 
@@ -291,6 +300,9 @@ returns
 
       # x-headers lookup
       set_attributes_by_x_headers(article, 'article', mail)
+
+      # Store additional information in preferences, e.g. if remote content got removed.
+      article.preferences.merge!(mail[:sanitized_body_info])
 
       # create article
       article.save!
@@ -497,35 +509,7 @@ returns
     end
   end
 
-=begin
-
-process unprocessable_mails (var/spool/unprocessable_mail/*.eml) again
-
-  Channel::EmailParser.process_unprocessable_mails
-
-=end
-
-  def self.process_unprocessable_mails(params = {})
-    files = []
-    Dir.glob("#{UNPROCESSABLE_MAIL_DIRECTORY}/*.eml") do |entry|
-      ticket, _article, _user, _mail = Channel::EmailParser.new.process(params, File.binread(entry))
-      next if ticket.blank?
-
-      files.push entry
-      File.delete(entry)
-    end
-    files
-  end
-
-=begin
-
-process unprocessable articles provided by the HTMLSanitizer.
-
-  Channel::EmailParser.process_unprocessable_articles
-
-=end
-
-  def self.process_unprocessable_articles(_params = {})
+  def self.reprocess_failed_articles
     articles = Ticket::Article.where(body: ::HtmlSanitizer::UNPROCESSABLE_HTML_MSG)
     articles.reorder(id: :desc).as_batches do |article|
       if !article.as_raw&.content
@@ -645,7 +629,7 @@ process unprocessable articles provided by the HTMLSanitizer.
   def message_body_hash(mail)
     if mail.html_part&.body.present?
       content_type = mail.html_part.mime_type || 'text/plain'
-      body = body_text(mail.html_part, strict_html: true)
+      (body, sanitized_body_info) = body_text(mail.html_part, strict_html: true)
     elsif mail.text_part.present? && mail.all_parts.any? { |elem| elem.inline? && elem.content_type&.start_with?('image') }
       content_type = 'text/html'
 
@@ -653,7 +637,7 @@ process unprocessable articles provided by the HTMLSanitizer.
         .all_parts
         .reduce('') do |memo, part|
           if part.mime_type == 'text/plain' && !part.attachment?
-            memo += body_text(part, strict_html: false).text2html
+            memo += body_text(part, strict_html: false).first.text2html
           elsif part.inline? && part.content_type&.start_with?('image')
             memo += "<img src='cid:#{part.cid}'>"
           end
@@ -667,22 +651,23 @@ process unprocessable articles provided by the HTMLSanitizer.
         .all_parts
         .reduce('') do |memo, part|
           if part.mime_type == 'text/plain' && !part.attachment?
-            memo += body_text(part, strict_html: false)
+            memo += body_text(part, strict_html: false).first
           end
 
           memo
         end
     elsif mail&.body.present? && (mail.mime_type.nil? || mail.mime_type.match?(%r{^text/(plain|html)$}))
       content_type = mail.mime_type || 'text/plain'
-      body = body_text(mail, strict_html: content_type.eql?('text/html'))
+      (body, sanitized_body_info) = body_text(mail, strict_html: content_type.eql?('text/html'))
     end
 
     content_type = 'text/plain' if body.blank?
 
     {
-      attachments:  collect_attachments(mail),
-      content_type: content_type || 'text/plain',
-      body:         body.presence || 'no visible content'
+      attachments:         collect_attachments(mail),
+      content_type:        content_type || 'text/plain',
+      body:                body.presence || 'no visible content',
+      sanitized_body_info: sanitized_body_info || {},
     }.with_indifferent_access
   end
 
@@ -697,10 +682,10 @@ process unprocessable articles provided by the HTMLSanitizer.
     body_text = Mail::Utilities.to_lf(body_text)
 
     # plaintext body requires no processing
-    return body_text if !options[:strict_html]
+    return [body_text, {}] if !options[:strict_html]
 
     # Issue #2390 - emails with >5k HTML links should be rejected
-    return EXCESSIVE_LINKS_MSG if body_text.scan(%r{<a[[:space:]]}i).count >= 5_000
+    return [EXCESSIVE_LINKS_MSG, {}] if body_text.scan(%r{<a[[:space:]]}i).count >= 5_000
 
     body_text.html2html_strict
   end
@@ -738,7 +723,7 @@ process unprocessable articles provided by the HTMLSanitizer.
     }.compact_blank
 
     [{
-      data:        body_text(message),
+      data:        body_text(message).first,
       filename:    filename,
       preferences: headers_store
     }]
@@ -938,15 +923,6 @@ process unprocessable articles provided by the HTMLSanitizer.
     }
 
     [attach]
-  end
-
-  # Archive the given message as tmp/folder/md5.eml
-  def archive_mail(path, msg)
-    FileUtils.mkpath path
-
-    path.join("#{Digest::MD5.hexdigest(msg)}.eml").tap do |file_path|
-      File.binwrite(file_path, msg)
-    end
   end
 
   # Auto reply as the postmaster to oversized emails with:

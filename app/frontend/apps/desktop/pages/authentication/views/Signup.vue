@@ -4,20 +4,20 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { useApplicationStore } from '#shared/stores/application.ts'
+import { NotificationTypes } from '#shared/components/CommonNotifications/types.ts'
+import { useNotifications } from '#shared/components/CommonNotifications/useNotifications.ts'
 import Form from '#shared/components/Form/Form.vue'
 import type { FormSubmitData } from '#shared/components/Form/types.ts'
 import { useForm } from '#shared/components/Form/useForm.ts'
-import { MutationHandler } from '#shared/server/apollo/handler/index.ts'
-import { i18n } from '#shared/i18n.ts'
-import { EnumPublicLinksScreen } from '#shared/graphql/types.ts'
-import { useNotifications } from '#shared/components/CommonNotifications/useNotifications.ts'
-import { NotificationTypes } from '#shared/components/CommonNotifications/types.ts'
 import type { SignupFormData } from '#shared/entities/user/types.ts'
+import { EnumPublicLinksScreen } from '#shared/graphql/types.ts'
+import { i18n } from '#shared/i18n.ts'
+import { MutationHandler } from '#shared/server/apollo/handler/index.ts'
+import { useApplicationStore } from '#shared/stores/application.ts'
 
-import LayoutPublicPage from '#desktop/components/layout/LayoutPublicPage/LayoutPublicPage.vue'
 import CommonButton from '#desktop/components/CommonButton/CommonButton.vue'
 import CommonPublicLinks from '#desktop/components/CommonPublicLinks/CommonPublicLinks.vue'
+import LayoutPublicPage from '#desktop/components/layout/LayoutPublicPage/LayoutPublicPage.vue'
 import { useSignupForm } from '#desktop/composables/authentication/useSignupForm.ts'
 
 import { useUserSignupMutation } from '../graphql/mutations/userSignup.api.ts'
@@ -86,6 +86,7 @@ const resendVerifyEmail = () => {
     .send()
     .then(() => {
       notify({
+        id: 'resend-verify-email',
         type: NotificationTypes.Success,
         message: __('Email sent to "%s". Please verify your email account.'),
         messagePlaceholder: [signupEmail.value],
@@ -93,6 +94,7 @@ const resendVerifyEmail = () => {
     })
     .catch(() => {
       notify({
+        id: 'resend-verify-email-error',
         type: NotificationTypes.Error,
         message: __('The verification email could not be resent.'),
       })
@@ -160,9 +162,9 @@ const goToLogin = () => {
 
     <template #bottomContent>
       <div
-        class="p-2 inline-flex items-center justify-center flex-wrap text-sm"
+        class="inline-flex flex-wrap items-center justify-center p-2 text-sm"
       >
-        <CommonLabel class="text-stone-200 dark:text-neutral-500 text-center">
+        <CommonLabel class="text-center text-stone-200 dark:text-neutral-500">
           {{
             $t(
               "You're already registered with your email address if you've been in touch with our Support team.",

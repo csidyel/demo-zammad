@@ -1,5 +1,10 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
+import type { Sizes } from '#shared/components/CommonIcon/types.ts'
+import type { EnumObjectManagerObjects } from '#shared/graphql/types.ts'
+import type { FormUpdaterOptions } from '#shared/types/form.ts'
+import type { ObjectLike } from '#shared/types/utils.ts'
+
 import type {
   FormKitClasses,
   FormKitGroupValue,
@@ -9,21 +14,27 @@ import type {
   FormKitSchemaCondition,
   FormKitSchemaNode,
 } from '@formkit/core'
-import type { Ref } from 'vue'
 import type {
   FormKitValidationMessages,
   FormKitValidationRules,
 } from '@formkit/validation'
-import type { EnumObjectManagerObjects } from '#shared/graphql/types.ts'
-import type { ObjectLike } from '#shared/types/utils.ts'
 import type { Except, Primitive, SetOptional, SetRequired } from 'type-fest'
+import type { Ref } from 'vue'
 
 export interface FormFieldAdditionalProps {
   belongsToObjectField?: string
+
   [index: string]: unknown
 }
 
-type SimpleFormFieldValue = Primitive | Primitive[]
+type SimpleFormFieldValueBase =
+  | Primitive
+  | Primitive[]
+  | Record<string, Primitive | Primitive[]>
+
+type SimpleFormFieldValue =
+  | SimpleFormFieldValueBase
+  | Record<string, SimpleFormFieldValueBase>
 
 export type FormFieldValue =
   | SimpleFormFieldValue
@@ -173,6 +184,7 @@ export interface ReactiveFormSchemData {
     string,
     {
       show: boolean
+      staticCondition: boolean
       updateFields: boolean
       props: Except<
         SetOptional<FormSchemaField, 'type'>,
@@ -180,6 +192,7 @@ export interface ReactiveFormSchemData {
       >
     }
   >
+
   [index: string]: unknown
 }
 
@@ -197,8 +210,11 @@ export enum FormHandlerExecution {
 
 export interface FormHandlerFunctionData {
   formNode: FormKitNode | undefined
+
   getNodeByName(id: string): FormKitNode | undefined
+
   findNodeByName(name: string): FormKitNode | undefined
+
   values: FormValues
   changedField?: ChangedField
   initialEntityObject?: ObjectLike
@@ -243,14 +259,19 @@ export interface FormRef {
   updateChangedFields: (
     changedFields: Record<string, Partial<FormSchemaField>>,
   ) => void
+
   getNodeByName(id: string): FormKitNode | undefined
+
   findNodeByName(name: string): FormKitNode | undefined
+
   resetForm(
     initialValues?: FormValues,
     object?: ObjectLike,
     options?: FormResetOptions,
     groupNode?: FormKitNode,
   ): void
+
+  triggerFormUpdater(options?: FormUpdaterOptions): void
 }
 
 export interface FormStep {
@@ -270,3 +291,52 @@ export type FormGroupClassMap = Record<FormGroupClass, string>
 
 export type FieldLinkClass = 'container' | 'base' | 'link'
 export type FieldLinkClassMap = Record<FieldLinkClass, string>
+
+export type FieldEditorClass = {
+  actionBar: {
+    buttonContainer: string
+    tableMenuContainer: string
+    leftGradient: {
+      left: string
+      before: {
+        background: {
+          light: string
+          dark: string
+        }
+      }
+    }
+    rightGradient: {
+      before: {
+        background: {
+          light: string
+          dark: string
+        }
+      }
+    }
+    shadowGradient: {
+      before: {
+        top: string
+        height: string
+      }
+    }
+    button: {
+      base: string
+      active: string
+      action?: Record<string, string>
+    }
+  }
+  input: {
+    container: string
+  }
+}
+
+export type FieldEditorProps = {
+  actionBar: {
+    visible?: boolean
+    button: {
+      icon: {
+        size: Sizes
+      }
+    }
+  }
+}

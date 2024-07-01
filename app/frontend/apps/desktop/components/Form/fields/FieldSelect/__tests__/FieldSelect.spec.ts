@@ -1,23 +1,26 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { SetRequired } from 'type-fest'
-import { cloneDeep, keyBy } from 'lodash-es'
+import { getNode } from '@formkit/core'
+import { FormKit } from '@formkit/vue'
 import {
   getAllByRole,
   getByRole,
   getByText,
   waitFor,
 } from '@testing-library/vue'
-import { FormKit } from '@formkit/vue'
-import { renderComponent } from '#tests/support/components/index.ts'
-import { i18n } from '#shared/i18n.ts'
-import { getNode } from '@formkit/core'
-import { waitForNextTick } from '#tests/support/utils.ts'
-import type { SelectOption } from '#shared/components/CommonSelect/types.ts'
+import { cloneDeep, keyBy } from 'lodash-es'
+
 import {
   queryAllByIconName,
   queryByIconName,
 } from '#tests/support/components/iconQueries.ts'
+import { renderComponent } from '#tests/support/components/index.ts'
+import { waitForNextTick } from '#tests/support/utils.ts'
+
+import type { SelectOption } from '#shared/components/CommonSelect/types.ts'
+import { i18n } from '#shared/i18n.ts'
+
+import type { SetRequired } from 'type-fest'
 
 const testOptions: SetRequired<SelectOption, 'label'>[] = [
   {
@@ -77,7 +80,6 @@ describe('Form - Field - Select - Dropdown', () => {
       props: {
         ...commonProps,
         options: testOptions,
-        clearable: true,
       },
     })
 
@@ -280,7 +282,6 @@ describe('Form - Field - Select - Options', () => {
     const selectOptions = getAllByRole(listbox, 'option')
 
     expect(selectOptions[1]).toHaveAttribute('aria-disabled', 'true')
-    expect(selectOptions[1]).toHaveClass('pointer-events-none')
 
     expect(getByText(listbox, disabledOptions[1].label)).toHaveClasses([
       'text-stone-200',
@@ -650,12 +651,12 @@ describe('Form - Field - Select - Options', () => {
 
     selectOptions.forEach((selectOption) => {
       if (selectOption.textContent === 'Ítem D') {
-        expect(selectOption.children[0].children[0]).toHaveTextContent('Ítem')
+        expect(selectOption.children[1].children[0]).toHaveTextContent('Ítem')
       } else {
-        expect(selectOption.children[0].children[0]).toHaveTextContent('Item')
+        expect(selectOption.children[1].children[0]).toHaveTextContent('Item')
       }
 
-      expect(selectOption.children[0].children[0]).toHaveClasses([
+      expect(selectOption.children[1].children[0].children[0]).toHaveClasses([
         'bg-blue-600',
         'dark:bg-blue-900',
       ])
@@ -1142,7 +1143,7 @@ describe('Form - Field - Select - Accessibility', () => {
       name: 'select all options',
     })
 
-    expect(selectAllButton).toHaveAttribute('tabindex', '1')
+    expect(selectAllButton).toHaveAttribute('tabindex', '0')
 
     const listbox = getByRole(menu, 'listbox')
 
@@ -1181,17 +1182,18 @@ describe('Form - Field - Select - Accessibility', () => {
     expect(selectField).toHaveFocus()
   })
 
-  it('prevents focusing of disabled field', async () => {
+  it('allows focusing of disabled field for a11y', async () => {
     const wrapper = renderComponent(FormKit, {
       ...wrapperParameters,
       props: {
         ...commonProps,
+        type: 'select',
         options: testOptions,
         disabled: true,
       },
     })
 
-    expect(wrapper.getByLabelText('Select')).toHaveAttribute('tabindex', '-1')
+    expect(wrapper.getByLabelText('Select')).toHaveAttribute('tabindex', '0')
   })
 
   it('prevents opening of dropdown in disabled field', async () => {

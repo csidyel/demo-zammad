@@ -1,7 +1,14 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { Ref } from 'vue'
-import type { ApolloError, OperationVariables } from '@apollo/client/core'
+import {
+  useNotifications,
+  NotificationTypes,
+} from '#shared/components/CommonNotifications/index.ts'
+import type {
+  GraphQLErrorReport,
+  GraphQLHandlerError,
+} from '#shared/types/error.ts'
+import { GraphQLErrorTypes } from '#shared/types/error.ts'
 import type {
   BaseHandlerOptions,
   CommonHandlerOptions,
@@ -9,15 +16,10 @@ import type {
   OperationResult,
   OperationReturn,
 } from '#shared/types/server/apollo/handler.ts'
-import type {
-  GraphQLErrorReport,
-  GraphQLHandlerError,
-} from '#shared/types/error.ts'
-import { GraphQLErrorTypes } from '#shared/types/error.ts'
-import {
-  useNotifications,
-  NotificationTypes,
-} from '#shared/components/CommonNotifications/index.ts'
+import getUuid from '#shared/utils/getUuid.ts'
+
+import type { ApolloError, OperationVariables } from '@apollo/client/core'
+import type { Ref } from 'vue'
 
 export default abstract class BaseHandler<
   TResult = OperationResult,
@@ -38,6 +40,8 @@ export default abstract class BaseHandler<
 
   public handlerOptions!: CommonHandlerOptions<THandlerOptions>
 
+  private handlerId: string
+
   constructor(
     operationResult: TOperationReturn,
     handlerOptions?: CommonHandlerOptionsParameter<THandlerOptions>,
@@ -45,6 +49,8 @@ export default abstract class BaseHandler<
     this.operationResult = operationResult
 
     this.handlerOptions = this.mergedHandlerOptions(handlerOptions)
+
+    this.handlerId = getUuid()
 
     this.initialize()
   }
@@ -118,6 +124,7 @@ export default abstract class BaseHandler<
       //   console.error(error)
       // }
       useNotifications().notify({
+        id: this.handlerId,
         message: this.errorNotificationMessage(
           errorHandler.type,
           errorHandler.message,

@@ -83,6 +83,7 @@ class App.Utils
       'color:#b3b3b3' # use in UI, ignore it
       'color:rgb(34, 34, 34)' # use in UI, ignore it
       'color:rgb(219, 219, 220)' # use in UI, ignore it
+      'color:rgb(255, 255, 255)' # use in UI, ignore it
     ],
     'SPAN': [
       'color:white',
@@ -97,6 +98,7 @@ class App.Utils
       'color:#b3b3b3' # use in UI, ignore it
       'color:rgb(34, 34, 34)' # use in UI, ignore it
       'color:rgb(219, 219, 220)' # use in UI, ignore it
+      'color:rgb(255, 255, 255)' # use in UI, ignore it
     ],
     'TABLE': [
       'font-size:0',
@@ -880,10 +882,10 @@ class App.Utils
       dataRef = objects
       dataRefLast = undefined
       for level in levels
-        if typeof dataRef is 'object' && level of dataRef
+        if _.isObject(dataRef) && dataRef && level of dataRef
           dataRefLast = dataRef
           dataRef = dataRef[level]
-        else if typeof dataRef is 'object' && typeof level is 'string' && matches = level.match(/(?<functionName>\w+)\((?<params>.*?)\)/)
+        else if _.isObject(dataRef) && typeof level is 'string' && matches = level.match(/(?<functionName>\w+)\((?<params>.*?)\)/)
           dataRefLast = dataRef
           { functionName, params } = matches.groups
           parameters = params.split(',').map((param) -> param.trim())
@@ -905,22 +907,47 @@ class App.Utils
       else if dataRef isnt undefined && dataRef isnt null && dataRef.toString
         # in case if we have a references object, check what datatype the attribute has
         # and e. g. convert timestamps/dates to browser locale
+        attributeName = level
+        objectName    = levels[levels.length - 2]
         className     = dataRefLast?.constructor?.className
-        lastLevelName = levels[levels.length - 2]
-        if lastLevelName && !className
-          className = lastLevelName.charAt(0).toUpperCase() + lastLevelName.slice(1)
+        if !className && objectName
+          className = objectName.charAt(0).toUpperCase() + objectName.slice(1)
+
+        if level is 'value'
+          attributeName = levels[levels.length - 2]
+          objectName    = levels[levels.length - 3]
+          className     = objectName.charAt(0).toUpperCase() + objectName.slice(1)
 
         if className && App[className]
           localClassRef = App[className]
           if localClassRef?.attributesGet
             attributes = localClassRef.attributesGet()
-            if attributes?[level]
-              if attributes[level]['tag'] is 'datetime'
-                value = App.i18n.translateTimestamp(dataRef)
-              else if attributes[level]['tag'] is 'date'
-                value = App.i18n.translateDate(dataRef)
-              else if attributes[level]['tag'] is 'autocompletion_ajax_external_data_source'
-                value = dataRef.value
+            if attributes?[attributeName]
+              dataType = attributes[attributeName]['tag']
+
+              if level is 'value'
+                switch dataType
+                  when 'select'
+                    key = dataRefLast[attributeName]
+                    value = attributes[attributeName]['historical_options'][key]
+                  when 'multiselect'
+                    key = dataRefLast[attributeName] || []
+                    value = key.map((element) -> attributes[attributeName]['historical_options'][element]).join(', ')
+                  when 'autocompletion_ajax_external_data_source'
+                    value = dataRefLast.label
+                  else
+                    value = dataRefLast[attributeName]
+              else
+                switch dataType
+                  when 'datetime'
+                    value = App.i18n.translateTimestamp(dataRef)
+                  when 'date'
+                    value = App.i18n.translateDate(dataRef)
+                  when 'multiselect'
+                    dataRef = dataRef || []
+                    value = dataRef.map((element) -> element).join(', ')
+                  when 'autocompletion_ajax_external_data_source'
+                    value = dataRef.value || '-'
 
         # as fallback use value of toString()
         if !value

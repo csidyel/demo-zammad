@@ -2,15 +2,16 @@
 
 <script setup lang="ts">
 import { computed, toRef } from 'vue'
-import CommonTicketPriorityIndicator from '#shared/components/CommonTicketPriorityIndicator/CommonTicketPriorityIndicator.vue'
-import CommonUserAvatar from '#shared/components/CommonUserAvatar/CommonUserAvatar.vue'
+
 import CommonOrganizationAvatar from '#shared/components/CommonOrganizationAvatar/CommonOrganizationAvatar.vue'
 import CommonTicketEscalationIndicator from '#shared/components/CommonTicketEscalationIndicator/CommonTicketEscalationIndicator.vue'
+import CommonTicketPriorityIndicator from '#shared/components/CommonTicketPriorityIndicator/CommonTicketPriorityIndicator.vue'
 import CommonTicketStateIndicator from '#shared/components/CommonTicketStateIndicator/CommonTicketStateIndicator.vue'
+import CommonUserAvatar from '#shared/components/CommonUserAvatar/CommonUserAvatar.vue'
+import { useTicketChannel } from '#shared/entities/ticket/composables/useTicketChannel.ts'
+import { useTicketView } from '#shared/entities/ticket/composables/useTicketView.ts'
 import type { TicketById } from '#shared/entities/ticket/types.ts'
 import { useLocaleStore } from '#shared/stores/locale.ts'
-import { useTicketView } from '#shared/entities/ticket/composables/useTicketView.ts'
-import { useTicketChannel } from '#shared/entities/ticket/composables/useTicketChannel.ts'
 
 interface Props {
   ticket: TicketById
@@ -55,7 +56,7 @@ const customer = computed(() => {
         </div>
         <div
           class="overflow-hidden ltr:mr-1 rtl:ml-1"
-          :class="{ 'rtl:-mr-1 ltr:-ml-1': ticket.organization }"
+          :class="{ 'ltr:-ml-1 rtl:-mr-1': ticket.organization }"
         >
           <div class="flex text-sm leading-4 text-gray-100">
             <div

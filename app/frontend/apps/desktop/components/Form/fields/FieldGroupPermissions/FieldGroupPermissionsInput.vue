@@ -1,14 +1,18 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 <script setup lang="ts">
-import { computed, reactive, toRef, watch } from 'vue'
 import { cloneDeep, isEqual } from 'lodash-es'
-import CommonButton from '#desktop/components/CommonButton/CommonButton.vue'
+import { computed, reactive, toRef, watch } from 'vue'
+
 import type { SelectValue } from '#shared/components/CommonSelect/types.ts'
-import type { TreeSelectOption } from '#shared/components/Form/fields/FieldTreeSelect/types.ts'
 import useValue from '#shared/components/Form/composables/useValue.ts'
+import type { TreeSelectOption } from '#shared/components/Form/fields/FieldTreeSelect/types.ts'
 import { useDelegateFocus } from '#shared/composables/useDelegateFocus.ts'
 import getUuid from '#shared/utils/getUuid.ts'
+
+import CommonButton from '#desktop/components/CommonButton/CommonButton.vue'
+
 import useFlatSelectOptions from '../FieldTreeSelect/useFlatSelectOptions.ts'
+
 import {
   GroupAccess,
   type GroupPermissionReactive,
@@ -202,19 +206,20 @@ const ensureGranularOrFullAccess = (
 <template>
   <output
     :id="context.id"
-    class="w-full flex flex-col p-2 space-y-2 rounded-lg focus:outline focus:outline-1 focus:outline-offset-1 focus:outline-blue-800 hover:focus:outline-blue-800"
+    class="flex w-full flex-col space-y-2 rounded-lg p-2 focus:outline focus:outline-1 focus:outline-offset-1 focus:outline-blue-800 hover:focus:outline-blue-800"
     :class="context.classes.input"
     :name="context.node.name"
     role="list"
     :tabindex="context.disabled ? '-1' : '0'"
     :aria-disabled="context.disabled"
+    :aria-describedby="context.describedBy"
     v-bind="context.attrs"
     @focus="delegateFocus"
   >
     <div
       v-for="(groupPermission, index) in groupPermissions"
       :key="groupPermission.key"
-      class="w-full flex items-center gap-3"
+      class="flex w-full items-center gap-3"
       role="listitem"
     >
       <FormKit
@@ -250,7 +255,7 @@ const ensureGranularOrFullAccess = (
       >
         <template #label>
           <CommonLabel
-            class="uppercase text-gray-300 dark:text-gray-300"
+            class="uppercase text-gray-300 dark:text-neutral-400"
             size="small"
           >
             {{ $t(groupAccess.label) }}

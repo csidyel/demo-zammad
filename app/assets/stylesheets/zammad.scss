@@ -536,7 +536,9 @@ ul {
 
 /* close commented backslash hack */
 
-[contenteditable] {
+/* Avoid too broad selectors, since they can affect unintended elements in third-party extensions (#5073). */
+[contenteditable='true'],
+.richtext-content[contenteditable] {
   display: block;
   outline-style: none;
   border-radius: 3px;
@@ -544,27 +546,27 @@ ul {
   /* needed to make empty tags editable, otherwise no focus can be set */
   min-height: 10px;
   min-width: 20px;
-}
 
-[contenteditable]:hover,
-[contenteditable]:focus {
-  background: var(--background-primary);
-}
+  &:hover,
+  &:focus {
+    background: var(--background-primary);
+  }
 
-[contenteditable]:focus {
-  text-overflow: clip !important;
-}
+  &:focus {
+    text-overflow: clip !important;
+  }
 
-[contenteditable].invalid {
-  background: #f92;
-}
+  &.invalid {
+    background: #f92;
+  }
 
-[contenteditable] > .placeholder {
-  color: var(--text-muted);
-}
+  & > .placeholder {
+    color: var(--text-muted);
+  }
 
-[contenteditable] p {
-  margin: 0;
+  p {
+    margin: 0;
+  }
 }
 
 /* fix for placeholder */
@@ -1453,6 +1455,19 @@ pre code {
 
 table {
   table-layout: fixed;
+}
+
+.scroll-table-container {
+  overflow: hidden;
+  overflow-y: scroll;
+  max-height: 244px;
+
+  table > thead > tr > th {
+    @extend .zIndex-2;
+
+    top: 0;
+    position: sticky;
+  }
 }
 
 .table {
@@ -3294,6 +3309,10 @@ kbd {
   justify-content: center;
 }
 
+.popover .page-loading {
+  min-height: 100px;
+}
+
 .page-loading-label {
   @include bidi-style(margin-left, 10px, margin-right, 0);
 
@@ -3917,6 +3936,10 @@ ol.tabs li {
 
 .icon-danger {
   color: hsl(41, 100%, 49%);
+
+  .alert.alert--warning & {
+    color: inherit;
+  }
 }
 
 .icon-draggable {
@@ -4261,6 +4284,7 @@ footer {
   bottom: 0;
 
   @include bidi-style(left, $sidebarWidth + $navigationWidth, right, 0);
+  @include bidi-style(right, 0, left, $sidebarWidth + $navigationWidth);
 
   min-width: $minWidth - $sidebarWidth - $navigationWidth;
   background: var(--background-secondary);
@@ -4272,23 +4296,21 @@ footer {
 
   @include small-desktop {
     @include bidi-style(left, $navigationWidth, right, 0);
+    @include bidi-style(right, 0, left, $navigationWidth);
 
     min-width: $minWidth - $sidebarWidth;
   }
 
   @include desktop {
-    @include bidi-style(
-      left,
-      $desktopSidebarWidth + $navigationWidth,
-      right,
-      0
-    );
+    @include bidi-style(left, $sidebarWidth + $navigationWidth, right, 0);
+    @include bidi-style(right, 0, left, $sidebarWidth + $navigationWidth);
 
-    min-width: $minWidth - $desktopSidebarWidth;
+    min-width: $minWidth - $sidebarWidth;
   }
 
   &.no-sidebar {
     @include bidi-style(left, $navigationWidth, right, 0);
+    @include bidi-style(right, 0, left, $navigationWidth);
 
     min-width: $minWidth - $navigationWidth;
 
@@ -4299,11 +4321,12 @@ footer {
 
   @include phone {
     @include bidi-style(left, $mobileNavigationWidth, right, 0);
+    @include bidi-style(right, 0, left, $mobileNavigationWidth);
 
     min-width: 0;
 
-    .navigation.is-not-collapsed ~ & {
-      @include bidi-style(left, $mobileNavigationWidthOpen, right, 0);
+    .navigation.is-not-collapsed ~ .content & {
+      @include bidi-style(left, 0, right, 0);
     }
   }
 }
@@ -7329,6 +7352,32 @@ a.list-group-item.active > .badge,
   border-color: var(--border-article-customer-selected);
 }
 
+.remote-content-message {
+  border-top: 1px solid var(--background-modifier-border);
+  white-space: normal;
+  margin: 10px -20px -10px;
+  padding: 10px 20px 10px 40px;
+  text-indent: -20px;
+  position: relative;
+  font-size: 13px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--background-modifier-hover);
+  }
+
+  .icon-danger {
+    vertical-align: text-bottom;
+    color: var(--text-normal);
+  }
+
+  @include phone {
+    margin-left: -10px;
+    margin-right: -10px;
+    padding: 10px 15px 10px 30px;
+  }
+}
+
 .attachments.attachments--list:not(:empty) {
   border-top: 1px solid var(--background-modifier-border);
   white-space: normal;
@@ -9222,6 +9271,10 @@ li.list-item-none {
   background: var(--background-secondary-hover);
 }
 
+.user-menu li.add .dropdown-menu.dropdown-menu--light li > a:hover {
+  color: var(--text-normal);
+}
+
 .dropdown-menu.dropdown-menu--light li:hover {
   background: none;
 }
@@ -10760,6 +10813,14 @@ label + .wizard-buttonList {
 
   & + .horizontal-filter {
     border-top: none;
+  }
+
+  &-attribute {
+    max-width: 250px;
+
+    .modal--veryLarge & {
+      max-width: 400px;
+    }
   }
 
   select,
@@ -12437,6 +12498,16 @@ output {
   }
 }
 
+.manage-chat-jquery-switch-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+
+  .zammad-switch {
+    @include bidi-style(margin-right, 8px, margin-left, 8px);
+  }
+}
+
 .browser {
   margin: 0 0 20px;
   position: relative;
@@ -12805,6 +12876,8 @@ output {
 }
 
 .richtext-content {
+  overflow-x: auto;
+
   &[contenteditable] {
     &,
     &:hover,

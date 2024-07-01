@@ -1,15 +1,18 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { mockApplicationConfig } from '#tests/support/mock-applicationConfig.ts'
+import { getTestRouter } from '#tests/support/components/renderComponent.ts'
 import { visitView } from '#tests/support/components/visitView.ts'
+import { mockApplicationConfig } from '#tests/support/mock-applicationConfig.ts'
 
 import {
   EnumSystemSetupInfoStatus,
   EnumSystemSetupInfoType,
 } from '#shared/graphql/types.ts'
 
-import { mockSystemSetupInfoQuery } from '../graphql/queries/systemSetupInfo.mocks.ts'
 import { mockSystemSetupLockMutation } from '../graphql/mutations/systemSetupLock.mocks.ts'
+import { mockSystemSetupInfoQuery } from '../graphql/queries/systemSetupInfo.mocks.ts'
+import { useSystemSetupInfoStore } from '../stores/systemSetupInfo.ts'
+
 import { mockSystemSetupInfo } from './mocks/mock-systemSetupInfo.ts'
 
 describe('guided setup start', () => {
@@ -143,6 +146,45 @@ describe('guided setup start', () => {
 
       expect(view.getByRole('button', { name: 'Go Back' })).toBeInTheDocument()
       expect(view.getByText('Create Administrator Account')).toBeInTheDocument()
+    })
+
+    it('redirects to home screen on back navigation, if the setup was completed', async () => {
+      mockSystemSetupInfoQuery({
+        systemSetupInfo: {
+          status: EnumSystemSetupInfoStatus.New,
+          type: null,
+        },
+      })
+
+      const view = await visitView('/guided-setup')
+
+      await view.events.click(view.getByText('Set up a new system'))
+
+      await vi.waitFor(() => {
+        expect(
+          view,
+          'correctly redirects to guided setup manual',
+        ).toHaveCurrentUrl('/guided-setup/manual')
+      })
+
+      mockSystemSetupInfoQuery({
+        systemSetupInfo: {
+          status: EnumSystemSetupInfoStatus.Done,
+          type: null,
+        },
+      })
+
+      const { setSystemSetupInfo } = useSystemSetupInfoStore()
+
+      await setSystemSetupInfo()
+
+      const router = getTestRouter()
+
+      router.back()
+
+      await vi.waitFor(() => {
+        expect(view, 'correctly redirects to home screen').toHaveCurrentUrl('/')
+      })
     })
   })
 })

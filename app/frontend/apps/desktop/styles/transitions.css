@@ -1,0 +1,44 @@
+.fade {
+  &-enter-active,
+  &-leave-active {
+    transition: opacity 0.3s ease;
+  }
+
+  &-enter-from,
+  &-leave-to {
+    opacity: 0;
+  }
+}
+
+.fade-move {
+  &-enter-active,
+  &-move,
+  &-leave-active {
+    transition: opacity 0.5s ease;
+  }
+
+  &-leave-active {
+    position: absolute;
+    top: -100%; /*  Add overflow clip on parent to hide elements */
+  }
+
+  &-enter-from,
+  &-leave-to {
+    opacity: 0;
+  }
+}
+
+.collapse {
+  &-enter-active,
+  &-leave-active {
+    transition:
+      height 0.2s ease-in-out,
+      opacity 0.2s ease;
+    overflow: hidden;
+  }
+
+  &-enter-from,
+  &-leave-to {
+    opacity: 0;
+  }
+}

@@ -2,14 +2,14 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+
 import { getAlertClasses } from '#shared/initializer/initializeAlertClasses.ts'
+
 import type { AlertVariant } from './types.ts'
 
 export interface Props {
   variant?: AlertVariant
   dismissible?: boolean
-  link?: string | null
-  linkText?: string | null
   id?: string
 }
 
@@ -41,35 +41,27 @@ const dismissed = ref(false)
   <div
     v-if="!dismissed"
     :id="props.id"
-    class="-:rounded-lg gap-1.5 p-2 border-transparent"
+    class="-:rounded-lg gap-1.5 border-transparent p-2"
     :class="[classMap.base, classMap[props.variant]]"
     role="alert"
     data-test-id="common-alert"
   >
-    <CommonIcon size="small" decorative :name="icon" />
+    <CommonIcon
+      class="mx-auto mt-0.5 md:mx-0"
+      :name="icon"
+      size="tiny"
+      decorative
+    />
 
     <slot />
 
-    <div
-      v-if="props.link || props.dismissible"
-      class="flex items-center justify-start ltr:ml-auto rtl:mr-auto"
-    >
-      <CommonLink
-        v-if="props.link"
-        class="ltr:mr-2 rtl:ml-2 text-ellipsis"
-        :class="classMap.link"
-        :link="props.link"
-        open-in-new-tab
-        rel="noopener noreferrer"
-        >{{ props.linkText || props.link }}</CommonLink
-      >
-
+    <div v-if="props.dismissible">
       <CommonIcon
         v-if="props.dismissible"
-        size="small"
+        size="tiny"
         decorative
         name="common-alert-dismiss"
-        class="ltr:mr-2 rtl:ml-2 cursor-pointer"
+        class="mx-auto cursor-pointer md:mx-0"
         @click="dismissed = true"
       />
     </div>

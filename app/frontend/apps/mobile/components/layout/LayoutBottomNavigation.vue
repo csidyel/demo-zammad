@@ -1,10 +1,12 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 <script setup lang="ts">
-import CommonUserAvatar from '#shared/components/CommonUserAvatar/CommonUserAvatar.vue'
-import { useSessionStore } from '#shared/stores/session.ts'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
+
+import CommonUserAvatar from '#shared/components/CommonUserAvatar/CommonUserAvatar.vue'
 import { useOnlineNotificationCount } from '#shared/entities/online-notification/composables/useOnlineNotificationCount.ts'
+import { useSessionStore } from '#shared/stores/session.ts'
+
 import { useCustomLayout } from './useCustomLayout.ts'
 
 const { user } = storeToRefs(useSessionStore())
@@ -20,7 +22,7 @@ const notificationCount = computed(() => {
 
 <template>
   <footer
-    class="bottom-navigation fixed bottom-0 z-10 w-full bg-gray-light backdrop-blur-lg"
+    class="bottom-navigation bg-gray-light fixed bottom-0 z-10 w-full backdrop-blur-lg"
     :class="{ 'px-4': isCustomLayout }"
     data-bottom-navigation
   >
@@ -44,7 +46,7 @@ const notificationCount = computed(() => {
           v-if="notificationCount"
           role="status"
           :aria-label="$t('Unread notifications')"
-          class="absolute h-4 min-w-[1rem] rounded-full bg-blue px-1 text-center text-xs text-black ltr:ml-4 rtl:mr-4"
+          class="bg-blue absolute h-4 min-w-[1rem] rounded-full px-1 text-center text-xs text-black ltr:ml-4 rtl:mr-4"
         >
           {{ notificationCount }}
         </div>
@@ -52,13 +54,13 @@ const notificationCount = computed(() => {
       </CommonLink>
       <CommonLink
         link="/account"
-        class="flex-1 group"
+        class="group flex-1"
         exact-active-class="user-active"
       >
         <CommonUserAvatar
           v-if="user"
           :entity="user"
-          class="group-[.user-active]:ring-2 group-[.user-active]:ring-blue"
+          class="group-[.user-active]:ring-blue group-[.user-active]:ring-2"
           size="small"
           personal
         />

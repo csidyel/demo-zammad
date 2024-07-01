@@ -2,14 +2,16 @@
 
 <script setup lang="ts">
 import { toRef } from 'vue'
-import type { SuggestionKeyDownProps } from '@tiptap/suggestion'
+
 import useNavigateOptions from './useNavigateOptions.ts'
+
 import type {
   MentionKnowledgeBaseItem,
   MentionTextItem,
   MentionType,
   MentionUserItem,
 } from './types.ts'
+import type { SuggestionKeyDownProps } from '@tiptap/suggestion'
 
 type PossibleItem = MentionUserItem | MentionKnowledgeBaseItem | MentionTextItem
 
@@ -61,6 +63,8 @@ defineExpose({
       class="cursor-pointer px-6 py-2 hover:bg-gray-400"
       :class="{ 'bg-gray-400': selectedIndex === index }"
       role="option"
+      :aria-selected="selectedIndex === index"
+      tabindex="0"
       @click="selectItem(index)"
       @keydown.space.prevent="selectItem(index)"
     >
@@ -79,7 +83,7 @@ defineExpose({
         </div>
         <div
           v-if="item.keywords"
-          class="rounded border border-solid border-gray-150 px-1 text-sm"
+          class="border-gray-150 rounded border border-solid px-1 text-sm"
         >
           {{ item.keywords }}
         </div>

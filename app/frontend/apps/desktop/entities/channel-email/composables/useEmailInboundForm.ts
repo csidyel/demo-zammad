@@ -1,6 +1,5 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { ShallowRef } from 'vue'
 import { shallowRef, computed, ref, reactive } from 'vue'
 
 import type {
@@ -16,11 +15,12 @@ import type {
   EmailInboundMetaInformation,
   EmailInboundMetaInformationNextAction,
 } from '../types/email-inbound-outbound.ts'
+import type { ShallowRef } from 'vue'
 
 export const useEmailInboundForm = () => {
   const formEmailInbound: ShallowRef<FormRef | undefined> = shallowRef()
 
-  const { values, updateFieldValues, formSetErrors } =
+  const { values, updateFieldValues, formSetErrors, onChangedField } =
     useForm<EmailInboundData>(formEmailInbound)
 
   const metaInformationInbound = ref<Maybe<EmailInboundMetaInformation>>(null)
@@ -66,31 +66,26 @@ export const useEmailInboundForm = () => {
     port: {},
   })
 
-  const emailInboundFormOnChanged = (
-    fieldName: string,
-    newValue: FormFieldValue,
-  ) => {
-    if (fieldName === 'ssl') {
-      const disabled = Boolean(newValue === 'off')
-      emailInboundFormChangeFields.sslVerify = {
-        disabled,
+  onChangedField('ssl', (newValue: FormFieldValue) => {
+    const disabled = Boolean(newValue === 'off')
+    emailInboundFormChangeFields.sslVerify = {
+      disabled,
+    }
+
+    updateFieldValues({
+      sslVerify: !disabled,
+    })
+
+    if (newValue === 'off') {
+      emailInboundFormChangeFields.port = {
+        value: 143,
       }
-
-      updateFieldValues({
-        sslVerify: !disabled,
-      })
-
-      if (newValue === 'off') {
-        emailInboundFormChangeFields.port = {
-          value: 143,
-        }
-      } else if (newValue === 'ssl') {
-        emailInboundFormChangeFields.port = {
-          value: 993,
-        }
+    } else if (newValue === 'ssl') {
+      emailInboundFormChangeFields.port = {
+        value: 993,
       }
     }
-  }
+  })
 
   const emailInboundSchema = [
     {
@@ -214,7 +209,6 @@ export const useEmailInboundForm = () => {
     formEmailInboundSetErrors: formSetErrors,
     metaInformationInbound,
     emailInboundFormChangeFields,
-    emailInboundFormOnChanged,
     updateMetaInformationInbound,
   }
 }

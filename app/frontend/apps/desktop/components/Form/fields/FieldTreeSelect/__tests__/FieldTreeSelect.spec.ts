@@ -1,6 +1,7 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { cloneDeep, keyBy } from 'lodash-es'
+import { getNode } from '@formkit/core'
+import { FormKit } from '@formkit/vue'
 import {
   getAllByRole,
   getByRole,
@@ -8,20 +9,22 @@ import {
   queryByRole,
   waitFor,
 } from '@testing-library/vue'
-import { FormKit } from '@formkit/vue'
-import { renderComponent } from '#tests/support/components/index.ts'
-import { i18n } from '#shared/i18n.ts'
-import { getNode } from '@formkit/core'
-import { useLocaleStore } from '#shared/stores/locale.ts'
-import { EnumTextDirection } from '#shared/graphql/types.ts'
+import { cloneDeep, keyBy } from 'lodash-es'
+
 import {
   findByIconName,
   getByIconName,
   queryAllByIconName,
   queryByIconName,
 } from '#tests/support/components/iconQueries.ts'
+import { renderComponent } from '#tests/support/components/index.ts'
 import { waitForNextTick } from '#tests/support/utils.ts'
+
 import type { TreeSelectOption } from '#shared/components/Form/fields/FieldTreeSelect/types.ts'
+import { EnumTextDirection } from '#shared/graphql/types.ts'
+import { i18n } from '#shared/i18n.ts'
+import { useLocaleStore } from '#shared/stores/locale.ts'
+
 import useFlatSelectOptions from '../useFlatSelectOptions.ts'
 
 const { flattenOptions } = useFlatSelectOptions()
@@ -513,6 +516,7 @@ describe('Form - Field - TreeSelect - Options', () => {
       {
         value: 2,
         label: 'Item C',
+        disabled: true,
       },
     ]
 
@@ -534,6 +538,14 @@ describe('Form - Field - TreeSelect - Options', () => {
     expect(selectOptions[1].childNodes[2]).toHaveClass('pointer-events-none')
 
     expect(getByText(listbox, disabledOptions[1].label)).toHaveClasses([
+      'text-gray-100',
+      'dark:text-neutral-400',
+    ])
+
+    expect(selectOptions[2]).toHaveAttribute('aria-disabled', 'true')
+    expect(selectOptions[2].childNodes[2]).toHaveClass('pointer-events-none')
+
+    expect(getByText(listbox, disabledOptions[2].label)).toHaveClasses([
       'text-stone-200',
       'dark:text-neutral-500',
     ])
@@ -1211,12 +1223,12 @@ describe('Form - Field - TreeSelect - Features', () => {
 
     selectOptions.forEach((selectOption) => {
       if (selectOption.textContent === 'Ítem C') {
-        expect(selectOption.children[0].children[0]).toHaveTextContent('Ítem')
+        expect(selectOption.children[1].children[0]).toHaveTextContent('Ítem')
       } else {
-        expect(selectOption.children[0].children[0]).toHaveTextContent('Item')
+        expect(selectOption.children[1].children[0]).toHaveTextContent('Item')
       }
 
-      expect(selectOption.children[0].children[0]).toHaveClasses([
+      expect(selectOption.children[1].children[0]).toHaveClasses([
         'bg-blue-600',
         'dark:bg-blue-900',
       ])
@@ -1260,7 +1272,7 @@ describe('Form - Field - TreeSelect - Accessibility', () => {
       name: 'select all options',
     })
 
-    expect(selectAllButton).toHaveAttribute('tabindex', '2')
+    expect(selectAllButton).toHaveAttribute('tabindex', '0')
 
     const listbox = getByRole(menu, 'listbox')
 
@@ -1282,23 +1294,21 @@ describe('Form - Field - TreeSelect - Accessibility', () => {
 
     expect(
       getByRole(menu, 'button', { name: 'Back to previous page' }),
-    ).toHaveAttribute('tabindex', '1')
+    ).toHaveAttribute('tabindex', '0')
   })
 
-  it('prevents focusing of disabled field', async () => {
+  it('allows focusing of disabled field for a11y', async () => {
     const wrapper = renderComponent(FormKit, {
       ...wrapperParameters,
       props: {
-        ...commonProps,
+        label: 'Select…',
+        type: 'treeselect',
         options: testOptions,
         disabled: true,
       },
     })
 
-    expect(wrapper.getByLabelText('Treeselect')).toHaveAttribute(
-      'tabindex',
-      '-1',
-    )
+    expect(wrapper.getByLabelText('Select…')).toHaveAttribute('tabindex', '0')
   })
 
   it('restores focus on close', async () => {
