@@ -14,14 +14,14 @@ global_job_config:
       - cache restore
       - sem-service start postgres 16 --username=zammad --password=zammad
       - sem-service start redis 5
-      - sem-version ruby 3.2.2
+      - sem-version ruby 3.2.4
       - sem-version node 20.11.0
       - sudo apt-get update
       - sudo apt-get install -y -f optipng jhead imagemagick libimlib2 openssl direnv shellcheck libimlib2-dev libxss1
       - echo '127.0.0.1 redis postgresql' | sudo tee -a /etc/hosts
       - rbenv rehash
       - bundle install --path vendor/bundle
-      - yarn set version 1.22.21
+      - yarn set version 1.22.22
       - yarn install
       - 'yarn cypress:install'
       - cache store
