@@ -23,6 +23,38 @@ RSpec.describe Channel::EmailParser, type: :model do
       end
     end
 
+    describe 'when mail does not contain any sender specification' do
+      subject(:instance) { described_class.new }
+
+      let(:raw_mail) { <<~RAW.chomp }
+        To: baz@qux.net
+        Subject: Foo
+
+        Lorem ipsum dolor
+      RAW
+
+      it 'raises error even if exception is false' do
+        expect { described_class.new.parse(raw_mail) }
+          .to raise_error(Exceptions::MissingAttribute, 'Could not parse any sender attribute from the email. Checked fields: From, Reply-To, Return-Path, Sender')
+      end
+    end
+
+    describe 'when mail does not contain any sender specification with disabled missing attribute exceptions' do
+      subject(:instance) { described_class.new }
+
+      let(:raw_mail) { <<~RAW.chomp }
+        To: baz@qux.net
+        Subject: Foo
+
+        Lorem ipsum dolor
+      RAW
+
+      it 'prevents raising an error' do
+        expect { described_class.new.parse(raw_mail, allow_missing_attribute_exceptions: false) }
+          .not_to raise_error
+      end
+    end
+
     # To write new .yml files for emails you can use the following code:
     #
     # File.write('test/data/mail/mailXXX.yml', Channel::EmailParser.new.parse(File.read('test/data/mail/mailXXX.box')).slice(:from, :from_email, :from_display_name, :to, :cc, :subject, :body, :content_type, :'reply-to', :attachments).to_yaml)
@@ -120,6 +152,27 @@ RSpec.describe Channel::EmailParser, type: :model do
         inline_image_attachment = data[:attachments].last
 
         expect(inline_image_attachment[:preferences]['Content-ID']).to eq cid
+      end
+    end
+
+    describe 'calendar attachment without a filename' do
+      let(:store) { create(:store, :ics).tap { |store| store.filename = '' } }
+
+      it 'gets fallback filename with correct file extension (#5427)' do
+        mail = Channel::EmailBuild.build(
+          from:         'sender@example.com',
+          to:           'recipient@example.com',
+          body:         'foobar',
+          content_type: 'text/html',
+          attachments:  [store],
+        )
+
+        parser = described_class.new
+        data = parser.parse(mail.to_s)
+
+        calendar_attachment = data[:attachments].last
+
+        expect(calendar_attachment[:filename]).to eq('calendar.ics')
       end
     end
   end
@@ -612,8 +665,7 @@ RSpec.describe Channel::EmailParser, type: :model do
           end
         end
 
-        context 'when not explicitly configured to search anywhere' do
-          before { Setting.set('postmaster_follow_up_search_in', nil) }
+        context 'when configured to search subject_references' do
 
           context 'when subject contains ticket reference' do
             include_context 'ticket reference in subject'

@@ -4,11 +4,11 @@
 import { computed } from 'vue'
 
 import { getEditorColorMenuClasses } from '#shared/components/Form/fields/FieldEditor/FieldEditorColorMenu/initializeEditorColorMenu.ts'
+import { getFieldEditorClasses } from '#shared/components/Form/initializeFieldEditor.ts'
 import type {
   ColorGroup,
   ColorScheme,
-} from '#shared/components/Form/fields/FieldEditor/FieldEditorColorMenu/types.ts'
-import { getFieldEditorClasses } from '#shared/components/Form/initializeFieldEditor.ts'
+} from '#shared/composables/useColorPallet/types.ts'
 
 import type { Editor } from '@tiptap/core'
 
@@ -23,7 +23,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  selectColor: [string]
+  'select-color': [string]
 }>()
 
 const orientationClass = computed(() => {
@@ -34,7 +34,7 @@ const setColor = (color: ColorScheme) => {
   if (!props.editor) return
   props.editor.commands.setColor(color.value)
 
-  emit('selectColor', color.value)
+  emit('select-color', color.value)
 }
 
 const checkActiveColor = (color: string) => {

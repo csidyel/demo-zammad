@@ -10,11 +10,6 @@ rm -rf test spec app/frontend/tests app/frontend/cypress
 find app/frontend/ -type d -name __tests__ -exec rm -rf {} +
 rm .rspec
 
-# Remove our customized .yarnrc to let yarn use the global cache
-#   instead of .yarn/cache which would go into the packages.
-rm .yarnrc
-rm -rf .yarn/cache
-
 # CI
 rm -rf .github .gitlab
 rm .gitlab-ci.yml
@@ -34,3 +29,9 @@ rm -rf doc/developer_manual
 
 # Various development files
 rm -rf .dev
+
+# delete caches
+rm -rf tmp/*
+
+# Delete node_modules folder - only required during building
+rm -rf node_modules

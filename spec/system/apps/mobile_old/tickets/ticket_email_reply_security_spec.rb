@@ -22,7 +22,7 @@ RSpec.describe 'Mobile > Ticket > Email reply with security options', app: :mobi
     find_button('Reply').click
 
     within_form(form_updater_gql_number: 1) do
-      find_select('Article Type', visible: :all).select_option('Phone')
+      find_select('Channel', visible: :all).select_option('Phone')
     end
   end
 
@@ -39,13 +39,13 @@ RSpec.describe 'Mobile > Ticket > Email reply with security options', app: :mobi
     find_button('Done').click
     find_button('Save').click
 
-    wait_for_gql('apps/mobile/pages/ticket/graphql/mutations/update.graphql')
+    wait_for_gql('shared/entities/ticket/graphql/mutations/update.graphql')
   end
 
   before do
     visit "/tickets/#{ticket.id}"
 
-    wait_for_gql('apps/mobile/pages/ticket/graphql/queries/ticket/articles.graphql')
+    wait_for_gql('shared/entities/ticket/graphql/queries/ticket/articles.graphql')
     wait_for_form_to_settle('form-ticket-edit')
   end
 

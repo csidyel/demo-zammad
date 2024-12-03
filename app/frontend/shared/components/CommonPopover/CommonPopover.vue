@@ -15,6 +15,7 @@ import {
   onUnmounted,
   ref,
   type UnwrapRef,
+  useTemplateRef,
 } from 'vue'
 
 import { useTransitionConfig } from '#shared/composables/useTransitionConfig.ts'
@@ -40,6 +41,7 @@ export interface Props {
   hideArrow?: boolean
   id?: string
   noAutoFocus?: boolean
+  persistent?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -52,7 +54,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const popoverElement = ref<HTMLElement>()
+const popoverElement = useTemplateRef('popover')
 
 const showPopover = ref(false)
 
@@ -280,7 +282,7 @@ const closePopover = (isInteractive = false) => {
 
   nextTick(() => {
     if (!isInteractive && props.owner) {
-      // eslint-disable-next-line no-unused-expressions
+      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
       '$el' in props.owner ? props.owner.$el?.focus?.() : props.owner?.focus?.()
     }
     updateOwnerAriaExpandedState()
@@ -346,6 +348,10 @@ onUnmounted(() => {
 
 defineExpose(exposedInstance)
 
+defineOptions({
+  inheritAttrs: false,
+})
+
 const { durations } = useTransitionConfig()
 
 const classes = getPopoverClasses()
@@ -355,16 +361,38 @@ const classes = getPopoverClasses()
   <Teleport to="body">
     <Transition name="fade" :duration="durations.normal">
       <div
-        v-if="showPopover"
+        v-if="persistent"
+        v-show="showPopover"
         :id="id"
-        ref="popoverElement"
+        ref="popover"
         role="region"
         class="popover fixed z-50 flex"
         :class="[classes.base]"
         :style="popoverStyle"
         :aria-labelledby="owner && '$el' in owner ? owner.$el?.id : owner?.id"
+        v-bind="$attrs"
       >
-        <div class="overflow-y-auto">
+        <div class="w-full overflow-y-auto">
+          <slot />
+        </div>
+        <div
+          v-if="!hideArrow"
+          class="absolute -z-10 -rotate-45 transform"
+          :class="[arrowPlacementClasses, classes.arrow]"
+        />
+      </div>
+      <div
+        v-else-if="showPopover"
+        :id="id"
+        ref="popover"
+        role="region"
+        class="popover fixed z-50 flex"
+        :class="[classes.base]"
+        :style="popoverStyle"
+        :aria-labelledby="owner && '$el' in owner ? owner.$el?.id : owner?.id"
+        v-bind="$attrs"
+      >
+        <div class="w-full overflow-y-auto">
           <slot />
         </div>
         <div

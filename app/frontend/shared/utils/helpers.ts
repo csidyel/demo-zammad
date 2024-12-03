@@ -1,6 +1,7 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import linkifyStr from 'linkify-string'
+import { isEqual } from 'lodash-es'
 
 export { htmlCleanup } from './htmlCleanup.ts'
 
@@ -20,7 +21,7 @@ export const edgesToArray = <T>(
 export const normalizeEdges = <T>(
   object?: Maybe<{ edges?: { node: T }[]; totalCount?: number }>,
 ): { array: T[]; totalCount: number } => {
-  const array = edgesToArray(object)
+  const array = edgesToArray<T>(object)
   return {
     array,
     totalCount: object?.totalCount ?? array.length,
@@ -54,6 +55,16 @@ export const textToHtml = (text: string) => {
   text = text.replace(/ {2}/g, ' &nbsp;')
   text = `<div>${text.replace(/\n/g, '</div><div>')}</div>`
   return text.replace(/<div><\/div>/g, '<div><br></div>')
+}
+
+export const textTruncate = (text: string, length = 100) => {
+  if (!text) return text
+
+  text = text.replace(/<([^>]+)>/g, '')
+
+  if (text.length < length) return text
+
+  return `${text.substring(0, length)}…`
 }
 
 export const debouncedQuery = <A extends unknown[], R>(
@@ -102,3 +113,15 @@ export const waitForElement = async (
   await new Promise((resolve) => requestAnimationFrame(resolve))
   return waitForElement(query, tries - 1)
 }
+
+/**
+ * **Note:** @Generic T supports comparing arrays, array buffers, booleans,
+ * date objects, error objects, maps, numbers, `Object` objects, regexes,
+ * sets, strings, symbols, and typed arrays.
+ * `Object` objects are compared
+ * by their own, not inherited, enumerable properties.
+ * Functions and DOM
+ * nodes are **not** supported.
+ * */
+export const findChangedIndex = <T>(oldArray: T[], newArray: T[]) =>
+  oldArray.findIndex((item, index) => !isEqual(item, newArray[index]))

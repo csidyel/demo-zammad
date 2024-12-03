@@ -26,7 +26,7 @@ RSpec.describe Ticket, type: :model do
   it_behaves_like 'CanCsvImport'
   include_examples 'CanCsvImport - Ticket specific tests'
   it_behaves_like 'ChecksCoreWorkflow'
-  it_behaves_like 'HasHistory', history_relation_object: ['Ticket::Article', 'Mention', 'Ticket::SharedDraftZoom']
+  it_behaves_like 'HasHistory', history_relation_object: ['Ticket::Article', 'Mention', 'Ticket::SharedDraftZoom', 'Checklist', 'Checklist::Item']
   it_behaves_like 'HasTags'
   it_behaves_like 'TagWritesToTicketHistory'
   it_behaves_like 'HasTaskbars'
@@ -1355,16 +1355,19 @@ RSpec.describe Ticket, type: :model do
           .to(false)
       end
 
-      it 'destroys all related dependencies' do
-        refs_known = { 'Ticket::Article'         => { 'ticket_id'=>1 },
-                       'Ticket::TimeAccounting'  => { 'ticket_id'=>1 },
-                       'Ticket::SharedDraftZoom' => { 'ticket_id'=>0 },
-                       'Ticket::Flag'            => { 'ticket_id'=>1 } }
+      it 'destroys all related dependencies', current_user_id: 1 do
+        refs_known = {
+          'Ticket::Article'         => { 'ticket_id' => 1 },
+          'Ticket::TimeAccounting'  => { 'ticket_id' => 1 },
+          'Ticket::SharedDraftZoom' => { 'ticket_id' => 0 },
+          'Checklist::Item'         => { 'ticket_id' => 1 },
+        }
 
-        ticket     = create(:ticket)
-        article    = create(:ticket_article, ticket: ticket)
-        accounting = create(:ticket_time_accounting, ticket: ticket)
-        flag       = create(:ticket_flag, ticket: ticket)
+        ticket         = create(:ticket)
+        article        = create(:ticket_article, ticket: ticket)
+        accounting     = create(:ticket_time_accounting, ticket: ticket)
+        checklist      = create(:checklist, ticket: ticket)
+        checklist_item = create(:checklist_item, ticket_id: ticket.id)
 
         refs_ticket = Models.references('Ticket', ticket.id, true)
         expect(refs_ticket).to eq(refs_known)
@@ -1374,7 +1377,9 @@ RSpec.describe Ticket, type: :model do
         expect { ticket.reload }.to raise_exception(ActiveRecord::RecordNotFound)
         expect { article.reload }.to raise_exception(ActiveRecord::RecordNotFound)
         expect { accounting.reload }.to raise_exception(ActiveRecord::RecordNotFound)
-        expect { flag.reload }.to raise_exception(ActiveRecord::RecordNotFound)
+        expect { checklist.reload }.to raise_exception(ActiveRecord::RecordNotFound)
+        # Related checklist_item should not be destroyed
+        expect(checklist_item.reload.ticket_id).to be_nil
       end
 
       context 'when ticket is generated from email (with attachments)' do
@@ -1764,7 +1769,7 @@ RSpec.describe Ticket, type: :model do
     subject!(:ticket) { create(:ticket) }
 
     context 'when payload is ok' do
-      let(:current_payload_size) { 3.megabyte }
+      let(:current_payload_size) { 3.megabytes }
 
       it 'return false' do
         expect(ticket.send(:search_index_attribute_lookup_oversized?, current_payload_size)).to be false
@@ -1772,7 +1777,7 @@ RSpec.describe Ticket, type: :model do
     end
 
     context 'when payload is bigger' do
-      let(:current_payload_size) { 350.megabyte }
+      let(:current_payload_size) { 350.megabytes }
 
       it 'return true' do
         expect(ticket.send(:search_index_attribute_lookup_oversized?, current_payload_size)).to be true
@@ -1790,7 +1795,7 @@ RSpec.describe Ticket, type: :model do
     end
 
     context 'when total payload is ok' do
-      let(:current_payload_size) { 200.megabyte }
+      let(:current_payload_size) { 200.megabytes }
 
       it 'return false' do
         expect(ticket.send(:search_index_attribute_lookup_file_oversized?, store, current_payload_size)).to be false
@@ -1798,7 +1803,7 @@ RSpec.describe Ticket, type: :model do
     end
 
     context 'when total payload is oversized' do
-      let(:current_payload_size) { 299.megabyte }
+      let(:current_payload_size) { 299.megabytes }
 
       it 'return true' do
         expect(ticket.send(:search_index_attribute_lookup_file_oversized?, store, current_payload_size)).to be true
@@ -1832,6 +1837,54 @@ RSpec.describe Ticket, type: :model do
 
       it 'return true' do
         expect(ticket.send(:search_index_attribute_lookup_file_ignored?, store_without_indexable_extention)).to be true
+      end
+    end
+  end
+
+  describe '.search_index_article_attachment_attributes' do
+    context 'payload for article' do
+      subject!(:store_item) do
+        create(:store,
+               object:   'SomeObject',
+               o_id:     1,
+               data:     'some content',
+               filename: 'test.TXT')
+      end
+
+      it 'verify count of attributes' do
+        expect(ticket.send(:search_index_article_attachment_attributes, store_item).count).to be 3
+      end
+
+      it 'verify size' do
+        expect(ticket.send(:search_index_article_attachment_attributes, store_item)['size']).to eq '12'
+      end
+
+      it 'verify _name' do
+        expect(ticket.send(:search_index_article_attachment_attributes, store_item)['_name']).to eq 'test.TXT'
+      end
+
+      it 'verify _content' do
+        expect(ticket.send(:search_index_article_attachment_attributes, store_item)['_content']).to eq 'c29tZSBjb250ZW50'
+      end
+    end
+  end
+
+  describe '.search_index_article_attributes' do
+    context 'payload for attachment' do
+      subject!(:ticket_article) do
+        create(:ticket_article, ticket: create(:ticket))
+      end
+
+      it 'verify count of attributes' do
+        expect(ticket.send(:search_index_article_attributes, ticket_article).count).to eq 20
+      end
+
+      it 'verify from' do
+        expect(ticket.send(:search_index_article_attributes, ticket_article)['from']).to eq ticket_article.from
+      end
+
+      it 'verify body' do
+        expect(ticket.send(:search_index_article_attributes, ticket_article)['body']).to eq ticket_article.body
       end
     end
   end
@@ -1971,6 +2024,33 @@ RSpec.describe Ticket, type: :model do
           expect(ticket.reopen_after_certain_time?).to be false
         end
       end
+    end
+  end
+
+  describe '#get_references' do
+    let!(:ticket) { create(:ticket) }
+    let!(:articles) { create_list(:ticket_article, 10, ticket: ticket, reply_to: nil) }
+
+    before do
+      articles.each do |article|
+        article.update(message_id: SecureRandom.uuid)
+      end
+    end
+
+    it 'does return references' do
+      expect(ticket.get_references.count).to eq(10)
+    end
+
+    it 'does return references by limit' do
+      expect(ticket.get_references([], max_length: articles.last.message_id.length * 3).count).to eq(3)
+    end
+
+    it 'does return last 3 references by limit' do
+      expect(ticket.get_references([], max_length: articles.last.message_id.length * 3)).to eq(articles.map(&:message_id)[-3..])
+    end
+
+    it 'does ignore references' do
+      expect(ticket.get_references([articles.last.message_id])).not_to include(articles.last.message_id)
     end
   end
 end

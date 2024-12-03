@@ -218,84 +218,7 @@ class UsersController < ApplicationController
   # @response_message 200 [Array<User>] A list of User records matching the search term.
   # @response_message 403               Forbidden / Invalid session.
   def search
-    query = params[:query]
-    if query.respond_to?(:permit!)
-      query.permit!.to_h
-    end
-
-    query = params[:query] || params[:term]
-    if query.respond_to?(:permit!)
-      query = query.permit!.to_h
-    end
-
-    query_params = {
-      query:        query,
-      limit:        pagination.limit,
-      offset:       pagination.offset,
-      sort_by:      params[:sort_by],
-      order_by:     params[:order_by],
-      current_user: current_user,
-    }
-    %i[ids role_ids group_ids permissions].each do |key|
-      next if params[key].blank?
-
-      query_params[key] = params[key]
-    end
-
-    # do query
-    user_all = User.search(query_params)
-
-    if response_expand?
-      list = user_all.map(&:attributes_with_association_names)
-      render json: list, status: :ok
-      return
-    end
-
-    # build result list
-    if params[:label] || params[:term]
-      users = []
-      user_all.each do |user|
-        realname = user.fullname
-
-        # improve realname, if possible
-        if user.email.present? && realname != user.email
-          begin
-            realname = Channel::EmailBuild.recipient_line(realname, user.email)
-          rescue Mail::Field::IncompleteParseError
-            # mute if parsing of recipient_line was not successful / #5166
-          end
-        end
-        a = if params[:term]
-              { id: user.id, label: realname, value: user.email, inactive: !user.active }
-            else
-              { id: user.id, label: realname, value: realname }
-            end
-        users.push a
-      end
-
-      # return result
-      render json: users
-      return
-    end
-
-    if response_full?
-      user_ids = []
-      assets   = {}
-      user_all.each do |user|
-        assets = user.assets(assets)
-        user_ids.push user.id
-      end
-
-      # return result
-      render json: {
-        assets:   assets,
-        user_ids: user_ids.uniq,
-      }
-      return
-    end
-
-    list = user_all.map(&:attributes_with_association_ids)
-    render json: list, status: :ok
+    model_search_render(User, params)
   end
 
   # @path       [GET] /users/history/{id}
@@ -554,7 +477,7 @@ curl http://localhost/api/v1/users/password_reset_verify -v -u #{login}:#{passwo
       render json: { message: 'failed' }, status: :ok
       return
     rescue PasswordPolicy::Error => e
-      render json: { message: 'failed', notice: [e] }, status: :ok
+      render json: { message: 'failed', notice: e.metadata }, status: :ok
       return
     end
 
@@ -602,7 +525,7 @@ curl http://localhost/api/v1/users/password_change -v -u #{login}:#{password} -H
         new_password:     params[:password_new]
       ).execute
     rescue PasswordPolicy::Error => e
-      render json: { message: 'failed', notice: [e.message] }, status: :unprocessable_entity
+      render json: { message: 'failed', notice: e.metadata }, status: :unprocessable_entity
       return
     rescue PasswordHash::Error
       render json: { message: 'failed', notice: [__('The current password you provided is incorrect.')] }, status: :unprocessable_entity
@@ -859,7 +782,7 @@ curl http://localhost/api/v1/users/avatar -v -u #{login}:#{password} -H "Content
   #
   # @summary          Download of example CSV file.
   # @notes            The requester have 'admin.user' permissions to be able to download it.
-  # @example          curl -u 'me@example.com:test' http://localhost:3000/api/v1/users/import_example
+  # @example          curl -u #{login}:#{password} http://localhost:3000/api/v1/users/import_example
   #
   # @response_message 200 File download.
   # @response_message 403 Forbidden / Invalid session.
@@ -876,8 +799,8 @@ curl http://localhost/api/v1/users/avatar -v -u #{login}:#{password} -H "Content
   #
   # @summary          Starts import.
   # @notes            The requester have 'admin.text_module' permissions to be create a new import.
-  # @example          curl -u 'me@example.com:test' -F 'file=@/path/to/file/users.csv' 'https://your.zammad/api/v1/users/import?try=true'
-  # @example          curl -u 'me@example.com:test' -F 'file=@/path/to/file/users.csv' 'https://your.zammad/api/v1/users/import'
+  # @example          curl -u #{login}:#{password} -F 'file=@/path/to/file/users.csv' 'https://your.zammad/api/v1/users/import?try=true'
+  # @example          curl -u #{login}:#{password} -F 'file=@/path/to/file/users.csv' 'https://your.zammad/api/v1/users/import'
   #
   # @response_message 201 Import started.
   # @response_message 403 Forbidden / Invalid session.
@@ -997,7 +920,7 @@ curl http://localhost/api/v1/users/avatar -v -u #{login}:#{password} -H "Content
     begin
       signup.execute
     rescue PasswordPolicy::Error => e
-      render json: { error: e.message }, status: :unprocessable_entity
+      render json: { message: 'failed', notice: e.metadata }, status: :unprocessable_entity
       return
     rescue Service::CheckFeatureEnabled::FeatureDisabledError => e
       raise Exceptions::UnprocessableEntity, e.message
@@ -1020,7 +943,7 @@ curl http://localhost/api/v1/users/avatar -v -u #{login}:#{password} -H "Content
     )
     render json: { message: 'ok' }, status: :created
   rescue PasswordPolicy::Error => e
-    render json: { error: e.message }, status: :unprocessable_entity
+    render json: { message: 'failed', notice: e.metadata }, status: :unprocessable_entity
   rescue Exceptions::MissingAttribute, Service::System::CheckSetup::SystemSetupError => e
     raise Exceptions::UnprocessableEntity, e.message
   end

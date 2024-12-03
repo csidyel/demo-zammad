@@ -1,83 +1,103 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import { computed, markRaw, reactive, watch } from 'vue'
+import { isEqual } from 'lodash-es'
+import { computed, markRaw, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 
 import Form from '#shared/components/Form/Form.vue'
 import type { FormSubmitData } from '#shared/components/Form/types.ts'
 import { useForm } from '#shared/components/Form/useForm.ts'
 import { useConfirmation } from '#shared/composables/useConfirmation.ts'
-import useMetaTitle from '#shared/composables/useMetaTitle.ts'
 import { useTicketSignature } from '#shared/composables/useTicketSignature.ts'
 import { useTicketCreate } from '#shared/entities/ticket/composables/useTicketCreate.ts'
 import { useTicketCreateArticleType } from '#shared/entities/ticket/composables/useTicketCreateArticleType.ts'
 import { useTicketCreateView } from '#shared/entities/ticket/composables/useTicketCreateView.ts'
-import { useTicketFormOganizationHandler } from '#shared/entities/ticket/composables/useTicketFormOrganizationHandler.ts'
-import type {
-  TicketCreateArticleType,
-  TicketFormData,
-} from '#shared/entities/ticket/types.ts'
+import { useTicketFormOrganizationHandler } from '#shared/entities/ticket/composables/useTicketFormOrganizationHandler.ts'
+import type { TicketFormData } from '#shared/entities/ticket/types.ts'
 import { defineFormSchema } from '#shared/form/defineFormSchema.ts'
 import {
   EnumFormUpdaterId,
   EnumObjectManagerObjects,
+  EnumTaskbarEntity,
 } from '#shared/graphql/types.ts'
-import { i18n } from '#shared/i18n.ts'
 import { useWalker } from '#shared/router/walker.ts'
 import { useApplicationStore } from '#shared/stores/application.ts'
 
 import CommonButton from '#desktop/components/CommonButton/CommonButton.vue'
 import CommonContentPanel from '#desktop/components/CommonContentPanel/CommonContentPanel.vue'
 import LayoutContent from '#desktop/components/layout/LayoutContent.vue'
+import { useTaskbarTab } from '#desktop/entities/user/current/composables/useTaskbarTab.ts'
+import { useTaskbarTabStateUpdates } from '#desktop/entities/user/current/composables/useTaskbarTabStateUpdates.ts'
+import type { TaskbarTabContext } from '#desktop/entities/user/current/types.ts'
 
 import ApplyTemplate from '../components/ApplyTemplate.vue'
 import TicketDuplicateDetectionAlert from '../components/TicketDuplicateDetectionAlert.vue'
 import TicketSidebar from '../components/TicketSidebar.vue'
-import { TicketSidebarScreenType } from '../components/types.ts'
-import { useTicketSidebar } from '../composables/useTicketSidebar.ts'
+import {
+  useProvideTicketSidebar,
+  useTicketSidebar,
+} from '../composables/useTicketSidebar.ts'
+import {
+  TicketSidebarScreenType,
+  type TicketSidebarContext,
+} from '../types/sidebar.ts'
+
+interface Props {
+  tabId?: string
+}
 
 defineOptions({
-  beforeRouteEnter() {
-    const { ticketCreateEnabled } = useTicketCreateView()
+  beforeRouteEnter(to) {
+    const { ticketCreateEnabled, checkUniqueTicketCreateRoute } =
+      useTicketCreateView()
 
     // TODO: Add real handling, when error page is available (see mobile).
     if (!ticketCreateEnabled.value) return '/error'
 
-    return true
+    return checkUniqueTicketCreateRoute(to)
+  },
+  beforeRouteUpdate(to) {
+    // When route is updated we need to check again of the unique identifier.
+    const { checkUniqueTicketCreateRoute } = useTicketCreateView()
+
+    return checkUniqueTicketCreateRoute(to)
   },
 })
+
+defineProps<Props>()
 
 const router = useRouter()
 const walker = useWalker()
 const route = useRoute()
 
-const { form, isDisabled, isDirty, formNodeId, values, triggerFormUpdater } =
-  useForm()
+const {
+  form,
+  isDisabled,
+  isDirty,
+  isInitialSettled,
+  formNodeId,
+  values,
+  triggerFormUpdater,
+} = useForm()
 
 const application = useApplicationStore()
 
 const redirectAfterCreate = (internalId?: number) => {
   if (internalId) {
     router.replace(`/tickets/${internalId}`)
-  } else {
-    router.replace({ name: 'Dashboard' }) // TODO: check...?
+    return
   }
+
+  // Fallback redirect, in case the user has no access to the ticket they just created.
+  router.replace({ name: 'Dashboard' })
 }
 
 const goBack = () => {
-  walker.back('/') // TODO: check what is the best fallback route path.
+  walker.back('/')
 }
 
-const { waitForVariantConfirmation } = useConfirmation()
-const discardChanges = async () => {
-  const confirm = await waitForVariantConfirmation('unsaved')
-
-  if (confirm) goBack()
-}
-
-const { ticketCreateArticleType, ticketArticleSenderTypeField } =
-  useTicketCreateArticleType()
+const { ticketArticleSenderTypeField } = useTicketCreateArticleType()
 
 const { createTicket, isTicketCustomer } = useTicketCreate(
   form,
@@ -174,7 +194,6 @@ const formSchema = defineFormSchema([
                 },
               },
             },
-            triggerFormUpdater: false,
           },
           {
             type: 'file',
@@ -193,6 +212,18 @@ const formSchema = defineFormSchema([
               items: [],
             },
           },
+          {
+            name: 'link_ticket_id',
+            type: 'hidden',
+          },
+          {
+            name: 'shared_draft_id',
+            type: 'hidden',
+          },
+          {
+            name: 'externalReferences',
+            type: 'hidden',
+          },
         ],
       },
     ],
@@ -205,7 +236,7 @@ const formSchema = defineFormSchema([
         isLayout: true,
         element: 'div',
         attrs: {
-          class: 'grid grid-cols-2 gap-2.5',
+          class: 'grid grid-cols-2-uneven gap-2.5',
         },
         children: [
           {
@@ -257,34 +288,67 @@ const changedFields = reactive({
 
 const { signatureHandling } = useTicketSignature()
 
-const { setViewTitle } = useMetaTitle()
-
-const currentViewTitle = computed(() => {
-  return i18n.t(
-    ticketCreateArticleType[
-      values.value.articlarticleSenderTypeeSenderType as TicketCreateArticleType
-    ]?.title,
-    (values.value.title as string) || defaultTitle,
-  )
-})
-
-watch(currentViewTitle, () => {
-  setViewTitle(currentViewTitle.value, false)
-})
-
-const sidebarContext = computed(() => ({
+const sidebarContext = computed<TicketSidebarContext>(() => ({
   screenType: TicketSidebarScreenType.TicketCreate,
+  form: form.value,
   formValues: values.value,
 }))
 
-const { hasSidebar } = useTicketSidebar(sidebarContext)
+useProvideTicketSidebar(sidebarContext)
+const { hasSidebar } = useTicketSidebar()
+
+const tabContext = computed<TaskbarTabContext>((currentContext) => {
+  if (!isInitialSettled.value) return {}
+
+  const newContext = {
+    formValues: values.value,
+    formIsDirty: isDirty.value,
+  }
+
+  if (currentContext && isEqual(newContext, currentContext))
+    return currentContext
+
+  return newContext
+})
+
+const { activeTaskbarTab, activeTaskbarTabFormId, activeTaskbarTabDelete } =
+  useTaskbarTab(EnumTaskbarEntity.TicketCreate, tabContext)
+
+const { setSkipNextStateUpdate } = useTaskbarTabStateUpdates(triggerFormUpdater)
+
+const { waitForVariantConfirmation } = useConfirmation()
+
+const discardChanges = async () => {
+  const confirm = await waitForVariantConfirmation('unsaved')
+  if (!confirm) return
+
+  goBack()
+  activeTaskbarTabDelete()
+}
 
 const applyTemplate = (templateId: string) => {
+  // Skip subscription for the current tab, to avoid not needed form updater requests.
+  setSkipNextStateUpdate(true)
+
   triggerFormUpdater({
     includeDirtyFields: true,
     additionalParams: {
       templateId,
     },
+  })
+}
+
+const formAdditionalRouteQueryParams = computed(() => ({
+  taskbarId: activeTaskbarTab.value?.taskbarTabId,
+  ...(route.query || {}),
+}))
+
+const submitCreateTicket = async (event: FormSubmitData<TicketFormData>) => {
+  return createTicket(event).then((result) => {
+    if (!result || result === null || result === undefined) return
+    if (typeof result === 'function') result()
+
+    activeTaskbarTabDelete()
   })
 }
 </script>
@@ -296,9 +360,12 @@ const applyTemplate = (templateId: string) => {
     content-alignment="center"
     :show-sidebar="hasSidebar"
   >
-    <div class="w-full max-w-screen-2xl px-28 pt-3.5">
+    <div class="w-full max-w-screen-xl px-28 py-3.5">
       <Form
+        id="ticket-create"
         ref="form"
+        :key="tabId"
+        :form-id="activeTaskbarTabFormId"
         :schema="formSchema"
         :schema-component-library="{
           CommonContentPanel: markRaw(CommonContentPanel),
@@ -307,31 +374,38 @@ const applyTemplate = (templateId: string) => {
         :schema-data="schemaData"
         :form-updater-id="EnumFormUpdaterId.FormUpdaterUpdaterTicketCreate"
         :handlers="[
-          useTicketFormOganizationHandler(),
+          useTicketFormOrganizationHandler(),
           signatureHandling('body'),
         ]"
         :change-fields="changedFields"
-        :form-updater-additional-params="route.query"
+        :form-updater-additional-params="formAdditionalRouteQueryParams"
         use-object-attributes
         form-class="flex flex-col gap-3"
-        @submit="createTicket($event as FormSubmitData<TicketFormData>)"
+        @submit="submitCreateTicket($event as FormSubmitData<TicketFormData>)"
+        @changed="setSkipNextStateUpdate(true)"
       />
     </div>
-    <template #sideBar="{ isCollapsed }">
-      <TicketSidebar :context="sidebarContext" :is-collapsed="isCollapsed" />
+    <template #sideBar="{ isCollapsed, toggleCollapse }">
+      <TicketSidebar
+        :context="sidebarContext"
+        :is-collapsed="isCollapsed"
+        :toggle-collapse="toggleCollapse"
+      />
     </template>
     <template #bottomBar>
-      <CommonButton
-        v-if="isDirty"
-        size="large"
-        variant="danger"
-        :disabled="isDisabled"
-        @click="discardChanges"
-        >{{ __('Discard Changes') }}</CommonButton
-      >
-      <CommonButton v-else size="large" variant="secondary" @click="goBack">{{
-        __('Cancel & Go Back')
-      }}</CommonButton>
+      <template v-if="isInitialSettled">
+        <CommonButton
+          v-if="isDirty"
+          size="large"
+          variant="danger"
+          :disabled="isDisabled"
+          @click="discardChanges"
+          >{{ __('Discard Changes') }}</CommonButton
+        >
+        <CommonButton v-else size="large" variant="secondary" @click="goBack">{{
+          __('Cancel & Go Back')
+        }}</CommonButton>
+      </template>
 
       <ApplyTemplate @select-template="applyTemplate" />
 

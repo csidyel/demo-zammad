@@ -1,14 +1,18 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { uniq } from 'lodash-es'
+import { ref } from 'vue'
 
+import { useEmailFileUrls } from '#shared/composables/useEmailFileUrls.ts'
 import { getTicketSignatureQuery } from '#shared/composables/useTicketSignature.ts'
 import type {
   TicketArticle,
   TicketById,
 } from '#shared/entities/ticket/types.ts'
+import { EnumTicketArticleSenderName } from '#shared/graphql/types.ts'
 import { getIdFromGraphQLId } from '#shared/graphql/utils.ts'
 import { textCleanup } from '#shared/utils/helpers.ts'
+import openExternalLink from '#shared/utils/openExternalLink.ts'
 
 import { forwardEmail } from './email/forward.ts'
 import { replyToEmail } from './email/reply.ts'
@@ -23,7 +27,7 @@ import type {
 
 const canReplyAll = (article: TicketArticle) => {
   const addresses = [article.to, article.cc]
-  if (article.sender?.name === 'Customer') {
+  if (article.sender?.name === EnumTicketArticleSenderName.Customer) {
     addresses.push(article.from)
   }
   const foreignRecipients = addresses
@@ -70,20 +74,23 @@ const actionPlugin: TicketArticleActionPlugin = {
 
     const isEmail = type === 'email' || type === 'web'
     const isPhone =
-      type === 'phone' && (sender === 'Customer' || sender === 'Agent')
+      type === 'phone' &&
+      (sender === EnumTicketArticleSenderName.Customer ||
+        sender === EnumTicketArticleSenderName.Agent)
 
     if (isEmail || isPhone) {
       actions.push(
         {
-          apps: ['mobile'],
+          apps: ['mobile', 'desktop'],
           name: 'email-reply',
           view: { agent: ['change'] },
           label: __('Reply'),
           icon: 'reply',
+          alwaysVisible: true,
           perform: (t, a, o) => replyToEmail(t, a, o, config),
         },
         {
-          apps: ['mobile'],
+          apps: ['mobile', 'desktop'],
           name: 'email-forward',
           view: { agent: ['change'] },
           label: __('Forward'),
@@ -95,13 +102,44 @@ const actionPlugin: TicketArticleActionPlugin = {
 
     if (isEmail && canReplyAll(article)) {
       actions.push({
-        apps: ['mobile'],
+        apps: ['mobile', 'desktop'],
         name: 'email-reply-all',
         view: { agent: ['change'] },
         label: __('Reply All'),
         icon: 'reply-alt',
+        alwaysVisible: true,
         perform: (t, a, o) => replyToEmail(t, a, o, config, true),
       })
+    }
+
+    if (isEmail) {
+      const emailFileUrls = useEmailFileUrls(article, ref(ticket.internalId))
+
+      if (emailFileUrls.originalFormattingUrl.value) {
+        actions.push({
+          apps: ['desktop'],
+          name: 'email-download-original-email',
+          view: { agent: ['read'] },
+          label: __('Download original email'),
+          icon: 'download',
+          perform: () =>
+            openExternalLink(
+              emailFileUrls.originalFormattingUrl.value as string,
+            ),
+        })
+      }
+
+      if (emailFileUrls.rawMessageUrl.value) {
+        actions.push({
+          apps: ['desktop'],
+          name: 'email-download-raw-email',
+          view: { agent: ['read'] },
+          label: __('Download raw email'),
+          icon: 'download',
+          perform: () =>
+            openExternalLink(emailFileUrls.rawMessageUrl.value as string),
+        })
+      }
     }
 
     return actions
@@ -127,7 +165,8 @@ const actionPlugin: TicketArticleActionPlugin = {
     const type: TicketArticleType = {
       value: 'email',
       label: __('Email'),
-      apps: ['mobile'],
+      buttonLabel: __('Add email'),
+      apps: ['mobile', 'desktop'],
       icon: 'mail',
       view: { agent: ['change'] },
       fields,
@@ -144,6 +183,12 @@ const actionPlugin: TicketArticleActionPlugin = {
         return addSignature(ticket, { body })
       },
       internal: false,
+      performReply(ticket) {
+        return {
+          subtype: 'reply',
+          to: ticket.customer.email ? [ticket.customer.email] : [],
+        }
+      },
     }
     return [type]
   },

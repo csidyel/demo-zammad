@@ -65,4 +65,25 @@ export default {
   loading: 'loading',
   show: 'show',
   hide: 'hide',
+
+  // WhatsApp status icons
+  read: 'check-double-circle',
+  delivered: 'check-double',
+  send: 'check',
+
+  // Icons in shared article security composables
+  'signing-success': 'signed',
+  'signing-fail': 'not-signed',
+  'encryption-success': 'lock',
+  'encryption-fail': 'encryption-error',
+
+  // Avatar indicator
+  'avatar-indicator-inactive': 'inactive-user',
+  'avatar-indicator-without-access': 'notification-unsubscribed',
+  'avatar-indicator-out-of-office': 'vacation-mode',
+  'avatar-indicator-editing-desktop': 'desktop-edit',
+  'avatar-indicator-editing-mobile': 'edit',
+  'avatar-indicator-desktop': 'desktop',
+  'avatar-indicator-mobile': 'avatar-indicator-mobile',
+  'avatar-indicator-idle': 'avatar-indicator-idle',
 }

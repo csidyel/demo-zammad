@@ -11,6 +11,6 @@ vi.hoisted(() => {
 
 describe('browser', () => {
   it('generate fingerprint', () => {
-    expect(generateFingerprint()).toBe('1613472439')
+    expect(generateFingerprint()).toBe('91006247')
   })
 })

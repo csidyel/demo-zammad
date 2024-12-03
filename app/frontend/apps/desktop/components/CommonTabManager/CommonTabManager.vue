@@ -1,7 +1,7 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted } from 'vue'
 
 import CommonTab from '#desktop/components/CommonTabManager/CommonTab.vue'
 import type { Tab } from '#desktop/components/CommonTabManager/types.ts'
@@ -18,60 +18,16 @@ const props = withDefaults(defineProps<Props>(), {
   size: 'large',
 })
 
-const tabNodes = ref<InstanceType<typeof CommonTab>[]>()
-
 const emit = defineEmits<{
   'update:modelValue': [Tab['key'] | Tab['key'][]]
 }>()
 
 const isTabMode = computed(() => !props.multiple)
 
-const activeTabIndex = computed(() => {
-  return props.tabs.findIndex(
-    (tab) => tab.key === (props.modelValue as Tab['key']),
-  )
-})
-
-const activeTabWidth = ref<number>(0)
-const activeTabHeight = ref<number>(0)
-const activeTabOffsetLeft = ref<number>(0)
-
-const getElementWidth = (el: HTMLElement) => el.offsetWidth || 0
-const getElementHeight = (el: HTMLElement) => el.offsetHeight || 0
-const getElementOffsetLeft = (el: HTMLElement) => el.offsetLeft || 0
-
 const isActiveTab = (tab: Tab) =>
   Array.isArray(props.modelValue)
     ? props.modelValue.some((activeTab) => activeTab === tab.key)
     : props.modelValue === tab.key
-
-const refreshActiveTabRefs = (el?: HTMLElement) => {
-  if (!el) return
-
-  requestAnimationFrame(() => {
-    nextTick(() => {
-      activeTabWidth.value = getElementWidth(el)
-      activeTabHeight.value = getElementHeight(el)
-      activeTabOffsetLeft.value = getElementOffsetLeft(el)
-    })
-  })
-}
-
-const onTabReady = (tab: Tab, el?: HTMLElement) => {
-  if (props.multiple || !isActiveTab(tab)) return
-  if (!el) return
-
-  refreshActiveTabRefs(el)
-}
-
-watch(activeTabIndex, (index) => {
-  if (!tabNodes.value) return
-
-  const el = tabNodes.value?.[index].$el
-  if (!el) return
-
-  refreshActiveTabRefs(el)
-})
 
 const updateModelValue = (tab: Tab) => {
   if (tab.disabled) return
@@ -115,22 +71,8 @@ const labelSize = computed(() => (props.size === 'large' ? 'medium' : 'small'))
     >
 
     <CommonTab
-      v-if="!multiple"
-      :style="{
-        width: `${activeTabWidth}px`,
-        left: `${activeTabOffsetLeft}px`,
-        height: `${activeTabHeight}px`,
-      }"
-      :size="size"
-      active
-      role="presentation"
-      class="absolute z-0 transition-[left]"
-    />
-
-    <CommonTab
       v-for="(tab, index) in tabs"
       :id="isTabMode ? `tab-label-${tab.key}` : undefined"
-      ref="tabNodes"
       :key="`${tab.key}-${index}`"
       :role="isTabMode ? 'tab' : 'option'"
       :aria-controls="isTabMode ? `tab-panel-${tab.key}` : undefined"
@@ -148,7 +90,6 @@ const labelSize = computed(() => (props.size === 'large' ? 'medium' : 'small'))
       @click="updateModelValue(tab)"
       @keydown.enter.prevent="updateModelValue(tab)"
       @keydown.space.prevent="updateModelValue(tab)"
-      @ready="onTabReady(tab, $event)"
     />
   </div>
 </template>

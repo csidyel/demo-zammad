@@ -7,6 +7,7 @@ import type {
   TicketArticle,
   TicketById,
 } from '#shared/entities/ticket/types.ts'
+import { EnumTicketArticleSenderName } from '#shared/graphql/types.ts'
 
 import CommonSectionPopup from '#mobile/components/CommonSectionPopup/CommonSectionPopup.vue'
 
@@ -29,7 +30,7 @@ interface Props {
 
 const props = defineProps<Props>()
 const emit = defineEmits<{
-  loadPrevious: []
+  'load-previous': []
 }>()
 
 const { contextOptions, articleContextShown, showArticleContext } =
@@ -87,13 +88,18 @@ const markSeen = (id: string) => {
         :user="row.article.author"
         :internal="row.article.internal"
         :content-type="row.article.contentType"
-        :position="row.article.sender?.name !== 'Customer' ? 'left' : 'right'"
+        :position="
+          row.article.sender?.name !== EnumTicketArticleSenderName.Customer
+            ? 'left'
+            : 'right'
+        "
         :media-error="row.article.mediaErrorState?.error"
         :security="row.article.securityState"
         :ticket-internal-id="ticket.internalId"
         :article-id="row.article.id"
         :attachments="filterAttachments(row.article)"
         :remote-content-warning="remoteContentWarning(row.article)"
+        :reaction="row.article.preferences?.whatsapp?.reaction?.emoji"
         @seen="markSeen(row.key)"
         @show-context="showArticleContext(row.article, ticket)"
       />
@@ -107,6 +113,7 @@ const markSeen = (id: string) => {
         v-if="row.type === 'system'"
         :to="row.to"
         :subject="row.subject"
+        :reaction="row.reaction"
         @seen="markSeen(row.key)"
       />
       <ArticleSeparatorDate v-if="row.type === 'date'" :date="row.date" />
@@ -114,7 +121,7 @@ const markSeen = (id: string) => {
       <ArticleSeparatorMore
         v-if="row.type === 'more'"
         :count="row.count"
-        @click="emit('loadPrevious')"
+        @click="emit('load-previous')"
       />
     </template>
   </section>

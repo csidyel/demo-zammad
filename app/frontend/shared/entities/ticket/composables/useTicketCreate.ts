@@ -15,7 +15,7 @@ import {
   EnumObjectManagerObjects,
   type TicketCreateInput,
 } from '#shared/graphql/types.ts'
-import { isGraphQLId } from '#shared/graphql/utils.ts'
+import { isGraphQLId, convertToGraphQLId } from '#shared/graphql/utils.ts'
 import MutationHandler from '#shared/server/apollo/handler/MutationHandler.ts'
 import { GraphQLErrorTypes } from '#shared/types/error.ts'
 import { convertFilesToAttachmentInput } from '#shared/utils/files.ts'
@@ -23,7 +23,7 @@ import { convertFilesToAttachmentInput } from '#shared/utils/files.ts'
 import { useTicketCreateView } from './useTicketCreateView.ts'
 
 import type { TicketFormData } from '../types.ts'
-import type { ApolloError } from '@apollo/client'
+import type { ApolloError } from '@apollo/client/core'
 import type { Ref } from 'vue'
 
 export const useTicketCreate = (
@@ -108,8 +108,17 @@ export const useTicketCreate = (
     // The customerId has an special handling, so we need to extract it from the internalObjectAttributeValues.
     const { customerId, ...internalValues } = internalObjectAttributeValues
 
+    let sharedDraftId
+    if (formData.shared_draft_id) {
+      sharedDraftId = convertToGraphQLId(
+        'Ticket::SharedDraftStart',
+        formData.shared_draft_id as string | number,
+      )
+    }
+
     const input = {
       ...internalValues,
+      sharedDraftId,
       customer: customerId
         ? getCustomerVariable(customerId as string)
         : undefined,
@@ -133,6 +142,24 @@ export const useTicketCreate = (
         form.value.formId,
         formData.attachments,
       )
+    }
+
+    if (formData.link_ticket_id) {
+      const linkObjectId = convertToGraphQLId(
+        'Ticket',
+        formData.link_ticket_id as string | number,
+      )
+
+      input.links = [
+        {
+          linkObjectId,
+          linkType: 'child',
+        },
+      ]
+    }
+
+    if (formData.externalReferences) {
+      input.externalReferences = formData.externalReferences
     }
 
     return ticketCreateMutation

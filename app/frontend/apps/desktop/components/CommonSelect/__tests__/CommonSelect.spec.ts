@@ -29,7 +29,10 @@ const html = String.raw
 
 const renderSelect = (props: Props, modelValue?: Ref) => {
   return renderComponent(CommonSelect, {
-    props,
+    props: {
+      isTargetVisible: true,
+      ...props,
+    },
     slots: {
       default: html` <template #default="{ open, focus }">
         <button @click="open()">Open Select</button>
@@ -193,6 +196,25 @@ describe('CommonSelect.vue', () => {
     expect(view.getByText(/^Item A$/)).toBeInTheDocument()
   })
 
+  it('forces translation if placeholder is provided', async () => {
+    const options = [
+      {
+        value: 0,
+        label: 'Label (%s)',
+        labelPlaceholder: ['A'],
+        heading: 'Heading (%s)',
+        headingPlaceholder: ['B'],
+      },
+    ]
+
+    const view = renderSelect({ options, noOptionsLabelTranslation: true })
+
+    await view.events.click(view.getByText('Open Select'))
+    expect(
+      view.getByRole('option', { name: 'Label (A) – Heading (B)' }),
+    ).toBeInTheDocument()
+  })
+
   it('can use boolean as value', async () => {
     const modelValue = ref()
     const view = renderSelect(
@@ -235,7 +257,10 @@ describe('CommonSelect.vue', () => {
     const option = view.getByRole('option')
 
     expect(option).toHaveTextContent('foo (1) – bar (2)')
-    expect(option.children[1]).toHaveAttribute('title', 'foo (1) – bar (2)')
+    expect(option.children[1]).toHaveAttribute(
+      'aria-label',
+      'foo (1) – bar (2)',
+    )
   })
 
   it('supports navigating options with children', async () => {

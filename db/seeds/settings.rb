@@ -970,16 +970,16 @@ Setting.create_if_not_exists(
 )
 
 Setting.create_if_not_exists(
-  title:       __('Priority Icons in Overviews'),
-  name:        'ui_ticket_overview_priority_icon',
-  area:        'UI::TicketOverview::PriorityIcons',
-  description: __('Enables priority icons in ticket overviews.'),
+  title:       __('Ticket Priority Icons'),
+  name:        'ui_ticket_priority_icons',
+  area:        'UI::Ticket::Priority',
+  description: __('Enables display of ticket priority icons in UI.'),
   options:     {
     form: [
       {
         display:   '',
         null:      true,
-        name:      'ui_ticket_overview_priority_icon',
+        name:      'ui_ticket_priority_icons',
         tag:       'boolean',
         translate: true,
         options:   {
@@ -1281,6 +1281,32 @@ Setting.create_if_not_exists(
         display: '',
         null:    true,
         name:    'auth_third_party_linking_notification',
+        tag:     'boolean',
+        options: {
+          true  => 'yes',
+          false => 'no',
+        },
+      },
+    ],
+  },
+  preferences: {
+    permission: ['admin.security'],
+    prio:       20,
+  },
+  state:       false,
+  frontend:    false
+)
+Setting.create_if_not_exists(
+  title:       __('No user creation on logon'),
+  name:        'auth_third_party_no_create_user',
+  area:        'Security::ThirdPartyAuthentication',
+  description: __('Disables user creation on logon with a third-party application.'),
+  options:     {
+    form: [
+      {
+        display: '',
+        null:    true,
+        name:    'auth_third_party_no_create_user',
         tag:     'boolean',
         options: {
           true  => 'yes',
@@ -3199,15 +3225,16 @@ Setting.create_if_not_exists(
         name:      'postmaster_follow_up_search_in',
         tag:       'checkbox',
         options:   {
-          'references' => __('References - Search for follow-up also in In-Reply-To or References headers.'),
-          'body'       => __('Body - Search for follow-up also in mail body.'),
-          'attachment' => __('Attachment - Search for follow-up also in attachments.'),
+          'references'         => __('References - Search for follow-up also in In-Reply-To or References headers.'),
+          'body'               => __('Body - Search for follow-up also in mail body.'),
+          'attachment'         => __('Attachment - Search for follow-up also in attachments.'),
+          'subject_references' => __('Subject & References - Additional search for same article subject and same message ID in references header if no follow-up was recognized using default settings.'),
         },
         translate: true,
       },
     ],
   },
-  state:       [],
+  state:       ['subject_references'],
   preferences: {
     permission: ['admin.channel_email', 'admin.channel_google', 'admin.channel_microsoft365'],
   },
@@ -5762,5 +5789,32 @@ Setting.create_if_not_exists(
     prio:       4000,
     permission: ['admin.ticket'],
   },
+  frontend:    true
+)
+
+Setting.create_if_not_exists(
+  title:       __('Checklists'),
+  name:        'checklist',
+  area:        'Web::Base',
+  description: __('Enable checklists.'),
+  options:     {
+    form: [
+      {
+        display: '',
+        null:    true,
+        name:    'checklist',
+        tag:     'boolean',
+        options: {
+          true  => 'yes',
+          false => 'no',
+        },
+      },
+    ],
+  },
+  preferences: {
+    authentication: true,
+    permission:     ['admin.checklist'],
+  },
+  state:       true,
   frontend:    true
 )

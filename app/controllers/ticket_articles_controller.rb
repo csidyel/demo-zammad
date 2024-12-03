@@ -3,7 +3,6 @@
 class TicketArticlesController < ApplicationController
   include CreatesTicketArticles
   include ClonesTicketArticleAttachments
-  include CalendarPreview
 
   prepend_before_action -> { authorize! }, only: %i[index import_example import_start]
   prepend_before_action :authentication_check
@@ -210,7 +209,7 @@ class TicketArticlesController < ApplicationController
   #
   # @summary          Download of example CSV file.
   # @notes            The requester have 'admin' permissions to be able to download it.
-  # @example          curl -u 'me@example.com:test' http://localhost:3000/api/v1/ticket_articles/import_example
+  # @example          curl -u #{login}:#{password} http://localhost:3000/api/v1/ticket_articles/import_example
   #
   # @response_message 200 File download.
   # @response_message 403 Forbidden / Invalid session.
@@ -231,8 +230,8 @@ class TicketArticlesController < ApplicationController
   #
   # @summary          Starts import.
   # @notes            The requester have 'admin' permissions to be create a new import.
-  # @example          curl -u 'me@example.com:test' -F 'file=@/path/to/file/ticket_articles.csv' 'https://your.zammad/api/v1/ticket_articles/import?try=true'
-  # @example          curl -u 'me@example.com:test' -F 'file=@/path/to/file/ticket_articles.csv' 'https://your.zammad/api/v1/ticket_articles/import'
+  # @example          curl -u #{login}:#{password} -F 'file=@/path/to/file/ticket_articles.csv' 'https://your.zammad/api/v1/ticket_articles/import?try=true'
+  # @example          curl -u #{login}:#{password} -F 'file=@/path/to/file/ticket_articles.csv' 'https://your.zammad/api/v1/ticket_articles/import'
   #
   # @response_message 201 Import started.
   # @response_message 403 Forbidden / Invalid session.
@@ -282,8 +281,7 @@ class TicketArticlesController < ApplicationController
   private
 
   def render_calendar_preview
-    data = parse_calendar(download_file)
-    render json: data, status: :ok
+    render json: Service::Calendar::IcsFile::Parse.new(current_user:).execute(file: download_file), status: :ok
   rescue => e
     logger.error e
     render json: { error: __('The preview cannot be generated. The format is corrupted or not supported.') }, status: :unprocessable_entity

@@ -20,7 +20,7 @@ end
 module Zammad
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
-    config.load_defaults 7.0
+    config.load_defaults 7.2
 
     Rails.autoloaders.each do |autoloader|
       autoloader.ignore            "#{config.root}/app/frontend"
@@ -43,6 +43,7 @@ module Zammad
 
     # Custom directories with classes and modules you want to be autoloadable.
     config.add_autoload_paths_to_load_path = false
+    # We cannot use 'autoload_lib' as it would also add 'lib/' to eager_load_paths, see #5420.
     config.autoload_paths += %W[#{config.root}/lib]
 
     # zeitwerk:check will only check preloaded paths. To make sure that also lib/ gets validated,
@@ -52,9 +53,6 @@ module Zammad
     config.active_job.queue_adapter = :delayed_job
 
     config.active_record.use_yaml_unsafe_load = true
-
-    # Remove PDF from the allowed inline content types so they have to be downloaded first (#4479).
-    config.active_storage.content_types_allowed_inline.delete('application/pdf')
 
     # Use custom logger to log Thread id next to Process pid
     config.log_formatter = ::Logger::Formatter.new

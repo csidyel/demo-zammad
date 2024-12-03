@@ -18,7 +18,7 @@ export type Scalars = {
   ISO8601DateTime: { input: string; output: string; }
   JSON: { input: any; output: any; }
   NonEmptyString: { input: string; output: string; }
-  UriHttpString: { input: any; output: any; }
+  UriHttpString: { input: string; output: string; }
 };
 
 /** Objects used to build activity message */
@@ -134,29 +134,6 @@ export type AutocompleteSearchInput = {
   query: Scalars['String']['input'];
 };
 
-/** Type that represents an autocomplete merge ticket entry. */
-export type AutocompleteSearchMergeTicketEntry = {
-  __typename?: 'AutocompleteSearchMergeTicketEntry';
-  disabled?: Maybe<Scalars['Boolean']['output']>;
-  heading?: Maybe<Scalars['String']['output']>;
-  headingPlaceholder?: Maybe<Array<Scalars['String']['output']>>;
-  icon?: Maybe<Scalars['String']['output']>;
-  label: Scalars['String']['output'];
-  labelPlaceholder?: Maybe<Array<Scalars['String']['output']>>;
-  ticket: Ticket;
-  value: Scalars['String']['output'];
-};
-
-/** Input fields for merge ticket autocomplete searches. */
-export type AutocompleteSearchMergeTicketInput = {
-  /** Limit for the amount of entries */
-  limit?: InputMaybe<Scalars['Int']['input']>;
-  /** Query from the autocomplete field */
-  query: Scalars['String']['input'];
-  /** Ticket ID */
-  sourceTicketId?: InputMaybe<Scalars['ID']['input']>;
-};
-
 /** Input fields for object attribute external data source autocomplete searches. */
 export type AutocompleteSearchObjectAttributeExternalDataSourceInput = {
   /** Name of the object attribute */
@@ -219,6 +196,39 @@ export type AutocompleteSearchRecipientInput = {
   query: Scalars['String']['input'];
 };
 
+/** Input fields for tag autocomplete searches. */
+export type AutocompleteSearchTagInput = {
+  /** Optional tags to be filtered out from results */
+  exceptTags?: InputMaybe<Array<Scalars['String']['input']>>;
+  /** Limit for the amount of entries */
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  /** Query from the autocomplete field */
+  query: Scalars['String']['input'];
+};
+
+/** Type that represents an autocomplete ticket entry. */
+export type AutocompleteSearchTicketEntry = {
+  __typename?: 'AutocompleteSearchTicketEntry';
+  disabled?: Maybe<Scalars['Boolean']['output']>;
+  heading?: Maybe<Scalars['String']['output']>;
+  headingPlaceholder?: Maybe<Array<Scalars['String']['output']>>;
+  icon?: Maybe<Scalars['String']['output']>;
+  label: Scalars['String']['output'];
+  labelPlaceholder?: Maybe<Array<Scalars['String']['output']>>;
+  ticket: Ticket;
+  value: Scalars['String']['output'];
+};
+
+/** Input fields for ticket autocomplete searches. */
+export type AutocompleteSearchTicketInput = {
+  /** Optional ticket ID to be filtered out from results */
+  exceptTicketInternalId?: InputMaybe<Scalars['Int']['input']>;
+  /** Limit for the amount of entries */
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  /** Query from the autocomplete field */
+  query: Scalars['String']['input'];
+};
+
 /** Type that represents an autocomplete user entry. */
 export type AutocompleteSearchUserEntry = {
   __typename?: 'AutocompleteSearchUserEntry';
@@ -268,6 +278,18 @@ export type AvatarInput = {
   original: UploadFileInput;
   /** The resized/cropped image to use for the avatar. */
   resized: UploadFileInput;
+};
+
+/** Event from ICS file */
+export type CalendarIcsFileEvent = {
+  __typename?: 'CalendarIcsFileEvent';
+  attendees?: Maybe<Array<Scalars['String']['output']>>;
+  description?: Maybe<Scalars['String']['output']>;
+  endDate?: Maybe<Scalars['ISO8601DateTime']['output']>;
+  location?: Maybe<Scalars['String']['output']>;
+  organizer?: Maybe<Scalars['String']['output']>;
+  startDate?: Maybe<Scalars['ISO8601DateTime']['output']>;
+  title?: Maybe<Scalars['String']['output']>;
 };
 
 /** Channels */
@@ -386,6 +408,8 @@ export type ChannelEmailInboundMailboxStats = {
   __typename?: 'ChannelEmailInboundMailboxStats';
   /** Whether an archive import of the email account should be suggested. */
   archivePossible?: Maybe<Scalars['Boolean']['output']>;
+  /** Whether the archive import suggestion is based on a fallback logic due to a missing DATE sort option on the mail server. */
+  archivePossibleIsFallback?: Maybe<Scalars['Boolean']['output']>;
   /** There were emails found older than the specified amount of weeks, therefore an archive import should be suggested. */
   archiveWeekRange?: Maybe<Scalars['Int']['output']>;
   /** Number of content emails found during account probing. */
@@ -459,6 +483,70 @@ export type ChannelEmailValidateConfigurationRoundtripPayload = {
   errors?: Maybe<Array<UserError>>;
   /** Was the validation successful? */
   success: Scalars['Boolean']['output'];
+};
+
+/** Ticket checklist */
+export type Checklist = {
+  __typename?: 'Checklist';
+  complete: Scalars['Int']['output'];
+  completed: Scalars['Boolean']['output'];
+  /** Create date/time of the record */
+  createdAt: Scalars['ISO8601DateTime']['output'];
+  /** User that created this record */
+  createdBy?: Maybe<User>;
+  id: Scalars['ID']['output'];
+  incomplete: Scalars['Int']['output'];
+  items: Array<ChecklistItem>;
+  name?: Maybe<Scalars['String']['output']>;
+  /** resolver for Rails' belongs_to relationship */
+  ticket: Ticket;
+  total: Scalars['Int']['output'];
+  /** Last update date/time of the record */
+  updatedAt: Scalars['ISO8601DateTime']['output'];
+  /** Last user that updated this record */
+  updatedBy?: Maybe<User>;
+};
+
+/** Ticket checklist item */
+export type ChecklistItem = {
+  __typename?: 'ChecklistItem';
+  checked: Scalars['Boolean']['output'];
+  /** resolver for Rails' belongs_to relationship */
+  checklist: Checklist;
+  /** Create date/time of the record */
+  createdAt: Scalars['ISO8601DateTime']['output'];
+  /** User that created this record */
+  createdBy?: Maybe<User>;
+  id: Scalars['ID']['output'];
+  text: Scalars['String']['output'];
+  ticketReference?: Maybe<TicketReference>;
+  /** Last update date/time of the record */
+  updatedAt: Scalars['ISO8601DateTime']['output'];
+  /** Last user that updated this record */
+  updatedBy?: Maybe<User>;
+};
+
+/** Checklist template */
+export type ChecklistTemplate = {
+  __typename?: 'ChecklistTemplate';
+  active?: Maybe<Scalars['Boolean']['output']>;
+  /** Create date/time of the record */
+  createdAt: Scalars['ISO8601DateTime']['output'];
+  /** User that created this record */
+  createdBy?: Maybe<User>;
+  id: Scalars['ID']['output'];
+  name?: Maybe<Scalars['String']['output']>;
+  /** Last update date/time of the record */
+  updatedAt: Scalars['ISO8601DateTime']['output'];
+  /** Last user that updated this record */
+  updatedBy?: Maybe<User>;
+};
+
+/** Autogenerated return type of ChecklistTemplateUpdates. */
+export type ChecklistTemplateUpdatesPayload = {
+  __typename?: 'ChecklistTemplateUpdatesPayload';
+  /** Checklist templates */
+  checklistTemplates?: Maybe<Array<ChecklistTemplate>>;
 };
 
 /** Autogenerated return type of ConfigUpdates. */
@@ -562,6 +650,15 @@ export enum EnumAuthenticationProvider {
 
 /** The channel area type */
 export enum EnumChannelArea {
+  EmailAccount = 'Email__Account',
+  EmailNotification = 'Email__Notification',
+  FacebookAccount = 'Facebook__Account',
+  GoogleAccount = 'Google__Account',
+  Microsoft365Account = 'Microsoft365__Account',
+  SmsAccount = 'Sms__Account',
+  SmsNotification = 'Sms__Notification',
+  TelegramBot = 'Telegram__Bot',
+  TwitterAccount = 'Twitter__Account',
   WhatsAppBusiness = 'WhatsApp__Business'
 }
 
@@ -592,11 +689,22 @@ export enum EnumFormUpdaterId {
   FormUpdaterUpdaterOrganizationEdit = 'FormUpdater__Updater__Organization__Edit',
   FormUpdaterUpdaterTicketCreate = 'FormUpdater__Updater__Ticket__Create',
   FormUpdaterUpdaterTicketEdit = 'FormUpdater__Updater__Ticket__Edit',
+  FormUpdaterUpdaterTicketTimeAccounting = 'FormUpdater__Updater__Ticket__TimeAccounting',
   FormUpdaterUpdaterUserCreate = 'FormUpdater__Updater__User__Create',
   FormUpdaterUpdaterUserCurrentNewAccessToken = 'FormUpdater__Updater__User__Current__NewAccessToken',
   FormUpdaterUpdaterUserEdit = 'FormUpdater__Updater__User__Edit',
   FormUpdaterUpdaterUserInvite = 'FormUpdater__Updater__User__Invite',
   FormUpdaterUpdaterUserNotifications = 'FormUpdater__Updater__User__Notifications'
+}
+
+/** Link type */
+export enum EnumLinkType {
+  /** Target is child of source */
+  Child = 'child',
+  /** Equally related */
+  Normal = 'normal',
+  /** Target is parent of source */
+  Parent = 'parent'
 }
 
 /** Available notification sound files */
@@ -697,12 +805,64 @@ export enum EnumTaskbarApp {
   Mobile = 'mobile'
 }
 
+/** All taskbar entity values */
+export enum EnumTaskbarEntity {
+  OrganizationProfile = 'OrganizationProfile',
+  Search = 'Search',
+  TicketCreate = 'TicketCreate',
+  TicketZoom = 'TicketZoom',
+  UserProfile = 'UserProfile'
+}
+
+/** All taskbar entity access type values */
+export enum EnumTaskbarEntityAccess {
+  /** Access to this entity is forbidden */
+  Forbidden = 'Forbidden',
+  /** Access to this entity is granted */
+  Granted = 'Granted',
+  /** The entity could not be found */
+  NotFound = 'NotFound'
+}
+
 /** Option to choose SQL sorting direction */
 export enum EnumTextDirection {
   /** Left-to-right */
   Ltr = 'ltr',
   /** Right-to-left */
   Rtl = 'rtl'
+}
+
+/** Ticket article sender names */
+export enum EnumTicketArticleSenderName {
+  Agent = 'Agent',
+  Customer = 'Customer',
+  System = 'System'
+}
+
+/** Possible values for issue tracker item states */
+export enum EnumTicketExternalReferencesIssueTrackerItemState {
+  Closed = 'closed',
+  Open = 'open'
+}
+
+/** Possible values for issue tracker type */
+export enum EnumTicketExternalReferencesIssueTrackerType {
+  /** GitHub */
+  Github = 'github',
+  /** GitLab */
+  Gitlab = 'gitlab'
+}
+
+/** Option to choose the ticket screen behavior */
+export enum EnumTicketScreenBehavior {
+  /** Next in overview */
+  CloseNextInOverview = 'closeNextInOverview',
+  /** Close tab */
+  CloseTab = 'closeTab',
+  /** Close tab on ticket close */
+  CloseTabOnTicketClose = 'closeTabOnTicketClose',
+  /** Stay on tab */
+  StayOnTab = 'stayOnTab'
 }
 
 /** Ticket state color code */
@@ -731,6 +891,12 @@ export enum EnumUserContact {
   Email = 'email',
   /** User phone number */
   Phone = 'phone'
+}
+
+/** All user error exception values */
+export enum EnumUserErrorException {
+  ServiceTicketUpdateValidatorChecklistCompletedError = 'Service__Ticket__Update__Validator__ChecklistCompleted__Error',
+  ServiceTicketUpdateValidatorTimeAccountingError = 'Service__Ticket__Update__Validator__TimeAccounting__Error'
 }
 
 /** Represents the form changed field information. */
@@ -771,6 +937,13 @@ export type FormUpdaterRelationField = {
   relation: Scalars['String']['input'];
 };
 
+/** Holds the fields and flags information for an form updater resolver. */
+export type FormUpdaterResult = {
+  __typename?: 'FormUpdaterResult';
+  fields: Scalars['JSON']['output'];
+  flags: Scalars['JSON']['output'];
+};
+
 /** Autogenerated return type of FormUploadCacheAdd. */
 export type FormUploadCacheAddPayload = {
   __typename?: 'FormUploadCacheAddPayload';
@@ -805,6 +978,7 @@ export type Group = {
   name?: Maybe<Scalars['String']['output']>;
   /** Internal note */
   note?: Maybe<Scalars['String']['output']>;
+  sharedDrafts?: Maybe<Scalars['Boolean']['output']>;
   /** Last update date/time of the record */
   updatedAt: Scalars['ISO8601DateTime']['output'];
   /** Last user that updated this record */
@@ -840,6 +1014,45 @@ export type GuidedSetupSetSystemInformationPayload = {
   success?: Maybe<Scalars['Boolean']['output']>;
 };
 
+/** History record */
+export type HistoryGroup = {
+  __typename?: 'HistoryGroup';
+  /** Date and time of the history record */
+  createdAt: Scalars['ISO8601DateTime']['output'];
+  /** Records of the history record */
+  records: Array<HistoryRecord>;
+};
+
+/** History record */
+export type HistoryRecord = {
+  __typename?: 'HistoryRecord';
+  /** Events of the history record */
+  events: Array<HistoryRecordEvent>;
+  /** User or system service who created the history record */
+  issuer: HistoryRecordIssuer;
+};
+
+/** History record event */
+export type HistoryRecordEvent = {
+  __typename?: 'HistoryRecordEvent';
+  /** Action of the event */
+  action: Scalars['String']['output'];
+  /** Attribute of the event */
+  attribute?: Maybe<Scalars['String']['output']>;
+  /** Changes of the event */
+  changes?: Maybe<Scalars['JSON']['output']>;
+  /** Date and time of the event */
+  createdAt: Scalars['ISO8601DateTime']['output'];
+  /** Object of the event */
+  object: HistoryRecordEventObject;
+};
+
+/** History record event object */
+export type HistoryRecordEventObject = Checklist | ChecklistItem | Group | Mention | ObjectClass | Organization | Ticket | TicketArticle | TicketSharedDraftZoom | User;
+
+/** History record issuer */
+export type HistoryRecordIssuer = Job | ObjectClass | PostmasterFilter | Trigger | User;
+
 /** Import job information */
 export type ImportJob = {
   __typename?: 'ImportJob';
@@ -852,6 +1065,24 @@ export type ImportJob = {
   name: Scalars['String']['output'];
   result?: Maybe<Scalars['JSON']['output']>;
   startedAt?: Maybe<Scalars['ISO8601DateTime']['output']>;
+  /** Last update date/time of the record */
+  updatedAt: Scalars['ISO8601DateTime']['output'];
+  /** Last user that updated this record */
+  updatedBy?: Maybe<User>;
+};
+
+/** Jobs */
+export type Job = {
+  __typename?: 'Job';
+  /** Create date/time of the record */
+  createdAt: Scalars['ISO8601DateTime']['output'];
+  /** User that created this record */
+  createdBy?: Maybe<User>;
+  id: Scalars['ID']['output'];
+  /** Internal database ID */
+  internalId: Scalars['Int']['output'];
+  /** Name of the job */
+  name: Scalars['String']['output'];
   /** Last update date/time of the record */
   updatedAt: Scalars['ISO8601DateTime']['output'];
   /** Last user that updated this record */
@@ -1011,6 +1242,51 @@ export type KnowledgeBaseLocale = {
   updatedAt: Scalars['ISO8601DateTime']['output'];
 };
 
+/** Links between objects */
+export type Link = {
+  __typename?: 'Link';
+  item: LinkObject;
+  type: EnumLinkType;
+};
+
+/** Autogenerated return type of LinkAdd. */
+export type LinkAddPayload = {
+  __typename?: 'LinkAddPayload';
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+  /** The created link */
+  link?: Maybe<Link>;
+};
+
+/** Link input */
+export type LinkInput = {
+  /** Source object ID */
+  sourceId: Scalars['ID']['input'];
+  /** Target object ID */
+  targetId: Scalars['ID']['input'];
+  /** Link type */
+  type: EnumLinkType;
+};
+
+/** Linkable objects */
+export type LinkObject = KnowledgeBaseAnswerTranslation | Ticket;
+
+/** Autogenerated return type of LinkRemove. */
+export type LinkRemovePayload = {
+  __typename?: 'LinkRemovePayload';
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+  /** Was the mutation successful? */
+  success?: Maybe<Scalars['Boolean']['output']>;
+};
+
+/** Autogenerated return type of LinkUpdates. */
+export type LinkUpdatesPayload = {
+  __typename?: 'LinkUpdatesPayload';
+  /** Link records */
+  links?: Maybe<Array<Link>>;
+};
+
 /** Locales available in the system */
 export type Locale = {
   __typename?: 'Locale';
@@ -1088,6 +1364,33 @@ export type LogoutPayload = {
   success: Scalars['Boolean']['output'];
 };
 
+/** Returns a list of macros */
+export type Macro = {
+  __typename?: 'Macro';
+  active: Scalars['Boolean']['output'];
+  /** Create date/time of the record */
+  createdAt: Scalars['ISO8601DateTime']['output'];
+  /** User that created this record */
+  createdBy?: Maybe<User>;
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  /** Internal note */
+  note?: Maybe<Scalars['String']['output']>;
+  perform: Scalars['String']['output'];
+  /** Last update date/time of the record */
+  updatedAt: Scalars['ISO8601DateTime']['output'];
+  /** Last user that updated this record */
+  updatedBy?: Maybe<User>;
+  uxFlowNextUp: Scalars['String']['output'];
+};
+
+/** Autogenerated return type of MacrosUpdate. */
+export type MacrosUpdatePayload = {
+  __typename?: 'MacrosUpdatePayload';
+  /** Some macro was updated */
+  macroUpdated?: Maybe<Scalars['Boolean']['output']>;
+};
+
 /** Mention */
 export type Mention = {
   __typename?: 'Mention';
@@ -1104,6 +1407,7 @@ export type Mention = {
   updatedBy?: Maybe<User>;
   /** resolver for Rails' belongs_to relationship */
   user: User;
+  userTicketAccess: PolicyMentionUserTicketAccess;
 };
 
 /** The connection type for Mention. */
@@ -1171,6 +1475,10 @@ export type Mutations = {
   guidedSetupSetSystemInformation?: Maybe<GuidedSetupSetSystemInformationPayload>;
   /** Transform the content of a knowledge base answer suggestion to be usable in the frontend */
   knowledgeBaseAnswerSuggestionContentTransform?: Maybe<KnowledgeBaseAnswerSuggestionContentTransformPayload>;
+  /** Add a link between objects */
+  linkAdd?: Maybe<LinkAddPayload>;
+  /** Remove link between objects */
+  linkRemove?: Maybe<LinkRemovePayload>;
   /** Performs a user login to create a session */
   login?: Maybe<LoginPayload>;
   /** End the current session */
@@ -1213,16 +1521,48 @@ export type Mutations = {
   ticketArticleRetryMediaDownload?: Maybe<TicketArticleRetryMediaDownloadPayload>;
   /** Retry an article's security process. */
   ticketArticleRetrySecurityProcess?: Maybe<TicketArticleRetrySecurityProcessPayload>;
+  /** Create an empty checklist or a checklist based on a template for a ticket. */
+  ticketChecklistAdd?: Maybe<TicketChecklistAddPayload>;
+  /** Delete a ticket checklist. */
+  ticketChecklistDelete?: Maybe<TicketChecklistDeletePayload>;
+  /** Delete a ticket checklist item. */
+  ticketChecklistItemDelete?: Maybe<TicketChecklistItemDeletePayload>;
+  /** Update order of the ticket checklist items. */
+  ticketChecklistItemOrderUpdate?: Maybe<TicketChecklistItemOrderUpdatePayload>;
+  /** Update or create a ticket checklist item. */
+  ticketChecklistItemUpsert?: Maybe<TicketChecklistItemUpsertPayload>;
+  /** Update title of the ticket checklist. */
+  ticketChecklistTitleUpdate?: Maybe<TicketChecklistTitleUpdatePayload>;
   /** Create a new ticket. */
   ticketCreate?: Maybe<TicketCreatePayload>;
   /** Update a ticket. */
   ticketCustomerUpdate?: Maybe<TicketCustomerUpdatePayload>;
+  /** Add idoit objects to a ticket or just resolve them for ticket creation. */
+  ticketExternalReferencesIdoitObjectAdd?: Maybe<TicketExternalReferencesIdoitObjectAddPayload>;
+  /** Remove an idoit object from a ticket. */
+  ticketExternalReferencesIdoitObjectRemove?: Maybe<TicketExternalReferencesIdoitObjectRemovePayload>;
+  /** Add an issue tracker link to a ticket or just resolve it for ticket creation. */
+  ticketExternalReferencesIssueTrackerItemAdd?: Maybe<TicketExternalReferencesIssueTrackerItemAddPayload>;
+  /** Removes an issue tracker link from an ticket. */
+  ticketExternalReferencesIssueTrackerItemRemove?: Maybe<TicketExternalReferencesIssueTrackerItemRemovePayload>;
   /** Deletes the desired live user entry. */
   ticketLiveUserDelete?: Maybe<TicketLiveUserDeletePayload>;
   /** Updates the current live user entry. If no matching live user entry is found, a new live user entry for the current user and ticket will be created. */
   ticketLiveUserUpsert?: Maybe<TicketLiveUserUpsertPayload>;
   /** Create a new ticket. */
   ticketMerge?: Maybe<TicketMergePayload>;
+  /** Deletes ticket shared draft */
+  ticketSharedDraftStartCreate?: Maybe<TicketSharedDraftStartCreatePayload>;
+  /** Deletes ticket shared draft */
+  ticketSharedDraftStartDelete?: Maybe<TicketSharedDraftStartDeletePayload>;
+  /** Deletes ticket shared draft */
+  ticketSharedDraftStartUpdate?: Maybe<TicketSharedDraftStartUpdatePayload>;
+  /** Create ticket shared draft in detail view */
+  ticketSharedDraftZoomCreate?: Maybe<TicketSharedDraftZoomCreatePayload>;
+  /** Deletes ticket shared draft */
+  ticketSharedDraftZoomDelete?: Maybe<TicketSharedDraftZoomDeletePayload>;
+  /** Update ticket shared draft in detail view */
+  ticketSharedDraftZoomUpdate?: Maybe<TicketSharedDraftZoomUpdatePayload>;
   /** Update a ticket. */
   ticketUpdate?: Maybe<TicketUpdatePayload>;
   /** Fetches the initiation phase data for a two-factor authentication method. */
@@ -1265,6 +1605,18 @@ export type Mutations = {
   userCurrentPasswordCheck?: Maybe<UserCurrentPasswordCheckPayload>;
   /** Remove a linked account of the current user's profile */
   userCurrentRemoveLinkedAccount?: Maybe<UserCurrentRemoveLinkedAccountPayload>;
+  /** Create a taskbar item for the currently logged-in user. */
+  userCurrentTaskbarItemAdd?: Maybe<UserCurrentTaskbarItemAddPayload>;
+  /** Delete a taskbar item of the currently logged-in user */
+  userCurrentTaskbarItemDelete?: Maybe<UserCurrentTaskbarItemDeletePayload>;
+  /** Sort taskbar item list by priority. */
+  userCurrentTaskbarItemListPrio?: Maybe<UserCurrentTaskbarItemListPrioPayload>;
+  /** Update last_contact_at for a taskbar item of the currently logged-in user */
+  userCurrentTaskbarItemTouchLastContact?: Maybe<UserCurrentTaskbarItemTouchLastContactPayload>;
+  /** Update a taskbar item of the currently logged-in user */
+  userCurrentTaskbarItemUpdate?: Maybe<UserCurrentTaskbarItemUpdatePayload>;
+  /** Update user ticket screen behavior settings */
+  userCurrentTicketScreenBehavior?: Maybe<UserCurrentTicketScreenBehaviorPayload>;
   /** Regenerates new two factor recovery codes */
   userCurrentTwoFactorRecoveryCodesGenerate?: Maybe<UserCurrentTwoFactorRecoveryCodesGeneratePayload>;
   /** Removes given two factor authentication method */
@@ -1368,6 +1720,18 @@ export type MutationsGuidedSetupSetSystemInformationArgs = {
 export type MutationsKnowledgeBaseAnswerSuggestionContentTransformArgs = {
   formId: Scalars['FormId']['input'];
   translationId: Scalars['ID']['input'];
+};
+
+
+/** All available mutations */
+export type MutationsLinkAddArgs = {
+  input: LinkInput;
+};
+
+
+/** All available mutations */
+export type MutationsLinkRemoveArgs = {
+  input: LinkInput;
 };
 
 
@@ -1492,6 +1856,48 @@ export type MutationsTicketArticleRetrySecurityProcessArgs = {
 
 
 /** All available mutations */
+export type MutationsTicketChecklistAddArgs = {
+  templateId?: InputMaybe<Scalars['ID']['input']>;
+  ticketId: Scalars['ID']['input'];
+};
+
+
+/** All available mutations */
+export type MutationsTicketChecklistDeleteArgs = {
+  checklistId: Scalars['ID']['input'];
+};
+
+
+/** All available mutations */
+export type MutationsTicketChecklistItemDeleteArgs = {
+  checklistId: Scalars['ID']['input'];
+  checklistItemId: Scalars['ID']['input'];
+};
+
+
+/** All available mutations */
+export type MutationsTicketChecklistItemOrderUpdateArgs = {
+  checklistId: Scalars['ID']['input'];
+  order: Array<Scalars['ID']['input']>;
+};
+
+
+/** All available mutations */
+export type MutationsTicketChecklistItemUpsertArgs = {
+  checklistId: Scalars['ID']['input'];
+  checklistItemId?: InputMaybe<Scalars['ID']['input']>;
+  input: TicketChecklistItemInput;
+};
+
+
+/** All available mutations */
+export type MutationsTicketChecklistTitleUpdateArgs = {
+  checklistId: Scalars['ID']['input'];
+  title?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+/** All available mutations */
 export type MutationsTicketCreateArgs = {
   input: TicketCreateInput;
 };
@@ -1500,6 +1906,36 @@ export type MutationsTicketCreateArgs = {
 /** All available mutations */
 export type MutationsTicketCustomerUpdateArgs = {
   input: TicketCustomerUpdateInput;
+  ticketId: Scalars['ID']['input'];
+};
+
+
+/** All available mutations */
+export type MutationsTicketExternalReferencesIdoitObjectAddArgs = {
+  idoitObjectIds: Array<Scalars['Int']['input']>;
+  ticketId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+/** All available mutations */
+export type MutationsTicketExternalReferencesIdoitObjectRemoveArgs = {
+  idoitObjectId: Scalars['Int']['input'];
+  ticketId: Scalars['ID']['input'];
+};
+
+
+/** All available mutations */
+export type MutationsTicketExternalReferencesIssueTrackerItemAddArgs = {
+  issueTrackerLink: Scalars['UriHttpString']['input'];
+  issueTrackerType: EnumTicketExternalReferencesIssueTrackerType;
+  ticketId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+
+/** All available mutations */
+export type MutationsTicketExternalReferencesIssueTrackerItemRemoveArgs = {
+  issueTrackerLink: Scalars['UriHttpString']['input'];
+  issueTrackerType: EnumTicketExternalReferencesIssueTrackerType;
   ticketId: Scalars['ID']['input'];
 };
 
@@ -1527,8 +1963,48 @@ export type MutationsTicketMergeArgs = {
 
 
 /** All available mutations */
+export type MutationsTicketSharedDraftStartCreateArgs = {
+  input: TicketSharedDraftStartInput;
+  name: Scalars['String']['input'];
+};
+
+
+/** All available mutations */
+export type MutationsTicketSharedDraftStartDeleteArgs = {
+  sharedDraftId: Scalars['ID']['input'];
+};
+
+
+/** All available mutations */
+export type MutationsTicketSharedDraftStartUpdateArgs = {
+  input: TicketSharedDraftStartInput;
+  sharedDraftId: Scalars['ID']['input'];
+};
+
+
+/** All available mutations */
+export type MutationsTicketSharedDraftZoomCreateArgs = {
+  input: TicketSharedDraftZoomInput;
+};
+
+
+/** All available mutations */
+export type MutationsTicketSharedDraftZoomDeleteArgs = {
+  sharedDraftId: Scalars['ID']['input'];
+};
+
+
+/** All available mutations */
+export type MutationsTicketSharedDraftZoomUpdateArgs = {
+  input: TicketSharedDraftZoomInput;
+  sharedDraftId: Scalars['ID']['input'];
+};
+
+
+/** All available mutations */
 export type MutationsTicketUpdateArgs = {
   input: TicketUpdateInput;
+  meta?: InputMaybe<TicketUpdateMetaInput>;
   ticketId: Scalars['ID']['input'];
 };
 
@@ -1649,6 +2125,43 @@ export type MutationsUserCurrentRemoveLinkedAccountArgs = {
 
 
 /** All available mutations */
+export type MutationsUserCurrentTaskbarItemAddArgs = {
+  input: UserTaskbarItemInput;
+};
+
+
+/** All available mutations */
+export type MutationsUserCurrentTaskbarItemDeleteArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+/** All available mutations */
+export type MutationsUserCurrentTaskbarItemListPrioArgs = {
+  list: Array<UserTaskbarItemListPrioInput>;
+};
+
+
+/** All available mutations */
+export type MutationsUserCurrentTaskbarItemTouchLastContactArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+/** All available mutations */
+export type MutationsUserCurrentTaskbarItemUpdateArgs = {
+  id: Scalars['ID']['input'];
+  input: UserTaskbarItemInput;
+};
+
+
+/** All available mutations */
+export type MutationsUserCurrentTicketScreenBehaviorArgs = {
+  behavior: EnumTicketScreenBehavior;
+};
+
+
+/** All available mutations */
 export type MutationsUserCurrentTwoFactorRemoveMethodArgs = {
   methodName: Scalars['String']['input'];
 };
@@ -1740,6 +2253,15 @@ export type ObjectAttributeValueInput = {
 /** Custom object fields (only editable & active) */
 export type ObjectAttributeValuesInterface = {
   objectAttributeValues?: Maybe<Array<ObjectAttributeValue>>;
+};
+
+/** Object class */
+export type ObjectClass = {
+  __typename?: 'ObjectClass';
+  /** Info about the object class */
+  info?: Maybe<Scalars['String']['output']>;
+  /** Name of the object class */
+  klass?: Maybe<Scalars['String']['output']>;
 };
 
 /** An object manager attribute record especially for the frontend */
@@ -2040,6 +2562,23 @@ export type PolicyDefault = {
   update: Scalars['Boolean']['output'];
 };
 
+/** Check Pundit policy queries for the mentioned object and user. */
+export type PolicyMentionUserTicketAccess = {
+  __typename?: 'PolicyMentionUserTicketAccess';
+  /** Does the user have agent-level read access to this ticket? */
+  agentReadAccess: Scalars['Boolean']['output'];
+  /** Does the user have agent-level update access to this ticket? */
+  agentUpdateAccess: Scalars['Boolean']['output'];
+  /** Is the user allowed to create user subscriptions for this ticket? */
+  createMentions: Scalars['Boolean']['output'];
+  /** Is the user allowed to delete this object? */
+  destroy: Scalars['Boolean']['output'];
+  /** Is the user allowed to create a follow-up for this ticket? */
+  followUp: Scalars['Boolean']['output'];
+  /** Is the user allowed to update this object? */
+  update: Scalars['Boolean']['output'];
+};
+
 /** Access ticket specific Pundit policy queries for the current object and user. */
 export type PolicyTicket = {
   __typename?: 'PolicyTicket';
@@ -2055,6 +2594,24 @@ export type PolicyTicket = {
   followUp: Scalars['Boolean']['output'];
   /** Is the user allowed to update this object? */
   update: Scalars['Boolean']['output'];
+};
+
+/** PostmasterFilters */
+export type PostmasterFilter = {
+  __typename?: 'PostmasterFilter';
+  /** Create date/time of the record */
+  createdAt: Scalars['ISO8601DateTime']['output'];
+  /** User that created this record */
+  createdBy?: Maybe<User>;
+  id: Scalars['ID']['output'];
+  /** Internal database ID */
+  internalId: Scalars['Int']['output'];
+  /** Name of the postmaster filter */
+  name: Scalars['String']['output'];
+  /** Last update date/time of the record */
+  updatedAt: Scalars['ISO8601DateTime']['output'];
+  /** Last user that updated this record */
+  updatedBy?: Maybe<User>;
 };
 
 /** Public links available in the system */
@@ -2102,8 +2659,8 @@ export type Queries = {
   autocompleteSearchAgent: Array<AutocompleteSearchUserEntry>;
   /** Generic autocomplete search */
   autocompleteSearchGeneric: Array<AutocompleteSearchGenericEntry>;
-  /** Search for tickets */
-  autocompleteSearchMergeTicket: Array<AutocompleteSearchMergeTicketEntry>;
+  /** Search for idoit object types */
+  autocompleteSearchIdoitObjectTypes: Array<AutocompleteSearchEntry>;
   /** Search for values in object attributes for external data sources */
   autocompleteSearchObjectAttributeExternalDataSource: Array<AutocompleteSearchExternalDataSourceEntry>;
   /** Search for organizations */
@@ -2112,18 +2669,28 @@ export type Queries = {
   autocompleteSearchRecipient: Array<AutocompleteSearchRecipientEntry>;
   /** Search for tags */
   autocompleteSearchTag: Array<AutocompleteSearchEntry>;
+  /** Search for tickets */
+  autocompleteSearchTicket: Array<AutocompleteSearchTicketEntry>;
   /** Search for users */
   autocompleteSearchUser: Array<AutocompleteSearchUserEntry>;
+  /** Fetch events from ICS file */
+  calendarIcsFileEvents: Array<CalendarIcsFileEvent>;
+  /** Fetch checklist templates */
+  checklistTemplates: Array<ChecklistTemplate>;
   /** Information about the authenticated user */
   currentUser: User;
   /** EmailAddresses available in the system */
   emailAddresses: Array<EmailAddress>;
   /** Return updated form information for a frontend form (e.g. core workflow information or resolved relations). */
-  formUpdater: Scalars['JSON']['output'];
+  formUpdater: FormUpdaterResult;
   /** Suggestions for insertable knowledge base answers in a new ticket article */
   knowledgeBaseAnswerSuggestions?: Maybe<Array<KnowledgeBaseAnswerTranslation>>;
+  /** List linked objects */
+  linkList?: Maybe<Array<Link>>;
   /** Locales available in the system */
   locales: Array<Locale>;
+  /** Returns a list of macros */
+  macros: Array<Macro>;
   /** Suggestions for mentionable users in a new ticket article */
   mentionSuggestions?: Maybe<Array<User>>;
   /** Fetch meta information about object manager attributes for usage in frontend. */
@@ -2152,12 +2719,34 @@ export type Queries = {
   ticket: Ticket;
   /** Fetch ticket articles by ticket ID */
   ticketArticles: TicketArticleConnection;
+  /** Fetch ticket attachments by ticket ID */
+  ticketAttachments: Array<StoredFile>;
+  /** Fetch ticket checklist */
+  ticketChecklist?: Maybe<Checklist>;
+  /** Detailed idoit objects for the given idoit object ids or the given ticket */
+  ticketExternalReferencesIdoitObjectList: Array<TicketExternalReferencesIdoitObject>;
+  /** Search for idoit objects belonging to a selected type */
+  ticketExternalReferencesIdoitObjectSearch: Array<TicketExternalReferencesIdoitObject>;
+  /** Detailed issue tracker items for the given issue tracker links or the given ticket */
+  ticketExternalReferencesIssueTrackerItemList: Array<TicketExternalReferencesIssueTrackerItem>;
+  /** Fetch history of a ticket */
+  ticketHistory: Array<HistoryGroup>;
   /** Ticket overviews available in the system */
   ticketOverviews: OverviewConnection;
+  /** Ticket shared drafts available to start new ticket in a given group */
+  ticketSharedDraftStartList: Array<TicketSharedDraftStart>;
+  /** Ticket shared drafts available to start new ticket in a given group */
+  ticketSharedDraftStartSingle: TicketSharedDraftStart;
+  /** Get a single ticket shared draft in detail view */
+  ticketSharedDraftZoomShow: TicketSharedDraftZoom;
   /** Fetch a ticket signature by group ID */
   ticketSignature?: Maybe<Signature>;
   /** Fetch tickets of a given ticket overview */
   ticketsByOverview: TicketConnection;
+  /** Fetch recent customer tickets */
+  ticketsRecentByCustomer: Array<Ticket>;
+  /** Fetch tickets recently viewed by the current user */
+  ticketsRecentlyViewed: Array<Ticket>;
   /** Translations for a given locale */
   translations?: Maybe<TranslationsPayload>;
   /** Fetch a user information by ID */
@@ -2174,6 +2763,8 @@ export type Queries = {
   userCurrentDeviceList?: Maybe<Array<UserDevice>>;
   /** Fetch available overviews of the currently logged-in user */
   userCurrentOverviewList: Array<Overview>;
+  /** Fetch available taskbar item list of the currently logged-in user */
+  userCurrentTaskbarItemList?: Maybe<Array<UserTaskbarItem>>;
   /** Fetch list of configured two factor authentication methods and . */
   userCurrentTwoFactorConfiguration: UserConfigurationTwoFactor;
   /** Fetch list of configured two factor authentication methods and . */
@@ -2196,8 +2787,8 @@ export type QueriesAutocompleteSearchGenericArgs = {
 
 
 /** All available queries */
-export type QueriesAutocompleteSearchMergeTicketArgs = {
-  input: AutocompleteSearchMergeTicketInput;
+export type QueriesAutocompleteSearchIdoitObjectTypesArgs = {
+  input: AutocompleteSearchInput;
 };
 
 
@@ -2221,13 +2812,31 @@ export type QueriesAutocompleteSearchRecipientArgs = {
 
 /** All available queries */
 export type QueriesAutocompleteSearchTagArgs = {
-  input: AutocompleteSearchInput;
+  input: AutocompleteSearchTagInput;
+};
+
+
+/** All available queries */
+export type QueriesAutocompleteSearchTicketArgs = {
+  input: AutocompleteSearchTicketInput;
 };
 
 
 /** All available queries */
 export type QueriesAutocompleteSearchUserArgs = {
   input: AutocompleteSearchUserInput;
+};
+
+
+/** All available queries */
+export type QueriesCalendarIcsFileEventsArgs = {
+  fileId: Scalars['ID']['input'];
+};
+
+
+/** All available queries */
+export type QueriesChecklistTemplatesArgs = {
+  onlyActive?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 
@@ -2254,8 +2863,21 @@ export type QueriesKnowledgeBaseAnswerSuggestionsArgs = {
 
 
 /** All available queries */
+export type QueriesLinkListArgs = {
+  objectId: Scalars['ID']['input'];
+  targetType: Scalars['String']['input'];
+};
+
+
+/** All available queries */
 export type QueriesLocalesArgs = {
   onlyActive?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+/** All available queries */
+export type QueriesMacrosArgs = {
+  groupId: Scalars['ID']['input'];
 };
 
 
@@ -2331,11 +2953,68 @@ export type QueriesTicketArticlesArgs = {
 
 
 /** All available queries */
+export type QueriesTicketAttachmentsArgs = {
+  ticketId: Scalars['ID']['input'];
+};
+
+
+/** All available queries */
+export type QueriesTicketChecklistArgs = {
+  ticket: LocatorTicketInput;
+};
+
+
+/** All available queries */
+export type QueriesTicketExternalReferencesIdoitObjectListArgs = {
+  input: TicketExternalReferencesIdoitObjectListInput;
+};
+
+
+/** All available queries */
+export type QueriesTicketExternalReferencesIdoitObjectSearchArgs = {
+  idoitTypeId?: InputMaybe<Scalars['String']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  query?: InputMaybe<Scalars['String']['input']>;
+};
+
+
+/** All available queries */
+export type QueriesTicketExternalReferencesIssueTrackerItemListArgs = {
+  input: TicketExternalReferencesIssueTrackerListInput;
+  issueTrackerType: EnumTicketExternalReferencesIssueTrackerType;
+};
+
+
+/** All available queries */
+export type QueriesTicketHistoryArgs = {
+  ticket: LocatorTicketInput;
+};
+
+
+/** All available queries */
 export type QueriesTicketOverviewsArgs = {
   after?: InputMaybe<Scalars['String']['input']>;
   before?: InputMaybe<Scalars['String']['input']>;
   first?: InputMaybe<Scalars['Int']['input']>;
   last?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+/** All available queries */
+export type QueriesTicketSharedDraftStartListArgs = {
+  groupId: Scalars['ID']['input'];
+};
+
+
+/** All available queries */
+export type QueriesTicketSharedDraftStartSingleArgs = {
+  sharedDraftId: Scalars['ID']['input'];
+};
+
+
+/** All available queries */
+export type QueriesTicketSharedDraftZoomShowArgs = {
+  sharedDraftId: Scalars['ID']['input'];
 };
 
 
@@ -2359,6 +3038,21 @@ export type QueriesTicketsByOverviewArgs = {
 
 
 /** All available queries */
+export type QueriesTicketsRecentByCustomerArgs = {
+  customerId: Scalars['ID']['input'];
+  exceptTicketInternalId?: InputMaybe<Scalars['Int']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+/** All available queries */
+export type QueriesTicketsRecentlyViewedArgs = {
+  exceptTicketInternalId?: InputMaybe<Scalars['Int']['input']>;
+  limit?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+/** All available queries */
 export type QueriesTranslationsArgs = {
   cacheKey?: InputMaybe<Scalars['String']['input']>;
   locale: Scalars['String']['input'];
@@ -2368,6 +3062,12 @@ export type QueriesTranslationsArgs = {
 /** All available queries */
 export type QueriesUserArgs = {
   user: LocatorUserInput;
+};
+
+
+/** All available queries */
+export type QueriesUserCurrentTaskbarItemListArgs = {
+  app?: InputMaybe<EnumTaskbarApp>;
 };
 
 
@@ -2466,8 +3166,14 @@ export type Subscriptions = {
   __typename?: 'Subscriptions';
   /** Application update/change events */
   appMaintenance: AppMaintenancePayload;
+  /** Subscription for checklist template changes. */
+  checklistTemplateUpdates: ChecklistTemplateUpdatesPayload;
   /** Updates to configuration settings */
   configUpdates: ConfigUpdatesPayload;
+  /** Updates to link records */
+  linkUpdates: LinkUpdatesPayload;
+  /** Updated macros */
+  macrosUpdate: MacrosUpdatePayload;
   /** Updates unseen notifications count */
   onlineNotificationsCount: OnlineNotificationsCountPayload;
   /** Updates to organization records */
@@ -2480,10 +3186,14 @@ export type Subscriptions = {
   templateUpdates: TemplateUpdatesPayload;
   /** Changes to the list of ticket articles */
   ticketArticleUpdates: TicketArticleUpdatesPayload;
+  /** Subscription for ticket checklist changes. */
+  ticketChecklistUpdates: TicketChecklistUpdatesPayload;
   /** Updates to ticket live users (for agents). */
   ticketLiveUserUpdates: TicketLiveUserUpdatesPayload;
   /** Updates to overviews */
   ticketOverviewUpdates: TicketOverviewUpdatesPayload;
+  /** Updates to ticket records */
+  ticketSharedDraftStartUpdateByGroup: TicketSharedDraftStartUpdateByGroupPayload;
   /** Updates to ticket records */
   ticketUpdates: TicketUpdatesPayload;
   /** Updates to given user access tokens */
@@ -2494,10 +3204,29 @@ export type Subscriptions = {
   userCurrentDevicesUpdates: UserCurrentDevicesUpdatesPayload;
   /** Updates to account overview sorting records */
   userCurrentOverviewOrderingUpdates: UserCurrentOverviewOrderingUpdatesPayload;
+  /** Subscription for taskbar item list priority changes */
+  userCurrentTaskbarItemListUpdates: UserCurrentTaskbarItemListUpdatesPayload;
+  /** Changes to the state of a taskbar item of the currently logged-in user */
+  userCurrentTaskbarItemStateUpdates: UserCurrentTaskbarItemStateUpdatesPayload;
+  /** Changes to the list of taskbar items of the currently logged-in user */
+  userCurrentTaskbarItemUpdates: UserCurrentTaskbarItemUpdatesPayload;
   /** Updates to current user two factor records */
   userCurrentTwoFactorUpdates: UserCurrentTwoFactorUpdatesPayload;
   /** Updates to user records */
   userUpdates: UserUpdatesPayload;
+};
+
+
+/** All available subscriptions */
+export type SubscriptionsChecklistTemplateUpdatesArgs = {
+  onlyActive?: InputMaybe<Scalars['Boolean']['input']>;
+};
+
+
+/** All available subscriptions */
+export type SubscriptionsLinkUpdatesArgs = {
+  objectId: Scalars['ID']['input'];
+  targetType: Scalars['String']['input'];
 };
 
 
@@ -2532,6 +3261,12 @@ export type SubscriptionsTicketArticleUpdatesArgs = {
 
 
 /** All available subscriptions */
+export type SubscriptionsTicketChecklistUpdatesArgs = {
+  ticketId: Scalars['ID']['input'];
+};
+
+
+/** All available subscriptions */
 export type SubscriptionsTicketLiveUserUpdatesArgs = {
   app: EnumTaskbarApp;
   key: Scalars['String']['input'];
@@ -2540,7 +3275,14 @@ export type SubscriptionsTicketLiveUserUpdatesArgs = {
 
 
 /** All available subscriptions */
+export type SubscriptionsTicketSharedDraftStartUpdateByGroupArgs = {
+  groupId: Scalars['ID']['input'];
+};
+
+
+/** All available subscriptions */
 export type SubscriptionsTicketUpdatesArgs = {
+  initial?: Scalars['Boolean']['input'];
   ticketId: Scalars['ID']['input'];
 };
 
@@ -2565,6 +3307,26 @@ export type SubscriptionsUserCurrentDevicesUpdatesArgs = {
 
 /** All available subscriptions */
 export type SubscriptionsUserCurrentOverviewOrderingUpdatesArgs = {
+  userId: Scalars['ID']['input'];
+};
+
+
+/** All available subscriptions */
+export type SubscriptionsUserCurrentTaskbarItemListUpdatesArgs = {
+  app: EnumTaskbarApp;
+  userId: Scalars['ID']['input'];
+};
+
+
+/** All available subscriptions */
+export type SubscriptionsUserCurrentTaskbarItemStateUpdatesArgs = {
+  taskbarItemId: Scalars['ID']['input'];
+};
+
+
+/** All available subscriptions */
+export type SubscriptionsUserCurrentTaskbarItemUpdatesArgs = {
+  app: EnumTaskbarApp;
   userId: Scalars['ID']['input'];
 };
 
@@ -2696,6 +3458,9 @@ export type TagsInterface = {
   tags?: Maybe<Array<Scalars['String']['output']>>;
 };
 
+/** Objects representing taskbar item entity */
+export type TaskbarItemEntity = Organization | Ticket | User | UserTaskbarItemEntityTicketCreate;
+
 /** Ticket template */
 export type Template = {
   __typename?: 'Template';
@@ -2774,6 +3539,8 @@ export type TextModuleRenderedContentArgs = {
 /** Tickets */
 export type Ticket = ObjectAttributeValuesInterface & TagsInterface & {
   __typename?: 'Ticket';
+  /** Returns the checklist of this ticket, if present */
+  checklist?: Maybe<Checklist>;
   closeAt?: Maybe<Scalars['ISO8601DateTime']['output']>;
   closeDiffInMin?: Maybe<Scalars['Int']['output']>;
   closeEscalationAt?: Maybe<Scalars['ISO8601DateTime']['output']>;
@@ -2787,6 +3554,8 @@ export type Ticket = ObjectAttributeValuesInterface & TagsInterface & {
   /** resolver for Rails' belongs_to relationship */
   customer: User;
   escalationAt?: Maybe<Scalars['ISO8601DateTime']['output']>;
+  /** Returns links to external services */
+  externalReferences?: Maybe<TicketExternalReferences>;
   firstResponseAt?: Maybe<Scalars['ISO8601DateTime']['output']>;
   firstResponseDiffInMin?: Maybe<Scalars['Int']['output']>;
   firstResponseEscalationAt?: Maybe<Scalars['ISO8601DateTime']['output']>;
@@ -2816,6 +3585,10 @@ export type Ticket = ObjectAttributeValuesInterface & TagsInterface & {
   preferences?: Maybe<Scalars['JSON']['output']>;
   /** resolver for Rails' belongs_to relationship */
   priority: TicketPriority;
+  /** Returns (only accessible) other tickets which reference the current ticket */
+  referencingChecklistTickets?: Maybe<Array<Ticket>>;
+  /** The Shared draft ID if the ticket has a shared draft. */
+  sharedDraftZoomId?: Maybe<Scalars['ID']['output']>;
   /** resolver for Rails' belongs_to relationship */
   state: TicketState;
   /** Ticket color indicator state. */
@@ -2872,7 +3645,6 @@ export type TicketArticle = {
   messageId?: Maybe<Scalars['String']['output']>;
   messageIdMd5?: Maybe<Scalars['String']['output']>;
   preferences?: Maybe<Scalars['JSON']['output']>;
-  references?: Maybe<Scalars['String']['output']>;
   replyTo?: Maybe<AddressesField>;
   securityState?: Maybe<TicketArticleSecurityState>;
   /** resolver for Rails' belongs_to relationship */
@@ -2944,6 +3716,8 @@ export type TicketArticleEmailForwardReplyPayload = {
 
 /** Represents the article attributes to be used in ticket create/update. */
 export type TicketArticleInput = {
+  /** The article accounted time activity type. */
+  accountedTimeTypeId?: InputMaybe<Scalars['ID']['input']>;
   /** The article attachments. */
   attachments?: InputMaybe<AttachmentInput>;
   /** The article body. */
@@ -3023,7 +3797,7 @@ export type TicketArticleSender = {
   /** User that created this record */
   createdBy?: Maybe<User>;
   id: Scalars['ID']['output'];
-  name?: Maybe<Scalars['String']['output']>;
+  name?: Maybe<EnumTicketArticleSenderName>;
   /** Last update date/time of the record */
   updatedAt: Scalars['ISO8601DateTime']['output'];
   /** Last user that updated this record */
@@ -3057,6 +3831,77 @@ export type TicketArticleUpdatesPayload = {
   updateArticle?: Maybe<TicketArticle>;
 };
 
+/** Autogenerated return type of TicketChecklistAdd. */
+export type TicketChecklistAddPayload = {
+  __typename?: 'TicketChecklistAddPayload';
+  /** Created checklist */
+  checklist?: Maybe<Checklist>;
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+};
+
+/** Autogenerated return type of TicketChecklistDelete. */
+export type TicketChecklistDeletePayload = {
+  __typename?: 'TicketChecklistDeletePayload';
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+  /** Was the mutation succcessful? */
+  success?: Maybe<Scalars['Boolean']['output']>;
+};
+
+/** Autogenerated return type of TicketChecklistItemDelete. */
+export type TicketChecklistItemDeletePayload = {
+  __typename?: 'TicketChecklistItemDeletePayload';
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+  /** Was the mutation succcessful? */
+  success?: Maybe<Scalars['Boolean']['output']>;
+};
+
+/** Input fields for ticket checklist item. */
+export type TicketChecklistItemInput = {
+  /** Checklist item state */
+  checked?: InputMaybe<Scalars['Boolean']['input']>;
+  /** Checklist item label */
+  text?: InputMaybe<Scalars['String']['input']>;
+};
+
+/** Autogenerated return type of TicketChecklistItemOrderUpdate. */
+export type TicketChecklistItemOrderUpdatePayload = {
+  __typename?: 'TicketChecklistItemOrderUpdatePayload';
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+  /** Was the mutation succcessful? */
+  success?: Maybe<Scalars['Boolean']['output']>;
+};
+
+/** Autogenerated return type of TicketChecklistItemUpsert. */
+export type TicketChecklistItemUpsertPayload = {
+  __typename?: 'TicketChecklistItemUpsertPayload';
+  /** Updated or created checklist item. */
+  checklistItem?: Maybe<ChecklistItem>;
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+};
+
+/** Autogenerated return type of TicketChecklistTitleUpdate. */
+export type TicketChecklistTitleUpdatePayload = {
+  __typename?: 'TicketChecklistTitleUpdatePayload';
+  /** Created checklist */
+  checklist?: Maybe<Checklist>;
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+};
+
+/** Autogenerated return type of TicketChecklistUpdates. */
+export type TicketChecklistUpdatesPayload = {
+  __typename?: 'TicketChecklistUpdatesPayload';
+  /** Ticket checklist was removed from ticket */
+  removedTicketChecklist?: Maybe<Scalars['Boolean']['output']>;
+  /** Ticket checklist */
+  ticketChecklist?: Maybe<Checklist>;
+};
+
 /** The connection type for Ticket. */
 export type TicketConnection = {
   __typename?: 'TicketConnection';
@@ -3081,8 +3926,12 @@ export type TicketCreateInput = {
   article?: InputMaybe<TicketArticleInput>;
   /** The customer of the ticket. */
   customer?: InputMaybe<TicketCustomerInput>;
+  /** External references to create for the newly created ticket */
+  externalReferences?: InputMaybe<TicketExternalReferencesInput>;
   /** The group of the ticket. */
   groupId: Scalars['ID']['input'];
+  /** Links to create for the newly created ticket */
+  links?: InputMaybe<Array<TicketLinkInput>>;
   /** Additional custom attributes (names + values) */
   objectAttributeValues?: InputMaybe<Array<ObjectAttributeValueInput>>;
   /** The organization of the ticket. */
@@ -3093,6 +3942,8 @@ export type TicketCreateInput = {
   pendingTime?: InputMaybe<Scalars['ISO8601DateTime']['input']>;
   /** The priority of the ticket. */
   priorityId?: InputMaybe<Scalars['ID']['input']>;
+  /** The shared draft used to create this ticket. */
+  sharedDraftId?: InputMaybe<Scalars['ID']['input']>;
   /** The state of the ticket. */
   stateId?: InputMaybe<Scalars['ID']['input']>;
   /** The tags that should be assigned to the new ticket. */
@@ -3142,6 +3993,145 @@ export type TicketEdge = {
   cursor: Scalars['String']['output'];
   /** The item at the end of the edge. */
   node: Ticket;
+};
+
+/** Links attached to a ticket and pointing to external services */
+export type TicketExternalReferences = {
+  __typename?: 'TicketExternalReferences';
+  /** Returns exising links for the github integration */
+  github?: Maybe<Array<Scalars['UriHttpString']['output']>>;
+  /** Returns exising links for the gitlab integration */
+  gitlab?: Maybe<Array<Scalars['UriHttpString']['output']>>;
+  /** Returns exising object ids for the idoit integration */
+  idoit?: Maybe<Array<Scalars['Int']['output']>>;
+};
+
+/** Idoit object item for an external reference for a ticket */
+export type TicketExternalReferencesIdoitObject = {
+  __typename?: 'TicketExternalReferencesIdoitObject';
+  /** Idoit object id */
+  idoitObjectId: Scalars['Int']['output'];
+  /** Link to the object in the idoit GUI */
+  link?: Maybe<Scalars['UriHttpString']['output']>;
+  status: Scalars['String']['output'];
+  title: Scalars['String']['output'];
+  type: Scalars['String']['output'];
+};
+
+/** Autogenerated return type of TicketExternalReferencesIdoitObjectAdd. */
+export type TicketExternalReferencesIdoitObjectAddPayload = {
+  __typename?: 'TicketExternalReferencesIdoitObjectAddPayload';
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+  /** The added / resolved idoit objects */
+  idoitObjects?: Maybe<Array<TicketExternalReferencesIdoitObject>>;
+};
+
+/** Represents information to fetch detailed idoit objects for the given idoit object ids or the given ticket */
+export type TicketExternalReferencesIdoitObjectListInput = {
+  /** The idoit object ids for the detailed list */
+  idoitObjectIds?: InputMaybe<Array<Scalars['Int']['input']>>;
+  /** The related ticket for the idoit objects */
+  ticketId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+/** Autogenerated return type of TicketExternalReferencesIdoitObjectRemove. */
+export type TicketExternalReferencesIdoitObjectRemovePayload = {
+  __typename?: 'TicketExternalReferencesIdoitObjectRemovePayload';
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+  /** Was the mutation successful? */
+  success?: Maybe<Scalars['Boolean']['output']>;
+};
+
+/** Represents the ticket external links to be added */
+export type TicketExternalReferencesInput = {
+  /** The article data. */
+  article?: InputMaybe<TicketArticleInput>;
+  /** The customer of the ticket. */
+  customer?: InputMaybe<TicketCustomerInput>;
+  /** Links for the github integration */
+  github?: InputMaybe<Array<Scalars['UriHttpString']['input']>>;
+  /** Links for the gitlab integration */
+  gitlab?: InputMaybe<Array<Scalars['UriHttpString']['input']>>;
+  /** Object ids for the Idoit integration */
+  idoit?: InputMaybe<Array<Scalars['Int']['input']>>;
+  /** Additional custom attributes (names + values) */
+  objectAttributeValues?: InputMaybe<Array<ObjectAttributeValueInput>>;
+  /** The organization of the ticket. */
+  organizationId?: InputMaybe<Scalars['ID']['input']>;
+  /** The owner of the ticket. */
+  ownerId?: InputMaybe<Scalars['ID']['input']>;
+  /** The pending time of the ticket. */
+  pendingTime?: InputMaybe<Scalars['ISO8601DateTime']['input']>;
+  /** The priority of the ticket. */
+  priorityId?: InputMaybe<Scalars['ID']['input']>;
+  /** The state of the ticket. */
+  stateId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+/** Issue tracker item for an external reference for a ticket */
+export type TicketExternalReferencesIssueTrackerItem = {
+  __typename?: 'TicketExternalReferencesIssueTrackerItem';
+  /** The assignees of the issue */
+  assignees?: Maybe<Array<Scalars['String']['output']>>;
+  /** The issue ID from the external issue tracker */
+  issueId: Scalars['Int']['output'];
+  /** The labels of the issue */
+  labels?: Maybe<Array<TicketExternalReferencesIssueTrackerItemLabel>>;
+  /** The milestone of the issue */
+  milestone?: Maybe<Scalars['String']['output']>;
+  /** The state of the issue */
+  state: EnumTicketExternalReferencesIssueTrackerItemState;
+  /** The title of the issue */
+  title: Scalars['String']['output'];
+  /** The URL of the issue */
+  url: Scalars['UriHttpString']['output'];
+};
+
+/** Autogenerated return type of TicketExternalReferencesIssueTrackerItemAdd. */
+export type TicketExternalReferencesIssueTrackerItemAddPayload = {
+  __typename?: 'TicketExternalReferencesIssueTrackerItemAddPayload';
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+  /** The added issue tracker item */
+  issueTrackerItem?: Maybe<TicketExternalReferencesIssueTrackerItem>;
+};
+
+/** The labels of the Issue tracker item */
+export type TicketExternalReferencesIssueTrackerItemLabel = {
+  __typename?: 'TicketExternalReferencesIssueTrackerItemLabel';
+  /** The color of the label */
+  color: Scalars['String']['output'];
+  /** The text color of the label */
+  textColor: Scalars['String']['output'];
+  /** The title of the label */
+  title: Scalars['String']['output'];
+};
+
+/** Autogenerated return type of TicketExternalReferencesIssueTrackerItemRemove. */
+export type TicketExternalReferencesIssueTrackerItemRemovePayload = {
+  __typename?: 'TicketExternalReferencesIssueTrackerItemRemovePayload';
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+  /** Was the mutation successful? */
+  success?: Maybe<Scalars['Boolean']['output']>;
+};
+
+/** Represents information to fetch detailed issue tracker items for the given issue tracker links or the given ticket */
+export type TicketExternalReferencesIssueTrackerListInput = {
+  /** The issue tracker links for the detailed list */
+  issueTrackerLinks?: InputMaybe<Array<Scalars['UriHttpString']['input']>>;
+  /** The related ticket for the issue tracker items */
+  ticketId?: InputMaybe<Scalars['ID']['input']>;
+};
+
+/** Represents a ticket link to another object. */
+export type TicketLinkInput = {
+  /** The target object to link to */
+  linkObjectId: Scalars['ID']['input'];
+  /** The link type to set, e.g. normal/parent/child */
+  linkType: Scalars['String']['input'];
 };
 
 /** Ticket live user information */
@@ -3234,12 +4224,141 @@ export type TicketPriority = {
   updatedBy?: Maybe<User>;
 };
 
+/** Refer to a ticket without raising authorization errors in case of missing permissions */
+export type TicketReference = {
+  __typename?: 'TicketReference';
+  /** The ticket, if there is read permission */
+  ticket?: Maybe<Ticket>;
+};
+
 /** Represents the security attributes to be used in ticket article create/update. */
 export type TicketSecurityInput = {
   /** Security method. */
   method: EnumSecurityStateType;
   /** Enabled security options. */
   options: Array<EnumSecurityOption>;
+};
+
+/** Ticket shared draft to start new tickets */
+export type TicketSharedDraftStart = {
+  __typename?: 'TicketSharedDraftStart';
+  content?: Maybe<Scalars['JSON']['output']>;
+  /** Create date/time of the record */
+  createdAt: Scalars['ISO8601DateTime']['output'];
+  /** User that created this record */
+  createdBy?: Maybe<User>;
+  /** resolver for Rails' belongs_to relationship */
+  group?: Maybe<Group>;
+  id: Scalars['ID']['output'];
+  /** Internal database ID */
+  internalId: Scalars['Int']['output'];
+  name?: Maybe<Scalars['String']['output']>;
+  /** Last update date/time of the record */
+  updatedAt: Scalars['ISO8601DateTime']['output'];
+  /** Last user that updated this record */
+  updatedBy?: Maybe<User>;
+};
+
+/** Autogenerated return type of TicketSharedDraftStartCreate. */
+export type TicketSharedDraftStartCreatePayload = {
+  __typename?: 'TicketSharedDraftStartCreatePayload';
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+  /** The updated draft. */
+  sharedDraft: TicketSharedDraftStart;
+};
+
+/** Autogenerated return type of TicketSharedDraftStartDelete. */
+export type TicketSharedDraftStartDeletePayload = {
+  __typename?: 'TicketSharedDraftStartDeletePayload';
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+  /** Was the ticket article deletion successful? */
+  success: Scalars['Boolean']['output'];
+};
+
+/** The ticket start draft fields */
+export type TicketSharedDraftStartInput = {
+  /** Content of the draft */
+  content: Scalars['JSON']['input'];
+  /** Form ID to copy attachments from */
+  formId: Scalars['String']['input'];
+  /** Group to put shared draft into */
+  groupId: Scalars['ID']['input'];
+};
+
+/** Autogenerated return type of TicketSharedDraftStartUpdateByGroup. */
+export type TicketSharedDraftStartUpdateByGroupPayload = {
+  __typename?: 'TicketSharedDraftStartUpdateByGroupPayload';
+  /** Up-to-date drafts in the given */
+  sharedDraftStarts?: Maybe<Array<TicketSharedDraftStart>>;
+};
+
+/** Autogenerated return type of TicketSharedDraftStartUpdate. */
+export type TicketSharedDraftStartUpdatePayload = {
+  __typename?: 'TicketSharedDraftStartUpdatePayload';
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+  /** The updated draft. */
+  sharedDraft: TicketSharedDraftStart;
+};
+
+/** Ticket shared draft in detail view */
+export type TicketSharedDraftZoom = {
+  __typename?: 'TicketSharedDraftZoom';
+  /** Create date/time of the record */
+  createdAt: Scalars['ISO8601DateTime']['output'];
+  /** User that created this record */
+  createdBy?: Maybe<User>;
+  id: Scalars['ID']['output'];
+  /** Internal database ID */
+  internalId: Scalars['Int']['output'];
+  newArticle?: Maybe<Scalars['JSON']['output']>;
+  ticketAttributes?: Maybe<Scalars['JSON']['output']>;
+  ticketId?: Maybe<Scalars['ID']['output']>;
+  /** Last update date/time of the record */
+  updatedAt: Scalars['ISO8601DateTime']['output'];
+  /** Last user that updated this record */
+  updatedBy?: Maybe<User>;
+};
+
+/** Autogenerated return type of TicketSharedDraftZoomCreate. */
+export type TicketSharedDraftZoomCreatePayload = {
+  __typename?: 'TicketSharedDraftZoomCreatePayload';
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+  /** The created draft. */
+  sharedDraft: TicketSharedDraftZoom;
+};
+
+/** Autogenerated return type of TicketSharedDraftZoomDelete. */
+export type TicketSharedDraftZoomDeletePayload = {
+  __typename?: 'TicketSharedDraftZoomDeletePayload';
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+  /** Was the ticket article deletion successful? */
+  success: Scalars['Boolean']['output'];
+};
+
+/** The ticket zoom draft fields */
+export type TicketSharedDraftZoomInput = {
+  /** Form ID to copy attachments from */
+  formId: Scalars['String']['input'];
+  /** Article content of the draft */
+  newArticle: Scalars['JSON']['input'];
+  /** Ticket attributes of the draft */
+  ticketAttributes: Scalars['JSON']['input'];
+  /** Ticket to put the draft into */
+  ticketId: Scalars['ID']['input'];
+};
+
+/** Autogenerated return type of TicketSharedDraftZoomUpdate. */
+export type TicketSharedDraftZoomUpdatePayload = {
+  __typename?: 'TicketSharedDraftZoomUpdatePayload';
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+  /** The updated draft. */
+  sharedDraft: TicketSharedDraftZoom;
 };
 
 /** Ticket states */
@@ -3314,6 +4433,30 @@ export type TicketUpdateInput = {
   title?: InputMaybe<Scalars['NonEmptyString']['input']>;
 };
 
+/** Represents ticket update meta information to be used in ticket update. */
+export type TicketUpdateMetaInput = {
+  /** The article data. */
+  article?: InputMaybe<TicketArticleInput>;
+  /** The customer of the ticket. */
+  customer?: InputMaybe<TicketCustomerInput>;
+  /** The macro to apply onto ticket */
+  macroId?: InputMaybe<Scalars['ID']['input']>;
+  /** Additional custom attributes (names + values) */
+  objectAttributeValues?: InputMaybe<Array<ObjectAttributeValueInput>>;
+  /** The organization of the ticket. */
+  organizationId?: InputMaybe<Scalars['ID']['input']>;
+  /** The owner of the ticket. */
+  ownerId?: InputMaybe<Scalars['ID']['input']>;
+  /** The pending time of the ticket. */
+  pendingTime?: InputMaybe<Scalars['ISO8601DateTime']['input']>;
+  /** The priority of the ticket. */
+  priorityId?: InputMaybe<Scalars['ID']['input']>;
+  /** The ticket update validators to skip */
+  skipValidators?: InputMaybe<Array<EnumUserErrorException>>;
+  /** The state of the ticket. */
+  stateId?: InputMaybe<Scalars['ID']['input']>;
+};
+
 /** Autogenerated return type of TicketUpdate. */
 export type TicketUpdatePayload = {
   __typename?: 'TicketUpdatePayload';
@@ -3361,6 +4504,24 @@ export type TranslationsPayload = {
   translations?: Maybe<Scalars['JSON']['output']>;
 };
 
+/** Triggers */
+export type Trigger = {
+  __typename?: 'Trigger';
+  /** Create date/time of the record */
+  createdAt: Scalars['ISO8601DateTime']['output'];
+  /** User that created this record */
+  createdBy?: Maybe<User>;
+  id: Scalars['ID']['output'];
+  /** Internal database ID */
+  internalId: Scalars['Int']['output'];
+  /** Name of the trigger */
+  name: Scalars['String']['output'];
+  /** Last update date/time of the record */
+  updatedAt: Scalars['ISO8601DateTime']['output'];
+  /** Last user that updated this record */
+  updatedBy?: Maybe<User>;
+};
+
 /** Payload for the two factor authentication */
 export type TwoFactorAuthenticationInput = {
   /** Two factor authentication method */
@@ -3395,6 +4556,8 @@ export type TwoFactorRecoveryInput = {
 export type UploadFileInput = {
   /** File content */
   content?: InputMaybe<Scalars['BinaryString']['input']>;
+  /** Content-Disposition: inline flag */
+  inline?: InputMaybe<Scalars['Boolean']['input']>;
   /** File name. */
   name: Scalars['String']['input'];
   /** File's content-type. */
@@ -3713,6 +4876,85 @@ export type UserCurrentRemoveLinkedAccountPayload = {
   success: Scalars['Boolean']['output'];
 };
 
+/** Autogenerated return type of UserCurrentTaskbarItemAdd. */
+export type UserCurrentTaskbarItemAddPayload = {
+  __typename?: 'UserCurrentTaskbarItemAddPayload';
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+  /** The created taskbar item. */
+  taskbarItem?: Maybe<UserTaskbarItem>;
+};
+
+/** Autogenerated return type of UserCurrentTaskbarItemDelete. */
+export type UserCurrentTaskbarItemDeletePayload = {
+  __typename?: 'UserCurrentTaskbarItemDeletePayload';
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+  /** This indicates if deleting the user (session) device was successful. */
+  success?: Maybe<Scalars['Boolean']['output']>;
+};
+
+/** Autogenerated return type of UserCurrentTaskbarItemListPrio. */
+export type UserCurrentTaskbarItemListPrioPayload = {
+  __typename?: 'UserCurrentTaskbarItemListPrioPayload';
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+  /** This indicates if sorting the taskbar item list was successful. */
+  success?: Maybe<Scalars['Boolean']['output']>;
+};
+
+/** Autogenerated return type of UserCurrentTaskbarItemListUpdates. */
+export type UserCurrentTaskbarItemListUpdatesPayload = {
+  __typename?: 'UserCurrentTaskbarItemListUpdatesPayload';
+  /** List of taskbar items */
+  taskbarItemList?: Maybe<Array<UserTaskbarItem>>;
+};
+
+/** Autogenerated return type of UserCurrentTaskbarItemStateUpdates. */
+export type UserCurrentTaskbarItemStateUpdatesPayload = {
+  __typename?: 'UserCurrentTaskbarItemStateUpdatesPayload';
+  /** Signals that the taskbar item state has changed */
+  stateChanged?: Maybe<Scalars['Boolean']['output']>;
+};
+
+/** Autogenerated return type of UserCurrentTaskbarItemTouchLastContact. */
+export type UserCurrentTaskbarItemTouchLastContactPayload = {
+  __typename?: 'UserCurrentTaskbarItemTouchLastContactPayload';
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+  /** The updated taskbar item. */
+  taskbarItem?: Maybe<UserTaskbarItem>;
+};
+
+/** Autogenerated return type of UserCurrentTaskbarItemUpdate. */
+export type UserCurrentTaskbarItemUpdatePayload = {
+  __typename?: 'UserCurrentTaskbarItemUpdatePayload';
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+  /** The updated taskbar item. */
+  taskbarItem?: Maybe<UserTaskbarItem>;
+};
+
+/** Autogenerated return type of UserCurrentTaskbarItemUpdates. */
+export type UserCurrentTaskbarItemUpdatesPayload = {
+  __typename?: 'UserCurrentTaskbarItemUpdatesPayload';
+  /** A new taskbar item needs to be added to the list */
+  addItem?: Maybe<UserTaskbarItem>;
+  /** An item must be removed from the list */
+  removeItem?: Maybe<Scalars['ID']['output']>;
+  /** An existing taskbar item was changed */
+  updateItem?: Maybe<UserTaskbarItem>;
+};
+
+/** Autogenerated return type of UserCurrentTicketScreenBehavior. */
+export type UserCurrentTicketScreenBehaviorPayload = {
+  __typename?: 'UserCurrentTicketScreenBehaviorPayload';
+  /** Errors encountered during execution of the mutation. */
+  errors?: Maybe<Array<UserError>>;
+  /** Whether the user ticket screen behavior setting was updated successfully */
+  success: Scalars['Boolean']['output'];
+};
+
 /** Autogenerated return type of UserCurrentTwoFactorRecoveryCodesGenerate. */
 export type UserCurrentTwoFactorRecoveryCodesGeneratePayload = {
   __typename?: 'UserCurrentTwoFactorRecoveryCodesGeneratePayload';
@@ -3801,6 +5043,7 @@ export type UserEdge = {
 /** Represents an error in the input of a mutation. */
 export type UserError = {
   __typename?: 'UserError';
+  exception?: Maybe<EnumUserErrorException>;
   field?: Maybe<Scalars['String']['output']>;
   message: Scalars['String']['output'];
 };
@@ -4079,6 +5322,71 @@ export type UserSignupVerifyPayload = {
   session?: Maybe<Session>;
 };
 
+/** Users taskbar item */
+export type UserTaskbarItem = {
+  __typename?: 'UserTaskbarItem';
+  active: Scalars['Boolean']['output'];
+  app: EnumTaskbarApp;
+  callback: EnumTaskbarEntity;
+  changed: Scalars['Boolean']['output'];
+  /** Create date/time of the record */
+  createdAt: Scalars['ISO8601DateTime']['output'];
+  /** User that created this record */
+  createdBy?: Maybe<User>;
+  dirty: Scalars['Boolean']['output'];
+  entity?: Maybe<TaskbarItemEntity>;
+  entityAccess?: Maybe<EnumTaskbarEntityAccess>;
+  formId?: Maybe<Scalars['String']['output']>;
+  formNewArticlePresent: Scalars['Boolean']['output'];
+  id: Scalars['ID']['output'];
+  key: Scalars['String']['output'];
+  notify: Scalars['Boolean']['output'];
+  params?: Maybe<Scalars['JSON']['output']>;
+  prio: Scalars['Int']['output'];
+  state?: Maybe<Scalars['JSON']['output']>;
+  /** Last update date/time of the record */
+  updatedAt: Scalars['ISO8601DateTime']['output'];
+  /** Last user that updated this record */
+  updatedBy?: Maybe<User>;
+  userId: Scalars['ID']['output'];
+};
+
+/** Entity representing taskbar item ticket create */
+export type UserTaskbarItemEntityTicketCreate = {
+  __typename?: 'UserTaskbarItemEntityTicketCreate';
+  createArticleTypeKey?: Maybe<Scalars['String']['output']>;
+  title: Scalars['String']['output'];
+  uid: Scalars['String']['output'];
+};
+
+/** The taskbar item fields. */
+export type UserTaskbarItemInput = {
+  /** The taskbar item application */
+  app: EnumTaskbarApp;
+  /** The taskbar item related object callback */
+  callback: EnumTaskbarEntity;
+  /** The taskbar item form updater dirty flag */
+  dirty?: InputMaybe<Scalars['Boolean']['input']>;
+  /** The itaskbar item related object key identifier */
+  key: Scalars['String']['input'];
+  /** The taskbar item notification about changes */
+  notify: Scalars['Boolean']['input'];
+  /** Additional custom attributes (names + values) */
+  objectAttributeValues?: InputMaybe<Array<ObjectAttributeValueInput>>;
+  /** The taskbar item related object parameters */
+  params?: InputMaybe<Scalars['JSON']['input']>;
+  /** The taskbar item sorting priority */
+  prio: Scalars['Int']['input'];
+};
+
+/** The taskbar item list priority fields. */
+export type UserTaskbarItemListPrioInput = {
+  /** The taskbar item ID */
+  id: Scalars['ID']['input'];
+  /** The taskbar item priority */
+  prio: Scalars['Int']['input'];
+};
+
 /** Autogenerated return type of UserUpdate. */
 export type UserUpdatePayload = {
   __typename?: 'UserUpdatePayload';
@@ -4095,12 +5403,19 @@ export type UserUpdatesPayload = {
   user?: Maybe<User>;
 };
 
+export type CalendarIcsFileEventsQueryVariables = Exact<{
+  fileId: Scalars['ID']['input'];
+}>;
+
+
+export type CalendarIcsFileEventsQuery = { __typename?: 'Queries', calendarIcsFileEvents: Array<{ __typename?: 'CalendarIcsFileEvent', title?: string | null, location?: string | null, startDate?: string | null, endDate?: string | null, organizer?: string | null, attendees?: Array<string> | null, description?: string | null }> };
+
 export type ChannelEmailAddMutationVariables = Exact<{
   input: ChannelEmailAddInput;
 }>;
 
 
-export type ChannelEmailAddMutation = { __typename?: 'Mutations', channelEmailAdd?: { __typename?: 'ChannelEmailAddPayload', channel?: { __typename?: 'Channel', options?: any | null, group?: { __typename?: 'Group', id: string } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type ChannelEmailAddMutation = { __typename?: 'Mutations', channelEmailAdd?: { __typename?: 'ChannelEmailAddPayload', channel?: { __typename?: 'Channel', options?: any | null, group?: { __typename?: 'Group', id: string } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type ChannelEmailGuessConfigurationMutationVariables = Exact<{
   emailAddress: Scalars['String']['input'];
@@ -4108,21 +5423,21 @@ export type ChannelEmailGuessConfigurationMutationVariables = Exact<{
 }>;
 
 
-export type ChannelEmailGuessConfigurationMutation = { __typename?: 'Mutations', channelEmailGuessConfiguration?: { __typename?: 'ChannelEmailGuessConfigurationPayload', result: { __typename?: 'ChannelEmailGuessConfigurationResult', inboundConfiguration?: { __typename?: 'ChannelEmailInboundConfiguration', adapter: EnumChannelEmailInboundAdapter, host?: string | null, port?: number | null, ssl?: EnumChannelEmailSsl | null, user?: string | null, password?: string | null, sslVerify?: boolean | null, folder?: string | null } | null, outboundConfiguration?: { __typename?: 'ChannelEmailOutboundConfiguration', adapter: EnumChannelEmailOutboundAdapter, host?: string | null, port?: number | null, user?: string | null, password?: string | null, sslVerify?: boolean | null } | null, mailboxStats?: { __typename?: 'ChannelEmailInboundMailboxStats', contentMessages?: number | null, archivePossible?: boolean | null, archiveWeekRange?: number | null } | null }, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type ChannelEmailGuessConfigurationMutation = { __typename?: 'Mutations', channelEmailGuessConfiguration?: { __typename?: 'ChannelEmailGuessConfigurationPayload', result: { __typename?: 'ChannelEmailGuessConfigurationResult', inboundConfiguration?: { __typename?: 'ChannelEmailInboundConfiguration', adapter: EnumChannelEmailInboundAdapter, host?: string | null, port?: number | null, ssl?: EnumChannelEmailSsl | null, user?: string | null, password?: string | null, sslVerify?: boolean | null, folder?: string | null } | null, outboundConfiguration?: { __typename?: 'ChannelEmailOutboundConfiguration', adapter: EnumChannelEmailOutboundAdapter, host?: string | null, port?: number | null, user?: string | null, password?: string | null, sslVerify?: boolean | null } | null, mailboxStats?: { __typename?: 'ChannelEmailInboundMailboxStats', contentMessages?: number | null, archivePossible?: boolean | null, archivePossibleIsFallback?: boolean | null, archiveWeekRange?: number | null } | null }, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type ChannelEmailSetNotificationConfigurationMutationVariables = Exact<{
   outboundConfiguration: ChannelEmailOutboundConfigurationInput;
 }>;
 
 
-export type ChannelEmailSetNotificationConfigurationMutation = { __typename?: 'Mutations', channelEmailSetNotificationConfiguration?: { __typename?: 'ChannelEmailSetNotificationConfigurationPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type ChannelEmailSetNotificationConfigurationMutation = { __typename?: 'Mutations', channelEmailSetNotificationConfiguration?: { __typename?: 'ChannelEmailSetNotificationConfigurationPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type ChannelEmailValidateConfigurationInboundMutationVariables = Exact<{
   inboundConfiguration: ChannelEmailInboundConfigurationInput;
 }>;
 
 
-export type ChannelEmailValidateConfigurationInboundMutation = { __typename?: 'Mutations', channelEmailValidateConfigurationInbound?: { __typename?: 'ChannelEmailValidateConfigurationInboundPayload', success?: boolean | null, mailboxStats?: { __typename?: 'ChannelEmailInboundMailboxStats', contentMessages?: number | null, archivePossible?: boolean | null, archiveWeekRange?: number | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type ChannelEmailValidateConfigurationInboundMutation = { __typename?: 'Mutations', channelEmailValidateConfigurationInbound?: { __typename?: 'ChannelEmailValidateConfigurationInboundPayload', success?: boolean | null, mailboxStats?: { __typename?: 'ChannelEmailInboundMailboxStats', contentMessages?: number | null, archivePossible?: boolean | null, archivePossibleIsFallback?: boolean | null, archiveWeekRange?: number | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type ChannelEmailValidateConfigurationOutboundMutationVariables = Exact<{
   outboundConfiguration: ChannelEmailOutboundConfigurationInput;
@@ -4130,7 +5445,7 @@ export type ChannelEmailValidateConfigurationOutboundMutationVariables = Exact<{
 }>;
 
 
-export type ChannelEmailValidateConfigurationOutboundMutation = { __typename?: 'Mutations', channelEmailValidateConfigurationOutbound?: { __typename?: 'ChannelEmailValidateConfigurationOutboundPayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type ChannelEmailValidateConfigurationOutboundMutation = { __typename?: 'Mutations', channelEmailValidateConfigurationOutbound?: { __typename?: 'ChannelEmailValidateConfigurationOutboundPayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type ChannelEmailValidateConfigurationRoundtripMutationVariables = Exact<{
   inboundConfiguration: ChannelEmailInboundConfigurationInput;
@@ -4139,7 +5454,7 @@ export type ChannelEmailValidateConfigurationRoundtripMutationVariables = Exact<
 }>;
 
 
-export type ChannelEmailValidateConfigurationRoundtripMutation = { __typename?: 'Mutations', channelEmailValidateConfigurationRoundtrip?: { __typename?: 'ChannelEmailValidateConfigurationRoundtripPayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type ChannelEmailValidateConfigurationRoundtripMutation = { __typename?: 'Mutations', channelEmailValidateConfigurationRoundtrip?: { __typename?: 'ChannelEmailValidateConfigurationRoundtripPayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type EmailAddressesQueryVariables = Exact<{
   onlyActive?: InputMaybe<Scalars['Boolean']['input']>;
@@ -4148,12 +5463,87 @@ export type EmailAddressesQueryVariables = Exact<{
 
 export type EmailAddressesQuery = { __typename?: 'Queries', emailAddresses: Array<{ __typename?: 'EmailAddress', name: string, email: string, active: boolean }> };
 
+export type UserCurrentTaskbarItemAttributesFragment = { __typename?: 'UserTaskbarItem', id: string, key: string, callback: EnumTaskbarEntity, formId?: string | null, formNewArticlePresent: boolean, entityAccess?: EnumTaskbarEntityAccess | null, prio: number, changed: boolean, dirty: boolean, notify: boolean, updatedAt: string, entity?: { __typename?: 'Organization', id: string, internalId: number } | { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, stateColorCode: EnumTicketStateColorCode, updatedAt: string, state: { __typename?: 'TicketState', id: string, name: string } } | { __typename?: 'User', id: string, internalId: number } | { __typename?: 'UserTaskbarItemEntityTicketCreate', uid: string, title: string, createArticleTypeKey?: string | null } | null };
+
 export type UserCurrentPasswordCheckMutationVariables = Exact<{
   password: Scalars['String']['input'];
 }>;
 
 
-export type UserCurrentPasswordCheckMutation = { __typename?: 'Mutations', userCurrentPasswordCheck?: { __typename?: 'UserCurrentPasswordCheckPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserCurrentPasswordCheckMutation = { __typename?: 'Mutations', userCurrentPasswordCheck?: { __typename?: 'UserCurrentPasswordCheckPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type UserCurrentTaskbarItemAddMutationVariables = Exact<{
+  input: UserTaskbarItemInput;
+}>;
+
+
+export type UserCurrentTaskbarItemAddMutation = { __typename?: 'Mutations', userCurrentTaskbarItemAdd?: { __typename?: 'UserCurrentTaskbarItemAddPayload', taskbarItem?: { __typename?: 'UserTaskbarItem', id: string, key: string, callback: EnumTaskbarEntity, formId?: string | null, formNewArticlePresent: boolean, entityAccess?: EnumTaskbarEntityAccess | null, prio: number, changed: boolean, dirty: boolean, notify: boolean, updatedAt: string, entity?: { __typename?: 'Organization', id: string, internalId: number } | { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, stateColorCode: EnumTicketStateColorCode, updatedAt: string, state: { __typename?: 'TicketState', id: string, name: string } } | { __typename?: 'User', id: string, internalId: number } | { __typename?: 'UserTaskbarItemEntityTicketCreate', uid: string, title: string, createArticleTypeKey?: string | null } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type UserCurrentTaskbarItemDeleteMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type UserCurrentTaskbarItemDeleteMutation = { __typename?: 'Mutations', userCurrentTaskbarItemDelete?: { __typename?: 'UserCurrentTaskbarItemDeletePayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type UserCurrentTaskbarItemListPrioMutationVariables = Exact<{
+  list: Array<UserTaskbarItemListPrioInput> | UserTaskbarItemListPrioInput;
+}>;
+
+
+export type UserCurrentTaskbarItemListPrioMutation = { __typename?: 'Mutations', userCurrentTaskbarItemListPrio?: { __typename?: 'UserCurrentTaskbarItemListPrioPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type UserCurrentTaskbarItemTouchLastContactMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type UserCurrentTaskbarItemTouchLastContactMutation = { __typename?: 'Mutations', userCurrentTaskbarItemTouchLastContact?: { __typename?: 'UserCurrentTaskbarItemTouchLastContactPayload', taskbarItem?: { __typename?: 'UserTaskbarItem', id: string, key: string, callback: EnumTaskbarEntity, formId?: string | null, formNewArticlePresent: boolean, entityAccess?: EnumTaskbarEntityAccess | null, prio: number, changed: boolean, dirty: boolean, notify: boolean, updatedAt: string, entity?: { __typename?: 'Organization', id: string, internalId: number } | { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, stateColorCode: EnumTicketStateColorCode, updatedAt: string, state: { __typename?: 'TicketState', id: string, name: string } } | { __typename?: 'User', id: string, internalId: number } | { __typename?: 'UserTaskbarItemEntityTicketCreate', uid: string, title: string, createArticleTypeKey?: string | null } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type UserCurrentTaskbarItemUpdateMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UserTaskbarItemInput;
+}>;
+
+
+export type UserCurrentTaskbarItemUpdateMutation = { __typename?: 'Mutations', userCurrentTaskbarItemUpdate?: { __typename?: 'UserCurrentTaskbarItemUpdatePayload', taskbarItem?: { __typename?: 'UserTaskbarItem', id: string, key: string, callback: EnumTaskbarEntity, formId?: string | null, formNewArticlePresent: boolean, entityAccess?: EnumTaskbarEntityAccess | null, prio: number, changed: boolean, dirty: boolean, notify: boolean, updatedAt: string, entity?: { __typename?: 'Organization', id: string, internalId: number } | { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, stateColorCode: EnumTicketStateColorCode, updatedAt: string, state: { __typename?: 'TicketState', id: string, name: string } } | { __typename?: 'User', id: string, internalId: number } | { __typename?: 'UserTaskbarItemEntityTicketCreate', uid: string, title: string, createArticleTypeKey?: string | null } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type UserCurrentTicketScreenBehaviorMutationVariables = Exact<{
+  behavior: EnumTicketScreenBehavior;
+}>;
+
+
+export type UserCurrentTicketScreenBehaviorMutation = { __typename?: 'Mutations', userCurrentTicketScreenBehavior?: { __typename?: 'UserCurrentTicketScreenBehaviorPayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type UserCurrentTaskbarItemListQueryVariables = Exact<{
+  app: EnumTaskbarApp;
+}>;
+
+
+export type UserCurrentTaskbarItemListQuery = { __typename?: 'Queries', userCurrentTaskbarItemList?: Array<{ __typename?: 'UserTaskbarItem', id: string, key: string, callback: EnumTaskbarEntity, formId?: string | null, formNewArticlePresent: boolean, entityAccess?: EnumTaskbarEntityAccess | null, prio: number, changed: boolean, dirty: boolean, notify: boolean, updatedAt: string, entity?: { __typename?: 'Organization', id: string, internalId: number } | { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, stateColorCode: EnumTicketStateColorCode, updatedAt: string, state: { __typename?: 'TicketState', id: string, name: string } } | { __typename?: 'User', id: string, internalId: number } | { __typename?: 'UserTaskbarItemEntityTicketCreate', uid: string, title: string, createArticleTypeKey?: string | null } | null }> | null };
+
+export type UserCurrentTaskbarItemListUpdatesSubscriptionVariables = Exact<{
+  userId: Scalars['ID']['input'];
+  app: EnumTaskbarApp;
+}>;
+
+
+export type UserCurrentTaskbarItemListUpdatesSubscription = { __typename?: 'Subscriptions', userCurrentTaskbarItemListUpdates: { __typename?: 'UserCurrentTaskbarItemListUpdatesPayload', taskbarItemList?: Array<{ __typename?: 'UserTaskbarItem', id: string, prio: number }> | null } };
+
+export type UserCurrentTaskbarItemStateUpdatesSubscriptionVariables = Exact<{
+  taskbarItemId: Scalars['ID']['input'];
+}>;
+
+
+export type UserCurrentTaskbarItemStateUpdatesSubscription = { __typename?: 'Subscriptions', userCurrentTaskbarItemStateUpdates: { __typename?: 'UserCurrentTaskbarItemStateUpdatesPayload', stateChanged?: boolean | null } };
+
+export type UserCurrentTaskbarItemUpdatesSubscriptionVariables = Exact<{
+  userId: Scalars['ID']['input'];
+  app: EnumTaskbarApp;
+}>;
+
+
+export type UserCurrentTaskbarItemUpdatesSubscription = { __typename?: 'Subscriptions', userCurrentTaskbarItemUpdates: { __typename?: 'UserCurrentTaskbarItemUpdatesPayload', removeItem?: string | null, addItem?: { __typename?: 'UserTaskbarItem', id: string, key: string, callback: EnumTaskbarEntity, formId?: string | null, formNewArticlePresent: boolean, entityAccess?: EnumTaskbarEntityAccess | null, prio: number, changed: boolean, dirty: boolean, notify: boolean, updatedAt: string, entity?: { __typename?: 'Organization', id: string, internalId: number } | { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, stateColorCode: EnumTicketStateColorCode, updatedAt: string, state: { __typename?: 'TicketState', id: string, name: string } } | { __typename?: 'User', id: string, internalId: number } | { __typename?: 'UserTaskbarItemEntityTicketCreate', uid: string, title: string, createArticleTypeKey?: string | null } | null } | null, updateItem?: { __typename?: 'UserTaskbarItem', id: string, key: string, callback: EnumTaskbarEntity, formId?: string | null, formNewArticlePresent: boolean, entityAccess?: EnumTaskbarEntityAccess | null, prio: number, changed: boolean, dirty: boolean, notify: boolean, updatedAt: string, entity?: { __typename?: 'Organization', id: string, internalId: number } | { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, stateColorCode: EnumTicketStateColorCode, updatedAt: string, state: { __typename?: 'TicketState', id: string, name: string } } | { __typename?: 'User', id: string, internalId: number } | { __typename?: 'UserTaskbarItemEntityTicketCreate', uid: string, title: string, createArticleTypeKey?: string | null } | null } | null } };
 
 export type UserCurrentTwoFactorUpdatesSubscriptionVariables = Exact<{
   userId: Scalars['ID']['input'];
@@ -4167,21 +5557,21 @@ export type AdminPasswordAuthSendMutationVariables = Exact<{
 }>;
 
 
-export type AdminPasswordAuthSendMutation = { __typename?: 'Mutations', adminPasswordAuthSend?: { __typename?: 'AdminPasswordAuthSendPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type AdminPasswordAuthSendMutation = { __typename?: 'Mutations', adminPasswordAuthSend?: { __typename?: 'AdminPasswordAuthSendPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type AdminPasswordAuthVerifyMutationVariables = Exact<{
   token: Scalars['String']['input'];
 }>;
 
 
-export type AdminPasswordAuthVerifyMutation = { __typename?: 'Mutations', adminPasswordAuthVerify?: { __typename?: 'AdminPasswordAuthVerifyPayload', login?: string | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type AdminPasswordAuthVerifyMutation = { __typename?: 'Mutations', adminPasswordAuthVerify?: { __typename?: 'AdminPasswordAuthVerifyPayload', login?: string | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserPasswordResetSendMutationVariables = Exact<{
   username: Scalars['String']['input'];
 }>;
 
 
-export type UserPasswordResetSendMutation = { __typename?: 'Mutations', userPasswordResetSend?: { __typename?: 'UserPasswordResetSendPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserPasswordResetSendMutation = { __typename?: 'Mutations', userPasswordResetSend?: { __typename?: 'UserPasswordResetSendPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserPasswordResetUpdateMutationVariables = Exact<{
   token: Scalars['String']['input'];
@@ -4189,82 +5579,82 @@ export type UserPasswordResetUpdateMutationVariables = Exact<{
 }>;
 
 
-export type UserPasswordResetUpdateMutation = { __typename?: 'Mutations', userPasswordResetUpdate?: { __typename?: 'UserPasswordResetUpdatePayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserPasswordResetUpdateMutation = { __typename?: 'Mutations', userPasswordResetUpdate?: { __typename?: 'UserPasswordResetUpdatePayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserPasswordResetVerifyMutationVariables = Exact<{
   token: Scalars['String']['input'];
 }>;
 
 
-export type UserPasswordResetVerifyMutation = { __typename?: 'Mutations', userPasswordResetVerify?: { __typename?: 'UserPasswordResetVerifyPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserPasswordResetVerifyMutation = { __typename?: 'Mutations', userPasswordResetVerify?: { __typename?: 'UserPasswordResetVerifyPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserSignupMutationVariables = Exact<{
   input: UserSignupInput;
 }>;
 
 
-export type UserSignupMutation = { __typename?: 'Mutations', userSignup?: { __typename?: 'UserSignupPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserSignupMutation = { __typename?: 'Mutations', userSignup?: { __typename?: 'UserSignupPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserSignupResendMutationVariables = Exact<{
   email: Scalars['String']['input'];
 }>;
 
 
-export type UserSignupResendMutation = { __typename?: 'Mutations', userSignupResend?: { __typename?: 'UserSignupResendPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserSignupResendMutation = { __typename?: 'Mutations', userSignupResend?: { __typename?: 'UserSignupResendPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserSignupVerifyMutationVariables = Exact<{
   token: Scalars['String']['input'];
 }>;
 
 
-export type UserSignupVerifyMutation = { __typename?: 'Mutations', userSignupVerify?: { __typename?: 'UserSignupVerifyPayload', session?: { __typename?: 'Session', id: string, afterAuth?: { __typename?: 'SessionAfterAuth', type: EnumAfterAuthType, data?: any | null } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserSignupVerifyMutation = { __typename?: 'Mutations', userSignupVerify?: { __typename?: 'UserSignupVerifyPayload', session?: { __typename?: 'Session', id: string, afterAuth?: { __typename?: 'SessionAfterAuth', type: EnumAfterAuthType, data?: any | null } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type GuidedSetupSetSystemInformationMutationVariables = Exact<{
   input: SystemInformation;
 }>;
 
 
-export type GuidedSetupSetSystemInformationMutation = { __typename?: 'Mutations', guidedSetupSetSystemInformation?: { __typename?: 'GuidedSetupSetSystemInformationPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type GuidedSetupSetSystemInformationMutation = { __typename?: 'Mutations', guidedSetupSetSystemInformation?: { __typename?: 'GuidedSetupSetSystemInformationPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type SystemImportConfigurationMutationVariables = Exact<{
   configuration: SystemImportConfigurationInput;
 }>;
 
 
-export type SystemImportConfigurationMutation = { __typename?: 'Mutations', systemImportConfiguration?: { __typename?: 'SystemImportConfigurationPayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type SystemImportConfigurationMutation = { __typename?: 'Mutations', systemImportConfiguration?: { __typename?: 'SystemImportConfigurationPayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type SystemImportStartMutationVariables = Exact<{ [key: string]: never; }>;
 
 
-export type SystemImportStartMutation = { __typename?: 'Mutations', systemImportStart?: { __typename?: 'SystemImportStartPayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type SystemImportStartMutation = { __typename?: 'Mutations', systemImportStart?: { __typename?: 'SystemImportStartPayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type SystemSetupLockMutationVariables = Exact<{
   ttl?: InputMaybe<Scalars['Int']['input']>;
 }>;
 
 
-export type SystemSetupLockMutation = { __typename?: 'Mutations', systemSetupLock?: { __typename?: 'SystemSetupLockPayload', resource?: string | null, value?: string | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type SystemSetupLockMutation = { __typename?: 'Mutations', systemSetupLock?: { __typename?: 'SystemSetupLockPayload', resource?: string | null, value?: string | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type SystemSetupRunAutoWizardMutationVariables = Exact<{
   token?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
-export type SystemSetupRunAutoWizardMutation = { __typename?: 'Mutations', systemSetupRunAutoWizard?: { __typename?: 'SystemSetupRunAutoWizardPayload', session?: { __typename?: 'Session', id: string, afterAuth?: { __typename?: 'SessionAfterAuth', type: EnumAfterAuthType, data?: any | null } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type SystemSetupRunAutoWizardMutation = { __typename?: 'Mutations', systemSetupRunAutoWizard?: { __typename?: 'SystemSetupRunAutoWizardPayload', session?: { __typename?: 'Session', id: string, afterAuth?: { __typename?: 'SessionAfterAuth', type: EnumAfterAuthType, data?: any | null } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type SystemSetupUnlockMutationVariables = Exact<{
   value: Scalars['String']['input'];
 }>;
 
 
-export type SystemSetupUnlockMutation = { __typename?: 'Mutations', systemSetupUnlock?: { __typename?: 'SystemSetupUnlockPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type SystemSetupUnlockMutation = { __typename?: 'Mutations', systemSetupUnlock?: { __typename?: 'SystemSetupUnlockPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserAddFirstAdminMutationVariables = Exact<{
   input: UserSignupInput;
 }>;
 
 
-export type UserAddFirstAdminMutation = { __typename?: 'Mutations', userAddFirstAdmin?: { __typename?: 'UserAddFirstAdminPayload', session?: { __typename?: 'Session', id: string, afterAuth?: { __typename?: 'SessionAfterAuth', type: EnumAfterAuthType, data?: any | null } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserAddFirstAdminMutation = { __typename?: 'Mutations', userAddFirstAdmin?: { __typename?: 'UserAddFirstAdminPayload', session?: { __typename?: 'Session', id: string, afterAuth?: { __typename?: 'SessionAfterAuth', type: EnumAfterAuthType, data?: any | null } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type SystemImportStateQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4276,7 +5666,7 @@ export type SystemSetupInfoQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type SystemSetupInfoQuery = { __typename?: 'Queries', systemSetupInfo: { __typename?: 'SystemSetupInfo', status: EnumSystemSetupInfoStatus, type?: EnumSystemSetupInfoType | null } };
 
-export type UserCalendarSubscriptionAttributesFragment = { __typename?: 'UserPersonalSettingsCalendarSubscriptionsConfig', combinedUrl?: any | null, globalOptions?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionGlobalOptions', alarm?: boolean | null } | null, newOpen?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingle', url?: any | null, options?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingleOptions', own?: boolean | null, notAssigned?: boolean | null } | null } | null, pending?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingle', url?: any | null, options?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingleOptions', own?: boolean | null, notAssigned?: boolean | null } | null } | null, escalation?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingle', url?: any | null, options?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingleOptions', own?: boolean | null, notAssigned?: boolean | null } | null } | null };
+export type UserCalendarSubscriptionAttributesFragment = { __typename?: 'UserPersonalSettingsCalendarSubscriptionsConfig', combinedUrl?: string | null, globalOptions?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionGlobalOptions', alarm?: boolean | null } | null, newOpen?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingle', url?: string | null, options?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingleOptions', own?: boolean | null, notAssigned?: boolean | null } | null } | null, pending?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingle', url?: string | null, options?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingleOptions', own?: boolean | null, notAssigned?: boolean | null } | null } | null, escalation?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingle', url?: string | null, options?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingleOptions', own?: boolean | null, notAssigned?: boolean | null } | null } | null };
 
 export type UserDeviceAttributesFragment = { __typename?: 'UserDevice', id: string, userId: string, name: string, os?: string | null, browser?: string | null, location?: string | null, deviceDetails?: any | null, locationDetails?: any | null, fingerprint?: string | null, userAgent?: string | null, ip?: string | null, createdAt: string, updatedAt: string };
 
@@ -4285,21 +5675,21 @@ export type UserCurrentAppearanceMutationVariables = Exact<{
 }>;
 
 
-export type UserCurrentAppearanceMutation = { __typename?: 'Mutations', userCurrentAppearance?: { __typename?: 'UserCurrentAppearancePayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserCurrentAppearanceMutation = { __typename?: 'Mutations', userCurrentAppearance?: { __typename?: 'UserCurrentAppearancePayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserCurrentAvatarSelectMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type UserCurrentAvatarSelectMutation = { __typename?: 'Mutations', userCurrentAvatarSelect?: { __typename?: 'UserCurrentAvatarSelectPayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserCurrentAvatarSelectMutation = { __typename?: 'Mutations', userCurrentAvatarSelect?: { __typename?: 'UserCurrentAvatarSelectPayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserCurrentCalendarSubscriptionUpdateMutationVariables = Exact<{
   input: UserCalendarSubscriptionsConfigInput;
 }>;
 
 
-export type UserCurrentCalendarSubscriptionUpdateMutation = { __typename?: 'Mutations', userCurrentCalendarSubscriptionUpdate?: { __typename?: 'UserCurrentCalendarSubscriptionUpdatePayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserCurrentCalendarSubscriptionUpdateMutation = { __typename?: 'Mutations', userCurrentCalendarSubscriptionUpdate?: { __typename?: 'UserCurrentCalendarSubscriptionUpdatePayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserCurrentChangePasswordMutationVariables = Exact<{
   currentPassword: Scalars['String']['input'];
@@ -4307,14 +5697,14 @@ export type UserCurrentChangePasswordMutationVariables = Exact<{
 }>;
 
 
-export type UserCurrentChangePasswordMutation = { __typename?: 'Mutations', userCurrentChangePassword?: { __typename?: 'UserCurrentChangePasswordPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserCurrentChangePasswordMutation = { __typename?: 'Mutations', userCurrentChangePassword?: { __typename?: 'UserCurrentChangePasswordPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserCurrentDeviceDeleteMutationVariables = Exact<{
   deviceId: Scalars['ID']['input'];
 }>;
 
 
-export type UserCurrentDeviceDeleteMutation = { __typename?: 'Mutations', userCurrentDeviceDelete?: { __typename?: 'UserCurrentDeviceDeletePayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserCurrentDeviceDeleteMutation = { __typename?: 'Mutations', userCurrentDeviceDelete?: { __typename?: 'UserCurrentDeviceDeletePayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserCurrentRemoveLinkedAccountMutationVariables = Exact<{
   provider: EnumAuthenticationProvider;
@@ -4322,12 +5712,12 @@ export type UserCurrentRemoveLinkedAccountMutationVariables = Exact<{
 }>;
 
 
-export type UserCurrentRemoveLinkedAccountMutation = { __typename?: 'Mutations', userCurrentRemoveLinkedAccount?: { __typename?: 'UserCurrentRemoveLinkedAccountPayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserCurrentRemoveLinkedAccountMutation = { __typename?: 'Mutations', userCurrentRemoveLinkedAccount?: { __typename?: 'UserCurrentRemoveLinkedAccountPayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserCurrentNotificationPreferencesResetMutationVariables = Exact<{ [key: string]: never; }>;
 
 
-export type UserCurrentNotificationPreferencesResetMutation = { __typename?: 'Mutations', userCurrentNotificationPreferencesReset?: { __typename?: 'UserCurrentNotificationPreferencesResetPayload', user: { __typename?: 'User', personalSettings?: { __typename?: 'UserPersonalSettings', notificationConfig?: { __typename?: 'UserPersonalSettingsNotificationConfig', groupIds?: Array<number> | null, matrix?: { __typename?: 'UserPersonalSettingsNotificationMatrix', create?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, escalation?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, reminderReached?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, update?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null } | null } | null, notificationSound?: { __typename?: 'UserPersonalSettingsNotificationSound', enabled?: boolean | null, file?: EnumNotificationSoundFile | null } | null } | null }, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserCurrentNotificationPreferencesResetMutation = { __typename?: 'Mutations', userCurrentNotificationPreferencesReset?: { __typename?: 'UserCurrentNotificationPreferencesResetPayload', user: { __typename?: 'User', personalSettings?: { __typename?: 'UserPersonalSettings', notificationConfig?: { __typename?: 'UserPersonalSettingsNotificationConfig', groupIds?: Array<number> | null, matrix?: { __typename?: 'UserPersonalSettingsNotificationMatrix', create?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, escalation?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, reminderReached?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, update?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null } | null } | null, notificationSound?: { __typename?: 'UserPersonalSettingsNotificationSound', enabled?: boolean | null, file?: EnumNotificationSoundFile | null } | null } | null }, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserCurrentNotificationPreferencesUpdateMutationVariables = Exact<{
   groupIds?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
@@ -4336,26 +5726,26 @@ export type UserCurrentNotificationPreferencesUpdateMutationVariables = Exact<{
 }>;
 
 
-export type UserCurrentNotificationPreferencesUpdateMutation = { __typename?: 'Mutations', userCurrentNotificationPreferencesUpdate?: { __typename?: 'UserCurrentNotificationPreferencesUpdatePayload', user: { __typename?: 'User', personalSettings?: { __typename?: 'UserPersonalSettings', notificationConfig?: { __typename?: 'UserPersonalSettingsNotificationConfig', groupIds?: Array<number> | null, matrix?: { __typename?: 'UserPersonalSettingsNotificationMatrix', create?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, escalation?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, reminderReached?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, update?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null } | null } | null, notificationSound?: { __typename?: 'UserPersonalSettingsNotificationSound', enabled?: boolean | null, file?: EnumNotificationSoundFile | null } | null } | null }, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserCurrentNotificationPreferencesUpdateMutation = { __typename?: 'Mutations', userCurrentNotificationPreferencesUpdate?: { __typename?: 'UserCurrentNotificationPreferencesUpdatePayload', user: { __typename?: 'User', personalSettings?: { __typename?: 'UserPersonalSettings', notificationConfig?: { __typename?: 'UserPersonalSettingsNotificationConfig', groupIds?: Array<number> | null, matrix?: { __typename?: 'UserPersonalSettingsNotificationMatrix', create?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, escalation?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, reminderReached?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, update?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null } | null } | null, notificationSound?: { __typename?: 'UserPersonalSettingsNotificationSound', enabled?: boolean | null, file?: EnumNotificationSoundFile | null } | null } | null }, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserCurrentOutOfOfficeMutationVariables = Exact<{
   input: OutOfOfficeInput;
 }>;
 
 
-export type UserCurrentOutOfOfficeMutation = { __typename?: 'Mutations', userCurrentOutOfOffice?: { __typename?: 'UserCurrentOutOfOfficePayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserCurrentOutOfOfficeMutation = { __typename?: 'Mutations', userCurrentOutOfOffice?: { __typename?: 'UserCurrentOutOfOfficePayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserCurrentOverviewResetOrderMutationVariables = Exact<{ [key: string]: never; }>;
 
 
-export type UserCurrentOverviewResetOrderMutation = { __typename?: 'Mutations', userCurrentOverviewResetOrder?: { __typename?: 'UserCurrentOverviewResetOrderPayload', success: boolean, overviews?: Array<{ __typename?: 'Overview', id: string, name: string }> | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserCurrentOverviewResetOrderMutation = { __typename?: 'Mutations', userCurrentOverviewResetOrder?: { __typename?: 'UserCurrentOverviewResetOrderPayload', success: boolean, overviews?: Array<{ __typename?: 'Overview', id: string, name: string }> | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserCurrentOverviewUpdateOrderMutationVariables = Exact<{
   overviewIds: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
 }>;
 
 
-export type UserCurrentOverviewUpdateOrderMutation = { __typename?: 'Mutations', userCurrentOverviewUpdateOrder?: { __typename?: 'UserCurrentOverviewUpdateOrderPayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserCurrentOverviewUpdateOrderMutation = { __typename?: 'Mutations', userCurrentOverviewUpdateOrder?: { __typename?: 'UserCurrentOverviewUpdateOrderPayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserCurrentAvatarListQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4365,7 +5755,7 @@ export type UserCurrentAvatarListQuery = { __typename?: 'Queries', userCurrentAv
 export type UserCurrentCalendarSubscriptionListQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type UserCurrentCalendarSubscriptionListQuery = { __typename?: 'Queries', userCurrentCalendarSubscriptionList: { __typename?: 'UserPersonalSettingsCalendarSubscriptionsConfig', combinedUrl?: any | null, globalOptions?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionGlobalOptions', alarm?: boolean | null } | null, newOpen?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingle', url?: any | null, options?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingleOptions', own?: boolean | null, notAssigned?: boolean | null } | null } | null, pending?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingle', url?: any | null, options?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingleOptions', own?: boolean | null, notAssigned?: boolean | null } | null } | null, escalation?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingle', url?: any | null, options?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingleOptions', own?: boolean | null, notAssigned?: boolean | null } | null } | null } };
+export type UserCurrentCalendarSubscriptionListQuery = { __typename?: 'Queries', userCurrentCalendarSubscriptionList: { __typename?: 'UserPersonalSettingsCalendarSubscriptionsConfig', combinedUrl?: string | null, globalOptions?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionGlobalOptions', alarm?: boolean | null } | null, newOpen?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingle', url?: string | null, options?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingleOptions', own?: boolean | null, notAssigned?: boolean | null } | null } | null, pending?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingle', url?: string | null, options?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingleOptions', own?: boolean | null, notAssigned?: boolean | null } | null } | null, escalation?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingle', url?: string | null, options?: { __typename?: 'UserPersonalSettingsCalendarSubscriptionSingleOptions', own?: boolean | null, notAssigned?: boolean | null } | null } | null } };
 
 export type UserCurrentDeviceListQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4405,12 +5795,207 @@ export type UserCurrentOverviewOrderingUpdatesSubscriptionVariables = Exact<{
 
 export type UserCurrentOverviewOrderingUpdatesSubscription = { __typename?: 'Subscriptions', userCurrentOverviewOrderingUpdates: { __typename?: 'UserCurrentOverviewOrderingUpdatesPayload', overviews?: Array<{ __typename?: 'Overview', id: string, name: string }> | null } };
 
+export type IdoitObjectAttributesFragment = { __typename?: 'TicketExternalReferencesIdoitObject', idoitObjectId: number, link?: string | null, title: string, type: string, status: string };
+
+export type LinkAddMutationVariables = Exact<{
+  input: LinkInput;
+}>;
+
+
+export type LinkAddMutation = { __typename?: 'Mutations', linkAdd?: { __typename?: 'LinkAddPayload', link?: { __typename?: 'Link', type: EnumLinkType, item: { __typename?: 'KnowledgeBaseAnswerTranslation', id: string } | { __typename?: 'Ticket', id: string, internalId: number, title: string, stateColorCode: EnumTicketStateColorCode, state: { __typename?: 'TicketState', id: string, name: string } } } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+
+export type LinkRemoveMutationVariables = Exact<{
+  input: LinkInput;
+}>;
+
+
+export type LinkRemoveMutation = { __typename?: 'Mutations', linkRemove?: { __typename?: 'LinkRemovePayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+
+export type TicketChecklistAddMutationVariables = Exact<{
+  ticketId: Scalars['ID']['input'];
+  templateId?: InputMaybe<Scalars['ID']['input']>;
+}>;
+
+
+export type TicketChecklistAddMutation = { __typename?: 'Mutations', ticketChecklistAdd?: { __typename?: 'TicketChecklistAddPayload', checklist?: { __typename?: 'Checklist', id: string, name?: string | null, items: Array<{ __typename?: 'ChecklistItem', id: string, text: string, checked: boolean }> } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type TicketChecklistDeleteMutationVariables = Exact<{
+  checklistId: Scalars['ID']['input'];
+}>;
+
+
+export type TicketChecklistDeleteMutation = { __typename?: 'Mutations', ticketChecklistDelete?: { __typename?: 'TicketChecklistDeletePayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type TicketChecklistItemDeleteMutationVariables = Exact<{
+  checklistId: Scalars['ID']['input'];
+  checklistItemId: Scalars['ID']['input'];
+}>;
+
+
+export type TicketChecklistItemDeleteMutation = { __typename?: 'Mutations', ticketChecklistItemDelete?: { __typename?: 'TicketChecklistItemDeletePayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type TicketChecklistItemOrderUpdateMutationVariables = Exact<{
+  checklistId: Scalars['ID']['input'];
+  order: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+}>;
+
+
+export type TicketChecklistItemOrderUpdateMutation = { __typename?: 'Mutations', ticketChecklistItemOrderUpdate?: { __typename?: 'TicketChecklistItemOrderUpdatePayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type TicketChecklistItemUpsertMutationVariables = Exact<{
+  checklistId: Scalars['ID']['input'];
+  checklistItemId?: InputMaybe<Scalars['ID']['input']>;
+  input: TicketChecklistItemInput;
+}>;
+
+
+export type TicketChecklistItemUpsertMutation = { __typename?: 'Mutations', ticketChecklistItemUpsert?: { __typename?: 'TicketChecklistItemUpsertPayload', checklistItem?: { __typename?: 'ChecklistItem', id: string, text: string, checked: boolean, ticketReference?: { __typename?: 'TicketReference', ticket?: { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, stateColorCode: EnumTicketStateColorCode, state: { __typename?: 'TicketState', id: string, name: string } } | null } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type TicketChecklistTitleUpdateMutationVariables = Exact<{
+  checklistId: Scalars['ID']['input'];
+  title?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type TicketChecklistTitleUpdateMutation = { __typename?: 'Mutations', ticketChecklistTitleUpdate?: { __typename?: 'TicketChecklistTitleUpdatePayload', checklist?: { __typename?: 'Checklist', id: string, name?: string | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type TicketExternalReferencesIdoitObjectAddMutationVariables = Exact<{
+  idoitObjectIds: Array<Scalars['Int']['input']> | Scalars['Int']['input'];
+  ticketId?: InputMaybe<Scalars['ID']['input']>;
+}>;
+
+
+export type TicketExternalReferencesIdoitObjectAddMutation = { __typename?: 'Mutations', ticketExternalReferencesIdoitObjectAdd?: { __typename?: 'TicketExternalReferencesIdoitObjectAddPayload', idoitObjects?: Array<{ __typename?: 'TicketExternalReferencesIdoitObject', idoitObjectId: number, link?: string | null, title: string, type: string, status: string }> | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type TicketExternalReferencesIdoitObjectRemoveMutationVariables = Exact<{
+  ticketId: Scalars['ID']['input'];
+  idoitObjectId: Scalars['Int']['input'];
+}>;
+
+
+export type TicketExternalReferencesIdoitObjectRemoveMutation = { __typename?: 'Mutations', ticketExternalReferencesIdoitObjectRemove?: { __typename?: 'TicketExternalReferencesIdoitObjectRemovePayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type TicketExternalReferencesIssueTrackerItemAddMutationVariables = Exact<{
+  issueTrackerLink: Scalars['UriHttpString']['input'];
+  issueTrackerType: EnumTicketExternalReferencesIssueTrackerType;
+  ticketId?: InputMaybe<Scalars['ID']['input']>;
+}>;
+
+
+export type TicketExternalReferencesIssueTrackerItemAddMutation = { __typename?: 'Mutations', ticketExternalReferencesIssueTrackerItemAdd?: { __typename?: 'TicketExternalReferencesIssueTrackerItemAddPayload', issueTrackerItem?: { __typename?: 'TicketExternalReferencesIssueTrackerItem', assignees?: Array<string> | null, issueId: number, milestone?: string | null, state: EnumTicketExternalReferencesIssueTrackerItemState, title: string, url: string, labels?: Array<{ __typename?: 'TicketExternalReferencesIssueTrackerItemLabel', color: string, textColor: string, title: string }> | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type TicketExternalReferencesIssueTrackerItemRemoveMutationVariables = Exact<{
+  issueTrackerLink: Scalars['UriHttpString']['input'];
+  issueTrackerType: EnumTicketExternalReferencesIssueTrackerType;
+  ticketId: Scalars['ID']['input'];
+}>;
+
+
+export type TicketExternalReferencesIssueTrackerItemRemoveMutation = { __typename?: 'Mutations', ticketExternalReferencesIssueTrackerItemRemove?: { __typename?: 'TicketExternalReferencesIssueTrackerItemRemovePayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type AutocompleteSearchIdoitObjectTypesQueryVariables = Exact<{
+  input: AutocompleteSearchInput;
+}>;
+
+
+export type AutocompleteSearchIdoitObjectTypesQuery = { __typename?: 'Queries', autocompleteSearchIdoitObjectTypes: Array<{ __typename?: 'AutocompleteSearchEntry', value: string, label: string }> };
+
+export type ChecklistTemplatesQueryVariables = Exact<{
+  onlyActive?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type ChecklistTemplatesQuery = { __typename?: 'Queries', checklistTemplates: Array<{ __typename?: 'ChecklistTemplate', id: string, name?: string | null, active?: boolean | null }> };
+
+export type LinkListQueryVariables = Exact<{
+  objectId: Scalars['ID']['input'];
+  targetType: Scalars['String']['input'];
+}>;
+
+
+export type LinkListQuery = { __typename?: 'Queries', linkList?: Array<{ __typename?: 'Link', type: EnumLinkType, item: { __typename?: 'KnowledgeBaseAnswerTranslation', id: string } | { __typename?: 'Ticket', id: string, internalId: number, title: string, stateColorCode: EnumTicketStateColorCode, state: { __typename?: 'TicketState', id: string, name: string } } }> | null };
+
 export type TemplatesQueryVariables = Exact<{
   onlyActive?: InputMaybe<Scalars['Boolean']['input']>;
 }>;
 
 
 export type TemplatesQuery = { __typename?: 'Queries', templates: Array<{ __typename?: 'Template', id: string, name: string }> };
+
+export type TicketAttachmentsQueryVariables = Exact<{
+  ticketId: Scalars['ID']['input'];
+}>;
+
+
+export type TicketAttachmentsQuery = { __typename?: 'Queries', ticketAttachments: Array<{ __typename?: 'StoredFile', id: string, internalId: number, name: string, size?: number | null, type?: string | null, preferences?: any | null }> };
+
+export type TicketChecklistQueryVariables = Exact<{
+  ticketId?: InputMaybe<Scalars['ID']['input']>;
+  ticketInternalId?: InputMaybe<Scalars['Int']['input']>;
+  ticketNumber?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type TicketChecklistQuery = { __typename?: 'Queries', ticketChecklist?: { __typename?: 'Checklist', id: string, name?: string | null, completed: boolean, incomplete: number, items: Array<{ __typename?: 'ChecklistItem', id: string, text: string, checked: boolean, ticketReference?: { __typename?: 'TicketReference', ticket?: { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, stateColorCode: EnumTicketStateColorCode, state: { __typename?: 'TicketState', id: string, name: string } } | null } | null }> } | null };
+
+export type TicketExternalReferencesIdoitObjectListQueryVariables = Exact<{
+  ticketId?: InputMaybe<Scalars['ID']['input']>;
+  idoitObjectIds?: InputMaybe<Array<Scalars['Int']['input']> | Scalars['Int']['input']>;
+}>;
+
+
+export type TicketExternalReferencesIdoitObjectListQuery = { __typename?: 'Queries', ticketExternalReferencesIdoitObjectList: Array<{ __typename?: 'TicketExternalReferencesIdoitObject', idoitObjectId: number, link?: string | null, title: string, type: string, status: string }> };
+
+export type TicketExternalReferencesIdoitObjectSearchQueryVariables = Exact<{
+  idoitTypeId?: InputMaybe<Scalars['String']['input']>;
+  limit: Scalars['Int']['input'];
+  query?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type TicketExternalReferencesIdoitObjectSearchQuery = { __typename?: 'Queries', ticketExternalReferencesIdoitObjectSearch: Array<{ __typename?: 'TicketExternalReferencesIdoitObject', idoitObjectId: number, link?: string | null, title: string, type: string, status: string }> };
+
+export type TicketExternalReferencesIssueTrackerItemListQueryVariables = Exact<{
+  issueTrackerType: EnumTicketExternalReferencesIssueTrackerType;
+  ticketId?: InputMaybe<Scalars['ID']['input']>;
+  issueTrackerLinks?: InputMaybe<Array<Scalars['UriHttpString']['input']> | Scalars['UriHttpString']['input']>;
+}>;
+
+
+export type TicketExternalReferencesIssueTrackerItemListQuery = { __typename?: 'Queries', ticketExternalReferencesIssueTrackerItemList: Array<{ __typename?: 'TicketExternalReferencesIssueTrackerItem', assignees?: Array<string> | null, issueId: number, milestone?: string | null, state: EnumTicketExternalReferencesIssueTrackerItemState, title: string, url: string, labels?: Array<{ __typename?: 'TicketExternalReferencesIssueTrackerItemLabel', color: string, textColor: string, title: string }> | null }> };
+
+export type TicketHistoryQueryVariables = Exact<{
+  ticketId?: InputMaybe<Scalars['ID']['input']>;
+  ticketInternalId?: InputMaybe<Scalars['Int']['input']>;
+  ticketNumber?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type TicketHistoryQuery = { __typename?: 'Queries', ticketHistory: Array<{ __typename?: 'HistoryGroup', createdAt: string, records: Array<{ __typename?: 'HistoryRecord', issuer: { __typename?: 'Job', id: string, name: string } | { __typename?: 'ObjectClass', klass?: string | null, info?: string | null } | { __typename?: 'PostmasterFilter', id: string, name: string } | { __typename?: 'Trigger', id: string, name: string } | { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, phone?: string | null, email?: string | null, image?: string | null }, events: Array<{ __typename?: 'HistoryRecordEvent', createdAt: string, action: string, attribute?: string | null, changes?: any | null, object: { __typename?: 'Checklist', id: string, name?: string | null } | { __typename?: 'ChecklistItem', id: string, text: string, checked: boolean } | { __typename?: 'Group', id: string, name?: string | null } | { __typename?: 'Mention', id: string, user: { __typename?: 'User', id: string, fullname?: string | null } } | { __typename?: 'ObjectClass', klass?: string | null, info?: string | null } | { __typename?: 'Organization', id: string, name?: string | null } | { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string } | { __typename?: 'TicketArticle', id: string, body: string } | { __typename?: 'TicketSharedDraftZoom', id: string } | { __typename?: 'User', id: string, fullname?: string | null } }> }> }> };
+
+export type TicketRelationAndRecentTicketListsQueryVariables = Exact<{
+  ticketId: Scalars['Int']['input'];
+  customerId: Scalars['ID']['input'];
+  limit?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type TicketRelationAndRecentTicketListsQuery = { __typename?: 'Queries', ticketsRecentByCustomer: Array<{ __typename?: 'Ticket', number: string, internalId: number, id: string, title: string, createdAt: string, stateColorCode: EnumTicketStateColorCode, customer: { __typename?: 'User', id: string, fullname?: string | null }, organization?: { __typename?: 'Organization', id: string, name?: string | null } | null, group: { __typename?: 'Group', id: string, name?: string | null }, state: { __typename?: 'TicketState', id: string, name: string } }>, ticketsRecentlyViewed: Array<{ __typename?: 'Ticket', number: string, internalId: number, id: string, title: string, createdAt: string, stateColorCode: EnumTicketStateColorCode, customer: { __typename?: 'User', id: string, fullname?: string | null }, organization?: { __typename?: 'Organization', id: string, name?: string | null } | null, group: { __typename?: 'Group', id: string, name?: string | null }, state: { __typename?: 'TicketState', id: string, name: string } }> };
+
+export type ChecklistTemplateUpdatesSubscriptionVariables = Exact<{
+  onlyActive?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type ChecklistTemplateUpdatesSubscription = { __typename?: 'Subscriptions', checklistTemplateUpdates: { __typename?: 'ChecklistTemplateUpdatesPayload', checklistTemplates?: Array<{ __typename?: 'ChecklistTemplate', id: string, name?: string | null, active?: boolean | null }> | null } };
+
+export type LinkUpdatesSubscriptionVariables = Exact<{
+  objectId: Scalars['ID']['input'];
+  targetType: Scalars['String']['input'];
+}>;
+
+
+export type LinkUpdatesSubscription = { __typename?: 'Subscriptions', linkUpdates: { __typename?: 'LinkUpdatesPayload', links?: Array<{ __typename?: 'Link', type: EnumLinkType, item: { __typename?: 'KnowledgeBaseAnswerTranslation', id: string } | { __typename?: 'Ticket', id: string, internalId: number, title: string, stateColorCode: EnumTicketStateColorCode, state: { __typename?: 'TicketState', id: string, name: string } } }> | null } };
 
 export type TemplateUpdatesSubscriptionVariables = Exact<{
   onlyActive: Scalars['Boolean']['input'];
@@ -4419,18 +6004,35 @@ export type TemplateUpdatesSubscriptionVariables = Exact<{
 
 export type TemplateUpdatesSubscription = { __typename?: 'Subscriptions', templateUpdates: { __typename?: 'TemplateUpdatesPayload', templates?: Array<{ __typename?: 'Template', id: string, name: string }> | null } };
 
+export type TicketChecklistUpdatesSubscriptionVariables = Exact<{
+  ticketId: Scalars['ID']['input'];
+}>;
+
+
+export type TicketChecklistUpdatesSubscription = { __typename?: 'Subscriptions', ticketChecklistUpdates: { __typename?: 'TicketChecklistUpdatesPayload', removedTicketChecklist?: boolean | null, ticketChecklist?: { __typename?: 'Checklist', id: string, name?: string | null, completed: boolean, incomplete: number, items: Array<{ __typename?: 'ChecklistItem', id: string, text: string, checked: boolean, ticketReference?: { __typename?: 'TicketReference', ticket?: { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, stateColorCode: EnumTicketStateColorCode, state: { __typename?: 'TicketState', id: string, name: string } } | null } | null }> } | null } };
+
 export type OrganizationUpdateMutationVariables = Exact<{
   id: Scalars['ID']['input'];
   input: OrganizationInput;
 }>;
 
 
-export type OrganizationUpdateMutation = { __typename?: 'Mutations', organizationUpdate?: { __typename?: 'OrganizationUpdatePayload', organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, shared?: boolean | null, domain?: string | null, domainAssignment?: boolean | null, active?: boolean | null, note?: string | null, vip?: boolean | null, ticketsCount?: { __typename?: 'TicketCount', open: number, closed: number } | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type OrganizationUpdateMutation = { __typename?: 'Mutations', organizationUpdate?: { __typename?: 'OrganizationUpdatePayload', organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, shared?: boolean | null, domain?: string | null, domainAssignment?: boolean | null, active?: boolean | null, note?: string | null, vip?: boolean | null, ticketsCount?: { __typename?: 'TicketCount', open: number, closed: number } | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type TicketOverviewTicketCountQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type TicketOverviewTicketCountQuery = { __typename?: 'Queries', ticketOverviews: { __typename?: 'OverviewConnection', edges: Array<{ __typename?: 'OverviewEdge', cursor: string, node: { __typename?: 'Overview', id: string, ticketCount: number } }>, pageInfo: { __typename?: 'PageInfo', endCursor?: string | null, hasNextPage: boolean } } };
+
+export type TicketWithMentionLimitQueryVariables = Exact<{
+  ticketId?: InputMaybe<Scalars['ID']['input']>;
+  ticketInternalId?: InputMaybe<Scalars['Int']['input']>;
+  ticketNumber?: InputMaybe<Scalars['String']['input']>;
+  mentionsCount?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type TicketWithMentionLimitQuery = { __typename?: 'Queries', ticket: { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, createdAt: string, escalationAt?: string | null, updatedAt: string, pendingTime?: string | null, tags?: Array<string> | null, timeUnit?: number | null, subscribed?: boolean | null, preferences?: any | null, stateColorCode: EnumTicketStateColorCode, sharedDraftZoomId?: string | null, firstResponseEscalationAt?: string | null, closeEscalationAt?: string | null, updateEscalationAt?: string | null, initialChannel?: EnumChannelArea | null, createArticleType?: { __typename?: 'TicketArticleType', id: string, name?: string | null } | null, mentions?: { __typename?: 'MentionConnection', totalCount: number, edges: Array<{ __typename?: 'MentionEdge', cursor: string, node: { __typename?: 'Mention', user: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, vip?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, image?: string | null }, userTicketAccess: { __typename?: 'PolicyMentionUserTicketAccess', agentReadAccess: boolean } } }> } | null, updatedBy?: { __typename?: 'User', id: string } | null, owner: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null }, customer: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, phone?: string | null, mobile?: string | null, image?: string | null, vip?: boolean | null, active?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, email?: string | null, hasSecondaryOrganizations?: boolean | null, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } | null, policy: { __typename?: 'PolicyDefault', update: boolean } }, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, vip?: boolean | null, active?: boolean | null } | null, state: { __typename?: 'TicketState', id: string, name: string, stateType: { __typename?: 'TicketStateType', id: string, name: string } }, group: { __typename?: 'Group', id: string, name?: string | null, emailAddress?: { __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null } | null }, priority: { __typename?: 'TicketPriority', id: string, name: string, defaultCreate: boolean, uiColor?: string | null }, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, policy: { __typename?: 'PolicyTicket', update: boolean, agentReadAccess: boolean }, timeUnitsPerType?: Array<{ __typename?: 'TicketTimeAccountingTypeSum', name: string, timeUnit: number }> | null, externalReferences?: { __typename?: 'TicketExternalReferences', github?: Array<string> | null, gitlab?: Array<string> | null } | null } };
 
 export type TicketOverviewUpdatesSubscriptionVariables = Exact<{
   withTicketCount: Scalars['Boolean']['input'];
@@ -4451,13 +6053,7 @@ export type SearchQueryVariables = Exact<{
 }>;
 
 
-export type SearchQuery = { __typename?: 'Queries', search: Array<{ __typename?: 'Organization', id: string, internalId: number, active?: boolean | null, name?: string | null, vip?: boolean | null, updatedAt: string, members?: { __typename?: 'UserConnection', totalCount: number, edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, fullname?: string | null } }> } | null, updatedBy?: { __typename?: 'User', id: string, fullname?: string | null } | null, ticketsCount?: { __typename?: 'TicketCount', open: number, closed: number } | null } | { __typename?: 'Ticket', id: string, internalId: number, title: string, number: string, updatedAt: string, stateColorCode: EnumTicketStateColorCode, state: { __typename?: 'TicketState', name: string }, priority: { __typename?: 'TicketPriority', name: string, defaultCreate: boolean, uiColor?: string | null }, customer: { __typename?: 'User', id: string, internalId: number, fullname?: string | null }, updatedBy?: { __typename?: 'User', id: string, fullname?: string | null } | null } | { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, image?: string | null, active?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, vip?: boolean | null, updatedAt: string, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null } | null, updatedBy?: { __typename?: 'User', id: string, fullname?: string | null } | null, ticketsCount?: { __typename?: 'TicketCount', open: number, closed: number } | null }> };
-
-export type TicketLiveUserAttributesFragment = { __typename?: 'TicketLiveUser', user: { __typename?: 'User', id: string, firstname?: string | null, lastname?: string | null, fullname?: string | null, email?: string | null, vip?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, image?: string | null }, apps: Array<{ __typename?: 'TicketLiveUserApp', name: EnumTaskbarApp, editing: boolean, lastInteraction: string }> };
-
-export type TicketArticleAttributesFragment = { __typename?: 'TicketArticle', id: string, internalId: number, messageId?: string | null, subject?: string | null, messageIdMd5?: string | null, inReplyTo?: string | null, contentType: string, references?: string | null, preferences?: any | null, bodyWithUrls: string, internal: boolean, createdAt: string, from?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, to?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, cc?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, replyTo?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, attachmentsWithoutInline: Array<{ __typename?: 'StoredFile', internalId: number, name: string, size?: number | null, type?: string | null, preferences?: any | null }>, author: { __typename?: 'User', id: string, fullname?: string | null, firstname?: string | null, lastname?: string | null, email?: string | null, active?: boolean | null, image?: string | null, vip?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, authorizations?: Array<{ __typename?: 'Authorization', provider: string, uid: string, username?: string | null }> | null }, type?: { __typename?: 'TicketArticleType', name?: string | null, communication?: boolean | null } | null, sender?: { __typename?: 'TicketArticleSender', name?: string | null } | null, securityState?: { __typename?: 'TicketArticleSecurityState', encryptionMessage?: string | null, encryptionSuccess?: boolean | null, signingMessage?: string | null, signingSuccess?: boolean | null, type?: EnumSecurityStateType | null } | null, mediaErrorState?: { __typename?: 'TicketArticleMediaErrorState', error?: boolean | null } | null };
-
-export type TicketMentionFragment = { __typename?: 'Mention', user: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, vip?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, image?: string | null } };
+export type SearchQuery = { __typename?: 'Queries', search: Array<{ __typename?: 'Organization', id: string, internalId: number, active?: boolean | null, name?: string | null, vip?: boolean | null, updatedAt: string, members?: { __typename?: 'UserConnection', totalCount: number, edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, fullname?: string | null } }> } | null, updatedBy?: { __typename?: 'User', id: string, fullname?: string | null } | null, ticketsCount?: { __typename?: 'TicketCount', open: number, closed: number } | null } | { __typename?: 'Ticket', id: string, internalId: number, title: string, number: string, updatedAt: string, stateColorCode: EnumTicketStateColorCode, state: { __typename?: 'TicketState', id: string, name: string }, priority: { __typename?: 'TicketPriority', name: string, defaultCreate: boolean, uiColor?: string | null }, customer: { __typename?: 'User', id: string, internalId: number, fullname?: string | null }, updatedBy?: { __typename?: 'User', id: string, fullname?: string | null } | null } | { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, image?: string | null, active?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, vip?: boolean | null, updatedAt: string, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null } | null, updatedBy?: { __typename?: 'User', id: string, fullname?: string | null } | null, ticketsCount?: { __typename?: 'TicketCount', open: number, closed: number } | null }> };
 
 export type TicketLiveUserDeleteMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -4465,7 +6061,7 @@ export type TicketLiveUserDeleteMutationVariables = Exact<{
 }>;
 
 
-export type TicketLiveUserDeleteMutation = { __typename?: 'Mutations', ticketLiveUserDelete?: { __typename?: 'TicketLiveUserDeletePayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type TicketLiveUserDeleteMutation = { __typename?: 'Mutations', ticketLiveUserDelete?: { __typename?: 'TicketLiveUserDeletePayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type TicketLiveUserUpsertMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -4474,45 +6070,7 @@ export type TicketLiveUserUpsertMutationVariables = Exact<{
 }>;
 
 
-export type TicketLiveUserUpsertMutation = { __typename?: 'Mutations', ticketLiveUserUpsert?: { __typename?: 'TicketLiveUserUpsertPayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
-
-export type TicketUpdateMutationVariables = Exact<{
-  ticketId: Scalars['ID']['input'];
-  input: TicketUpdateInput;
-}>;
-
-
-export type TicketUpdateMutation = { __typename?: 'Mutations', ticketUpdate?: { __typename?: 'TicketUpdatePayload', ticket?: { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, createdAt: string, escalationAt?: string | null, updatedAt: string, pendingTime?: string | null, tags?: Array<string> | null, timeUnit?: number | null, subscribed?: boolean | null, preferences?: any | null, stateColorCode: EnumTicketStateColorCode, firstResponseEscalationAt?: string | null, closeEscalationAt?: string | null, updateEscalationAt?: string | null, initialChannel?: EnumChannelArea | null, owner: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null }, customer: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, phone?: string | null, mobile?: string | null, image?: string | null, vip?: boolean | null, active?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, email?: string | null, hasSecondaryOrganizations?: boolean | null, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } | null, policy: { __typename?: 'PolicyDefault', update: boolean } }, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, vip?: boolean | null, active?: boolean | null } | null, state: { __typename?: 'TicketState', id: string, name: string, stateType: { __typename?: 'TicketStateType', name: string } }, group: { __typename?: 'Group', id: string, name?: string | null, emailAddress?: { __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null } | null }, priority: { __typename?: 'TicketPriority', id: string, name: string, defaultCreate: boolean, uiColor?: string | null }, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, policy: { __typename?: 'PolicyTicket', update: boolean, agentReadAccess: boolean }, timeUnitsPerType?: Array<{ __typename?: 'TicketTimeAccountingTypeSum', name: string, timeUnit: number }> | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
-
-export type AutocompleteSearchMergeTicketQueryVariables = Exact<{
-  input: AutocompleteSearchMergeTicketInput;
-}>;
-
-
-export type AutocompleteSearchMergeTicketQuery = { __typename?: 'Queries', autocompleteSearchMergeTicket: Array<{ __typename?: 'AutocompleteSearchMergeTicketEntry', value: string, label: string, labelPlaceholder?: Array<string> | null, heading?: string | null, headingPlaceholder?: Array<string> | null, disabled?: boolean | null, icon?: string | null, ticket: { __typename?: 'Ticket', id: string, number: string, internalId: number, stateColorCode: EnumTicketStateColorCode, state: { __typename?: 'TicketState', id: string, name: string } } }> };
-
-export type TicketQueryVariables = Exact<{
-  ticketId?: InputMaybe<Scalars['ID']['input']>;
-  ticketInternalId?: InputMaybe<Scalars['Int']['input']>;
-  ticketNumber?: InputMaybe<Scalars['String']['input']>;
-  mentionsCount?: InputMaybe<Scalars['Int']['input']>;
-}>;
-
-
-export type TicketQuery = { __typename?: 'Queries', ticket: { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, createdAt: string, escalationAt?: string | null, updatedAt: string, pendingTime?: string | null, tags?: Array<string> | null, timeUnit?: number | null, subscribed?: boolean | null, preferences?: any | null, stateColorCode: EnumTicketStateColorCode, firstResponseEscalationAt?: string | null, closeEscalationAt?: string | null, updateEscalationAt?: string | null, initialChannel?: EnumChannelArea | null, createArticleType?: { __typename?: 'TicketArticleType', id: string, name?: string | null } | null, mentions?: { __typename?: 'MentionConnection', totalCount: number, edges: Array<{ __typename?: 'MentionEdge', cursor: string, node: { __typename?: 'Mention', user: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, vip?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, image?: string | null } } }> } | null, owner: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null }, customer: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, phone?: string | null, mobile?: string | null, image?: string | null, vip?: boolean | null, active?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, email?: string | null, hasSecondaryOrganizations?: boolean | null, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } | null, policy: { __typename?: 'PolicyDefault', update: boolean } }, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, vip?: boolean | null, active?: boolean | null } | null, state: { __typename?: 'TicketState', id: string, name: string, stateType: { __typename?: 'TicketStateType', name: string } }, group: { __typename?: 'Group', id: string, name?: string | null, emailAddress?: { __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null } | null }, priority: { __typename?: 'TicketPriority', id: string, name: string, defaultCreate: boolean, uiColor?: string | null }, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, policy: { __typename?: 'PolicyTicket', update: boolean, agentReadAccess: boolean }, timeUnitsPerType?: Array<{ __typename?: 'TicketTimeAccountingTypeSum', name: string, timeUnit: number }> | null } };
-
-export type TicketArticlesQueryVariables = Exact<{
-  ticketId?: InputMaybe<Scalars['ID']['input']>;
-  ticketInternalId?: InputMaybe<Scalars['Int']['input']>;
-  ticketNumber?: InputMaybe<Scalars['String']['input']>;
-  beforeCursor?: InputMaybe<Scalars['String']['input']>;
-  afterCursor?: InputMaybe<Scalars['String']['input']>;
-  pageSize?: InputMaybe<Scalars['Int']['input']>;
-  loadDescription?: InputMaybe<Scalars['Boolean']['input']>;
-}>;
-
-
-export type TicketArticlesQuery = { __typename?: 'Queries', description?: { __typename?: 'TicketArticleConnection', edges: Array<{ __typename?: 'TicketArticleEdge', node: { __typename?: 'TicketArticle', id: string, internalId: number, messageId?: string | null, subject?: string | null, messageIdMd5?: string | null, inReplyTo?: string | null, contentType: string, references?: string | null, preferences?: any | null, bodyWithUrls: string, internal: boolean, createdAt: string, from?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, to?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, cc?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, replyTo?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, attachmentsWithoutInline: Array<{ __typename?: 'StoredFile', internalId: number, name: string, size?: number | null, type?: string | null, preferences?: any | null }>, author: { __typename?: 'User', id: string, fullname?: string | null, firstname?: string | null, lastname?: string | null, email?: string | null, active?: boolean | null, image?: string | null, vip?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, authorizations?: Array<{ __typename?: 'Authorization', provider: string, uid: string, username?: string | null }> | null }, type?: { __typename?: 'TicketArticleType', name?: string | null, communication?: boolean | null } | null, sender?: { __typename?: 'TicketArticleSender', name?: string | null } | null, securityState?: { __typename?: 'TicketArticleSecurityState', encryptionMessage?: string | null, encryptionSuccess?: boolean | null, signingMessage?: string | null, signingSuccess?: boolean | null, type?: EnumSecurityStateType | null } | null, mediaErrorState?: { __typename?: 'TicketArticleMediaErrorState', error?: boolean | null } | null } }> }, articles: { __typename?: 'TicketArticleConnection', totalCount: number, edges: Array<{ __typename?: 'TicketArticleEdge', cursor: string, node: { __typename?: 'TicketArticle', id: string, internalId: number, messageId?: string | null, subject?: string | null, messageIdMd5?: string | null, inReplyTo?: string | null, contentType: string, references?: string | null, preferences?: any | null, bodyWithUrls: string, internal: boolean, createdAt: string, from?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, to?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, cc?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, replyTo?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, attachmentsWithoutInline: Array<{ __typename?: 'StoredFile', internalId: number, name: string, size?: number | null, type?: string | null, preferences?: any | null }>, author: { __typename?: 'User', id: string, fullname?: string | null, firstname?: string | null, lastname?: string | null, email?: string | null, active?: boolean | null, image?: string | null, vip?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, authorizations?: Array<{ __typename?: 'Authorization', provider: string, uid: string, username?: string | null }> | null }, type?: { __typename?: 'TicketArticleType', name?: string | null, communication?: boolean | null } | null, sender?: { __typename?: 'TicketArticleSender', name?: string | null } | null, securityState?: { __typename?: 'TicketArticleSecurityState', encryptionMessage?: string | null, encryptionSuccess?: boolean | null, signingMessage?: string | null, signingSuccess?: boolean | null, type?: EnumSecurityStateType | null } | null, mediaErrorState?: { __typename?: 'TicketArticleMediaErrorState', error?: boolean | null } | null } }>, pageInfo: { __typename?: 'PageInfo', endCursor?: string | null, startCursor?: string | null, hasPreviousPage: boolean } } };
+export type TicketLiveUserUpsertMutation = { __typename?: 'Mutations', ticketLiveUserUpsert?: { __typename?: 'TicketLiveUserUpsertPayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type TicketsByOverviewQueryVariables = Exact<{
   overviewId: Scalars['ID']['input'];
@@ -4526,30 +6084,7 @@ export type TicketsByOverviewQueryVariables = Exact<{
 }>;
 
 
-export type TicketsByOverviewQuery = { __typename?: 'Queries', ticketsByOverview: { __typename?: 'TicketConnection', totalCount: number, edges: Array<{ __typename?: 'TicketEdge', cursor: string, node: { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, createdAt: string, updatedAt: string, stateColorCode: EnumTicketStateColorCode, updatedBy?: { __typename?: 'User', id: string, fullname?: string | null } | null, customer: { __typename?: 'User', id: string, firstname?: string | null, lastname?: string | null, fullname?: string | null }, organization?: { __typename?: 'Organization', id: string, name?: string | null } | null, state: { __typename?: 'TicketState', id: string, name: string, stateType: { __typename?: 'TicketStateType', name: string } }, group: { __typename?: 'Group', id: string, name?: string | null }, priority?: { __typename?: 'TicketPriority', id: string, name: string, uiColor?: string | null, defaultCreate: boolean }, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } }>, pageInfo: { __typename?: 'PageInfo', endCursor?: string | null, hasNextPage: boolean } } };
-
-export type TicketLiveUserUpdatesSubscriptionVariables = Exact<{
-  userId: Scalars['ID']['input'];
-  key: Scalars['String']['input'];
-  app: EnumTaskbarApp;
-}>;
-
-
-export type TicketLiveUserUpdatesSubscription = { __typename?: 'Subscriptions', ticketLiveUserUpdates: { __typename?: 'TicketLiveUserUpdatesPayload', liveUsers?: Array<{ __typename?: 'TicketLiveUser', user: { __typename?: 'User', id: string, firstname?: string | null, lastname?: string | null, fullname?: string | null, email?: string | null, vip?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, image?: string | null }, apps: Array<{ __typename?: 'TicketLiveUserApp', name: EnumTaskbarApp, editing: boolean, lastInteraction: string }> }> | null } };
-
-export type TicketArticleUpdatesSubscriptionVariables = Exact<{
-  ticketId: Scalars['ID']['input'];
-}>;
-
-
-export type TicketArticleUpdatesSubscription = { __typename?: 'Subscriptions', ticketArticleUpdates: { __typename?: 'TicketArticleUpdatesPayload', removeArticleId?: string | null, addArticle?: { __typename?: 'TicketArticle', id: string, createdAt: string } | null, updateArticle?: { __typename?: 'TicketArticle', id: string, internalId: number, messageId?: string | null, subject?: string | null, messageIdMd5?: string | null, inReplyTo?: string | null, contentType: string, references?: string | null, preferences?: any | null, bodyWithUrls: string, internal: boolean, createdAt: string, from?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, to?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, cc?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, replyTo?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, attachmentsWithoutInline: Array<{ __typename?: 'StoredFile', internalId: number, name: string, size?: number | null, type?: string | null, preferences?: any | null }>, author: { __typename?: 'User', id: string, fullname?: string | null, firstname?: string | null, lastname?: string | null, email?: string | null, active?: boolean | null, image?: string | null, vip?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, authorizations?: Array<{ __typename?: 'Authorization', provider: string, uid: string, username?: string | null }> | null }, type?: { __typename?: 'TicketArticleType', name?: string | null, communication?: boolean | null } | null, sender?: { __typename?: 'TicketArticleSender', name?: string | null } | null, securityState?: { __typename?: 'TicketArticleSecurityState', encryptionMessage?: string | null, encryptionSuccess?: boolean | null, signingMessage?: string | null, signingSuccess?: boolean | null, type?: EnumSecurityStateType | null } | null, mediaErrorState?: { __typename?: 'TicketArticleMediaErrorState', error?: boolean | null } | null } | null } };
-
-export type TicketUpdatesSubscriptionVariables = Exact<{
-  ticketId: Scalars['ID']['input'];
-}>;
-
-
-export type TicketUpdatesSubscription = { __typename?: 'Subscriptions', ticketUpdates: { __typename?: 'TicketUpdatesPayload', ticket?: { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, createdAt: string, escalationAt?: string | null, updatedAt: string, pendingTime?: string | null, tags?: Array<string> | null, timeUnit?: number | null, subscribed?: boolean | null, preferences?: any | null, stateColorCode: EnumTicketStateColorCode, firstResponseEscalationAt?: string | null, closeEscalationAt?: string | null, updateEscalationAt?: string | null, initialChannel?: EnumChannelArea | null, mentions?: { __typename?: 'MentionConnection', totalCount: number, edges: Array<{ __typename?: 'MentionEdge', cursor: string, node: { __typename?: 'Mention', user: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, vip?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, image?: string | null } } }> } | null, owner: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null }, customer: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, phone?: string | null, mobile?: string | null, image?: string | null, vip?: boolean | null, active?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, email?: string | null, hasSecondaryOrganizations?: boolean | null, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } | null, policy: { __typename?: 'PolicyDefault', update: boolean } }, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, vip?: boolean | null, active?: boolean | null } | null, state: { __typename?: 'TicketState', id: string, name: string, stateType: { __typename?: 'TicketStateType', name: string } }, group: { __typename?: 'Group', id: string, name?: string | null, emailAddress?: { __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null } | null }, priority: { __typename?: 'TicketPriority', id: string, name: string, defaultCreate: boolean, uiColor?: string | null }, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, policy: { __typename?: 'PolicyTicket', update: boolean, agentReadAccess: boolean }, timeUnitsPerType?: Array<{ __typename?: 'TicketTimeAccountingTypeSum', name: string, timeUnit: number }> | null } | null } };
+export type TicketsByOverviewQuery = { __typename?: 'Queries', ticketsByOverview: { __typename?: 'TicketConnection', totalCount: number, edges: Array<{ __typename?: 'TicketEdge', cursor: string, node: { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, createdAt: string, updatedAt: string, stateColorCode: EnumTicketStateColorCode, updatedBy?: { __typename?: 'User', id: string, fullname?: string | null } | null, customer: { __typename?: 'User', id: string, firstname?: string | null, lastname?: string | null, fullname?: string | null }, organization?: { __typename?: 'Organization', id: string, name?: string | null } | null, state: { __typename?: 'TicketState', id: string, name: string, stateType: { __typename?: 'TicketStateType', id: string, name: string } }, group: { __typename?: 'Group', id: string, name?: string | null }, priority?: { __typename?: 'TicketPriority', id: string, name: string, uiColor?: string | null, defaultCreate: boolean }, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } }>, pageInfo: { __typename?: 'PageInfo', endCursor?: string | null, hasNextPage: boolean } } };
 
 export type UserUpdateMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -4557,7 +6092,7 @@ export type UserUpdateMutationVariables = Exact<{
 }>;
 
 
-export type UserUpdateMutation = { __typename?: 'Mutations', userUpdate?: { __typename?: 'UserUpdatePayload', user?: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, image?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, preferences?: any | null, hasSecondaryOrganizations?: boolean | null, outOfOfficeReplacement?: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, login?: string | null, phone?: string | null, email?: string | null } | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } | null, personalSettings?: { __typename?: 'UserPersonalSettings', notificationConfig?: { __typename?: 'UserPersonalSettingsNotificationConfig', groupIds?: Array<number> | null, matrix?: { __typename?: 'UserPersonalSettingsNotificationMatrix', create?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, escalation?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, reminderReached?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, update?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null } | null } | null, notificationSound?: { __typename?: 'UserPersonalSettingsNotificationSound', enabled?: boolean | null, file?: EnumNotificationSoundFile | null } | null } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserUpdateMutation = { __typename?: 'Mutations', userUpdate?: { __typename?: 'UserUpdatePayload', user?: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, image?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, preferences?: any | null, hasSecondaryOrganizations?: boolean | null, outOfOfficeReplacement?: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, login?: string | null, phone?: string | null, email?: string | null } | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } | null, personalSettings?: { __typename?: 'UserPersonalSettings', notificationConfig?: { __typename?: 'UserPersonalSettingsNotificationConfig', groupIds?: Array<number> | null, matrix?: { __typename?: 'UserPersonalSettingsNotificationMatrix', create?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, escalation?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, reminderReached?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, update?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null } | null } | null, notificationSound?: { __typename?: 'UserPersonalSettingsNotificationSound', enabled?: boolean | null, file?: EnumNotificationSoundFile | null } | null } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type AutocompleteSearchAgentQueryVariables = Exact<{
   input: AutocompleteSearchUserInput;
@@ -4572,7 +6107,7 @@ export type AutocompleteSearchGenericQueryVariables = Exact<{
 }>;
 
 
-export type AutocompleteSearchGenericQuery = { __typename?: 'Queries', autocompleteSearchGeneric: Array<{ __typename?: 'AutocompleteSearchGenericEntry', value: number, label: string, labelPlaceholder?: Array<string> | null, heading?: string | null, headingPlaceholder?: Array<string> | null, disabled?: boolean | null, object: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, vip?: boolean | null, members?: { __typename?: 'UserConnection', edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, internalId: number, login?: string | null, image?: string | null, firstname?: string | null, lastname?: string | null, fullname?: string | null, email?: string | null, phone?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, vip?: boolean | null } }> } | null } | { __typename?: 'Ticket' } | { __typename?: 'User', id: string, internalId: number, login?: string | null, image?: string | null, firstname?: string | null, lastname?: string | null, fullname?: string | null, email?: string | null, phone?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, vip?: boolean | null } }> };
+export type AutocompleteSearchGenericQuery = { __typename?: 'Queries', autocompleteSearchGeneric: Array<{ __typename?: 'AutocompleteSearchGenericEntry', value: number, label: string, labelPlaceholder?: Array<string> | null, heading?: string | null, headingPlaceholder?: Array<string> | null, disabled?: boolean | null, object: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, vip?: boolean | null, allMembers?: { __typename?: 'UserConnection', edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, internalId: number, login?: string | null, image?: string | null, firstname?: string | null, lastname?: string | null, fullname?: string | null, email?: string | null, phone?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, vip?: boolean | null, hasSecondaryOrganizations?: boolean | null } }> } | null } | { __typename?: 'Ticket' } | { __typename?: 'User', id: string, internalId: number, login?: string | null, image?: string | null, firstname?: string | null, lastname?: string | null, fullname?: string | null, email?: string | null, phone?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, vip?: boolean | null, hasSecondaryOrganizations?: boolean | null, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, vip?: boolean | null, ticketsCount?: { __typename?: 'TicketCount', open: number, closed: number } | null } | null } }> };
 
 export type AutocompleteSearchUserQueryVariables = Exact<{
   input: AutocompleteSearchUserInput;
@@ -4587,7 +6122,7 @@ export type KnowledgeBaseAnswerSuggestionContentTransformMutationVariables = Exa
 }>;
 
 
-export type KnowledgeBaseAnswerSuggestionContentTransformMutation = { __typename?: 'Mutations', knowledgeBaseAnswerSuggestionContentTransform?: { __typename?: 'KnowledgeBaseAnswerSuggestionContentTransformPayload', body?: string | null, attachments?: Array<{ __typename?: 'StoredFile', id: string, name: string, size?: number | null, type?: string | null, preferences?: any | null }> | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type KnowledgeBaseAnswerSuggestionContentTransformMutation = { __typename?: 'Mutations', knowledgeBaseAnswerSuggestionContentTransform?: { __typename?: 'KnowledgeBaseAnswerSuggestionContentTransformPayload', body?: string | null, attachments?: Array<{ __typename?: 'StoredFile', id: string, name: string, size?: number | null, type?: string | null, preferences?: any | null }> | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type KnowledgeBaseAnswerSuggestionsQueryVariables = Exact<{
   query: Scalars['String']['input'];
@@ -4660,7 +6195,7 @@ export type FormUpdaterQueryVariables = Exact<{
 }>;
 
 
-export type FormUpdaterQuery = { __typename?: 'Queries', formUpdater: any };
+export type FormUpdaterQuery = { __typename?: 'Queries', formUpdater: { __typename?: 'FormUpdaterResult', fields: any, flags: any } };
 
 export type ObjectManagerFrontendAttributesQueryVariables = Exact<{
   object: EnumObjectManagerObjects;
@@ -4674,26 +6209,26 @@ export type OnlineNotificationDeleteMutationVariables = Exact<{
 }>;
 
 
-export type OnlineNotificationDeleteMutation = { __typename?: 'Mutations', onlineNotificationDelete?: { __typename?: 'OnlineNotificationDeletePayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type OnlineNotificationDeleteMutation = { __typename?: 'Mutations', onlineNotificationDelete?: { __typename?: 'OnlineNotificationDeletePayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type OnlineNotificationMarkAllAsSeenMutationVariables = Exact<{
   onlineNotificationIds: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
 }>;
 
 
-export type OnlineNotificationMarkAllAsSeenMutation = { __typename?: 'Mutations', onlineNotificationMarkAllAsSeen?: { __typename?: 'OnlineNotificationMarkAllAsSeenPayload', onlineNotifications?: Array<{ __typename?: 'OnlineNotification', id: string, seen: boolean }> | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type OnlineNotificationMarkAllAsSeenMutation = { __typename?: 'Mutations', onlineNotificationMarkAllAsSeen?: { __typename?: 'OnlineNotificationMarkAllAsSeenPayload', onlineNotifications?: Array<{ __typename?: 'OnlineNotification', id: string, seen: boolean }> | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type OnlineNotificationSeenMutationVariables = Exact<{
   objectId: Scalars['ID']['input'];
 }>;
 
 
-export type OnlineNotificationSeenMutation = { __typename?: 'Mutations', onlineNotificationSeen?: { __typename?: 'OnlineNotificationSeenPayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type OnlineNotificationSeenMutation = { __typename?: 'Mutations', onlineNotificationSeen?: { __typename?: 'OnlineNotificationSeenPayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type OnlineNotificationsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type OnlineNotificationsQuery = { __typename?: 'Queries', onlineNotifications: { __typename?: 'OnlineNotificationConnection', edges: Array<{ __typename?: 'OnlineNotificationEdge', cursor: string, node: { __typename?: 'OnlineNotification', id: string, seen: boolean, createdAt: string, typeName: string, objectName: string, createdBy?: { __typename?: 'User', id: string, fullname?: string | null, lastname?: string | null, firstname?: string | null, email?: string | null, vip?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, image?: string | null } | null, metaObject?: { __typename?: 'DataPrivacyTask' } | { __typename?: 'Group' } | { __typename?: 'Organization' } | { __typename?: 'Role' } | { __typename?: 'Ticket', id: string, internalId: number, title: string } | { __typename?: 'TicketArticle' } | { __typename?: 'User' } | null } }>, pageInfo: { __typename?: 'PageInfo', endCursor?: string | null, hasNextPage: boolean } } };
+export type OnlineNotificationsQuery = { __typename?: 'Queries', onlineNotifications: { __typename?: 'OnlineNotificationConnection', edges: Array<{ __typename?: 'OnlineNotificationEdge', cursor: string, node: { __typename?: 'OnlineNotification', id: string, seen: boolean, createdAt: string, typeName: string, objectName: string, createdBy?: { __typename?: 'User', id: string, fullname?: string | null, lastname?: string | null, firstname?: string | null, email?: string | null, vip?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, image?: string | null } | null, metaObject?: { __typename?: 'DataPrivacyTask' } | { __typename?: 'Group' } | { __typename?: 'Organization' } | { __typename?: 'Role' } | { __typename?: 'Ticket', id: string, internalId: number, title: string } | { __typename?: 'TicketArticle', id: string, internalId: number, bodyWithUrls: string, preferences?: any | null, ticket: { __typename?: 'Ticket', id: string, internalId: number, title: string }, to?: { __typename?: 'AddressesField', raw: string } | null } | { __typename?: 'User' } | null } }>, pageInfo: { __typename?: 'PageInfo', endCursor?: string | null, hasNextPage: boolean } } };
 
 export type OnlineNotificationsCountSubscriptionVariables = Exact<{
   userId: Scalars['ID']['input'];
@@ -4704,7 +6239,7 @@ export type OnlineNotificationsCountSubscription = { __typename?: 'Subscriptions
 
 export type OrganizationAttributesFragment = { __typename?: 'Organization', id: string, internalId: number, name?: string | null, shared?: boolean | null, domain?: string | null, domainAssignment?: boolean | null, active?: boolean | null, note?: string | null, vip?: boolean | null, ticketsCount?: { __typename?: 'TicketCount', open: number, closed: number } | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null };
 
-export type OrganizationMembersFragment = { __typename?: 'Organization', members?: { __typename?: 'UserConnection', totalCount: number, edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, internalId: number, image?: string | null, firstname?: string | null, lastname?: string | null, fullname?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, vip?: boolean | null } }> } | null };
+export type OrganizationMembersFragment = { __typename?: 'Organization', allMembers?: { __typename?: 'UserConnection', totalCount: number, edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, internalId: number, image?: string | null, firstname?: string | null, lastname?: string | null, fullname?: string | null, email?: string | null, phone?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, vip?: boolean | null } }> } | null };
 
 export type OrganizationQueryVariables = Exact<{
   organizationId?: InputMaybe<Scalars['ID']['input']>;
@@ -4713,7 +6248,7 @@ export type OrganizationQueryVariables = Exact<{
 }>;
 
 
-export type OrganizationQuery = { __typename?: 'Queries', organization: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, shared?: boolean | null, domain?: string | null, domainAssignment?: boolean | null, active?: boolean | null, note?: string | null, vip?: boolean | null, policy: { __typename?: 'PolicyDefault', update: boolean }, ticketsCount?: { __typename?: 'TicketCount', open: number, closed: number } | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, members?: { __typename?: 'UserConnection', totalCount: number, edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, internalId: number, image?: string | null, firstname?: string | null, lastname?: string | null, fullname?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, vip?: boolean | null } }> } | null } };
+export type OrganizationQuery = { __typename?: 'Queries', organization: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, shared?: boolean | null, domain?: string | null, domainAssignment?: boolean | null, active?: boolean | null, note?: string | null, vip?: boolean | null, policy: { __typename?: 'PolicyDefault', update: boolean }, ticketsCount?: { __typename?: 'TicketCount', open: number, closed: number } | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, allMembers?: { __typename?: 'UserConnection', totalCount: number, edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, internalId: number, image?: string | null, firstname?: string | null, lastname?: string | null, fullname?: string | null, email?: string | null, phone?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, vip?: boolean | null } }> } | null } };
 
 export type OrganizationUpdatesSubscriptionVariables = Exact<{
   organizationId: Scalars['ID']['input'];
@@ -4721,7 +6256,7 @@ export type OrganizationUpdatesSubscriptionVariables = Exact<{
 }>;
 
 
-export type OrganizationUpdatesSubscription = { __typename?: 'Subscriptions', organizationUpdates: { __typename?: 'OrganizationUpdatesPayload', organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, shared?: boolean | null, domain?: string | null, domainAssignment?: boolean | null, active?: boolean | null, note?: string | null, vip?: boolean | null, ticketsCount?: { __typename?: 'TicketCount', open: number, closed: number } | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, members?: { __typename?: 'UserConnection', totalCount: number, edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, internalId: number, image?: string | null, firstname?: string | null, lastname?: string | null, fullname?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, vip?: boolean | null } }> } | null } | null } };
+export type OrganizationUpdatesSubscription = { __typename?: 'Subscriptions', organizationUpdates: { __typename?: 'OrganizationUpdatesPayload', organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, shared?: boolean | null, domain?: string | null, domainAssignment?: boolean | null, active?: boolean | null, note?: string | null, vip?: boolean | null, ticketsCount?: { __typename?: 'TicketCount', open: number, closed: number } | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, allMembers?: { __typename?: 'UserConnection', totalCount: number, edges: Array<{ __typename?: 'UserEdge', node: { __typename?: 'User', id: string, internalId: number, image?: string | null, firstname?: string | null, lastname?: string | null, fullname?: string | null, email?: string | null, phone?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, vip?: boolean | null } }> } | null } | null } };
 
 export type PublicLinksQueryVariables = Exact<{
   screen: EnumPublicLinksScreen;
@@ -4737,16 +6272,32 @@ export type PublicLinkUpdatesSubscriptionVariables = Exact<{
 
 export type PublicLinkUpdatesSubscription = { __typename?: 'Subscriptions', publicLinkUpdates: { __typename?: 'PublicLinkUpdatesPayload', publicLinks?: Array<{ __typename?: 'PublicLink', id: string, link: string, title: string, description?: string | null, newTab: boolean }> | null } };
 
+export type TagAssignmentAddMutationVariables = Exact<{
+  objectId: Scalars['ID']['input'];
+  tag: Scalars['String']['input'];
+}>;
+
+
+export type TagAssignmentAddMutation = { __typename?: 'Mutations', tagAssignmentAdd?: { __typename?: 'TagAssignmentAddPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type TagAssignmentRemoveMutationVariables = Exact<{
+  objectId: Scalars['ID']['input'];
+  tag: Scalars['String']['input'];
+}>;
+
+
+export type TagAssignmentRemoveMutation = { __typename?: 'Mutations', tagAssignmentRemove?: { __typename?: 'TagAssignmentRemovePayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
 export type TagAssignmentUpdateMutationVariables = Exact<{
   objectId: Scalars['ID']['input'];
   tags: Array<Scalars['String']['input']> | Scalars['String']['input'];
 }>;
 
 
-export type TagAssignmentUpdateMutation = { __typename?: 'Mutations', tagAssignmentUpdate?: { __typename?: 'TagAssignmentUpdatePayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type TagAssignmentUpdateMutation = { __typename?: 'Mutations', tagAssignmentUpdate?: { __typename?: 'TagAssignmentUpdatePayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type AutocompleteSearchTagQueryVariables = Exact<{
-  input: AutocompleteSearchInput;
+  input: AutocompleteSearchTagInput;
 }>;
 
 
@@ -4760,14 +6311,14 @@ export type TicketArticleChangeVisibilityMutationVariables = Exact<{
 }>;
 
 
-export type TicketArticleChangeVisibilityMutation = { __typename?: 'Mutations', ticketArticleChangeVisibility?: { __typename?: 'TicketArticleChangeVisibilityPayload', article?: { __typename?: 'TicketArticle', id: string, internal: boolean } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type TicketArticleChangeVisibilityMutation = { __typename?: 'Mutations', ticketArticleChangeVisibility?: { __typename?: 'TicketArticleChangeVisibilityPayload', article?: { __typename?: 'TicketArticle', id: string, internal: boolean } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type TicketArticleDeleteMutationVariables = Exact<{
   articleId: Scalars['ID']['input'];
 }>;
 
 
-export type TicketArticleDeleteMutation = { __typename?: 'Mutations', ticketArticleDelete?: { __typename?: 'TicketArticleDeletePayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type TicketArticleDeleteMutation = { __typename?: 'Mutations', ticketArticleDelete?: { __typename?: 'TicketArticleDeletePayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type TicketArticleEmailForwardReplyMutationVariables = Exact<{
   articleId: Scalars['ID']['input'];
@@ -4775,32 +6326,119 @@ export type TicketArticleEmailForwardReplyMutationVariables = Exact<{
 }>;
 
 
-export type TicketArticleEmailForwardReplyMutation = { __typename?: 'Mutations', ticketArticleEmailForwardReply?: { __typename?: 'TicketArticleEmailForwardReplyPayload', quotableFrom?: string | null, quotableTo?: string | null, quotableCc?: string | null, attachments: Array<{ __typename?: 'StoredFile', id: string, internalId: number, name: string, size?: number | null, type?: string | null }>, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type TicketArticleEmailForwardReplyMutation = { __typename?: 'Mutations', ticketArticleEmailForwardReply?: { __typename?: 'TicketArticleEmailForwardReplyPayload', quotableFrom?: string | null, quotableTo?: string | null, quotableCc?: string | null, attachments: Array<{ __typename?: 'StoredFile', id: string, internalId: number, name: string, size?: number | null, type?: string | null }>, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type TicketArticleRetryMediaDownloadMutationVariables = Exact<{
   articleId: Scalars['ID']['input'];
 }>;
 
 
-export type TicketArticleRetryMediaDownloadMutation = { __typename?: 'Mutations', ticketArticleRetryMediaDownload?: { __typename?: 'TicketArticleRetryMediaDownloadPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type TicketArticleRetryMediaDownloadMutation = { __typename?: 'Mutations', ticketArticleRetryMediaDownload?: { __typename?: 'TicketArticleRetryMediaDownloadPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type TicketArticleRetrySecurityProcessMutationVariables = Exact<{
   articleId: Scalars['ID']['input'];
 }>;
 
 
-export type TicketArticleRetrySecurityProcessMutation = { __typename?: 'Mutations', ticketArticleRetrySecurityProcess?: { __typename?: 'TicketArticleRetrySecurityProcessPayload', retryResult?: { __typename?: 'TicketArticleSecurityState', type?: EnumSecurityStateType | null, signingSuccess?: boolean | null, signingMessage?: string | null, encryptionSuccess?: boolean | null, encryptionMessage?: string | null } | null, article?: { __typename?: 'TicketArticle', id: string, securityState?: { __typename?: 'TicketArticleSecurityState', type?: EnumSecurityStateType | null, signingSuccess?: boolean | null, signingMessage?: string | null, encryptionSuccess?: boolean | null, encryptionMessage?: string | null } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type TicketArticleRetrySecurityProcessMutation = { __typename?: 'Mutations', ticketArticleRetrySecurityProcess?: { __typename?: 'TicketArticleRetrySecurityProcessPayload', retryResult?: { __typename?: 'TicketArticleSecurityState', type?: EnumSecurityStateType | null, signingSuccess?: boolean | null, signingMessage?: string | null, encryptionSuccess?: boolean | null, encryptionMessage?: string | null } | null, article?: { __typename?: 'TicketArticle', id: string, securityState?: { __typename?: 'TicketArticleSecurityState', type?: EnumSecurityStateType | null, signingSuccess?: boolean | null, signingMessage?: string | null, encryptionSuccess?: boolean | null, encryptionMessage?: string | null } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type TicketSharedDraftStartAttributesFragment = { __typename?: 'TicketSharedDraftStart', id: string, name?: string | null, updatedAt: string, updatedBy?: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, email?: string | null, phone?: string | null, image?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null } | null };
+
+export type TicketSharedDraftStartCreateMutationVariables = Exact<{
+  name: Scalars['String']['input'];
+  input: TicketSharedDraftStartInput;
+}>;
+
+
+export type TicketSharedDraftStartCreateMutation = { __typename?: 'Mutations', ticketSharedDraftStartCreate?: { __typename?: 'TicketSharedDraftStartCreatePayload', sharedDraft: { __typename?: 'TicketSharedDraftStart', id: string, name?: string | null, updatedAt: string, updatedBy?: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, email?: string | null, phone?: string | null, image?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null } | null }, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type TicketSharedDraftStartDeleteMutationVariables = Exact<{
+  sharedDraftId: Scalars['ID']['input'];
+}>;
+
+
+export type TicketSharedDraftStartDeleteMutation = { __typename?: 'Mutations', ticketSharedDraftStartDelete?: { __typename?: 'TicketSharedDraftStartDeletePayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type TicketSharedDraftStartUpdateMutationVariables = Exact<{
+  sharedDraftId: Scalars['ID']['input'];
+  input: TicketSharedDraftStartInput;
+}>;
+
+
+export type TicketSharedDraftStartUpdateMutation = { __typename?: 'Mutations', ticketSharedDraftStartUpdate?: { __typename?: 'TicketSharedDraftStartUpdatePayload', sharedDraft: { __typename?: 'TicketSharedDraftStart', id: string, name?: string | null, updatedAt: string, updatedBy?: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, email?: string | null, phone?: string | null, image?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null } | null }, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type TicketSharedDraftStartListQueryVariables = Exact<{
+  groupId: Scalars['ID']['input'];
+}>;
+
+
+export type TicketSharedDraftStartListQuery = { __typename?: 'Queries', ticketSharedDraftStartList: Array<{ __typename?: 'TicketSharedDraftStart', id: string, name?: string | null, updatedAt: string, updatedBy?: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, email?: string | null, phone?: string | null, image?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null } | null }> };
+
+export type TicketSharedDraftStartSingleQueryVariables = Exact<{
+  sharedDraftId: Scalars['ID']['input'];
+}>;
+
+
+export type TicketSharedDraftStartSingleQuery = { __typename?: 'Queries', ticketSharedDraftStartSingle: { __typename?: 'TicketSharedDraftStart', content?: any | null, id: string, name?: string | null, updatedAt: string, updatedBy?: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, email?: string | null, phone?: string | null, image?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null } | null } };
+
+export type TicketSharedDraftStartUpdateByGroupSubscriptionVariables = Exact<{
+  groupId: Scalars['ID']['input'];
+}>;
+
+
+export type TicketSharedDraftStartUpdateByGroupSubscription = { __typename?: 'Subscriptions', ticketSharedDraftStartUpdateByGroup: { __typename?: 'TicketSharedDraftStartUpdateByGroupPayload', sharedDraftStarts?: Array<{ __typename?: 'TicketSharedDraftStart', id: string, name?: string | null, updatedAt: string, updatedBy?: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, email?: string | null, phone?: string | null, image?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null } | null }> | null } };
+
+export type TicketSharedDraftZoomAttributesFragment = { __typename?: 'TicketSharedDraftZoom', id: string, ticketId?: string | null, newArticle?: any | null, ticketAttributes?: any | null, updatedAt: string, updatedBy?: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, email?: string | null, phone?: string | null, image?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null } | null };
+
+export type TicketSharedDraftZoomCreateMutationVariables = Exact<{
+  input: TicketSharedDraftZoomInput;
+}>;
+
+
+export type TicketSharedDraftZoomCreateMutation = { __typename?: 'Mutations', ticketSharedDraftZoomCreate?: { __typename?: 'TicketSharedDraftZoomCreatePayload', sharedDraft: { __typename?: 'TicketSharedDraftZoom', id: string, ticketId?: string | null, newArticle?: any | null, ticketAttributes?: any | null, updatedAt: string, updatedBy?: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, email?: string | null, phone?: string | null, image?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null } | null }, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type TicketSharedDraftZoomDeleteMutationVariables = Exact<{
+  sharedDraftId: Scalars['ID']['input'];
+}>;
+
+
+export type TicketSharedDraftZoomDeleteMutation = { __typename?: 'Mutations', ticketSharedDraftZoomDelete?: { __typename?: 'TicketSharedDraftZoomDeletePayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type TicketSharedDraftZoomUpdateMutationVariables = Exact<{
+  sharedDraftId: Scalars['ID']['input'];
+  input: TicketSharedDraftZoomInput;
+}>;
+
+
+export type TicketSharedDraftZoomUpdateMutation = { __typename?: 'Mutations', ticketSharedDraftZoomUpdate?: { __typename?: 'TicketSharedDraftZoomUpdatePayload', sharedDraft: { __typename?: 'TicketSharedDraftZoom', id: string, ticketId?: string | null, newArticle?: any | null, ticketAttributes?: any | null, updatedAt: string, updatedBy?: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, email?: string | null, phone?: string | null, image?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null } | null }, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type TicketSharedDraftZoomShowQueryVariables = Exact<{
+  sharedDraftId: Scalars['ID']['input'];
+}>;
+
+
+export type TicketSharedDraftZoomShowQuery = { __typename?: 'Queries', ticketSharedDraftZoomShow: { __typename?: 'TicketSharedDraftZoom', id: string, ticketId?: string | null, newArticle?: any | null, ticketAttributes?: any | null, updatedAt: string, updatedBy?: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, email?: string | null, phone?: string | null, image?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null } | null } };
 
 export type OverviewAttributesFragment = { __typename?: 'Overview', id: string, name: string, link: string, prio: number, orderBy: string, orderDirection: EnumOrderDirection, active: boolean, ticketCount?: number, viewColumns: Array<{ __typename?: 'KeyValue', key: string, value?: string | null }>, orderColumns: Array<{ __typename?: 'KeyValue', key: string, value?: string | null }> };
 
-export type TicketAttributesFragment = { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, createdAt: string, escalationAt?: string | null, updatedAt: string, pendingTime?: string | null, tags?: Array<string> | null, timeUnit?: number | null, subscribed?: boolean | null, preferences?: any | null, stateColorCode: EnumTicketStateColorCode, firstResponseEscalationAt?: string | null, closeEscalationAt?: string | null, updateEscalationAt?: string | null, initialChannel?: EnumChannelArea | null, owner: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null }, customer: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, phone?: string | null, mobile?: string | null, image?: string | null, vip?: boolean | null, active?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, email?: string | null, hasSecondaryOrganizations?: boolean | null, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } | null, policy: { __typename?: 'PolicyDefault', update: boolean } }, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, vip?: boolean | null, active?: boolean | null } | null, state: { __typename?: 'TicketState', id: string, name: string, stateType: { __typename?: 'TicketStateType', name: string } }, group: { __typename?: 'Group', id: string, name?: string | null, emailAddress?: { __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null } | null }, priority: { __typename?: 'TicketPriority', id: string, name: string, defaultCreate: boolean, uiColor?: string | null }, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, policy: { __typename?: 'PolicyTicket', update: boolean, agentReadAccess: boolean }, timeUnitsPerType?: Array<{ __typename?: 'TicketTimeAccountingTypeSum', name: string, timeUnit: number }> | null };
+export type ReferencingTicketFragment = { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, stateColorCode: EnumTicketStateColorCode, state: { __typename?: 'TicketState', id: string, name: string } };
+
+export type TicketArticleAttributesFragment = { __typename?: 'TicketArticle', id: string, internalId: number, messageId?: string | null, subject?: string | null, messageIdMd5?: string | null, inReplyTo?: string | null, contentType: string, preferences?: any | null, bodyWithUrls: string, internal: boolean, createdAt: string, from?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, to?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, cc?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, replyTo?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, attachmentsWithoutInline: Array<{ __typename?: 'StoredFile', id: string, internalId: number, name: string, size?: number | null, type?: string | null, preferences?: any | null }>, author: { __typename?: 'User', id: string, fullname?: string | null, firstname?: string | null, lastname?: string | null, email?: string | null, active?: boolean | null, image?: string | null, vip?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, authorizations?: Array<{ __typename?: 'Authorization', provider: string, uid: string, username?: string | null }> | null }, type?: { __typename?: 'TicketArticleType', name?: string | null, communication?: boolean | null } | null, sender?: { __typename?: 'TicketArticleSender', name?: EnumTicketArticleSenderName | null } | null, securityState?: { __typename?: 'TicketArticleSecurityState', encryptionMessage?: string | null, encryptionSuccess?: boolean | null, signingMessage?: string | null, signingSuccess?: boolean | null, type?: EnumSecurityStateType | null } | null, mediaErrorState?: { __typename?: 'TicketArticleMediaErrorState', error?: boolean | null } | null };
+
+export type TicketAttributesFragment = { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, createdAt: string, escalationAt?: string | null, updatedAt: string, pendingTime?: string | null, tags?: Array<string> | null, timeUnit?: number | null, subscribed?: boolean | null, preferences?: any | null, stateColorCode: EnumTicketStateColorCode, sharedDraftZoomId?: string | null, firstResponseEscalationAt?: string | null, closeEscalationAt?: string | null, updateEscalationAt?: string | null, initialChannel?: EnumChannelArea | null, updatedBy?: { __typename?: 'User', id: string } | null, owner: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null }, customer: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, phone?: string | null, mobile?: string | null, image?: string | null, vip?: boolean | null, active?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, email?: string | null, hasSecondaryOrganizations?: boolean | null, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } | null, policy: { __typename?: 'PolicyDefault', update: boolean } }, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, vip?: boolean | null, active?: boolean | null } | null, state: { __typename?: 'TicketState', id: string, name: string, stateType: { __typename?: 'TicketStateType', id: string, name: string } }, group: { __typename?: 'Group', id: string, name?: string | null, emailAddress?: { __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null } | null }, priority: { __typename?: 'TicketPriority', id: string, name: string, defaultCreate: boolean, uiColor?: string | null }, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, policy: { __typename?: 'PolicyTicket', update: boolean, agentReadAccess: boolean }, timeUnitsPerType?: Array<{ __typename?: 'TicketTimeAccountingTypeSum', name: string, timeUnit: number }> | null, externalReferences?: { __typename?: 'TicketExternalReferences', github?: Array<string> | null, gitlab?: Array<string> | null } | null };
+
+export type TicketLiveUserAttributesFragment = { __typename?: 'TicketLiveUser', user: { __typename?: 'User', id: string, firstname?: string | null, lastname?: string | null, fullname?: string | null, email?: string | null, vip?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, image?: string | null }, apps: Array<{ __typename?: 'TicketLiveUserApp', name: EnumTaskbarApp, editing: boolean, lastInteraction: string }> };
+
+export type TicketMentionFragment = { __typename?: 'Mention', user: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, vip?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, image?: string | null }, userTicketAccess: { __typename?: 'PolicyMentionUserTicketAccess', agentReadAccess: boolean } };
+
+export type TicketTaskbarTabAttributesFragment = { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, stateColorCode: EnumTicketStateColorCode, updatedAt: string, state: { __typename?: 'TicketState', id: string, name: string } };
 
 export type TicketCreateMutationVariables = Exact<{
   input: TicketCreateInput;
 }>;
 
 
-export type TicketCreateMutation = { __typename?: 'Mutations', ticketCreate?: { __typename?: 'TicketCreatePayload', ticket?: { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, createdAt: string, escalationAt?: string | null, updatedAt: string, pendingTime?: string | null, tags?: Array<string> | null, timeUnit?: number | null, subscribed?: boolean | null, preferences?: any | null, stateColorCode: EnumTicketStateColorCode, firstResponseEscalationAt?: string | null, closeEscalationAt?: string | null, updateEscalationAt?: string | null, initialChannel?: EnumChannelArea | null, owner: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null }, customer: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, phone?: string | null, mobile?: string | null, image?: string | null, vip?: boolean | null, active?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, email?: string | null, hasSecondaryOrganizations?: boolean | null, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } | null, policy: { __typename?: 'PolicyDefault', update: boolean } }, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, vip?: boolean | null, active?: boolean | null } | null, state: { __typename?: 'TicketState', id: string, name: string, stateType: { __typename?: 'TicketStateType', name: string } }, group: { __typename?: 'Group', id: string, name?: string | null, emailAddress?: { __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null } | null }, priority: { __typename?: 'TicketPriority', id: string, name: string, defaultCreate: boolean, uiColor?: string | null }, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, policy: { __typename?: 'PolicyTicket', update: boolean, agentReadAccess: boolean }, timeUnitsPerType?: Array<{ __typename?: 'TicketTimeAccountingTypeSum', name: string, timeUnit: number }> | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type TicketCreateMutation = { __typename?: 'Mutations', ticketCreate?: { __typename?: 'TicketCreatePayload', ticket?: { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, createdAt: string, escalationAt?: string | null, updatedAt: string, pendingTime?: string | null, tags?: Array<string> | null, timeUnit?: number | null, subscribed?: boolean | null, preferences?: any | null, stateColorCode: EnumTicketStateColorCode, sharedDraftZoomId?: string | null, firstResponseEscalationAt?: string | null, closeEscalationAt?: string | null, updateEscalationAt?: string | null, initialChannel?: EnumChannelArea | null, updatedBy?: { __typename?: 'User', id: string } | null, owner: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null }, customer: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, phone?: string | null, mobile?: string | null, image?: string | null, vip?: boolean | null, active?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, email?: string | null, hasSecondaryOrganizations?: boolean | null, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } | null, policy: { __typename?: 'PolicyDefault', update: boolean } }, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, vip?: boolean | null, active?: boolean | null } | null, state: { __typename?: 'TicketState', id: string, name: string, stateType: { __typename?: 'TicketStateType', id: string, name: string } }, group: { __typename?: 'Group', id: string, name?: string | null, emailAddress?: { __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null } | null }, priority: { __typename?: 'TicketPriority', id: string, name: string, defaultCreate: boolean, uiColor?: string | null }, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, policy: { __typename?: 'PolicyTicket', update: boolean, agentReadAccess: boolean }, timeUnitsPerType?: Array<{ __typename?: 'TicketTimeAccountingTypeSum', name: string, timeUnit: number }> | null, externalReferences?: { __typename?: 'TicketExternalReferences', github?: Array<string> | null, gitlab?: Array<string> | null } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type TicketCustomerUpdateMutationVariables = Exact<{
   ticketId: Scalars['ID']['input'];
@@ -4808,7 +6446,7 @@ export type TicketCustomerUpdateMutationVariables = Exact<{
 }>;
 
 
-export type TicketCustomerUpdateMutation = { __typename?: 'Mutations', ticketCustomerUpdate?: { __typename?: 'TicketCustomerUpdatePayload', ticket?: { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, createdAt: string, escalationAt?: string | null, updatedAt: string, pendingTime?: string | null, tags?: Array<string> | null, timeUnit?: number | null, subscribed?: boolean | null, preferences?: any | null, stateColorCode: EnumTicketStateColorCode, firstResponseEscalationAt?: string | null, closeEscalationAt?: string | null, updateEscalationAt?: string | null, initialChannel?: EnumChannelArea | null, owner: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null }, customer: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, phone?: string | null, mobile?: string | null, image?: string | null, vip?: boolean | null, active?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, email?: string | null, hasSecondaryOrganizations?: boolean | null, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } | null, policy: { __typename?: 'PolicyDefault', update: boolean } }, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, vip?: boolean | null, active?: boolean | null } | null, state: { __typename?: 'TicketState', id: string, name: string, stateType: { __typename?: 'TicketStateType', name: string } }, group: { __typename?: 'Group', id: string, name?: string | null, emailAddress?: { __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null } | null }, priority: { __typename?: 'TicketPriority', id: string, name: string, defaultCreate: boolean, uiColor?: string | null }, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, policy: { __typename?: 'PolicyTicket', update: boolean, agentReadAccess: boolean }, timeUnitsPerType?: Array<{ __typename?: 'TicketTimeAccountingTypeSum', name: string, timeUnit: number }> | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type TicketCustomerUpdateMutation = { __typename?: 'Mutations', ticketCustomerUpdate?: { __typename?: 'TicketCustomerUpdatePayload', ticket?: { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, createdAt: string, escalationAt?: string | null, updatedAt: string, pendingTime?: string | null, tags?: Array<string> | null, timeUnit?: number | null, subscribed?: boolean | null, preferences?: any | null, stateColorCode: EnumTicketStateColorCode, sharedDraftZoomId?: string | null, firstResponseEscalationAt?: string | null, closeEscalationAt?: string | null, updateEscalationAt?: string | null, initialChannel?: EnumChannelArea | null, updatedBy?: { __typename?: 'User', id: string } | null, owner: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null }, customer: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, phone?: string | null, mobile?: string | null, image?: string | null, vip?: boolean | null, active?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, email?: string | null, hasSecondaryOrganizations?: boolean | null, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } | null, policy: { __typename?: 'PolicyDefault', update: boolean } }, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, vip?: boolean | null, active?: boolean | null } | null, state: { __typename?: 'TicketState', id: string, name: string, stateType: { __typename?: 'TicketStateType', id: string, name: string } }, group: { __typename?: 'Group', id: string, name?: string | null, emailAddress?: { __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null } | null }, priority: { __typename?: 'TicketPriority', id: string, name: string, defaultCreate: boolean, uiColor?: string | null }, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, policy: { __typename?: 'PolicyTicket', update: boolean, agentReadAccess: boolean }, timeUnitsPerType?: Array<{ __typename?: 'TicketTimeAccountingTypeSum', name: string, timeUnit: number }> | null, externalReferences?: { __typename?: 'TicketExternalReferences', github?: Array<string> | null, gitlab?: Array<string> | null } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type TicketMergeMutationVariables = Exact<{
   sourceTicketId: Scalars['ID']['input'];
@@ -4816,21 +6454,60 @@ export type TicketMergeMutationVariables = Exact<{
 }>;
 
 
-export type TicketMergeMutation = { __typename?: 'Mutations', ticketMerge?: { __typename?: 'TicketMergePayload', errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type TicketMergeMutation = { __typename?: 'Mutations', ticketMerge?: { __typename?: 'TicketMergePayload', errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type MentionSubscribeMutationVariables = Exact<{
   ticketId: Scalars['ID']['input'];
 }>;
 
 
-export type MentionSubscribeMutation = { __typename?: 'Mutations', mentionSubscribe?: { __typename?: 'MentionSubscribePayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type MentionSubscribeMutation = { __typename?: 'Mutations', mentionSubscribe?: { __typename?: 'MentionSubscribePayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type MentionUnsubscribeMutationVariables = Exact<{
   ticketId: Scalars['ID']['input'];
 }>;
 
 
-export type MentionUnsubscribeMutation = { __typename?: 'Mutations', mentionUnsubscribe?: { __typename?: 'MentionUnsubscribePayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type MentionUnsubscribeMutation = { __typename?: 'Mutations', mentionUnsubscribe?: { __typename?: 'MentionUnsubscribePayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type TicketUpdateMutationVariables = Exact<{
+  ticketId: Scalars['ID']['input'];
+  input: TicketUpdateInput;
+  meta: TicketUpdateMetaInput;
+}>;
+
+
+export type TicketUpdateMutation = { __typename?: 'Mutations', ticketUpdate?: { __typename?: 'TicketUpdatePayload', ticket?: { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, createdAt: string, escalationAt?: string | null, updatedAt: string, pendingTime?: string | null, tags?: Array<string> | null, timeUnit?: number | null, subscribed?: boolean | null, preferences?: any | null, stateColorCode: EnumTicketStateColorCode, sharedDraftZoomId?: string | null, firstResponseEscalationAt?: string | null, closeEscalationAt?: string | null, updateEscalationAt?: string | null, initialChannel?: EnumChannelArea | null, updatedBy?: { __typename?: 'User', id: string } | null, owner: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null }, customer: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, phone?: string | null, mobile?: string | null, image?: string | null, vip?: boolean | null, active?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, email?: string | null, hasSecondaryOrganizations?: boolean | null, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } | null, policy: { __typename?: 'PolicyDefault', update: boolean } }, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, vip?: boolean | null, active?: boolean | null } | null, state: { __typename?: 'TicketState', id: string, name: string, stateType: { __typename?: 'TicketStateType', id: string, name: string } }, group: { __typename?: 'Group', id: string, name?: string | null, emailAddress?: { __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null } | null }, priority: { __typename?: 'TicketPriority', id: string, name: string, defaultCreate: boolean, uiColor?: string | null }, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, policy: { __typename?: 'PolicyTicket', update: boolean, agentReadAccess: boolean }, timeUnitsPerType?: Array<{ __typename?: 'TicketTimeAccountingTypeSum', name: string, timeUnit: number }> | null, externalReferences?: { __typename?: 'TicketExternalReferences', github?: Array<string> | null, gitlab?: Array<string> | null } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
+
+export type AutocompleteSearchTicketQueryVariables = Exact<{
+  input: AutocompleteSearchTicketInput;
+}>;
+
+
+export type AutocompleteSearchTicketQuery = { __typename?: 'Queries', autocompleteSearchTicket: Array<{ __typename?: 'AutocompleteSearchTicketEntry', value: string, label: string, labelPlaceholder?: Array<string> | null, heading?: string | null, headingPlaceholder?: Array<string> | null, disabled?: boolean | null, icon?: string | null, ticket: { __typename?: 'Ticket', id: string, number: string, internalId: number, stateColorCode: EnumTicketStateColorCode, state: { __typename?: 'TicketState', id: string, name: string } } }> };
+
+export type TicketQueryVariables = Exact<{
+  ticketId?: InputMaybe<Scalars['ID']['input']>;
+  ticketInternalId?: InputMaybe<Scalars['Int']['input']>;
+  ticketNumber?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type TicketQuery = { __typename?: 'Queries', ticket: { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, createdAt: string, escalationAt?: string | null, updatedAt: string, pendingTime?: string | null, tags?: Array<string> | null, timeUnit?: number | null, subscribed?: boolean | null, preferences?: any | null, stateColorCode: EnumTicketStateColorCode, sharedDraftZoomId?: string | null, firstResponseEscalationAt?: string | null, closeEscalationAt?: string | null, updateEscalationAt?: string | null, initialChannel?: EnumChannelArea | null, createArticleType?: { __typename?: 'TicketArticleType', id: string, name?: string | null } | null, mentions?: { __typename?: 'MentionConnection', totalCount: number, edges: Array<{ __typename?: 'MentionEdge', cursor: string, node: { __typename?: 'Mention', user: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, vip?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, image?: string | null }, userTicketAccess: { __typename?: 'PolicyMentionUserTicketAccess', agentReadAccess: boolean } } }> } | null, checklist?: { __typename?: 'Checklist', id: string, completed: boolean, incomplete: number, total: number, complete: number } | null, referencingChecklistTickets?: Array<{ __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, stateColorCode: EnumTicketStateColorCode, state: { __typename?: 'TicketState', id: string, name: string } }> | null, updatedBy?: { __typename?: 'User', id: string } | null, owner: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null }, customer: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, phone?: string | null, mobile?: string | null, image?: string | null, vip?: boolean | null, active?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, email?: string | null, hasSecondaryOrganizations?: boolean | null, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } | null, policy: { __typename?: 'PolicyDefault', update: boolean } }, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, vip?: boolean | null, active?: boolean | null } | null, state: { __typename?: 'TicketState', id: string, name: string, stateType: { __typename?: 'TicketStateType', id: string, name: string } }, group: { __typename?: 'Group', id: string, name?: string | null, emailAddress?: { __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null } | null }, priority: { __typename?: 'TicketPriority', id: string, name: string, defaultCreate: boolean, uiColor?: string | null }, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, policy: { __typename?: 'PolicyTicket', update: boolean, agentReadAccess: boolean }, timeUnitsPerType?: Array<{ __typename?: 'TicketTimeAccountingTypeSum', name: string, timeUnit: number }> | null, externalReferences?: { __typename?: 'TicketExternalReferences', github?: Array<string> | null, gitlab?: Array<string> | null } | null } };
+
+export type TicketArticlesQueryVariables = Exact<{
+  ticketId?: InputMaybe<Scalars['ID']['input']>;
+  ticketInternalId?: InputMaybe<Scalars['Int']['input']>;
+  ticketNumber?: InputMaybe<Scalars['String']['input']>;
+  beforeCursor?: InputMaybe<Scalars['String']['input']>;
+  afterCursor?: InputMaybe<Scalars['String']['input']>;
+  pageSize?: InputMaybe<Scalars['Int']['input']>;
+  loadFirstArticles?: InputMaybe<Scalars['Boolean']['input']>;
+  firstArticlesCount?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type TicketArticlesQuery = { __typename?: 'Queries', firstArticles?: { __typename?: 'TicketArticleConnection', edges: Array<{ __typename?: 'TicketArticleEdge', node: { __typename?: 'TicketArticle', id: string, internalId: number, messageId?: string | null, subject?: string | null, messageIdMd5?: string | null, inReplyTo?: string | null, contentType: string, preferences?: any | null, bodyWithUrls: string, internal: boolean, createdAt: string, from?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, to?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, cc?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, replyTo?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, attachmentsWithoutInline: Array<{ __typename?: 'StoredFile', id: string, internalId: number, name: string, size?: number | null, type?: string | null, preferences?: any | null }>, author: { __typename?: 'User', id: string, fullname?: string | null, firstname?: string | null, lastname?: string | null, email?: string | null, active?: boolean | null, image?: string | null, vip?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, authorizations?: Array<{ __typename?: 'Authorization', provider: string, uid: string, username?: string | null }> | null }, type?: { __typename?: 'TicketArticleType', name?: string | null, communication?: boolean | null } | null, sender?: { __typename?: 'TicketArticleSender', name?: EnumTicketArticleSenderName | null } | null, securityState?: { __typename?: 'TicketArticleSecurityState', encryptionMessage?: string | null, encryptionSuccess?: boolean | null, signingMessage?: string | null, signingSuccess?: boolean | null, type?: EnumSecurityStateType | null } | null, mediaErrorState?: { __typename?: 'TicketArticleMediaErrorState', error?: boolean | null } | null } }> }, articles: { __typename?: 'TicketArticleConnection', totalCount: number, edges: Array<{ __typename?: 'TicketArticleEdge', cursor: string, node: { __typename?: 'TicketArticle', id: string, internalId: number, messageId?: string | null, subject?: string | null, messageIdMd5?: string | null, inReplyTo?: string | null, contentType: string, preferences?: any | null, bodyWithUrls: string, internal: boolean, createdAt: string, from?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, to?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, cc?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, replyTo?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, attachmentsWithoutInline: Array<{ __typename?: 'StoredFile', id: string, internalId: number, name: string, size?: number | null, type?: string | null, preferences?: any | null }>, author: { __typename?: 'User', id: string, fullname?: string | null, firstname?: string | null, lastname?: string | null, email?: string | null, active?: boolean | null, image?: string | null, vip?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, authorizations?: Array<{ __typename?: 'Authorization', provider: string, uid: string, username?: string | null }> | null }, type?: { __typename?: 'TicketArticleType', name?: string | null, communication?: boolean | null } | null, sender?: { __typename?: 'TicketArticleSender', name?: EnumTicketArticleSenderName | null } | null, securityState?: { __typename?: 'TicketArticleSecurityState', encryptionMessage?: string | null, encryptionSuccess?: boolean | null, signingMessage?: string | null, signingSuccess?: boolean | null, type?: EnumSecurityStateType | null } | null, mediaErrorState?: { __typename?: 'TicketArticleMediaErrorState', error?: boolean | null } | null } }>, pageInfo: { __typename?: 'PageInfo', endCursor?: string | null, startCursor?: string | null, hasPreviousPage: boolean } } };
 
 export type TicketOverviewsQueryVariables = Exact<{
   withTicketCount: Scalars['Boolean']['input'];
@@ -4838,6 +6515,30 @@ export type TicketOverviewsQueryVariables = Exact<{
 
 
 export type TicketOverviewsQuery = { __typename?: 'Queries', ticketOverviews: { __typename?: 'OverviewConnection', edges: Array<{ __typename?: 'OverviewEdge', cursor: string, node: { __typename?: 'Overview', id: string, name: string, link: string, prio: number, orderBy: string, orderDirection: EnumOrderDirection, active: boolean, ticketCount?: number, viewColumns: Array<{ __typename?: 'KeyValue', key: string, value?: string | null }>, orderColumns: Array<{ __typename?: 'KeyValue', key: string, value?: string | null }> } }>, pageInfo: { __typename?: 'PageInfo', endCursor?: string | null, hasNextPage: boolean } } };
+
+export type TicketArticleUpdatesSubscriptionVariables = Exact<{
+  ticketId: Scalars['ID']['input'];
+}>;
+
+
+export type TicketArticleUpdatesSubscription = { __typename?: 'Subscriptions', ticketArticleUpdates: { __typename?: 'TicketArticleUpdatesPayload', removeArticleId?: string | null, addArticle?: { __typename?: 'TicketArticle', id: string, createdAt: string } | null, updateArticle?: { __typename?: 'TicketArticle', id: string, internalId: number, messageId?: string | null, subject?: string | null, messageIdMd5?: string | null, inReplyTo?: string | null, contentType: string, preferences?: any | null, bodyWithUrls: string, internal: boolean, createdAt: string, from?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, to?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, cc?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, replyTo?: { __typename?: 'AddressesField', raw: string, parsed?: Array<{ __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null, isSystemAddress: boolean }> | null } | null, attachmentsWithoutInline: Array<{ __typename?: 'StoredFile', id: string, internalId: number, name: string, size?: number | null, type?: string | null, preferences?: any | null }>, author: { __typename?: 'User', id: string, fullname?: string | null, firstname?: string | null, lastname?: string | null, email?: string | null, active?: boolean | null, image?: string | null, vip?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, authorizations?: Array<{ __typename?: 'Authorization', provider: string, uid: string, username?: string | null }> | null }, type?: { __typename?: 'TicketArticleType', name?: string | null, communication?: boolean | null } | null, sender?: { __typename?: 'TicketArticleSender', name?: EnumTicketArticleSenderName | null } | null, securityState?: { __typename?: 'TicketArticleSecurityState', encryptionMessage?: string | null, encryptionSuccess?: boolean | null, signingMessage?: string | null, signingSuccess?: boolean | null, type?: EnumSecurityStateType | null } | null, mediaErrorState?: { __typename?: 'TicketArticleMediaErrorState', error?: boolean | null } | null } | null } };
+
+export type TicketLiveUserUpdatesSubscriptionVariables = Exact<{
+  userId: Scalars['ID']['input'];
+  key: Scalars['String']['input'];
+  app: EnumTaskbarApp;
+}>;
+
+
+export type TicketLiveUserUpdatesSubscription = { __typename?: 'Subscriptions', ticketLiveUserUpdates: { __typename?: 'TicketLiveUserUpdatesPayload', liveUsers?: Array<{ __typename?: 'TicketLiveUser', user: { __typename?: 'User', id: string, firstname?: string | null, lastname?: string | null, fullname?: string | null, email?: string | null, vip?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, image?: string | null }, apps: Array<{ __typename?: 'TicketLiveUserApp', name: EnumTaskbarApp, editing: boolean, lastInteraction: string }> }> | null } };
+
+export type TicketUpdatesSubscriptionVariables = Exact<{
+  ticketId: Scalars['ID']['input'];
+  initial?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type TicketUpdatesSubscription = { __typename?: 'Subscriptions', ticketUpdates: { __typename?: 'TicketUpdatesPayload', ticket?: { __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, createdAt: string, escalationAt?: string | null, updatedAt: string, pendingTime?: string | null, tags?: Array<string> | null, timeUnit?: number | null, subscribed?: boolean | null, preferences?: any | null, stateColorCode: EnumTicketStateColorCode, sharedDraftZoomId?: string | null, firstResponseEscalationAt?: string | null, closeEscalationAt?: string | null, updateEscalationAt?: string | null, initialChannel?: EnumChannelArea | null, createArticleType?: { __typename?: 'TicketArticleType', id: string, name?: string | null } | null, mentions?: { __typename?: 'MentionConnection', totalCount: number, edges: Array<{ __typename?: 'MentionEdge', cursor: string, node: { __typename?: 'Mention', user: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, vip?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, active?: boolean | null, image?: string | null }, userTicketAccess: { __typename?: 'PolicyMentionUserTicketAccess', agentReadAccess: boolean } } }> } | null, checklist?: { __typename?: 'Checklist', id: string, completed: boolean, incomplete: number, total: number, complete: number } | null, referencingChecklistTickets?: Array<{ __typename?: 'Ticket', id: string, internalId: number, number: string, title: string, stateColorCode: EnumTicketStateColorCode, state: { __typename?: 'TicketState', id: string, name: string } }> | null, updatedBy?: { __typename?: 'User', id: string } | null, owner: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null }, customer: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, phone?: string | null, mobile?: string | null, image?: string | null, vip?: boolean | null, active?: boolean | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, email?: string | null, hasSecondaryOrganizations?: boolean | null, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } | null, policy: { __typename?: 'PolicyDefault', update: boolean } }, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, vip?: boolean | null, active?: boolean | null } | null, state: { __typename?: 'TicketState', id: string, name: string, stateType: { __typename?: 'TicketStateType', id: string, name: string } }, group: { __typename?: 'Group', id: string, name?: string | null, emailAddress?: { __typename?: 'EmailAddressParsed', name?: string | null, emailAddress?: string | null } | null }, priority: { __typename?: 'TicketPriority', id: string, name: string, defaultCreate: boolean, uiColor?: string | null }, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, policy: { __typename?: 'PolicyTicket', update: boolean, agentReadAccess: boolean }, timeUnitsPerType?: Array<{ __typename?: 'TicketTimeAccountingTypeSum', name: string, timeUnit: number }> | null, externalReferences?: { __typename?: 'TicketExternalReferences', github?: Array<string> | null, gitlab?: Array<string> | null } | null } | null } };
 
 export type TokenAttributesFragment = { __typename?: 'Token', id: string, name?: string | null, preferences?: any | null, expiresAt?: string | null, lastUsedAt?: string | null, createdAt: string, user?: { __typename?: 'User', id: string } | null };
 
@@ -4851,14 +6552,14 @@ export type UserCurrentTwoFactorGetMethodConfigurationQuery = { __typename?: 'Qu
 export type UserCurrentTwoFactorRecoveryCodesGenerateMutationVariables = Exact<{ [key: string]: never; }>;
 
 
-export type UserCurrentTwoFactorRecoveryCodesGenerateMutation = { __typename?: 'Mutations', userCurrentTwoFactorRecoveryCodesGenerate?: { __typename?: 'UserCurrentTwoFactorRecoveryCodesGeneratePayload', recoveryCodes?: Array<string> | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserCurrentTwoFactorRecoveryCodesGenerateMutation = { __typename?: 'Mutations', userCurrentTwoFactorRecoveryCodesGenerate?: { __typename?: 'UserCurrentTwoFactorRecoveryCodesGeneratePayload', recoveryCodes?: Array<string> | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserCurrentTwoFactorRemoveMethodMutationVariables = Exact<{
   methodName: Scalars['String']['input'];
 }>;
 
 
-export type UserCurrentTwoFactorRemoveMethodMutation = { __typename?: 'Mutations', userCurrentTwoFactorRemoveMethod?: { __typename?: 'UserCurrentTwoFactorRemoveMethodPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserCurrentTwoFactorRemoveMethodMutation = { __typename?: 'Mutations', userCurrentTwoFactorRemoveMethod?: { __typename?: 'UserCurrentTwoFactorRemoveMethodPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserCurrentTwoFactorRemoveMethodCredentialsMutationVariables = Exact<{
   methodName: Scalars['String']['input'];
@@ -4873,7 +6574,7 @@ export type UserCurrentTwoFactorSetDefaultMethodMutationVariables = Exact<{
 }>;
 
 
-export type UserCurrentTwoFactorSetDefaultMethodMutation = { __typename?: 'Mutations', userCurrentTwoFactorSetDefaultMethod?: { __typename?: 'UserCurrentTwoFactorSetDefaultMethodPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserCurrentTwoFactorSetDefaultMethodMutation = { __typename?: 'Mutations', userCurrentTwoFactorSetDefaultMethod?: { __typename?: 'UserCurrentTwoFactorSetDefaultMethodPayload', success?: boolean | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserCurrentTwoFactorVerifyMethodConfigurationMutationVariables = Exact<{
   methodName: EnumTwoFactorAuthenticationMethod;
@@ -4889,35 +6590,35 @@ export type UserCurrentAccessTokenAddMutationVariables = Exact<{
 }>;
 
 
-export type UserCurrentAccessTokenAddMutation = { __typename?: 'Mutations', userCurrentAccessTokenAdd?: { __typename?: 'UserCurrentAccessTokenAddPayload', tokenValue: string, token?: { __typename?: 'Token', id: string, name?: string | null, preferences?: any | null, expiresAt?: string | null, lastUsedAt?: string | null, createdAt: string, user?: { __typename?: 'User', id: string } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserCurrentAccessTokenAddMutation = { __typename?: 'Mutations', userCurrentAccessTokenAdd?: { __typename?: 'UserCurrentAccessTokenAddPayload', tokenValue: string, token?: { __typename?: 'Token', id: string, name?: string | null, preferences?: any | null, expiresAt?: string | null, lastUsedAt?: string | null, createdAt: string, user?: { __typename?: 'User', id: string } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserCurrentAccessTokenDeleteMutationVariables = Exact<{
   tokenId: Scalars['ID']['input'];
 }>;
 
 
-export type UserCurrentAccessTokenDeleteMutation = { __typename?: 'Mutations', userCurrentAccessTokenDelete?: { __typename?: 'UserCurrentAccessTokenDeletePayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserCurrentAccessTokenDeleteMutation = { __typename?: 'Mutations', userCurrentAccessTokenDelete?: { __typename?: 'UserCurrentAccessTokenDeletePayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserCurrentAvatarAddMutationVariables = Exact<{
   images: AvatarInput;
 }>;
 
 
-export type UserCurrentAvatarAddMutation = { __typename?: 'Mutations', userCurrentAvatarAdd?: { __typename?: 'UserCurrentAvatarAddPayload', avatar?: { __typename?: 'Avatar', id: string, default: boolean, deletable: boolean, initial: boolean, imageFull?: string | null, imageResize?: string | null, imageHash?: string | null, createdAt: string, updatedAt: string } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserCurrentAvatarAddMutation = { __typename?: 'Mutations', userCurrentAvatarAdd?: { __typename?: 'UserCurrentAvatarAddPayload', avatar?: { __typename?: 'Avatar', id: string, default: boolean, deletable: boolean, initial: boolean, imageFull?: string | null, imageResize?: string | null, imageHash?: string | null, createdAt: string, updatedAt: string } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserCurrentAvatarDeleteMutationVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type UserCurrentAvatarDeleteMutation = { __typename?: 'Mutations', userCurrentAvatarDelete?: { __typename?: 'UserCurrentAvatarDeletePayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserCurrentAvatarDeleteMutation = { __typename?: 'Mutations', userCurrentAvatarDelete?: { __typename?: 'UserCurrentAvatarDeletePayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserCurrentLocaleMutationVariables = Exact<{
   locale: Scalars['String']['input'];
 }>;
 
 
-export type UserCurrentLocaleMutation = { __typename?: 'Mutations', userCurrentLocale?: { __typename?: 'UserCurrentLocalePayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserCurrentLocaleMutation = { __typename?: 'Mutations', userCurrentLocale?: { __typename?: 'UserCurrentLocalePayload', success: boolean, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserCurrentTwoFactorConfigurationQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -4942,7 +6643,7 @@ export type UserAddMutationVariables = Exact<{
 }>;
 
 
-export type UserAddMutation = { __typename?: 'Mutations', userAdd?: { __typename?: 'UserAddPayload', user?: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, image?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, preferences?: any | null, hasSecondaryOrganizations?: boolean | null, outOfOfficeReplacement?: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, login?: string | null, phone?: string | null, email?: string | null } | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } | null, personalSettings?: { __typename?: 'UserPersonalSettings', notificationConfig?: { __typename?: 'UserPersonalSettingsNotificationConfig', groupIds?: Array<number> | null, matrix?: { __typename?: 'UserPersonalSettingsNotificationMatrix', create?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, escalation?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, reminderReached?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, update?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null } | null } | null, notificationSound?: { __typename?: 'UserPersonalSettingsNotificationSound', enabled?: boolean | null, file?: EnumNotificationSoundFile | null } | null } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type UserAddMutation = { __typename?: 'Mutations', userAdd?: { __typename?: 'UserAddPayload', user?: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, image?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, preferences?: any | null, hasSecondaryOrganizations?: boolean | null, outOfOfficeReplacement?: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, login?: string | null, phone?: string | null, email?: string | null } | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } | null, personalSettings?: { __typename?: 'UserPersonalSettings', notificationConfig?: { __typename?: 'UserPersonalSettingsNotificationConfig', groupIds?: Array<number> | null, matrix?: { __typename?: 'UserPersonalSettingsNotificationMatrix', create?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, escalation?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, reminderReached?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, update?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null } | null } | null, notificationSound?: { __typename?: 'UserPersonalSettingsNotificationSound', enabled?: boolean | null, file?: EnumNotificationSoundFile | null } | null } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type UserQueryVariables = Exact<{
   userId?: InputMaybe<Scalars['ID']['input']>;
@@ -4955,13 +6656,15 @@ export type UserQuery = { __typename?: 'Queries', user: { __typename?: 'User', i
 
 export type CurrentUserAttributesFragment = { __typename?: 'User', email?: string | null, id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, image?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, preferences?: any | null, hasSecondaryOrganizations?: boolean | null, authorizations?: Array<{ __typename?: 'Authorization', id: string, provider: string, uid: string, username?: string | null }> | null, permissions?: { __typename?: 'UserPermission', names: Array<string> } | null, outOfOfficeReplacement?: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, login?: string | null, phone?: string | null, email?: string | null } | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } | null, personalSettings?: { __typename?: 'UserPersonalSettings', notificationConfig?: { __typename?: 'UserPersonalSettingsNotificationConfig', groupIds?: Array<number> | null, matrix?: { __typename?: 'UserPersonalSettingsNotificationMatrix', create?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, escalation?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, reminderReached?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, update?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null } | null } | null, notificationSound?: { __typename?: 'UserPersonalSettingsNotificationSound', enabled?: boolean | null, file?: EnumNotificationSoundFile | null } | null } | null };
 
-export type ErrorsFragment = { __typename?: 'UserError', message: string, field?: string | null };
+export type ErrorsFragment = { __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null };
 
 export type ObjectAttributeValuesFragment = { __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } };
 
 export type PublicLinkAttributesFragment = { __typename?: 'PublicLink', id: string, link: string, title: string, description?: string | null, newTab: boolean };
 
 export type SessionFragment = { __typename?: 'Session', id: string, afterAuth?: { __typename?: 'SessionAfterAuth', type: EnumAfterAuthType, data?: any | null } | null };
+
+export type SimpleTicketAttributeFragment = { __typename?: 'Ticket', number: string, internalId: number, id: string, title: string, createdAt: string, stateColorCode: EnumTicketStateColorCode, customer: { __typename?: 'User', id: string, fullname?: string | null }, organization?: { __typename?: 'Organization', id: string, name?: string | null } | null, group: { __typename?: 'Group', id: string, name?: string | null }, state: { __typename?: 'TicketState', id: string, name: string } };
 
 export type UserAttributesFragment = { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, image?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, preferences?: any | null, hasSecondaryOrganizations?: boolean | null, outOfOfficeReplacement?: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, login?: string | null, phone?: string | null, email?: string | null } | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } | null, personalSettings?: { __typename?: 'UserPersonalSettings', notificationConfig?: { __typename?: 'UserPersonalSettingsNotificationConfig', groupIds?: Array<number> | null, matrix?: { __typename?: 'UserPersonalSettingsNotificationMatrix', create?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, escalation?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, reminderReached?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, update?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null } | null } | null, notificationSound?: { __typename?: 'UserPersonalSettingsNotificationSound', enabled?: boolean | null, file?: EnumNotificationSoundFile | null } | null } | null };
 
@@ -4974,7 +6677,7 @@ export type LoginMutationVariables = Exact<{
 }>;
 
 
-export type LoginMutation = { __typename?: 'Mutations', login?: { __typename?: 'LoginPayload', session?: { __typename?: 'Session', id: string, afterAuth?: { __typename?: 'SessionAfterAuth', type: EnumAfterAuthType, data?: any | null } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null, twoFactorRequired?: { __typename?: 'UserLoginTwoFactorMethods', availableTwoFactorAuthenticationMethods: Array<EnumTwoFactorAuthenticationMethod>, defaultTwoFactorAuthenticationMethod?: EnumTwoFactorAuthenticationMethod | null, recoveryCodesAvailable: boolean } | null } | null };
+export type LoginMutation = { __typename?: 'Mutations', login?: { __typename?: 'LoginPayload', session?: { __typename?: 'Session', id: string, afterAuth?: { __typename?: 'SessionAfterAuth', type: EnumAfterAuthType, data?: any | null } | null } | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null, twoFactorRequired?: { __typename?: 'UserLoginTwoFactorMethods', availableTwoFactorAuthenticationMethods: Array<EnumTwoFactorAuthenticationMethod>, defaultTwoFactorAuthenticationMethod?: EnumTwoFactorAuthenticationMethod | null, recoveryCodesAvailable: boolean } | null } | null };
 
 export type LogoutMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -4988,7 +6691,7 @@ export type TwoFactorMethodInitiateAuthenticationMutationVariables = Exact<{
 }>;
 
 
-export type TwoFactorMethodInitiateAuthenticationMutation = { __typename?: 'Mutations', twoFactorMethodInitiateAuthentication?: { __typename?: 'TwoFactorMethodInitiateAuthenticationPayload', initiationData?: any | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null }> | null } | null };
+export type TwoFactorMethodInitiateAuthenticationMutation = { __typename?: 'Mutations', twoFactorMethodInitiateAuthentication?: { __typename?: 'TwoFactorMethodInitiateAuthenticationPayload', initiationData?: any | null, errors?: Array<{ __typename?: 'UserError', message: string, field?: string | null, exception?: EnumUserErrorException | null }> | null } | null };
 
 export type ProductAboutQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -5016,6 +6719,13 @@ export type LocalesQueryVariables = Exact<{
 
 
 export type LocalesQuery = { __typename?: 'Queries', locales: Array<{ __typename?: 'Locale', locale: string, alias?: string | null, name: string, dir: EnumTextDirection, active: boolean }> };
+
+export type MacrosQueryVariables = Exact<{
+  groupId: Scalars['ID']['input'];
+}>;
+
+
+export type MacrosQuery = { __typename?: 'Queries', macros: Array<{ __typename?: 'Macro', id: string, active: boolean, name: string, uxFlowNextUp: string }> };
 
 export type SessionQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -5054,6 +6764,11 @@ export type CurrentUserUpdatesSubscriptionVariables = Exact<{
 
 
 export type CurrentUserUpdatesSubscription = { __typename?: 'Subscriptions', userUpdates: { __typename?: 'UserUpdatesPayload', user?: { __typename?: 'User', email?: string | null, id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, image?: string | null, outOfOffice?: boolean | null, outOfOfficeStartAt?: string | null, outOfOfficeEndAt?: string | null, preferences?: any | null, hasSecondaryOrganizations?: boolean | null, authorizations?: Array<{ __typename?: 'Authorization', id: string, provider: string, uid: string, username?: string | null }> | null, permissions?: { __typename?: 'UserPermission', names: Array<string> } | null, outOfOfficeReplacement?: { __typename?: 'User', id: string, internalId: number, firstname?: string | null, lastname?: string | null, fullname?: string | null, login?: string | null, phone?: string | null, email?: string | null } | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null, organization?: { __typename?: 'Organization', id: string, internalId: number, name?: string | null, active?: boolean | null, objectAttributeValues?: Array<{ __typename?: 'ObjectAttributeValue', value?: any | null, renderedLink?: string | null, attribute: { __typename?: 'ObjectManagerFrontendAttribute', name: string, display: string } }> | null } | null, personalSettings?: { __typename?: 'UserPersonalSettings', notificationConfig?: { __typename?: 'UserPersonalSettingsNotificationConfig', groupIds?: Array<number> | null, matrix?: { __typename?: 'UserPersonalSettingsNotificationMatrix', create?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, escalation?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, reminderReached?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null, update?: { __typename?: 'UserPersonalSettingsNotificationMatrixRow', channel?: { __typename?: 'UserPersonalSettingsNotificationMatrixChannel', email?: boolean | null, online?: boolean | null } | null, criteria?: { __typename?: 'UserPersonalSettingsNotificationMatrixCriteria', no?: boolean | null, ownedByMe?: boolean | null, ownedByNobody?: boolean | null, subscribed?: boolean | null } | null } | null } | null } | null, notificationSound?: { __typename?: 'UserPersonalSettingsNotificationSound', enabled?: boolean | null, file?: EnumNotificationSoundFile | null } | null } | null } | null } };
+
+export type MacrosUpdateSubscriptionVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MacrosUpdateSubscription = { __typename?: 'Subscriptions', macrosUpdate: { __typename?: 'MacrosUpdatePayload', macroUpdated?: boolean | null } };
 
 export type PushMessagesSubscriptionVariables = Exact<{ [key: string]: never; }>;
 

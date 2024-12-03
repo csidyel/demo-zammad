@@ -66,11 +66,12 @@ jobs:
         with:
           context: .
           labels: ${{ steps.meta.outputs.labels }}
+          pull: true
           push: true
           tags: ${{ steps.meta.outputs.tags }}
 
   docker-create-multiarch-manifest:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs:
       - docker-build-image
     strategy:

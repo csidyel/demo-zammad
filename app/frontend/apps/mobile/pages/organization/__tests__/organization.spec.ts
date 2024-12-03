@@ -53,7 +53,7 @@ describe('static organization', () => {
 
     await waitUntil(() => mockApi.calls.resolve)
 
-    expect(view.getByText(organization.name || 'not found')).toBeInTheDocument()
+    expect(view.getByText(organization.name || 'Not Found')).toBeInTheDocument()
 
     expect(
       view.getByLabelText(`Avatar (${organization.name})`),
@@ -107,8 +107,8 @@ describe('static organization', () => {
     const mockApi = mockGraphQLApi(OrganizationDocument).willResolve({
       organization: {
         ...organization,
-        members: {
-          ...organization.members,
+        allMembers: {
+          ...organization.allMembers,
           totalCount: 2,
         },
       },
@@ -130,7 +130,7 @@ describe('static organization', () => {
 
     expect(view.container).toHaveTextContent('Members')
 
-    const members = organization.members?.edges || []
+    const members = organization.allMembers?.edges || []
 
     expect(members).toHaveLength(1)
     expect(view.container).toHaveTextContent(members[0].node.fullname!)
@@ -140,8 +140,8 @@ describe('static organization', () => {
       data: {
         organization: {
           ...organization,
-          members: {
-            ...organization.members,
+          allMembers: {
+            ...organization.allMembers,
             edges: nullableMock([
               ...members,
               {
@@ -248,13 +248,16 @@ describe('static organization', () => {
 
     const mockApi =
       mockGraphQLApi(OrganizationDocument).willFailWithNotFoundError()
+
+    mockGraphQLSubscription(OrganizationUpdatesDocument)
+
     mockOrganizationObjectAttributes()
 
     const view = await visitView('/organizations/123')
 
     await waitUntil(() => mockApi.calls.error)
 
-    await expect(view.findByText('Not found')).resolves.toBeInTheDocument()
+    await expect(view.findByText('Not Found')).resolves.toBeInTheDocument()
   })
 
   it('redirects to error page if access to organization is forbidden', async () => {
@@ -262,6 +265,7 @@ describe('static organization', () => {
 
     const mockApi =
       mockGraphQLApi(OrganizationDocument).willFailWithForbiddenError()
+    mockGraphQLSubscription(OrganizationUpdatesDocument)
     mockOrganizationObjectAttributes()
 
     const view = await visitView('/organizations/123')

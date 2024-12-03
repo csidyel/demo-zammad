@@ -1,8 +1,8 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import { noop } from 'lodash-es'
-import { computed, provide, ref, reactive, toRef } from 'vue'
+import { cloneDeep, noop } from 'lodash-es'
+import { computed, provide, ref, reactive, toRef, nextTick } from 'vue'
 import {
   onBeforeRouteLeave,
   onBeforeRouteUpdate,
@@ -16,35 +16,41 @@ import {
   useNotifications,
 } from '#shared/components/CommonNotifications/index.ts'
 import Form from '#shared/components/Form/Form.vue'
-import type { FormSubmitData } from '#shared/components/Form/types.ts'
+import type {
+  FormSubmitData,
+  FormValues,
+} from '#shared/components/Form/types.ts'
 import { useForm } from '#shared/components/Form/useForm.ts'
 import { useConfirmation } from '#shared/composables/useConfirmation.ts'
 import { useOnlineNotificationSeen } from '#shared/composables/useOnlineNotificationSeen.ts'
+import { useTicketEdit } from '#shared/entities/ticket/composables/useTicketEdit.ts'
+import { useTicketEditForm } from '#shared/entities/ticket/composables/useTicketEditForm.ts'
 import { useTicketView } from '#shared/entities/ticket/composables/useTicketView.ts'
+import { TicketUpdatesDocument } from '#shared/entities/ticket/graphql/subscriptions/ticketUpdates.api.ts'
+import type { TicketUpdateFormData } from '#shared/entities/ticket/types.ts'
 import { useErrorHandler } from '#shared/errors/useErrorHandler.ts'
 import UserError from '#shared/errors/UserError.ts'
 import type {
   TicketUpdatesSubscription,
   TicketUpdatesSubscriptionVariables,
 } from '#shared/graphql/types.ts'
-import { EnumFormUpdaterId } from '#shared/graphql/types.ts'
+import {
+  EnumFormUpdaterId,
+  EnumUserErrorException,
+} from '#shared/graphql/types.ts'
 import { convertToGraphQLId } from '#shared/graphql/utils.ts'
 import { QueryHandler } from '#shared/server/apollo/handler/index.ts'
-import { useApplicationStore } from '#shared/stores/application.ts'
 
 import CommonLoader from '#mobile/components/CommonLoader/CommonLoader.vue'
 import { useCommonSelect } from '#mobile/components/CommonSelect/useCommonSelect.ts'
 import { getOpenedDialogs } from '#mobile/composables/useDialog.ts'
+import { useTicketWithMentionLimitQuery } from '#mobile/entities/ticket/graphql/queries/ticketWithMentionLimit.api.ts'
 import type { TicketInformation } from '#mobile/entities/ticket/types.ts'
 
 import TicketDetailViewActions from '../components/TicketDetailView/TicketDetailViewActions.vue'
 import { useTicketArticleReply } from '../composable/useTicketArticleReply.ts'
-import { useTicketEdit } from '../composable/useTicketEdit.ts'
-import { useTicketEditForm } from '../composable/useTicketEditForm.ts'
 import { TICKET_INFORMATION_SYMBOL } from '../composable/useTicketInformation.ts'
 import { useTicketLiveUser } from '../composable/useTicketLiveUser.ts'
-import { useTicketQuery } from '../graphql/queries/ticket.api.ts'
-import { TicketUpdatesDocument } from '../graphql/subscriptions/ticketUpdates.api.ts'
 
 interface Props {
   internalId: string
@@ -58,7 +64,7 @@ const MENTIONS_LIMIT = 5
 const { createQueryErrorHandler } = useErrorHandler()
 
 const ticketQuery = new QueryHandler(
-  useTicketQuery(() => ({
+  useTicketWithMentionLimitQuery(() => ({
     ticketId: ticketId.value,
     mentionsCount: MENTIONS_LIMIT,
   })),
@@ -94,11 +100,19 @@ const { form, canSubmit, isDirty, formSubmit, formReset } = useForm()
 const { initialTicketValue, isTicketFormGroupValid, editTicket } =
   useTicketEdit(ticket, form)
 
-const canUpdateTicket = computed(() => !!ticket.value?.policy.update)
+const {
+  currentArticleType,
+  ticketSchema,
+  articleSchema,
+  securityIntegration,
+  isTicketEditable,
+  articleTypeHandler,
+  articleTypeSelectHandler,
+} = useTicketEditForm(ticket, form)
 
-const needSpaceForSaveBanner = computed(() => {
-  return canUpdateTicket.value && isDirty.value
-})
+const needSpaceForSaveBanner = computed(
+  () => isTicketEditable.value && isDirty.value,
+)
 
 const {
   articleReplyDialog,
@@ -109,24 +123,49 @@ const {
   closeArticleReplyDialog,
 } = useTicketArticleReply(ticket, form, needSpaceForSaveBanner)
 
-const {
-  currentArticleType,
-  ticketEditSchema,
-  articleTypeHandler,
-  articleTypeSelectHandler,
-} = useTicketEditForm(ticket, form)
+const ticketEditSchema = [
+  {
+    isLayout: true,
+    component: 'FormGroup',
+    props: {
+      style: {
+        if: '$formLocation !== "[data-ticket-edit-form]"',
+        then: 'display: none;',
+      },
+      showDirtyMark: true,
+    },
+    children: [ticketSchema],
+  },
+  {
+    isLayout: true,
+    component: 'FormGroup',
+    props: {
+      style: {
+        if: '$formLocation !== "[data-ticket-article-reply-form]"',
+        then: 'display: none;',
+      },
+    },
+    children: [articleSchema],
+  },
+]
 
 const { isTicketAgent } = useTicketView(ticket)
 
 const { notify } = useNotifications()
 
-const saveTicketForm = async (formData: FormSubmitData) => {
-  const updateFormData = currentArticleType.value?.updateForm
-  if (updateFormData) {
-    formData = updateFormData(formData)
-  }
+const saveTicketForm = async (
+  formData: FormSubmitData<TicketUpdateFormData>,
+) => {
+  let data = cloneDeep(formData)
+
+  if (currentArticleType.value?.updateForm)
+    data = currentArticleType.value.updateForm(formData)
+
   try {
-    const result = await editTicket(formData)
+    const result = await editTicket(
+      data,
+      { skipValidators: Object.values(EnumUserErrorException) }, // skip all validators, they are irrelevant for mobile view
+    )
 
     if (result?.ticketUpdate?.ticket) {
       notify({
@@ -136,13 +175,19 @@ const saveTicketForm = async (formData: FormSubmitData) => {
       })
 
       // Reset article form after ticket update and reset form.
-      return () => {
-        newTicketArticlePresent.value = false
-        closeArticleReplyDialog().then(() => {
-          // after the dialog is closed, form changes value from reseted { ticket, article } to { ticket }
-          // which makes it dirty, so we reset it again to be just { ticket }
-          formReset({ ticket: formData.ticket })
-        })
+      newTicketArticlePresent.value = false
+
+      return {
+        reset: (
+          values: FormSubmitData<TicketUpdateFormData>,
+          formNodeValues: FormValues,
+        ) => {
+          nextTick(() => {
+            closeArticleReplyDialog().then(() => {
+              formReset({ values: { ticket: formNodeValues.ticket } })
+            })
+          })
+        },
       }
     }
   } catch (errors) {
@@ -203,7 +248,7 @@ provide<TicketInformation>(TICKET_INFORMATION_SYMBOL, {
   newTicketArticleRequested,
   newTicketArticlePresent,
   updateFormLocation,
-  canUpdateTicket,
+  isTicketEditable,
   showArticleReplyDialog,
   liveUserList,
   refetchingStatus,
@@ -250,15 +295,6 @@ const submitForm = () => {
   formSubmit()
 }
 
-const application = useApplicationStore()
-
-const securityIntegration = computed<boolean>(
-  () =>
-    (application.config.smime_integration ||
-      application.config.pgp_integration) ??
-    false,
-)
-
 const ticketEditSchemaData = reactive({
   formLocation,
   securityIntegration,
@@ -272,7 +308,7 @@ const { isOpened: commonSelectOpened } = useCommonSelect()
 const showReplyButton = computed(() => {
   if (articleReplyDialog.isOpened.value) return false
 
-  return canUpdateTicket.value
+  return isTicketEditable.value
 })
 
 const showScrollDown = computed(() => {
@@ -293,7 +329,7 @@ const showBottomBanner = computed(() => {
     return false
 
   return (
-    (canUpdateTicket.value && isDirty.value) ||
+    (isTicketEditable.value && isDirty.value) ||
     showReplyButton.value ||
     showScrollDown.value
   )
@@ -305,7 +341,7 @@ const showBottomBanner = computed(() => {
   <div class="pb-safe-16"></div>
   <!-- submit form is always present in the DOM, so we can access FormKit validity state -->
   <!-- if it's visible, it's moved to the [data-ticket-edit-form] element, which is in TicketInformationDetail -->
-  <Teleport v-if="canUpdateTicket" :to="formLocation">
+  <Teleport v-if="isTicketEditable" :to="formLocation">
     <CommonLoader
       :class="formVisible ? 'visible' : 'hidden'"
       :loading="!ticket"
@@ -326,7 +362,7 @@ const showBottomBanner = computed(() => {
         use-object-attributes
         :aria-hidden="!formVisible"
         :class="formVisible ? 'visible' : 'hidden'"
-        @submit="saveTicketForm($event as FormSubmitData)"
+        @submit="saveTicketForm($event as FormSubmitData<TicketUpdateFormData>)"
       />
     </CommonLoader>
   </Teleport>
@@ -336,7 +372,7 @@ const showBottomBanner = computed(() => {
       :new-replies-count="newArticlesIds.size"
       :new-article-present="newTicketArticlePresent"
       :can-reply="showReplyButton"
-      :can-save="canUpdateTicket && isDirty"
+      :can-save="isTicketEditable && isDirty"
       :can-scroll-down="showScrollDown"
       :hidden="!showBottomBanner"
       @reply="showArticleReplyDialog"

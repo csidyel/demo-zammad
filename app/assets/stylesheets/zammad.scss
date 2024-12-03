@@ -386,6 +386,10 @@ ul {
   pointer-events: none;
 }
 
+.u-low-opacity {
+  opacity: 60%;
+}
+
 .u-clickable {
   @extend %clickable;
 }
@@ -1024,7 +1028,7 @@ pre code {
   }
 }
 
-.btn + .btn,
+.btn + .btn:not(.btn--no-margin),
 .btn + .buttonDropdown,
 .buttonDropdown + .buttonDropdown {
   @include bidi-style(margin-left, 10px, margin-right, 0);
@@ -1205,6 +1209,10 @@ pre code {
         background-color: #429ed7;
       }
     }
+  }
+
+  button[disabled] ~ .dropdown-menu-accessories button {
+    opacity: 0.33;
   }
 }
 
@@ -1584,6 +1592,10 @@ td.align-right {
   }
 }
 
+.table.table--no-borders > tbody > tr:not(:first-child) > td {
+  border-color: transparent;
+}
+
 .table > tbody > tr.u-center > td {
   vertical-align: middle;
 }
@@ -1823,6 +1835,29 @@ td .icon-cog {
   }
 }
 
+.checkbox-replacement-readonly {
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+
+  > .icon {
+    vertical-align: middle;
+    margin-top: -2px;
+  }
+
+  .icon-checkbox-checked-readonly.icon {
+    fill: var(--text-muted);
+    color: var(--background-primary);
+  }
+
+  .icon-checkbox-readonly.icon {
+    fill: var(--text-muted);
+  }
+}
+
 .radio-replacement {
   input:focus ~ .icon-checked,
   input:focus ~ .icon-unchecked {
@@ -1835,6 +1870,7 @@ td .icon-cog {
 }
 
 .table .checkbox-replacement,
+.table .checkbox-replacement-readonly,
 .table .radio-replacement {
   height: 40px;
   width: 40px;
@@ -1984,6 +2020,7 @@ table {
 
 .label-text {
   @include bidi-style(margin-left, 3px, margin-right, 0);
+
   @extend %clickable;
 }
 
@@ -2072,6 +2109,11 @@ fieldset > .form-group {
   &.is-readonly .controls:not(.ignore-readonly) {
     pointer-events: none;
     cursor: not-allowed !important;
+
+    input:read-only.form-control:not(.js-input, .js-objectSelect) {
+      pointer-events: auto;
+      cursor: auto;
+    }
   }
 
   &.form-group--nested {
@@ -2953,10 +2995,11 @@ input.has-error {
 }
 
 .modal--clue {
+  @extend .zIndex-6;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 500;
 
   .modal-backdrop {
     bottom: 0;
@@ -3032,6 +3075,11 @@ input.has-error {
 
     .btn.is-disabled {
       color: var(--text-normal);
+    }
+
+    &:only-child {
+      @include ltr(margin-left, auto);
+      @include rtl(margin-right, auto);
     }
   }
 
@@ -4516,7 +4564,7 @@ footer {
     left: 0;
     width: $mobileNavigationWidth;
     height: 100%;
-    z-index: 999;
+    z-index: 499;
 
     &:empty {
       display: none !important;
@@ -6968,6 +7016,30 @@ a.list-group-item.active > .badge,
   }
 }
 
+.ticket-meta-highlighted {
+  color: var(--header-primary);
+}
+
+.ticket-meta-checklist-details {
+  display: block;
+  margin-top: 8px;
+
+  .ticket-meta-checklist-icon {
+    width: 14px;
+    height: 12.25px;
+    position: relative;
+    top: 2px;
+  }
+
+  .ticket-meta-checklist-entry {
+    display: inline-block;
+  }
+
+  .ticket-meta-checklist-entry + .ticket-meta-checklist-entry {
+    @include bidi-style(padding-left, 14px, padding-right, 0);
+  }
+}
+
 .task-subline {
   text-align: center;
   display: block;
@@ -7023,6 +7095,30 @@ a.list-group-item.active > .badge,
 
   &.article-actions {
     justify-content: space-around;
+  }
+}
+
+.article-reaction {
+  position: absolute;
+  bottom: -12px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--background-article-customer-meta);
+  border: 1px solid var(--border-alt);
+  border-radius: 5px;
+  cursor: default;
+
+  @include ltr(right, 7px);
+  @include rtl(left, 7px);
+
+  span {
+    width: 14px;
+    height: 14px;
+    font-size: 14px;
+    line-height: 14px;
   }
 }
 
@@ -7808,6 +7904,7 @@ a.list-group-item.active > .badge,
   white-space: nowrap;
 
   @include bidi-style(margin-left, auto, margin-right, 0);
+
   @extend .u-clickable;
 
   @include phone {
@@ -7862,6 +7959,7 @@ a.list-group-item.active > .badge,
   white-space: nowrap;
 
   @include bidi-style(margin-left, auto, margin-right, 0);
+
   @extend %clickable;
 }
 
@@ -7906,6 +8004,7 @@ a.list-group-item.active > .badge,
 
 .attachmentUpload-cancel {
   @extend .u-clickable;
+
   @include bidi-style(margin-left, auto, margin-right, 0);
 
   text-decoration: underline;
@@ -8950,27 +9049,6 @@ li.list-item-none {
   display: block;
 }
 
-.table.user-list {
-  tr:hover .switchView {
-    visibility: visible;
-  }
-
-  td .list {
-    margin-top: -4px;
-  }
-
-  .switchView {
-    visibility: hidden;
-    display: block;
-    text-overflow: ellipsis;
-    overflow: hidden;
-  }
-
-  .btn {
-    margin: 3px 5px 0;
-  }
-}
-
 .switchBackToUser {
   display: flex;
   align-items: center;
@@ -9180,6 +9258,7 @@ li.list-item-none {
   padding: 0 40px;
 
   @extend .zIndex-11;
+
   @include bidi-style(padding-left, 40px, padding-right, 0);
 
   @include phone {
@@ -9370,6 +9449,12 @@ li.list-item-none {
 
 .dropdown-menu > li > a span {
   display: block;
+}
+
+.dropdown-menu > li > a.is-hovered {
+  color: var(--text-inverted);
+  text-decoration: none;
+  background: var(--menu-background-active);
 }
 
 .dropdown-menu .badge--text {
@@ -9644,6 +9729,7 @@ li.dropdown-header {
 
   .userList-name {
     @extend .u-textTruncate;
+
     @include bidi-style(margin-left, 7px, margin-right, 0);
   }
 }
@@ -11155,6 +11241,17 @@ output {
     transform: translateX(70%);
 
     @include rtl(transform, none);
+  }
+}
+
+.zammad-switch-inline-label {
+  @extend .inline-label;
+
+  display: flex;
+  align-items: center;
+
+  .zammad-switch {
+    @include bidi-style(margin-left, 8px, margin-right, 0);
   }
 }
 
@@ -14821,5 +14918,224 @@ div.accounted-time-value {
     overflow: hidden;
 
     @include bidi-style(margin-right, 6px, margin-left, 0);
+  }
+}
+
+.checklistShowRowContent {
+  display: flex;
+  align-items: stretch;
+
+  .checklistItemTicketTitle,
+  .checklistItemValue {
+    flex-grow: 1;
+    padding-left: 4px;
+    padding-right: 4px;
+    padding-top: 10px;
+    padding-bottom: 5px; // make sure the value is aligned vertically with the checkbox and the dropdown menu
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+
+    &.edit-widget-active {
+      padding-top: 5px;
+      padding-bottom: 3px;
+
+      @include bidi-style(padding-left, 0, padding-right, 4px);
+    }
+  }
+
+  .checkbox-replacement-readonly,
+  .checkbox-replacement {
+    width: 40px;
+    flex-shrink: 0;
+  }
+
+  .checklistItemTicketStateIndicator {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .checklistShowRowDisplayValue {
+    display: flex;
+    flex-grow: 1;
+  }
+
+  .draggable {
+    width: 40px;
+    height: 28px;
+    text-align: center;
+    cursor: move;
+    flex-shrink: 0;
+    display: flex;
+    align-items: start;
+    justify-content: center;
+    margin-top: 12px;
+  }
+
+  .draggable:not(.hide) + .checklistItemTicketStateIndicator,
+  .draggable:not(.hide) + .checkbox-replacement-readonly {
+    width: 20px;
+  }
+
+  .dropdown-container {
+    flex-shrink: 0;
+
+    .icon-checkmark {
+      fill: white;
+    }
+  }
+}
+
+.checklistShow .table {
+  margin-bottom: 0;
+
+  &:not(.table--no-borders) {
+    border-bottom: 1px solid var(--background-modifier-accent);
+  }
+
+  > thead > tr > th {
+    height: 40px;
+    vertical-align: middle;
+    padding-top: 4px;
+    padding-bottom: 3px;
+  }
+
+  > tbody > tr > td {
+    vertical-align: middle;
+
+    &.checklistShowRowContentCell {
+      height: 40px;
+      padding: 0;
+    }
+
+    &.checklistShowRowContentCellNoItems {
+      height: 40px;
+      font-size: 12px;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .icon {
+      margin-top: 0;
+    }
+  }
+}
+
+.checklistShowButtons {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px;
+
+  .btn {
+    margin: 0;
+  }
+
+  .btn--create {
+    @include ltr(margin-left, auto);
+    @include rtl(margin-right, auto);
+  }
+}
+
+.input-group--small {
+  height: 30px;
+
+  .input-group-btn {
+    .btn--action {
+      padding: 0 9px !important;
+    }
+
+    .btn--icon-only {
+      height: 30px;
+      width: 30px;
+
+      .icon {
+        height: 10px;
+        width: 10px;
+      }
+    }
+  }
+}
+
+.checklistItemEdit,
+.checklistTitleEdit {
+  flex-grow: 1;
+}
+
+.checklistStart {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+.checklist-item-container {
+  .checklist-item {
+    display: flex;
+    flex: 0 1 auto;
+    align-items: center;
+    margin-bottom: 4px;
+    padding-left: 6px;
+    padding-right: 6px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--background-modifier-accent);
+
+    &-draggable {
+      cursor: move;
+      margin-right: 8px;
+      margin-left: 8px;
+      padding-top: 6px;
+    }
+
+    &-text {
+      @include ltr(margin-right, 8px);
+      @include rtl(margin-left, 8px);
+    }
+  }
+}
+
+.checklist-item-add-container {
+  display: flex;
+  flex-direction: row;
+  margin-top: 5px;
+  padding-left: 13px;
+  padding-right: 13px;
+
+  .checklist-item-add-item-text {
+    flex: 1 1 0%;
+
+    @include ltr(margin-right, 8px);
+    @include rtl(margin-left, 8px);
+  }
+}
+
+.checklist_item .controls .help-inline {
+  padding-left: 13px;
+  padding-right: 13px;
+}
+
+.checklist-item-template {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+#form-checklist-template .form-group {
+  margin-bottom: 10px;
+}
+
+#keyboard-shortcut {
+  &-switches {
+    margin-bottom: 20px;
+  }
+
+  &-areas {
+    transition: opacity 0.1s;
+
+    &.is-disabled {
+      opacity: 0.33;
+    }
   }
 }

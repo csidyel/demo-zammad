@@ -22,14 +22,15 @@ class Ticket < ApplicationModel
   include Ticket::TouchesAssociations
   include Ticket::TriggersSubscriptions
   include Ticket::ChecksReopenAfterCertainTime
+  include Ticket::Checklists
 
   include ::Ticket::Escalation
   include ::Ticket::Subject
   include ::Ticket::Assets
   include ::Ticket::SearchIndex
+  include ::Ticket::CanSelector
   include ::Ticket::Search
   include ::Ticket::MergeHistory
-  include ::Ticket::CanSelector
   include ::Ticket::PerformChanges
 
   store :preferences
@@ -51,6 +52,8 @@ class Ticket < ApplicationModel
 
   core_workflow_screens 'create_middle', 'edit', 'overview_bulk'
   core_workflow_admin_screens 'create_middle', 'edit'
+
+  taskbar_entities 'TicketZoom', 'TicketCreate'
 
   activity_stream_attributes_ignored :organization_id, # organization_id will change automatically on user update
                                      :create_article_type_id,
@@ -84,7 +87,7 @@ class Ticket < ApplicationModel
                              :article_count,
                              :preferences
 
-  history_relation_object 'Ticket::Article', 'Mention', 'Ticket::SharedDraftZoom'
+  history_relation_object 'Ticket::Article', 'Mention', 'Ticket::SharedDraftZoom', 'Checklist', 'Checklist::Item'
 
   validates :note, length: { maximum: 250 }
   sanitized_html :note
@@ -94,7 +97,6 @@ class Ticket < ApplicationModel
 
   has_many      :articles, -> { reorder(:created_at, :id) }, class_name: 'Ticket::Article', after_add: :cache_update, after_remove: :cache_update, dependent: :destroy, inverse_of: :ticket
   has_many      :ticket_time_accounting, class_name: 'Ticket::TimeAccounting', dependent: :destroy, inverse_of: :ticket
-  has_many      :flags,                  class_name: 'Ticket::Flag', dependent: :destroy
   has_many      :mentions,               as: :mentionable, dependent: :destroy
   has_one       :shared_draft,           class_name: 'Ticket::SharedDraftZoom', inverse_of: :ticket, dependent: :destroy
   belongs_to    :state,                  class_name: 'Ticket::State', optional: true
@@ -562,18 +564,25 @@ result
 
 =end
 
-  def get_references(ignore = [])
+  # limited by 32kb (https://github.com/zammad/zammad/issues/5334)
+  # https://learn.microsoft.com/en-us/office365/servicedescriptions/exchange-online-service-description/exchange-online-limits
+  def get_references(ignore = [], max_length: 30_000)
     references = []
-    Ticket::Article.select('in_reply_to, message_id').where(ticket_id: id).each do |article|
-      if article.in_reply_to.present?
-        references.push article.in_reply_to
+    counter    = 0
+    Ticket::Article.select('in_reply_to, message_id').where(ticket_id: id).reorder(id: :desc).each do |article|
+      new_references = []
+      if article.message_id.present?
+        new_references.push article.message_id
       end
-      next if article.message_id.blank?
+      if article.in_reply_to.present?
+        new_references.push article.in_reply_to
+      end
+      new_references -= ignore
 
-      references.push article.message_id
-    end
-    ignore.each do |item|
-      references.delete(item)
+      counter += new_references.join.length
+      break if counter > max_length
+
+      references.unshift(*new_references)
     end
     references
   end

@@ -30,7 +30,7 @@ export default (
     policy: {
       destroy: true,
       update: true,
-      agentReadAccess: permissions?.names.includes('ticket.agent') ?? false,
+      agentReadAccess: !!permissions?.names.includes('ticket.agent'),
     },
     createArticleType: {
       __typename: 'TicketArticleType',
@@ -38,6 +38,8 @@ export default (
       name: 'email',
       communication: false,
     },
+    checklist: null,
+    referencingChecklistTickets: [],
   }
   if (meta.variables.ticketNumber) {
     ticket.number = meta.variables.ticketNumber as string

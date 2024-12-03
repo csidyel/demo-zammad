@@ -5,10 +5,20 @@ import { useApplicationStore } from '#shared/stores/application.ts'
 
 import log from './log.ts'
 
+import type { Except } from 'type-fest'
+
+export type FilePreview = 'image' | 'calendar'
+
 export interface ImageFileData {
   name: string
   type: string
   content: string
+}
+
+export interface ImageFileSource extends Except<ImageFileData, 'content'> {
+  name: string
+  type: string
+  src: string
 }
 
 interface CompressData {
@@ -153,6 +163,16 @@ export const blobToBase64 = async (blob: Blob) =>
     reader.readAsDataURL(blob)
   })
 
+export const dataURLToBlob = (dataURL: string) => {
+  const byteString = window.atob(dataURL.split(',')[1])
+  const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0]
+
+  // Create Uint8Array directly from the byteString
+  const ia = Uint8Array.from(byteString, (c) => c.charCodeAt(0))
+
+  return new Blob([ia], { type: mimeString })
+}
+
 export const convertFileList = async (
   filesList: Maybe<FileList | File[]>,
   options: CompressOptions = {},
@@ -224,10 +244,13 @@ export const allowedImageTypesString = () => {
   return allowedImageTypes().join(',')
 }
 
-export const canPreviewFile = (type?: Maybe<string>) => {
+export const canPreviewFile = (type?: Maybe<string>): FilePreview | false => {
   if (!type) return false
 
-  return allowedImageTypes().includes(type)
+  if (allowedImageTypes().includes(type)) return 'image'
+  if (type === 'text/calendar') return 'calendar'
+
+  return false
 }
 
 export const convertFilesToAttachmentInput = (

@@ -135,20 +135,6 @@ class CreateTicket < ActiveRecord::Migration[4.2]
     add_foreign_key :tickets, :users, column: :created_by_id
     add_foreign_key :tickets, :users, column: :updated_by_id
 
-    create_table :ticket_flags do |t|
-      t.references :ticket,                          null: false
-      t.column :key,            :string, limit: 50,  null: false
-      t.column :value,          :string, limit: 50,  null: true
-      t.column :created_by_id,  :integer,            null: false
-      t.timestamps limit: 3, null: false
-    end
-    add_index :ticket_flags, %i[ticket_id created_by_id]
-    add_index :ticket_flags, %i[ticket_id key]
-    add_index :ticket_flags, [:ticket_id]
-    add_index :ticket_flags, [:created_by_id]
-    add_foreign_key :ticket_flags, :tickets, column: :ticket_id
-    add_foreign_key :ticket_flags, :users, column: :created_by_id
-
     create_table :ticket_article_types do |t|
       t.column :name,                 :string, limit: 250, null: false
       t.column :note,                 :string, limit: 250, null: true
@@ -186,7 +172,6 @@ class CreateTicket < ActiveRecord::Migration[4.2]
       t.column :message_id_md5,       :string, limit: 32,      null: true
       t.column :in_reply_to,          :string, limit: 3000,    null: true
       t.column :content_type,         :string, limit: 20,      null: false, default: 'text/plain'
-      t.column :references,           :string, limit: 3200,    null: true
       t.column :body,                 :text,   limit: 20.megabytes + 1, null: false
       t.column :internal,             :boolean, null: false, default: false
       t.column :preferences,          :text, limit: 500.kilobytes + 1, null: true
@@ -562,9 +547,70 @@ class CreateTicket < ActiveRecord::Migration[4.2]
       t.column :updated_by_id, :integer, null: false
       t.timestamps limit: 3
     end
+
+    create_table :checklists do |t|
+      t.string :name,      limit: 250,     null: false, default: ''
+      if Rails.application.config.db_column_array
+        t.string :sorted_item_ids, null: false, array: true, default: []
+      else
+        t.json :sorted_item_ids, null: false
+      end
+      t.references :created_by, null: false, foreign_key: { to_table: :users }
+      t.references :updated_by, null: false, foreign_key: { to_table: :users }
+      t.timestamps limit: 3, null: false
+    end
+
+    change_table :tickets do |t|
+      t.references :checklist, null: true, foreign_key: true, index: { unique: true }
+    end
+
+    create_table :checklist_items do |t|
+      if ActiveRecord::Base.connection_db_config.configuration_hash[:adapter] == 'mysql2'
+        t.text :text, null: false
+      else
+        t.text :text, null: false, default: ''
+      end
+      t.boolean :checked,       null: false, default: false
+      t.references :checklist,  null: false, foreign_key: true
+      t.references :created_by, null: false, foreign_key: { to_table: :users }
+      t.references :updated_by, null: false, foreign_key: { to_table: :users }
+      t.references :ticket,     null: true,  foreign_key: true
+      t.timestamps limit: 3,    null: false
+    end
+    add_index :checklist_items, [:checked]
+
+    create_table :checklist_templates do |t|
+      t.string  :name,      limit: 250,     null: false, default: ''
+      t.boolean :active,    default: true,  null: false
+      if Rails.application.config.db_column_array
+        t.string :sorted_item_ids, null: false, array: true, default: []
+      else
+        t.json :sorted_item_ids, null: false
+      end
+      t.references :created_by, null: false, foreign_key: { to_table: :users }
+      t.references :updated_by, null: false, foreign_key: { to_table: :users }
+      t.timestamps limit: 3, null: false
+    end
+    add_index :checklist_templates, [:active]
+
+    create_table :checklist_template_items do |t|
+      if ActiveRecord::Base.connection_db_config.configuration_hash[:adapter] == 'mysql2'
+        t.text :text, null: false
+      else
+        t.text :text, null: false, default: ''
+      end
+      t.references :checklist_template,  null: false, foreign_key: true
+      t.references :created_by, null: false, foreign_key: { to_table: :users }
+      t.references :updated_by, null: false, foreign_key: { to_table: :users }
+      t.timestamps limit: 3, null: false
+    end
   end
 
   def self.down
+    drop_table :checklist_template_items
+    drop_table :checklist_templates
+    drop_table :checklist_items
+    drop_table :checklists
     drop_table :report_profiles
     drop_table :chat_sessions
     drop_table :chat_messages
@@ -588,7 +634,6 @@ class CreateTicket < ActiveRecord::Migration[4.2]
     drop_table :ticket_articles
     drop_table :ticket_article_types
     drop_table :ticket_article_senders
-    drop_table :ticket_flags
     drop_table :tickets
     drop_table :ticket_priorities
     drop_table :ticket_states

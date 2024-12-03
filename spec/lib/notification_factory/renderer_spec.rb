@@ -174,6 +174,24 @@ RSpec.describe NotificationFactory::Renderer do
           it "renders an #{tag} body with quote" do
             expect(renderer.render).to eq "&gt; #{body}<br>"
           end
+
+          context 'with links' do
+            context 'with &amp;' do
+              let(:body) { "This is an example\nhttps://example.com/?query=foo&amp;query2=bar" }
+
+              it "renders an #{tag} body with working links" do
+                expect(renderer.render).to eq '&gt; This is an example<br>&gt; https://example.com/?query=foo&amp;query2=bar<br>'
+              end
+            end
+
+            context 'with &' do
+              let(:body) { "This is an example\nhttps://example.com/?query=foo&query2=bar" }
+
+              it "renders an #{tag} body with working links" do
+                expect(renderer.render).to eq '&gt; This is an example<br>&gt; https://example.com/?query=foo&amp;query2=bar<br>'
+              end
+            end
+          end
         end
       end
     end
@@ -200,7 +218,7 @@ RSpec.describe NotificationFactory::Renderer do
         let(:create_object_manager_attribute) do
           create(:object_manager_attribute_select, name: 'select')
         end
-        let(:ticket) { create(:ticket, customer: @user, select: 'key_1') }
+        let(:ticket)          { create(:ticket, customer: @user, select: 'key_1') }
         let(:template)        { '#{ticket.select} _SEPERATOR_ #{ticket.select.value}' }
         let(:expected_render) { 'key_1 _SEPERATOR_ value_1' }
 
@@ -486,6 +504,18 @@ RSpec.describe NotificationFactory::Renderer do
         let(:ticket)          { create(:ticket, customer: @user, tree_select: 'Incident::Hardware::Laptop') }
         let(:template)        { '#{ticket.tree_select} _SEPERATOR_ #{ticket.tree_select.value}' }
         let(:expected_render) { 'Incident::Hardware::Laptop _SEPERATOR_ Incident::Hardware::Laptop' }
+
+        it_behaves_like 'correctly rendering the attributes'
+      end
+
+      context 'with a textarea attribute' do
+        let(:create_object_manager_attribute) do
+          create(:object_manager_attribute_textarea, name: 'textarea')
+          create(:object_manager_attribute_textarea, name: 'textarea_empty')
+        end
+        let(:ticket)          { create(:ticket, customer: @user, textarea: "Line 1\nLine 2\nLine 3", textarea_empty: nil) }
+        let(:template)        { '#{ticket.textarea} _SEPERATOR_ #{ticket.textarea.value} _SEPERATOR_ #{ticket.textarea_empty} _SEPERATOR_ #{ticket.textarea_empty.value}' }
+        let(:expected_render) { 'Line 1<br>Line 2<br>Line 3 _SEPERATOR_ Line 1<br>Line 2<br>Line 3 _SEPERATOR_  _SEPERATOR_ ' }
 
         it_behaves_like 'correctly rendering the attributes'
       end

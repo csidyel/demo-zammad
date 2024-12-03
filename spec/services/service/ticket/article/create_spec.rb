@@ -21,7 +21,7 @@ RSpec.describe Service::Ticket::Article::Create, current_user_id: -> { user.id }
       expect(article).to be_persisted.and(have_attributes(ticket_id: ticket.id))
     end
 
-    describe 'time accounting' do
+    describe 'time accounting', :aggregate_failures do
       let(:time_accounting_enabled) { true }
 
       before do
@@ -30,8 +30,23 @@ RSpec.describe Service::Ticket::Article::Create, current_user_id: -> { user.id }
         payload[:time_unit] = 60
       end
 
-      it 'adds time accounting if present' do
-        expect(article.ticket_time_accounting).to be_present
+      it 'adds time accounting without type' do
+        expect(article.ticket_time_accounting.time_unit).to be_present
+        expect(article.ticket_time_accounting.type).to be_nil
+      end
+
+      context 'with accounting type' do
+        let(:accounted_time_type) { create(:ticket_time_accounting_type) }
+
+        before do
+          payload[:accounted_time_type] = accounted_time_type
+        end
+
+        it 'adds time accounting with type' do
+          expect(article.ticket_time_accounting.time_unit).to be_present
+          expect(article.ticket_time_accounting.type).to eq(accounted_time_type)
+        end
+
       end
 
       context 'when time accounting is not enabled' do
@@ -150,6 +165,41 @@ RSpec.describe Service::Ticket::Article::Create, current_user_id: -> { user.id }
   9TXL0Y4OHwAAAABJRU5ErkJggg==" alt="Red dot" />'
 
         expect(article.attachments).to be_one
+      end
+
+      context 'when attachment is uploaded' do
+        let(:form_id) { SecureRandom.uuid }
+        let(:taskbar) { create(:taskbar, user_id: user.id, state: { form_id: }) }
+
+        before do
+          taskbar
+
+          file_name    = 'file1.png'
+          file_type    = 'image/png'
+          file_content = Base64.strict_encode64('file1')
+
+          UploadCache.new(form_id).tap do |cache|
+            cache.add(
+              data:          file_content,
+              filename:      file_name,
+              preferences:   { 'Content-Type' => file_type },
+              created_by_id: 1,
+            )
+          end
+        end
+
+        it 'adds attachments with inlines and updates taskbar state', aggregate_failures: true do
+          payload[:content_type] = 'text/html'
+          payload[:attachments] = {
+            files:   [],
+            form_id:,
+          }
+          payload[:body] = "some body <img src='/api/v1/attachments/#{Store.last.id}'> alt='Red dot' />"
+
+          expect(article.attachments).to be_one
+
+          expect(taskbar.reload.state).to eq({})
+        end
       end
     end
 

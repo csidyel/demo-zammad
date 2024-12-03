@@ -97,7 +97,7 @@ describe('component for displaying text article', () => {
       }),
     )
 
-    expect(view.emitted()).toHaveProperty('showContext')
+    expect(view.emitted()).toHaveProperty('show-context')
 
     await view.rerender({
       position: 'left',
@@ -250,7 +250,7 @@ describe('component for displaying text article', () => {
 
     expect(attachment1).toHaveAttribute(
       'href',
-      '/api/ticket_attachment/6/12/1?disposition=attachment',
+      '/api/attachments/1?disposition=attachment',
     )
     expect(attachment1).toHaveTextContent('Zammad 1.png')
     expect(attachment1).toHaveTextContent('236 KB')
@@ -260,11 +260,11 @@ describe('component for displaying text article', () => {
     })
     expect(
       getByAltText(previewButton, 'Image of Zammad 1.png'),
-    ).toHaveAttribute('src', '/api/ticket_attachment/6/12/1?view=preview')
+    ).toHaveAttribute('src', '/api/attachments/1?preview=1')
 
     expect(attachment2).toHaveAttribute(
       'href',
-      '/api/ticket_attachment/6/12/2?disposition=attachment',
+      '/api/attachments/2?disposition=attachment',
     )
     expect(attachment2).toHaveTextContent('Zammad 2.pdf')
     expect(attachment2).toHaveTextContent('355 Bytes')
@@ -293,7 +293,7 @@ describe('component for displaying text article', () => {
     })
     await view.events.click(attachment)
 
-    expect(view).toHaveImagePreview('/api/ticket_attachment/6/12/1?view=inline')
+    expect(view).toHaveImagePreview('/api/attachments/1?disposition=inline')
   })
 
   it('always shows selected image to preview', async () => {
@@ -383,18 +383,15 @@ describe('links handling', () => {
   })
 
   it('handles self mobile links with fqdn', async () => {
-    mockApplicationConfig({ fqdn: 'example.com' })
-    await clickLink(`http://example.com:3000${mobile.pathname}`)
+    mockApplicationConfig({ http_type: 'https', fqdn: 'example.com' })
+    await clickLink(`https://example.com${mobile.pathname}`)
     const router = getTestRouter()
     expect(open).not.toHaveBeenCalled()
     expect(router.push).toHaveBeenCalledWith(mobile.link)
   })
   it('handles target=_blank mobile links with fqdn', async () => {
-    mockApplicationConfig({ fqdn: 'example.com' })
-    await clickLink(
-      `http://example.com:3000${mobile.pathname}`,
-      'target="_blank"',
-    )
+    mockApplicationConfig({ http_type: 'https', fqdn: 'example.com' })
+    await clickLink(`https://example.com${mobile.pathname}`, 'target="_blank"')
     const router = getTestRouter()
     expect(open).toHaveBeenCalledWith(mobile.pathname, '_blank')
     expect(router.push).not.toHaveBeenCalledWith()
@@ -423,16 +420,16 @@ describe('links handling', () => {
   })
 
   it('handles self desktop links with fqdn', async () => {
-    mockApplicationConfig({ fqdn: 'example.com' })
-    await clickLink(`http://example.com:3000/#${desktop.link.slice(1)}`)
+    mockApplicationConfig({ http_type: 'https', fqdn: 'example.com' })
+    await clickLink(`https://example.com/#${desktop.link.slice(1)}`)
     const router = getTestRouter()
     expect(open).not.toHaveBeenCalled()
     expect(router.push).toHaveBeenCalledWith(desktop.link)
   })
   it('handles target=_blank desktop links with fqdn', async () => {
-    mockApplicationConfig({ fqdn: 'example.com' })
+    mockApplicationConfig({ http_type: 'https', fqdn: 'example.com' })
     await clickLink(
-      `http://example.com:3000/#${desktop.link.slice(1)}`,
+      `https://example.com/#${desktop.link.slice(1)}`,
       'target="_blank"',
     )
     const router = getTestRouter()
@@ -456,7 +453,7 @@ describe('links handling', () => {
   })
 
   it('fixes invalid user mention links', () => {
-    mockApplicationConfig({ fqdn: 'example.com' })
+    mockApplicationConfig({ http_type: 'https', fqdn: 'example.com' })
     const userId = '1'
     const userLink = `http://example.com:3000/#user/profile/${userId}`
     const view = renderArticleBubble({
@@ -464,7 +461,7 @@ describe('links handling', () => {
     })
     expect(view.getByRole('link')).toHaveAttribute(
       'href',
-      `http://localhost:3000/mobile/users/${userId}`,
+      `https://example.com/mobile/users/${userId}`,
     )
   })
 })

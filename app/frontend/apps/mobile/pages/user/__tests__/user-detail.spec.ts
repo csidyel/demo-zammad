@@ -2,11 +2,15 @@
 
 import { getTestRouter } from '#tests/support/components/renderComponent.ts'
 import { visitView } from '#tests/support/components/visitView.ts'
-import { mockGraphQLApi } from '#tests/support/mock-graphql-api.ts'
+import {
+  mockGraphQLApi,
+  mockGraphQLSubscription,
+} from '#tests/support/mock-graphql-api.ts'
 import { setupView } from '#tests/support/mock-user.ts'
 import { waitUntil, waitUntilApisResolved } from '#tests/support/utils.ts'
 
 import { UserDocument } from '#shared/entities/user/graphql/queries/user.api.ts'
+import { UserUpdatesDocument } from '#shared/graphql/subscriptions/userUpdates.api.ts'
 
 import {
   defaultUser,
@@ -210,18 +214,21 @@ describe('visiting user page', () => {
     setupView('agent')
 
     const mockApi = mockGraphQLApi(UserDocument).willFailWithNotFoundError()
+    mockGraphQLSubscription(UserUpdatesDocument)
 
     const view = await visitView('/users/123')
 
     await waitUntil(() => mockApi.calls.error)
 
-    await expect(view.findByText('Not found')).resolves.toBeInTheDocument()
+    await expect(view.findByText('Not Found')).resolves.toBeInTheDocument()
   })
 
   it('redirects to error page if access to organization is forbidden', async () => {
     setupView('agent')
 
     const mockApi = mockGraphQLApi(UserDocument).willFailWithForbiddenError()
+    mockGraphQLSubscription(UserUpdatesDocument)
+
     const view = await visitView('/users/123')
 
     await waitUntil(() => mockApi.calls.error)
@@ -232,6 +239,8 @@ describe('visiting user page', () => {
 
 test('correctly redirects from hash-based routes', async () => {
   setupView('agent')
+  mockGraphQLSubscription(UserUpdatesDocument)
+
   await visitView('/#user/profile/1')
   const router = getTestRouter()
   const route = router.currentRoute.value

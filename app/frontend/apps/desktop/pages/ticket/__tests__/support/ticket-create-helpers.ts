@@ -1,46 +1,51 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 import type { ExtendedRenderResult } from '#tests/support/components'
+import { nullableMock } from '#tests/support/utils.ts'
 
 import {
   mockAutocompleteSearchGenericQuery,
   waitForAutocompleteSearchGenericQueryCalls,
 } from '#shared/components/Form/fields/FieldCustomer/graphql/queries/autocompleteSearch/generic.mocks.ts'
 import { mockFormUpdaterQuery } from '#shared/components/Form/graphql/queries/formUpdater.mocks.ts'
+import { mockOrganizationQuery } from '#shared/entities/organization/graphql/queries/organization.mocks.ts'
 import { mockUserQuery } from '#shared/entities/user/graphql/queries/user.mocks.ts'
+import { convertToGraphQLId } from '#shared/graphql/utils.ts'
 
 import { testOptions } from '#desktop/components/Form/fields/FieldCustomer/__tests__/support/testOptions.ts'
 
 export const handleMockFormUpdaterQuery = (additionalProperties = {}) =>
   mockFormUpdaterQuery({
     formUpdater: {
-      ...additionalProperties,
-      group_id: {
-        options: [
-          {
-            value: 1,
-            label: 'Users',
-          },
-          {
-            value: 2,
-            label: 'some group1',
-          },
-        ],
-      },
-      priority_id: {
-        options: [
-          { value: 1, label: '1 low' },
-          { value: 2, label: '2 normal' },
-          { value: 3, label: '3 high' },
-        ],
-      },
-      state_id: {
-        options: [
-          { value: 4, label: 'closed' },
-          { value: 1, label: 'new' },
-          { value: 2, label: 'open' },
-          { value: 6, label: 'pending close' },
-          { value: 3, label: 'pending reminder' },
-        ],
+      fields: {
+        group_id: {
+          options: [
+            {
+              value: 1,
+              label: 'Users',
+            },
+            {
+              value: 2,
+              label: 'some group1',
+            },
+          ],
+        },
+        priority_id: {
+          options: [
+            { value: 1, label: '1 low' },
+            { value: 2, label: '2 normal' },
+            { value: 3, label: '3 high' },
+          ],
+        },
+        state_id: {
+          options: [
+            { value: 4, label: 'closed' },
+            { value: 1, label: 'new' },
+            { value: 2, label: 'open' },
+            { value: 6, label: 'pending close' },
+            { value: 3, label: 'pending reminder' },
+          ],
+        },
+        ...additionalProperties,
       },
     },
   })
@@ -50,7 +55,7 @@ export const handleCustomerMock = async (view: ExtendedRenderResult) => {
     autocompleteSearchGeneric: testOptions,
   })
 
-  const customerField = view.getByRole('combobox', { name: 'Customer' })
+  const customerField = view.getByLabelText('Customer')
 
   await view.events.type(customerField, 'Nicole')
 
@@ -60,11 +65,11 @@ export const handleCustomerMock = async (view: ExtendedRenderResult) => {
 export const rendersFields = (view: ExtendedRenderResult) => {
   // Same for all article types
   expect(view.getByText('Title')).toBeInTheDocument()
-  expect(view.getByRole('combobox', { name: 'Customer' })).toBeInTheDocument()
+  expect(view.getByLabelText('Customer')).toBeInTheDocument()
   expect(view.getByText('Text')).toBeInTheDocument()
-  expect(view.getByRole('combobox', { name: 'Group' })).toBeInTheDocument()
-  expect(view.getByRole('combobox', { name: 'Priority' })).toBeInTheDocument()
-  expect(view.getByRole('combobox', { name: 'State' })).toBeInTheDocument()
+  expect(view.getByLabelText('Group')).toBeInTheDocument()
+  expect(view.getByLabelText('Priority')).toBeInTheDocument()
+  expect(view.getByLabelText('State')).toBeInTheDocument()
 
   expect(view.getByText('Group')).toBeInTheDocument()
   expect(view.getByText('Owner')).toBeInTheDocument()
@@ -75,13 +80,11 @@ export const rendersFields = (view: ExtendedRenderResult) => {
 
 export const handleMockUserQuery = () => {
   return mockUserQuery({
-    user: {
-      __typename: 'User',
+    user: nullableMock({
       policy: {
-        __typename: 'PolicyDefault',
         update: true,
       },
-      id: 'gid://zammad/User/2',
+      id: convertToGraphQLId('User', 2),
       internalId: 2,
       firstname: 'Nicole',
       lastname: 'Braun',
@@ -100,9 +103,7 @@ export const handleMockUserQuery = () => {
       active: true,
       objectAttributeValues: [
         {
-          __typename: 'ObjectAttributeValue',
           attribute: {
-            __typename: 'ObjectManagerFrontendAttribute',
             name: 'department',
             display: 'Department',
           },
@@ -110,9 +111,7 @@ export const handleMockUserQuery = () => {
           renderedLink: null,
         },
         {
-          __typename: 'ObjectAttributeValue',
           attribute: {
-            __typename: 'ObjectManagerFrontendAttribute',
             name: 'address',
             display: 'Address',
           },
@@ -121,29 +120,59 @@ export const handleMockUserQuery = () => {
         },
       ],
       organization: {
-        __typename: 'Organization',
-        id: 'gid://zammad/Organization/1',
+        id: convertToGraphQLId('Organization', 1),
         internalId: 1,
+        shared: null,
         name: 'Zammad Foundation',
         active: true,
         vip: false,
         ticketsCount: {
-          __typename: 'TicketCount',
           open: 17,
           closed: 0,
         },
       },
       secondaryOrganizations: {
-        __typename: 'OrganizationConnection',
         edges: [],
         totalCount: 0,
       },
       hasSecondaryOrganizations: false,
       ticketsCount: {
-        __typename: 'TicketCount',
         open: 17,
         closed: 0,
       },
-    },
+    }),
+  })
+}
+
+export const handleMockOrganizationQuery = () => {
+  return mockOrganizationQuery({
+    organization: nullableMock({
+      internalId: 1,
+      name: 'Zammad Foundation',
+      shared: false,
+      domain: null,
+      domainAssignment: false,
+      allMembers: {
+        edges: [
+          {
+            node: {
+              id: convertToGraphQLId('User', 1),
+              internalId: 1,
+              firstname: 'Nicole',
+              lastname: 'Braun',
+              fullname: 'Nicole Braun',
+              email: 'nicole.braun@zammad.org',
+              active: true,
+              vip: false,
+            },
+          },
+        ],
+        totalCount: 1,
+      },
+      ticketsCount: {
+        open: 17,
+        closed: 0,
+      },
+    }),
   })
 }

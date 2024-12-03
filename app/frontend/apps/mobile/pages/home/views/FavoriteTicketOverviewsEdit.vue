@@ -1,9 +1,10 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
+import { animations, updateConfig } from '@formkit/drag-and-drop'
+import { dragAndDrop } from '@formkit/drag-and-drop/vue'
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
-import Draggable from 'vuedraggable'
 
 import {
   NotificationTypes,
@@ -45,6 +46,16 @@ const includedOverviews = computed({
   set: (value) => {
     includedIds.value = new Set(value.map((overview) => overview.id))
   },
+})
+
+const dndParentRef = ref()
+
+dragAndDrop({
+  parent: dndParentRef,
+  values: includedOverviews,
+  plugins: [animations()],
+  dropZoneClass: 'opacity-0',
+  touchDropZoneClass: 'opacity-0',
 })
 
 const { notify } = useNotifications()
@@ -89,6 +100,10 @@ const removeFromFavorites = (id: string) => {
 const addToFavorites = (id: string) => {
   includedIds.value.add(id)
 }
+
+const updateDndDisabledConfig = (disabled: boolean) => {
+  updateConfig(dndParentRef.value, { disabled })
+}
 </script>
 
 <template>
@@ -102,24 +117,20 @@ const addToFavorites = (id: string) => {
       :header-label="__('Included ticket overviews')"
       data-test-id="includedOverviews"
     >
-      <Draggable
-        v-model="includedOverviews"
-        :animation="100"
-        handle=".handler"
-        item-key="id"
-      >
-        <template #item="{ element }">
-          <TicketOverviewEditItem
-            action="delete"
-            :overview="element"
-            draggable
-            @action="removeFromFavorites(element.id)"
-          />
-        </template>
-      </Draggable>
+      <div ref="dndParentRef">
+        <TicketOverviewEditItem
+          v-for="overview in includedOverviews"
+          :key="overview.id"
+          action="delete"
+          :overview="overview"
+          draggable
+          @action="removeFromFavorites(overview.id)"
+          @action-active="updateDndDisabledConfig"
+        />
+      </div>
       <div
         v-if="!includedOverviews.length"
-        class="flex min-h-[54px] items-center"
+        class="ms-3 flex min-h-[54px] items-center"
       >
         <p>{{ $t('No entries') }}</p>
       </div>
@@ -139,7 +150,7 @@ const addToFavorites = (id: string) => {
       />
       <div
         v-if="!excludedOverviews.length"
-        class="flex min-h-[54px] items-center"
+        class="ms-3 flex min-h-[54px] items-center"
       >
         <p>{{ $t('No entries') }}</p>
       </div>

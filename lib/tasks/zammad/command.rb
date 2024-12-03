@@ -1,5 +1,7 @@
 # Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
+require 'English'
+
 module Tasks
   module Zammad
 
@@ -24,6 +26,11 @@ module Tasks
       # Needs to be implemented by child classes.
       def self.description
         raise "The required method 'description' is not implemented by #{name}"
+      end
+
+      # Needs to be implemented by child classes.
+      def self.task_handler
+        raise "The required method 'task_handler' is not implemented by #{name}"
       end
 
       def self.register_rake_task
@@ -68,6 +75,7 @@ module Tasks
         puts "> #{cmd}"
         puts `#{cmd}`
         puts ''
+        raise if !$CHILD_STATUS.success?
       end
     end
   end

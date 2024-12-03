@@ -5,8 +5,12 @@ class Taskbar < ApplicationModel
   include ::Taskbar::HasAttachments
   include Taskbar::Assets
   include Taskbar::TriggersSubscriptions
+  include Taskbar::List
 
   TASKBAR_APPS = %w[desktop mobile].freeze
+  TASKBAR_STATIC_ENTITIES = %w[
+    Search
+  ].freeze
 
   store           :state
   store           :params
@@ -15,9 +19,12 @@ class Taskbar < ApplicationModel
   belongs_to :user
 
   validates :app, inclusion: { in: TASKBAR_APPS }
+  validates :key, uniqueness: { scope: %i[user_id app] }
 
-  before_create   :update_last_contact, :set_user, :update_preferences_infos
-  before_update   :update_last_contact, :set_user, :update_preferences_infos
+  before_validation :set_user
+
+  before_create   :update_last_contact, :update_preferences_infos
+  before_update   :update_last_contact, :update_preferences_infos
 
   after_update    :notify_clients
   after_destroy   :update_preferences_infos, :notify_clients
@@ -37,10 +44,18 @@ class Taskbar < ApplicationModel
       .where.not(id: taskbar.id)
   }
 
+  def self.taskbar_entities
+    ApplicationModel.descendants.select { |model| model.included_modules.include?(HasTaskbars) }.each_with_object([]) do |model, result|
+      model.taskbar_entities&.each do |entity|
+        result << entity
+      end
+    end | TASKBAR_STATIC_ENTITIES
+  end
+
   def state_changed?
     return false if state.blank?
 
-    state.each_value do |value|
+    state.each do |key, value|
       if value.is_a? Hash
         value.each do |key1, value1|
           next if value1.blank?
@@ -50,6 +65,7 @@ class Taskbar < ApplicationModel
         end
       else
         next if value.blank?
+        next if key == 'form_id'
 
         return true
       end
@@ -77,6 +93,20 @@ class Taskbar < ApplicationModel
 
   def related_taskbars
     self.class.related_taskbars(self)
+  end
+
+  def touch_last_contact!
+    # Don't inform the current user (only!) about live user and item updates.
+    self.skip_live_user_trigger = true
+    self.skip_item_trigger      = true
+    self.last_contact           = Time.zone.now
+    save!
+  end
+
+  def saved_change_to_dirty?
+    return false if !saved_change_to_preferences?
+
+    !!preferences[:dirty] != !!preferences_previously_was[:dirty]
   end
 
   private
@@ -142,6 +172,7 @@ class Taskbar < ApplicationModel
       taskbar.with_lock do
         taskbar.preferences = preferences
         taskbar.local_update = true
+        taskbar.skip_item_trigger = true
         taskbar.save!
       end
     end
@@ -163,5 +194,4 @@ class Taskbar < ApplicationModel
       data,
     )
   end
-
 end

@@ -3,7 +3,8 @@ class TranslationInline extends App.Controller
     super
     @rebind()
     @controllerBind('auth', => @rebind())
-    @controllerBind('i18n:inline_translation', => @toogle())
+    @controllerBind('toggle-shortcut-layout', => @rebind())
+    @controllerBind('i18n:inline_translation', => @toggle())
 
   rebind: =>
     $(document).off('keydown.translation')
@@ -12,22 +13,22 @@ class TranslationInline extends App.Controller
     return if !@permissionCheck('admin.translation')
 
     # bind on key down
-    # if hotkeys+t is pressed, enable translation_inline and fire ui:rerender
-    browserHotkeys = App.Browser.hotkeys()
-    $(document).on('keydown.translation', (e) =>
-      hotkeys = false
-      if browserHotkeys is 'ctrl+shift'
-        if !e.altKey && e.ctrlKey && !e.metaKey && e.shiftKey
-          hotkeys = true
-      else
-        if e.altKey && e.ctrlKey && !e.metaKey
-          hotkeys = true
-      if hotkeys && e.keyCode is 84
-        e.preventDefault()
-        @toogle()
+    # if `t` is pressed, enable translation_inline and fire ui:rerender
+    # in case of old shortcut layout, require hotkeys in the combination
+    useOldShortcutLayout = App.KeyboardShortcutPlugin.useOldShortcutLayout()
+    modifier = ''
+    modifier += App.Browser.hotkeys() if useOldShortcutLayout
+    modifier += '+' if modifier isnt ''
+    modifier += 't'
+    $(document).on('keydown.translation', { keys: modifier } , (e) =>
+      return if App.KeyboardShortcutPlugin.isDisabled()
+      return if App.KeyboardShortcutPlugin.isInput()
+
+      e.preventDefault()
+      @toggle()
     )
 
-  toogle: =>
+  toggle: =>
     if @active
       $('.translation:focus').trigger('blur')
       @disable()

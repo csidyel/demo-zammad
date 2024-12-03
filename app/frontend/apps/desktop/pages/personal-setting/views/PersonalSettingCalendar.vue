@@ -235,7 +235,7 @@ watch(formInitialValues, (newValues) => {
   // No reset needed when the form has already the correct state.
   if (isEqual(values.value, newValues) && !isDirty.value) return
 
-  formReset(newValues)
+  formReset({ values: newValues })
 })
 
 const { notify } = useNotifications()
@@ -310,7 +310,6 @@ const tabs = [
       />
 
       <FormKit
-        :key="alarmLocalValue"
         v-model="alarmLocalValue"
         type="toggle"
         :label="__('Add alarm to pending reminder and escalated tickets')"

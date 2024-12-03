@@ -16,6 +16,7 @@ export interface ConfigList {
   auth_weibo?: boolean | null
   chat?: boolean | null
   chat_agent_idle_timeout: string
+  checklist?: boolean | null
   core_workflow_ajax_mode?: boolean | null
   cti_integration?: boolean | null
   customer_ticket_create?: boolean | null
@@ -94,8 +95,8 @@ export interface ConfigList {
   ui_ticket_create_available_types: ('phone-in' | 'phone-out' | 'email-out')[]
   ui_ticket_create_default_type: 'phone-in' | 'phone-out' | 'email-out'
   ui_ticket_create_notes: unknown
-  ui_ticket_overview_priority_icon?: boolean | null
   ui_ticket_overview_ticket_limit: number
+  ui_ticket_priority_icons?: boolean | null
   ui_ticket_zoom_article_delete_timeframe: number
   ui_ticket_zoom_article_email_full_quote?: boolean | null
   ui_ticket_zoom_article_email_full_quote_header?: boolean | null

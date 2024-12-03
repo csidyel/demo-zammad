@@ -1,26 +1,32 @@
 # Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-RSpec.shared_examples 'FormUpdater::AppliesTicketSharedDraft' do
+RSpec.shared_examples 'FormUpdater::AppliesTicketSharedDraft' do |draft_type: 'start'|
   context 'when applying a ticket shared draft' do
 
     let(:object_name)           { 'ticket' }
     let(:field_name)            { 'title' }
     let(:field_draft_value)     { 'test' }
     let(:field_result)          { { value: 'test' } }
-    let(:draft)                 { create(:ticket_shared_draft_start, group: user.groups.first, content: { field_name => field_draft_value }) }
     let(:dirty_fields)          { [] }
-    let(:additional_data)       { { 'sharedDraftStartId' => Gql::ZammadSchema.id_from_object(draft) } }
+    let(:additional_data)       { { 'sharedDraftId' => Gql::ZammadSchema.id_from_object(draft), 'draftType' => draft_type } }
     let(:meta)                  { { additional_data:, dirty_fields: } }
+    let(:draft) do
+      if draft_type == 'start'
+        create(:ticket_shared_draft_start, group: user.groups.first, content: { field_name => field_draft_value })
+      elsif draft_type == 'detail-view'
+        create(:ticket_shared_draft_zoom, ticket: create(:ticket, group: group), new_article: { body: '4711' }, ticket_attributes: { field_name => field_draft_value })
+      end
+    end
 
     shared_examples 'skips the field' do
       it 'skips the field' do
-        expect(resolved_result.resolve[field_name]).not_to have_key(:value)
+        expect(resolved_result.resolve[:fields][field_name]).not_to have_key(:value)
       end
     end
 
     shared_examples 'sets the draft value for the field' do
       it 'sets the draft value for the field' do
-        expect(resolved_result.resolve[field_name]).to include(field_result)
+        expect(resolved_result.resolve[:fields][field_name]).to include(field_result)
       end
     end
 
@@ -32,11 +38,11 @@ RSpec.shared_examples 'FormUpdater::AppliesTicketSharedDraft' do
 
     context 'with a draft to be applied' do
 
-      context 'when the field is dirty and has a value' do
-        let(:data)         { { field_name => 'previous value' } }
-        let(:dirty_fields) { [field_name] }
+      context 'with implicit draft internal identifier' do
+        let(:field_name)   { 'shared_draft_id' }
+        let(:field_result) { { value: draft.id } }
 
-        include_examples 'skips the field'
+        include_examples 'sets the draft value for the field'
       end
 
       context 'when a value is present, but the field is not marked as dirty' do
@@ -85,7 +91,7 @@ RSpec.shared_examples 'FormUpdater::AppliesTicketSharedDraft' do
       end
 
       context 'with recipient autocomplete fields' do
-        let(:search_user)           { create(:user, organization: create(:organization)) }
+        let(:search_user)           { create(:user) }
         let(:object_name)           { 'article' }
         let(:field_name)            { 'cc' }
         let(:field_draft_value)     { search_user.email }
@@ -98,13 +104,30 @@ RSpec.shared_examples 'FormUpdater::AppliesTicketSharedDraft' do
 
         include_examples 'sets the draft value for the field'
 
-        context 'with unknown user' do
+        context 'with unknown email' do
           let(:search_user) { 'dummy@non-existing.com' }
           let(:field_draft_value) { search_user }
           let(:field_result) do
             {
               value:   [search_user],
-              options: [{ value: search_user, label: search_user, heading: nil }]
+              options: [{ value: search_user, label: search_user }]
+            }
+          end
+
+          include_examples 'sets the draft value for the field'
+        end
+
+        context 'with multiple recipients' do
+          let(:recipient_user)    { create(:user) }
+          let(:recipient_email)   { 'dummy@non-existing.com' }
+          let(:field_draft_value) { "#{recipient_user.email}, #{recipient_email}" }
+          let(:field_result) do
+            {
+              value:   [recipient_user.email, recipient_email],
+              options: [
+                { value: recipient_user.email, label: recipient_user.email, heading: recipient_user.fullname },
+                { value: recipient_email, label: recipient_email },
+              ],
             }
           end
 
@@ -112,11 +135,39 @@ RSpec.shared_examples 'FormUpdater::AppliesTicketSharedDraft' do
         end
       end
 
+      context 'with attachments' do
+        let(:object_name)           { 'article' }
+        let(:field_name)            { 'attachments' }
+        let(:field_draft_value)     { [] }
+        let(:original_attachment)   { create(:store, object: draft.class.name, o_id: draft.id) }
+        let(:form_id)               { SecureRandom.uuid }
+        let(:meta)                  { { additional_data:, dirty_fields:, form_id: } }
+
+        let(:field_result) do
+          {
+            value: [
+              {
+                id:   cloned_attachment.id,
+                name: cloned_attachment.filename,
+                size: cloned_attachment.size,
+                type: cloned_attachment.preferences['Content-Type'],
+              }
+            ]
+          }
+        end
+
+        let(:cloned_attachment) { Store.list(object: 'UploadCache', o_id: form_id).first }
+
+        before { original_attachment }
+
+        include_examples 'sets the draft value for the field'
+      end
+
       context 'with organization autocomplete fields' do
         let(:search_organization)   { create(:organization) }
         let(:object_attribute)      { create(:object_manager_attribute_organization_autocompletion) }
         let(:field_name)            { object_attribute.name }
-        let(:field_draft_value)     { search_organization.id }
+        let(:field_draft_value)     { search_organization.id.to_s }
         let(:field_result) do
           {
             value:   search_organization.id,
@@ -149,11 +200,17 @@ RSpec.shared_examples 'FormUpdater::AppliesTicketSharedDraft' do
         let(:group)    { create(:group, name: 'Example 1') }
         let(:user)     { create(:agent, groups: [group]) }
         let(:context)  { { current_user: user } }
-        let(:draft)    { create(:ticket_shared_draft_start, group: user.groups.first, content: { 'group_id' => group.id.to_s, 'owner_id' => user.id.to_s }) }
+        let(:draft) do
+          if draft_type == 'start'
+            create(:ticket_shared_draft_start, group: user.groups.first, content: { 'group_id' => group.id.to_s, 'owner_id' => user.id.to_s })
+          elsif draft_type == 'detail-view'
+            create(:ticket_shared_draft_zoom, ticket: create(:ticket, group: group), new_article: { body: '4711' }, ticket_attributes: { 'group_id' => group.id.to_s, 'owner_id' => user.id.to_s })
+          end
+        end
 
         it 'sets the draft value for both fields', :aggregate_failures do
-          expect(resolved_result.resolve['group_id']).to include(value: group.id)
-          expect(resolved_result.resolve['owner_id']).to include(value: user.id.to_s)
+          expect(resolved_result.resolve[:fields]['group_id']).to include(value: group.id)
+          expect(resolved_result.resolve[:fields]['owner_id']).to include(value: user.id)
         end
       end
     end

@@ -2,6 +2,9 @@
 
 import { setupView } from '#tests/support/mock-user.ts'
 
+import { EnumTicketArticleSenderName } from '#shared/graphql/types.ts'
+import { convertToGraphQLId } from '#shared/graphql/utils.ts'
+
 import {
   createTicketArticle,
   createTestArticleActions,
@@ -12,6 +15,22 @@ import {
 const createAgentUpdatableTicket = () => {
   return createTicket({
     policy: { update: true, agentReadAccess: true },
+  })
+}
+
+const createEmailTicketArticle = () => {
+  return createTicketArticle({
+    type: { name: 'email' },
+    attachmentsWithoutInline: [
+      {
+        id: convertToGraphQLId('Store', 123),
+        preferences: {
+          'original-format': true,
+        },
+        internalId: 123,
+        name: 'test.txt',
+      },
+    ],
   })
 }
 
@@ -48,7 +67,7 @@ describe('email permissions', () => {
       }
       article.sender = {
         __typename: 'TicketArticleSender',
-        name: 'Customer',
+        name: EnumTicketArticleSenderName.Customer,
       }
       const actions = createTestArticleActions(ticket, article)
       expect(actions.find((action) => action.name === type)).toBeDefined()
@@ -67,7 +86,7 @@ describe('email permissions', () => {
       }
       article.sender = {
         __typename: 'TicketArticleSender',
-        name: 'Agent',
+        name: EnumTicketArticleSenderName.Agent,
       }
       const actions = createTestArticleActions(ticket, article)
       expect(actions.find((action) => action.name === type)).toBeDefined()
@@ -85,7 +104,7 @@ describe('email permissions', () => {
       }
       article.sender = {
         __typename: 'TicketArticleSender',
-        name: 'Agent',
+        name: EnumTicketArticleSenderName.Agent,
       }
       return {
         ticket,
@@ -137,7 +156,7 @@ describe('email permissions', () => {
       const { ticket, article } = setupAction()
       article.sender = {
         __typename: 'TicketArticleSender',
-        name: 'Customer',
+        name: EnumTicketArticleSenderName.Customer,
       }
       article.to = {
         raw: '',
@@ -161,7 +180,7 @@ describe('email permissions', () => {
       const { ticket, article } = setupAction()
       article.sender = {
         __typename: 'TicketArticleSender',
-        name: 'Agent',
+        name: EnumTicketArticleSenderName.Agent,
       }
       article.to = {
         raw: 'zammad1@example.com',
@@ -187,7 +206,7 @@ describe('email permissions', () => {
       const { ticket, article } = setupAction()
       article.sender = {
         __typename: 'TicketArticleSender',
-        name: 'Agent',
+        name: EnumTicketArticleSenderName.Agent,
       }
       article.to = {
         raw: '',
@@ -211,7 +230,7 @@ describe('email permissions', () => {
       const { ticket, article } = setupAction()
       article.sender = {
         __typename: 'TicketArticleSender',
-        name: 'Agent',
+        name: EnumTicketArticleSenderName.Agent,
       }
       article.to = {
         raw: '',
@@ -294,4 +313,53 @@ describe('email permissions', () => {
     const types = createTestArticleTypes(ticket)
     expect(types.find((type) => type.value === 'email')).toBeUndefined()
   })
+
+  describe.each(['email-download-original-email', 'email-download-raw-email'])(
+    '%s action',
+    (type) => {
+      it('available for agent on desktop', () => {
+        setupView('agent')
+        const ticket = createTicket({ policy: { update: true } })
+        const article = createEmailTicketArticle()
+        const actions = createTestArticleActions(ticket, article, 'desktop')
+
+        expect(actions).toEqual(
+          expect.arrayContaining([expect.objectContaining({ name: type })]),
+        )
+      })
+
+      it('not available for agent on desktop if article is not email', () => {
+        setupView('agent')
+        const ticket = createTicket({ policy: { update: true } })
+        const article = createTicketArticle({ type: { name: 'phone' } })
+        const actions = createTestArticleActions(ticket, article, 'desktop')
+
+        expect(actions).toEqual(
+          expect.not.arrayContaining([expect.objectContaining({ name: type })]),
+        )
+      })
+
+      it('not available for customer', () => {
+        setupView('customer')
+        const ticket = createTicket({ policy: { update: true } })
+        const article = createEmailTicketArticle()
+        const actions = createTestArticleActions(ticket, article, 'desktop')
+
+        expect(actions).toEqual(
+          expect.not.arrayContaining([expect.objectContaining({ name: type })]),
+        )
+      })
+
+      it('not available for agent on mobile', () => {
+        setupView('agent')
+        const ticket = createTicket({ policy: { update: true } })
+        const article = createEmailTicketArticle()
+        const actions = createTestArticleActions(ticket, article, 'mobile')
+
+        expect(actions).toEqual(
+          expect.not.arrayContaining([expect.objectContaining({ name: type })]),
+        )
+      })
+    },
+  )
 })

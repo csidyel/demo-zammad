@@ -748,6 +748,7 @@ RSpec.describe 'Ticket', type: :request do
       expect(json_response['created_by_id']).to eq(agent.id)
 
       ticket = Ticket.find(json_response['id'])
+
       expect(ticket.articles.count).to eq(1)
       expect(ticket.articles.first.attachments.count).to eq(2)
       file = ticket.articles.first.attachments[0]
@@ -756,11 +757,13 @@ RSpec.describe 'Ticket', type: :request do
       expect(file.preferences['Mime-Type']).to eq('image/jpeg')
       expect(file.preferences['Content-ID']).to be_truthy
       expect(file.preferences['Content-ID']).to match(%r{#{ticket.id}\..+?@zammad.example.com})
+      expect(file).to be_inline
       file = ticket.articles.first.attachments[1]
       expect(Digest::MD5.hexdigest(file.content)).to eq('39d0d586a701e199389d954f2d592720')
       expect(file.filename).to eq('some_file.txt')
       expect(file.preferences['Mime-Type']).to eq('text/plain')
       expect(file.preferences['Content-ID']).to be_falsey
+      expect(file).not_to be_inline
     end
 
     it 'does ticket create with agent (02.02)' do
@@ -885,11 +888,11 @@ RSpec.describe 'Ticket', type: :request do
       expect(article_json_response['type_id']).to eq(Ticket::Article::Type.lookup(name: 'note').id)
 
       perform_enqueued_jobs
-      get "/api/v1/tickets/search?query=#{CGI.escape(title)}", params: {}, as: :json
+      get "/api/v1/tickets/search?query=#{CGI.escape(title)}&full=true", params: {}, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a(Hash)
-      expect(json_response['tickets'][0]).to eq(ticket.id)
-      expect(json_response['tickets_count']).to eq(1)
+      expect(json_response['record_ids'][0]).to eq(ticket.id)
+      expect(json_response['record_ids'].count).to eq(1)
 
       params = {
         condition: {
@@ -899,16 +902,17 @@ RSpec.describe 'Ticket', type: :request do
           },
         },
       }
-      post '/api/v1/tickets/search', params: params, as: :json
+      post '/api/v1/tickets/search?full=true', params: params, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a(Hash)
-      expect(json_response['tickets'][0]).to eq(ticket.id)
-      expect(json_response['tickets_count']).to eq(1)
+      expect(json_response['record_ids'][0]).to eq(ticket.id)
+      expect(json_response['record_ids'].count).to eq(1)
 
       delete "/api/v1/ticket_articles/#{article_json_response['id']}", params: {}, as: :json
       expect(response).to have_http_status(:ok)
 
       params = {
+        to:        Faker::Internet.unique.email,
         from:      'something which should not be changed on server side',
         ticket_id: ticket.id,
         subject:   'some subject',
@@ -946,6 +950,7 @@ RSpec.describe 'Ticket', type: :request do
       expect(json_response['type_id']).to eq(Ticket::Article::Type.lookup(name: 'email').id)
 
       params = {
+        to:        Faker::Internet.unique.email,
         from:      'something which should not be changed on server side',
         ticket_id: ticket.id,
         subject:   'some subject',
@@ -1042,6 +1047,7 @@ RSpec.describe 'Ticket', type: :request do
         subject:   'some subject',
         body:      'some body',
         type:      'email',
+        to:        Faker::Internet.unique.email,
       }
       post '/api/v1/ticket_articles', params: params, as: :json
       expect(response).to have_http_status(:created)
@@ -1084,33 +1090,33 @@ RSpec.describe 'Ticket', type: :request do
       end
 
       authenticated_as(admin)
-      get "/api/v1/tickets/search?query=#{CGI.escape(title)}&limit=40", params: {}, as: :json
+      get "/api/v1/tickets/search?query=#{CGI.escape(title)}&limit=40&full=true", params: {}, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a(Hash)
-      expect(json_response['tickets'][0]).to eq(tickets[19].id)
-      expect(json_response['tickets'][19]).to eq(tickets[0].id)
-      expect(json_response['tickets_count']).to eq(20)
+      expect(json_response['record_ids'][0]).to eq(tickets[19].id)
+      expect(json_response['record_ids'][19]).to eq(tickets[0].id)
+      expect(json_response['record_ids'].count).to eq(20)
 
-      get "/api/v1/tickets/search?query=#{CGI.escape(title)}&limit=10", params: {}, as: :json
+      get "/api/v1/tickets/search?query=#{CGI.escape(title)}&limit=10&full=true", params: {}, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a(Hash)
-      expect(json_response['tickets'][0]).to eq(tickets[19].id)
-      expect(json_response['tickets'][9]).to eq(tickets[10].id)
-      expect(json_response['tickets_count']).to eq(10)
+      expect(json_response['record_ids'][0]).to eq(tickets[19].id)
+      expect(json_response['record_ids'][9]).to eq(tickets[10].id)
+      expect(json_response['record_ids'].count).to eq(10)
 
-      get "/api/v1/tickets/search?query=#{CGI.escape(title)}&limit=40&page=1&per_page=5", params: {}, as: :json
+      get "/api/v1/tickets/search?query=#{CGI.escape(title)}&limit=40&full=true&page=1&per_page=5", params: {}, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a(Hash)
-      expect(json_response['tickets'][0]).to eq(tickets[19].id)
-      expect(json_response['tickets'][4]).to eq(tickets[15].id)
-      expect(json_response['tickets_count']).to eq(5)
+      expect(json_response['record_ids'][0]).to eq(tickets[19].id)
+      expect(json_response['record_ids'][4]).to eq(tickets[15].id)
+      expect(json_response['record_ids'].count).to eq(5)
 
-      get "/api/v1/tickets/search?query=#{CGI.escape(title)}&limit=40&page=2&per_page=5", params: {}, as: :json
+      get "/api/v1/tickets/search?query=#{CGI.escape(title)}&limit=40&full=true&page=2&per_page=5", params: {}, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a(Hash)
-      expect(json_response['tickets'][0]).to eq(tickets[14].id)
-      expect(json_response['tickets'][4]).to eq(tickets[10].id)
-      expect(json_response['tickets_count']).to eq(5)
+      expect(json_response['record_ids'][0]).to eq(tickets[14].id)
+      expect(json_response['record_ids'][4]).to eq(tickets[10].id)
+      expect(json_response['record_ids'].count).to eq(5)
 
       get '/api/v1/tickets?limit=40&page=1&per_page=5', params: {}, as: :json
       expect(response).to have_http_status(:ok)
@@ -1280,11 +1286,11 @@ RSpec.describe 'Ticket', type: :request do
       expect(article_json_response['type_id']).to eq(Ticket::Article::Type.lookup(name: 'note').id)
 
       perform_enqueued_jobs
-      get "/api/v1/tickets/search?query=#{CGI.escape(title)}", params: {}, as: :json
+      get "/api/v1/tickets/search?query=#{CGI.escape(title)}&full=true", params: {}, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a(Hash)
-      expect(json_response['tickets'][0]).to eq(ticket.id)
-      expect(json_response['tickets_count']).to eq(1)
+      expect(json_response['record_ids'][0]).to eq(ticket.id)
+      expect(json_response['record_ids'].count).to eq(1)
 
       params = {
         condition: {
@@ -1294,11 +1300,11 @@ RSpec.describe 'Ticket', type: :request do
           },
         },
       }
-      post '/api/v1/tickets/search', params: params, as: :json
+      post '/api/v1/tickets/search?full=true', params: params, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a(Hash)
-      expect(json_response['tickets'][0]).to eq(ticket.id)
-      expect(json_response['tickets_count']).to eq(1)
+      expect(json_response['record_ids'][0]).to eq(ticket.id)
+      expect(json_response['record_ids'].count).to eq(1)
 
       delete "/api/v1/ticket_articles/#{article_json_response['id']}", params: {}, as: :json
       expect(response).to have_http_status(:forbidden)
@@ -2102,40 +2108,40 @@ RSpec.describe 'Ticket', type: :request do
       )
 
       authenticated_as(admin)
-      get "/api/v1/tickets/search?query=#{CGI.escape(title)}&limit=40", params: {}, as: :json
+      get "/api/v1/tickets/search?query=#{CGI.escape(title)}&limit=40&full=true", params: {}, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a(Hash)
-      expect(json_response['tickets']).to eq([ticket2.id, ticket1.id])
+      expect(json_response['record_ids']).to eq([ticket2.id, ticket1.id])
 
       authenticated_as(admin)
-      get "/api/v1/tickets/search?query=#{CGI.escape(title)}&limit=40", params: { sort_by: 'created_at', order_by: 'asc' }, as: :json
+      get "/api/v1/tickets/search?query=#{CGI.escape(title)}&limit=40&full=true", params: { sort_by: 'created_at', order_by: 'asc' }, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a(Hash)
-      expect(json_response['tickets']).to eq([ticket1.id, ticket2.id])
+      expect(json_response['record_ids']).to eq([ticket1.id, ticket2.id])
 
       authenticated_as(admin)
-      get "/api/v1/tickets/search?query=#{CGI.escape(title)}&limit=40", params: { sort_by: 'title', order_by: 'asc' }, as: :json
+      get "/api/v1/tickets/search?query=#{CGI.escape(title)}&limit=40&full=true", params: { sort_by: 'title', order_by: 'asc' }, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a(Hash)
-      expect(json_response['tickets']).to eq([ticket1.id, ticket2.id])
+      expect(json_response['record_ids']).to eq([ticket1.id, ticket2.id])
 
       authenticated_as(admin)
-      get "/api/v1/tickets/search?query=#{CGI.escape(title)}&limit=40", params: { sort_by: 'title', order_by: 'desc' }, as: :json
+      get "/api/v1/tickets/search?query=#{CGI.escape(title)}&limit=40&full=true", params: { sort_by: 'title', order_by: 'desc' }, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a(Hash)
-      expect(json_response['tickets']).to eq([ticket2.id, ticket1.id])
+      expect(json_response['record_ids']).to eq([ticket2.id, ticket1.id])
 
       authenticated_as(admin)
-      get "/api/v1/tickets/search?query=#{CGI.escape(title)}&limit=40", params: { sort_by: %w[created_at updated_at], order_by: %w[asc asc] }, as: :json
+      get "/api/v1/tickets/search?query=#{CGI.escape(title)}&limit=40&full=true", params: { sort_by: %w[created_at updated_at], order_by: %w[asc asc] }, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a(Hash)
-      expect(json_response['tickets']).to eq([ticket1.id, ticket2.id])
+      expect(json_response['record_ids']).to eq([ticket1.id, ticket2.id])
 
       authenticated_as(admin)
-      get "/api/v1/tickets/search?query=#{CGI.escape(title)}&limit=40", params: { sort_by: %w[created_at updated_at], order_by: %w[desc asc] }, as: :json
+      get "/api/v1/tickets/search?query=#{CGI.escape(title)}&limit=40&full=true", params: { sort_by: %w[created_at updated_at], order_by: %w[desc asc] }, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a(Hash)
-      expect(json_response['tickets']).to eq([ticket2.id, ticket1.id])
+      expect(json_response['record_ids']).to eq([ticket2.id, ticket1.id])
     end
 
     it 'does ticket history' do

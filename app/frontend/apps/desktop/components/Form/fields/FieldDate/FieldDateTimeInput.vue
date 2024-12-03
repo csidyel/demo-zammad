@@ -3,13 +3,14 @@
 <script setup lang="ts">
 import VueDatePicker, { type DatePickerInstance } from '@vuepic/vue-datepicker'
 import { storeToRefs } from 'pinia'
-import { computed, ref, toRef } from 'vue'
+import { computed, nextTick, ref, toRef } from 'vue'
 
 import useValue from '#shared/components/Form/composables/useValue.ts'
 import type { DateTimeContext } from '#shared/components/Form/fields/FieldDate/types.ts'
 import { useDateTime } from '#shared/components/Form/fields/FieldDate/useDateTime.ts'
 import { EnumTextDirection } from '#shared/graphql/types.ts'
 import { i18n } from '#shared/i18n.ts'
+import testFlags from '#shared/utils/testFlags.ts'
 
 import { useThemeStore } from '#desktop/stores/theme.ts'
 import '@vuepic/vue-datepicker/dist/main.css'
@@ -61,6 +62,18 @@ const inputIcon = computed(() => {
 const picker = ref<DatePickerInstance>()
 
 const { isDarkMode } = storeToRefs(useThemeStore())
+
+const open = () => {
+  nextTick(() => {
+    testFlags.set('field-date-time.opened')
+  })
+}
+
+const closed = () => {
+  nextTick(() => {
+    testFlags.set('field-date-time.closed')
+  })
+}
 </script>
 
 <template>
@@ -72,7 +85,7 @@ const { isDarkMode } = storeToRefs(useThemeStore())
       :uid="context.id"
       :model-type="valueFormat"
       :name="context.node.name"
-      :clearable="context.clearable ?? false"
+      :clearable="!!context.clearable"
       :disabled="context.disabled"
       :range="context.range"
       :enable-time-picker="timePicker"
@@ -92,9 +105,11 @@ const { isDarkMode } = storeToRefs(useThemeStore())
       :action-row="actionRow"
       :config="config"
       :aria-labels="ariaLabels"
+      :text-input="{ openMenu: 'toggle' }"
       auto-apply
-      text-input
       offset="12"
+      @open="open"
+      @closed="closed"
       @blur="context.handlers.blur"
     >
       <template
@@ -192,7 +207,7 @@ const { isDarkMode } = storeToRefs(useThemeStore())
   --dp-input-background-color: theme(colors.blue.200);
 
   .dp {
-    &__clear_icon:hover {
+    &--clear-btn:hover {
       color: theme(colors.black);
     }
 
@@ -246,7 +261,7 @@ const { isDarkMode } = storeToRefs(useThemeStore())
   --dp-input-background-color: theme(colors.gray.700);
 
   .dp {
-    &__clear_icon:hover {
+    &--clear-btn:hover {
       color: theme(colors.white);
     }
 
@@ -316,7 +331,7 @@ const { isDarkMode } = storeToRefs(useThemeStore())
       }
     }
 
-    &__clear_icon {
+    &--clear-btn {
       right: theme(space.6);
 
       &:where([dir='rtl'], [dir='rtl'] *) {
@@ -429,6 +444,10 @@ const { isDarkMode } = storeToRefs(useThemeStore())
       }
     }
 
+    &__overlay_container {
+      padding-bottom: theme(padding.2);
+    }
+
     &__overlay_container + .dp__button,
     &__overlay_row + .dp__button {
       width: auto;
@@ -436,7 +455,7 @@ const { isDarkMode } = storeToRefs(useThemeStore())
     }
 
     &__overlay_container + .dp__button {
-      width: calc(var(--dp-menu-min-width) - theme(margin[1.5]) * 2);
+      width: calc(var(--dp-menu-min-width));
     }
 
     &__time_display {

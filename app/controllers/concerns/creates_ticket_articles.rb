@@ -54,6 +54,7 @@ module CreatesTicketArticles # rubocop:disable Metrics/ModuleLength
     article = Ticket::Article.new(clean_params)
     article.ticket_id = ticket.id
     article.check_mentions_raises_error = true
+    article.check_email_recipient_raises_error = true
 
     # store dataurl images to store
     attachments_inline = []
@@ -64,7 +65,12 @@ module CreatesTicketArticles # rubocop:disable Metrics/ModuleLength
     # find attachments in upload cache
     attachments = []
     if form_id
-      attachments += UploadCache.new(form_id).attachments
+      attachments += UploadCache
+        .new(form_id)
+        .attachments
+        .reject do |elem|
+          UploadCache.files_include_attachment?(attachments_inline, elem) || elem.inline?
+        end
     end
 
     # store inline attachments
@@ -140,7 +146,7 @@ module CreatesTicketArticles # rubocop:disable Metrics/ModuleLength
     # clear in-progress state from taskbar
     Taskbar
       .where(user_id: current_user.id)
-      .first { |taskbar| taskbar.persisted_form_id == form_id }
+      .find { |taskbar| taskbar.persisted_form_id == form_id }
       &.update!(state: {})
 
     # remove temporary attachment cache
@@ -148,5 +154,4 @@ module CreatesTicketArticles # rubocop:disable Metrics/ModuleLength
 
     article
   end
-
 end

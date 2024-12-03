@@ -13,7 +13,7 @@ RSpec.describe SystemReport, current_user_id: 1, type: :model do
     describe 'settings plugin' do
       let(:non_confidential_settings) do
         [
-          'ui_ticket_overview_priority_icon',
+          'ui_ticket_priority_icons',
           'kb_multi_lingual_support',
           'kb_active',
           'kb_active_publicly',
@@ -221,6 +221,7 @@ RSpec.describe SystemReport, current_user_id: 1, type: :model do
           'two_factor_authentication_method_authenticator_app',
           'two_factor_authentication_enforce_role_ids',
           'ticket_organization_reassignment',
+          'checklist',
         ]
       end
 

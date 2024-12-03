@@ -7,6 +7,7 @@ import {
   onKeyDown,
   useVModel,
 } from '@vueuse/core'
+import { useTemplateRef } from 'vue'
 import {
   computed,
   type ConcreteComponent,
@@ -17,7 +18,6 @@ import {
   toRef,
 } from 'vue'
 
-import CommonLabel from '#shared/components/CommonLabel/CommonLabel.vue'
 import type {
   MatchedSelectOption,
   SelectOption,
@@ -32,6 +32,7 @@ import { useLocaleStore } from '#shared/stores/locale.ts'
 import stopEvent from '#shared/utils/events.ts'
 import testFlags from '#shared/utils/testFlags.ts'
 
+import CommonLoader from '#desktop/components/CommonLoader/CommonLoader.vue'
 import { useTransitionCollapse } from '#desktop/composables/useTransitionCollapse.ts'
 
 import CommonSelectItem from './CommonSelectItem.vue'
@@ -64,6 +65,8 @@ export interface Props {
   emptyInitialLabelText?: string
   actions?: DropdownOptionsAction[]
   isChildPage?: boolean
+  isLoading?: boolean
+  isTargetVisible?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -76,10 +79,10 @@ const emit = defineEmits<{
   push: [option: AutoCompleteOption]
   pop: []
   close: []
-  focusFilterInput: []
+  'focus-filter-input': []
 }>()
 
-const dropdownElement = ref<HTMLElement>()
+const dropdownElement = useTemplateRef('dropdown')
 const localValue = useVModel(props, 'modelValue', emit)
 
 // TODO: do we really want this initial transforming of the value, when it's null?
@@ -137,17 +140,15 @@ const getActiveElement = () => {
 
 const { instances } = useCommonSelect()
 
-const closeDropdown = () => {
+const closeDropdown = (refocusOnEscape?: boolean) => {
   deactivateTabTrap()
+
   showDropdown.value = false
   emit('close')
 
-  // TODO: move to existing nextTick.
-  if (!props.noRefocus) {
-    nextTick(() => lastFocusableOutsideElement?.focus())
-  }
-
   nextTick(() => {
+    if (!props.noRefocus || refocusOnEscape)
+      lastFocusableOutsideElement?.focus()
     testFlags.set('common-select.closed')
   })
 }
@@ -164,7 +165,7 @@ const openDropdown = (
   showDropdown.value = true
   lastFocusableOutsideElement = getActiveElement()
 
-  onClickOutside(dropdownElement, closeDropdown, {
+  onClickOutside(dropdownElement, () => closeDropdown(), {
     ignore: [lastFocusableOutsideElement as unknown as HTMLElement],
   })
 
@@ -222,7 +223,7 @@ onKeyDown(
   'Escape',
   (event) => {
     stopEvent(event)
-    closeDropdown()
+    closeDropdown(true)
   },
   { target: dropdownElement as Ref<EventTarget> },
 )
@@ -290,7 +291,7 @@ const selectAll = (focusInput = false) => {
     .forEach((option) => select(option))
 
   if (focusInput === true) {
-    emit('focusFilterInput')
+    emit('focus-filter-input')
     return
   }
 
@@ -405,7 +406,7 @@ const goToChildPage = ({
   />
   <Teleport to="body">
     <Transition
-      name="collapse"
+      :name="isTargetVisible ? 'collapse' : 'none'"
       :duration="collapseDuration"
       @enter="collapseEnter"
       @after-enter="collapseAfterEnter"
@@ -413,14 +414,15 @@ const goToChildPage = ({
     >
       <div
         v-if="showDropdown"
+        v-show="isTargetVisible"
         id="common-select"
-        ref="dropdownElement"
-        class="fixed z-10 flex min-h-9 antialiased"
+        ref="dropdown"
+        class="fixed z-50 flex min-h-9 antialiased"
         :style="dropdownStyle"
       >
         <div class="w-full" role="menu">
           <div
-            class="flex h-full flex-col items-start border-x border-neutral-100 bg-white dark:border-gray-900 dark:bg-gray-500"
+            class="flex h-full flex-col items-start border-x border-neutral-100 bg-neutral-50 dark:border-gray-900 dark:bg-gray-500"
             :class="{
               'rounded-t-lg border-t': hasDirectionUp,
               'rounded-b-lg border-b': !hasDirectionUp,
@@ -475,34 +477,56 @@ const goToChildPage = ({
               tabindex="-1"
               class="w-full overflow-y-auto"
             >
-              <CommonSelectItem
-                v-for="option in filter ? highlightedOptions : options"
-                :key="String(option.value)"
-                :class="{
-                  'first:rounded-t-lg':
-                    hasDirectionUp &&
-                    !isChildPage &&
-                    (!multiple || !hasMoreSelectableOptions),
-                  'last:rounded-b-lg': !hasDirectionUp,
-                }"
-                :selected="isCurrentValue(option.value)"
-                :multiple="multiple"
-                :option="option"
-                :no-label-translate="noOptionsLabelTranslation"
-                :filter="filter"
-                :option-icon-component="optionIconComponent"
-                @select="select($event)"
-                @next="goToChildPage($event)"
-              />
-              <CommonSelectItem
-                v-if="!options.length"
-                :option="{
-                  label: emptyLabelText,
-                  value: '',
-                  disabled: true,
-                }"
-                no-selection-indicator
-              />
+              <Transition name="none" mode="out-in">
+                <div v-if="options.length">
+                  <CommonSelectItem
+                    v-for="option in filter ? highlightedOptions : options"
+                    :key="String(option.value)"
+                    :class="{
+                      'first:rounded-t-lg':
+                        hasDirectionUp &&
+                        !isChildPage &&
+                        (!multiple || !hasMoreSelectableOptions),
+                      'last:rounded-b-lg': !hasDirectionUp,
+                    }"
+                    :selected="isCurrentValue(option.value)"
+                    :multiple="multiple"
+                    :option="option"
+                    :no-label-translate="noOptionsLabelTranslation"
+                    :filter="filter"
+                    :option-icon-component="optionIconComponent"
+                    @select="select($event)"
+                    @next="goToChildPage($event)"
+                  />
+                </div>
+
+                <div v-else-if="isLoading" class="flex items-center">
+                  <CommonLoader
+                    v-if="!options.length"
+                    class="ltr:ml-2 rtl:mr-2"
+                    size="small"
+                    loading
+                  />
+                  <CommonSelectItem
+                    :option="{
+                      label: __('Loading…'),
+                      value: '',
+                      disabled: true,
+                    }"
+                    no-selection-indicator
+                  />
+                </div>
+                <CommonSelectItem
+                  v-else-if="!options.length"
+                  :option="{
+                    label: emptyLabelText,
+                    value: '',
+                    disabled: true,
+                  }"
+                  no-selection-indicator
+                />
+              </Transition>
+
               <slot name="footer" />
             </div>
           </div>

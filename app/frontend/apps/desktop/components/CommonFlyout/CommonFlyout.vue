@@ -5,12 +5,13 @@ import {
   useWindowSize,
   useLocalStorage,
   useScroll,
-  onKeyUp,
   useActiveElement,
+  onKeyDown,
 } from '@vueuse/core'
 import {
   computed,
   nextTick,
+  useTemplateRef,
   onMounted,
   type Ref,
   ref,
@@ -23,8 +24,8 @@ import { getFirstFocusableElement } from '#shared/utils/getFocusableElements.ts'
 
 import CommonButton from '#desktop/components/CommonButton/CommonButton.vue'
 import CommonOverlayContainer from '#desktop/components/CommonOverlayContainer/CommonOverlayContainer.vue'
-import { useResizeWidthHandle } from '#desktop/components/ResizeHandle/composables/useResizeWidthHandle.ts'
-import ResizeHandle from '#desktop/components/ResizeHandle/ResizeHandle.vue'
+import ResizeLine from '#desktop/components/ResizeLine/ResizeLine.vue'
+import { useResizeLine } from '#desktop/components/ResizeLine/useResizeLine.ts'
 
 import CommonFlyoutActionFooter from './CommonFlyoutActionFooter.vue'
 import { closeFlyout } from './useFlyout.ts'
@@ -33,13 +34,11 @@ import type { ActionFooterOptions, FlyoutSizes } from './types.ts'
 
 export interface Props {
   /**
-   * @property name
    * Unique name which gets used to identify the flyout
    * @example 'crop-avatar'
    */
   name: string
   /**
-   * @property persistResizeWidth
    * If true, the given flyout resizable width will be stored in local storage
    * Stored under the key `flyout-${name}-width`
    * @example 'crop-avatar' => 'flyout-crop-avatar-width'
@@ -56,9 +55,8 @@ export interface Props {
   footerActionOptions?: ActionFooterOptions
   noCloseOnAction?: boolean
   /**
-   * @property noAutofocus
    * Don't focus the first element inside a Flyout after being mounted
-   * if nothing is focusable, will focus "Close" button when dismissable is active.
+   * if nothing is focusable, will focus "Close" button when dismissible is active.
    */
   noAutofocus?: boolean
 }
@@ -74,11 +72,12 @@ defineOptions({
 
 const emit = defineEmits<{
   action: []
-  close: []
+  close: [boolean?]
 }>()
 
-const close = async () => {
-  emit('close')
+const close = async (isCancel?: boolean) => {
+  emit('close', isCancel)
+
   await closeFlyout(props.name)
 }
 
@@ -93,12 +92,10 @@ const action = async () => {
 
 const flyoutId = `flyout-${props.name}`
 
-const flyoutSize = { medium: 500 }
+const flyoutSize = { medium: 500, large: 800 }
 
 // Width control over flyout
 let flyoutContainerWidth: Ref<number>
-const commonOverlayContainer =
-  ref<InstanceType<typeof CommonOverlayContainer>>()
 
 const gap = 16 // Gap between sidebar and flyout
 
@@ -127,7 +124,7 @@ if (props.persistResizeWidth) {
   flyoutContainerWidth = ref(flyoutSize[props.size || 'medium'])
 }
 
-const resizeHandleComponent = ref<InstanceType<typeof ResizeHandle>>()
+const resizeHandleInstance = useTemplateRef('resize-handle')
 
 const resizeCallback = (valueX: number) => {
   if (valueX >= flyoutMaxWidth.value) return
@@ -140,7 +137,7 @@ const activeElement = useActiveElement()
 const handleKeyStroke = (e: KeyboardEvent, adjustment: number) => {
   if (
     !flyoutContainerWidth.value ||
-    activeElement.value !== resizeHandleComponent.value?.$el
+    activeElement.value !== resizeHandleInstance.value?.resizeLine
   )
     return
 
@@ -153,12 +150,13 @@ const handleKeyStroke = (e: KeyboardEvent, adjustment: number) => {
   resizeCallback(newWidth)
 }
 
-const { startResizing, isResizingHorizontal } = useResizeWidthHandle(
+const { startResizing, isResizing } = useResizeLine(
   resizeCallback,
-  resizeHandleComponent,
+  resizeHandleInstance.value?.resizeLine,
   handleKeyStroke,
   {
     calculateFromRight: true,
+    orientation: 'vertical',
   },
 )
 
@@ -181,16 +179,16 @@ onMounted(async () => {
 })
 
 // Keyboard
-onKeyUp('Escape', (e) => {
+onKeyDown('Escape', (e) => {
   if (props.noCloseOnEscape) return
   stopEvent(e)
   close()
 })
 
 // Style
-const contentElement = ref<HTMLDivElement>()
-const headerElement = ref<HTMLDivElement>()
-const footerElement = ref<HTMLDivElement>()
+const contentElement = useTemplateRef('content')
+const headerElement = useTemplateRef('header')
+const footerElement = useTemplateRef('footer')
 
 const { arrivedState } = useScroll(contentElement)
 
@@ -232,40 +230,36 @@ onMounted(() => {
 <template>
   <CommonOverlayContainer
     :id="flyoutId"
-    ref="commonOverlayContainer"
     tag="aside"
     tabindex="-1"
-    class="overflow-clip-x fixed bottom-0 top-0 z-40 flex max-h-dvh min-w-min flex-col border-y border-neutral-100 bg-white ltr:right-0 ltr:rounded-l-xl ltr:border-l rtl:left-0 rtl:rounded-r-xl rtl:border-r dark:border-gray-900 dark:bg-gray-500"
+    class="overflow-clip-x fixed bottom-0 top-0 z-40 flex max-h-dvh min-w-min flex-col border-y border-neutral-100 bg-neutral-50 ltr:right-0 ltr:rounded-l-xl ltr:border-l rtl:left-0 rtl:rounded-r-xl rtl:border-r dark:border-gray-900 dark:bg-gray-500"
     :no-close-on-backdrop-click="noCloseOnBackdropClick"
     :show-backdrop="showBackdrop"
     :style="{ width: `${flyoutContainerWidth}px` }"
-    :class="{ 'transition-all': !isResizingHorizontal }"
-    :aria-label="$t('Side panel')"
+    :class="{ 'transition-all': !isResizing }"
     :aria-labelledby="`${flyoutId}-title`"
     @click-background="close()"
   >
     <header
-      ref="headerElement"
-      class="sticky top-0 flex items-center border-b border-neutral-100 border-b-transparent bg-white p-3 ltr:rounded-tl-xl rtl:rounded-tr-xl dark:bg-gray-500"
+      ref="header"
+      class="sticky top-0 flex items-center border-b border-neutral-100 border-b-transparent bg-neutral-50 p-3 ltr:rounded-tl-xl rtl:rounded-tr-xl dark:bg-gray-500"
       :class="{
         'border-b-neutral-100 dark:border-b-gray-900':
           !arrivedState.top && isContentOverflowing,
       }"
     >
       <slot name="header">
-        <div
-          class="flex items-center gap-2 text-base text-gray-100 dark:text-neutral-400"
+        <CommonLabel
+          v-if="headerTitle"
+          :id="`${flyoutId}-title`"
+          tag="h2"
+          class="min-h-7 grow gap-1.5"
+          size="large"
+          :prefix-icon="headerIcon"
+          icon-color="text-stone-200 dark:text-neutral-500"
         >
-          <CommonIcon
-            v-if="headerIcon"
-            class="flex-shrink-0"
-            size="small"
-            :name="headerIcon"
-          />
-          <h2 v-if="headerTitle" :id="`${flyoutId}-title`">
-            {{ headerTitle }}
-          </h2>
-        </div>
+          {{ $t(headerTitle) }}
+        </CommonLabel>
       </slot>
       <CommonButton
         class="ltr:ml-auto rtl:mr-auto"
@@ -277,46 +271,42 @@ onMounted(() => {
       />
     </header>
 
-    <div
-      ref="contentElement"
-      class="h-full overflow-y-scroll px-3"
-      v-bind="$attrs"
-    >
+    <div ref="content" class="h-full overflow-y-scroll px-3" v-bind="$attrs">
       <slot />
     </div>
 
     <footer
       v-if="$slots.footer || !hideFooter"
-      ref="footerElement"
+      ref="footer"
       :aria-label="$t('Side panel footer')"
-      class="sticky bottom-0 border-t border-t-transparent bg-white p-3 ltr:rounded-bl-xl rtl:rounded-br-xl dark:bg-gray-500"
+      class="sticky bottom-0 border-t border-t-transparent bg-neutral-50 p-3 ltr:rounded-bl-xl rtl:rounded-br-xl dark:bg-gray-500"
       :class="{
         'border-t-neutral-100 dark:border-t-gray-900':
           !arrivedState.bottom && isContentOverflowing,
       }"
     >
-      <slot name="footer">
+      <slot name="footer" v-bind="{ action, close }">
         <CommonFlyoutActionFooter
           v-bind="footerActionOptions"
-          @cancel="close()"
+          @cancel="close(true)"
           @action="action()"
         />
       </slot>
     </footer>
 
-    <ResizeHandle
+    <ResizeLine
       v-if="resizable"
-      ref="resizeHandleComponent"
-      class="absolute top-1/2 -translate-y-1/2 ltr:left-0 rtl:right-0"
-      :aria-label="$t('Resize side panel')"
-      role="separator"
-      tabindex="0"
-      aria-orientation="horizontal"
-      :aria-valuenow="flyoutContainerWidth"
-      :aria-valuemax="flyoutMaxWidth"
-      @mousedown="startResizing"
-      @touchstart="startResizing"
-      @dblclick="resetWidth()"
+      ref="resize-handle"
+      :label="$t('Resize side panel')"
+      class="absolute top-2 h-[calc(100%-16px)] overflow-clip ltr:left-px ltr:-translate-x-1/2 rtl:right-px rtl:translate-x-1/2"
+      orientation="vertical"
+      :values="{
+        current: flyoutContainerWidth,
+        max: flyoutMaxWidth,
+      }"
+      @mousedown-event="startResizing"
+      @touchstart-event="startResizing"
+      @dblclick-event="resetWidth()"
     />
   </CommonOverlayContainer>
 </template>

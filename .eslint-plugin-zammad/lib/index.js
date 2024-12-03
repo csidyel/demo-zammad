@@ -9,11 +9,11 @@
 // Requirements
 //------------------------------------------------------------------------------
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const requireIndex = require('requireindex')
 
 //------------------------------------------------------------------------------
 // Plugin Definition
 //------------------------------------------------------------------------------
-
 // import all rules in lib/rules
 module.exports.rules = requireIndex(`${__dirname}/rules`)

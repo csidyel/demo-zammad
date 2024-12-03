@@ -22,12 +22,19 @@ class Gql::ZammadSchema < GraphQL::Schema
   max_depth 15
 
   TYPE_MAP = {
-    ::Store => ::Gql::Types::StoredFileType
+    ::Store   => ::Gql::Types::StoredFileType,
+    ::Taskbar => ::Gql::Types::User::TaskbarItemType,
+  }.freeze
+
+  ABSTRACT_TYPE_MAP = {
+    ::Gql::Types::User::TaskbarItemEntityType => ::Gql::Types::User::TaskbarItemEntity::TicketCreateType,
   }.freeze
 
   # Union and Interface Resolution
-  def self.resolve_type(_abstract_type, obj, _ctx)
+  def self.resolve_type(abstract_type, obj, _ctx)
     TYPE_MAP[obj.class] || "Gql::Types::#{obj.class.name}Type".constantize
+  rescue NameError
+    ABSTRACT_TYPE_MAP[abstract_type]
   rescue
     raise GraphQL::RequiredImplementationMissingError, "Cannot resolve type for '#{obj.class.name}'."
   end
@@ -73,7 +80,7 @@ class Gql::ZammadSchema < GraphQL::Schema
     raise Exceptions::Forbidden, error.message # Add a top-level error to the response instead of returning nil.
   end
 
-  RETHROWABLE_ERRORS = [GraphQL::ExecutionError, ArgumentError, IndexError, NameError, RangeError, RegexpError, SystemCallError, ThreadError, TypeError, ZeroDivisionError].freeze
+  RETHROWABLE_ERRORS = [GraphQL::ExecutionError, ArgumentError, IndexError, NameError, NoMethodError, RangeError, RegexpError, SystemCallError, ThreadError, TypeError, ZeroDivisionError].freeze
 
   # Post-process errors and enrich them with meta information for processing on the client side.
   rescue_from(StandardError) do |err, _obj, _args, ctx, field|
@@ -96,7 +103,7 @@ class Gql::ZammadSchema < GraphQL::Schema
     extensions = {
       type: err.class.name,
     }
-    if Rails.env.development? || Rails.env.test?
+    if Rails.env.local?
       extensions[:backtrace] = Rails.backtrace_cleaner.clean(err.backtrace)
     end
 

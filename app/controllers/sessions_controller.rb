@@ -138,6 +138,8 @@ class SessionsController < ApplicationController
 
     # redirect to app
     redirect_to redirect_url
+  rescue Authorization::Provider::AccountError => e
+    forbidden(e)
   end
 
   def failure_omniauth
@@ -324,6 +326,7 @@ class SessionsController < ApplicationController
     end
 
     config['core_workflow_config'] = CoreWorkflow.config
+    config['icons_url']            = icons_url
 
     config
   end

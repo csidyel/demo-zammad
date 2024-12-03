@@ -16,6 +16,9 @@
 # storage (copy from config/zammad/storage.yml.dist)
 /config/zammad/storage.yml
 
+# Personal initializers
+/config/initializers/*.local.rb
+
 # local backup config file
 /contrib/backup/config
 
@@ -29,6 +32,7 @@
 # Bundler
 /.bundle
 /Gemfile.local
+/vendor/bundle
 
 # Clutter ======================================================================
 # These files are automatically generated;

@@ -8,8 +8,20 @@ import userEvent from '@testing-library/user-event'
 import { render } from '@testing-library/vue'
 import { mount } from '@vue/test-utils'
 import { merge, cloneDeep } from 'lodash-es'
-import { isRef, nextTick, ref, watchEffect, unref } from 'vue'
+import { afterEach, vi } from 'vitest'
+import {
+  isRef,
+  nextTick,
+  ref,
+  watchEffect,
+  unref,
+  type App,
+  type Plugin,
+  type Ref,
+} from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
+
+import type { DependencyProvideApi } from '#tests/support/components/types.ts'
 
 import CommonAlert from '#shared/components/CommonAlert/CommonAlert.vue'
 import CommonBadge from '#shared/components/CommonBadge/CommonBadge.vue'
@@ -29,6 +41,7 @@ import { initializeTwoFactorPlugins } from '#shared/entities/two-factor/composab
 import { buildFormKitPluginConfig } from '#shared/form/index.ts'
 import { i18n } from '#shared/i18n.ts'
 import applicationConfigPlugin from '#shared/plugins/applicationConfigPlugin.ts'
+import tooltip from '#shared/plugins/directives/tooltip/index.ts'
 import { initializeWalker } from '#shared/router/walker.ts'
 import type { AppName } from '#shared/types/app.ts'
 import type { FormFieldTypeImportModules } from '#shared/types/form.ts'
@@ -36,7 +49,6 @@ import type { ImportGlobEagerOutput } from '#shared/types/utils.ts'
 
 import { twoFactorConfigurationPluginLookup } from '#desktop/entities/two-factor-configuration/plugins/index.ts'
 import desktopIconsAliases from '#desktop/initializer/desktopIconsAliasesMap.ts'
-import { directives } from '#desktop/initializer/initializeGlobalDirectives.ts'
 import mobileIconsAliases from '#mobile/initializer/mobileIconsAliasesMap.ts'
 
 import { setTestState, waitForNextTick } from '../utils.ts'
@@ -48,7 +60,6 @@ import buildLinksQueries from './linkQueries.ts'
 
 import type { Matcher, RenderResult } from '@testing-library/vue'
 import type { ComponentMountingOptions } from '@vue/test-utils'
-import type { Plugin, Ref } from 'vue'
 import type { Router, RouteRecordRaw, NavigationGuard } from 'vue-router'
 
 const appName = getTestAppName()
@@ -109,6 +120,7 @@ export interface ExtendedMountingOptions<Props>
   store?: boolean
   confirmation?: boolean
   form?: boolean
+  provide?: DependencyProvideApi
   formField?: boolean
   unmount?: boolean
   dialog?: boolean
@@ -118,6 +130,7 @@ export interface ExtendedMountingOptions<Props>
     [prop: string]: unknown
   }
   visuals?: SharedVisualConfig
+  plugins?: Plugin[]
 }
 
 type UserEvent = ReturnType<(typeof userEvent)['setup']>
@@ -156,8 +169,8 @@ const defaultWrapperOptions: ExtendedMountingOptions<unknown> = {
       CommonLabel,
       CommonBadge,
     },
-    directives,
     stubs: {},
+    directives: { [tooltip.name]: tooltip.directive },
     plugins,
   },
 }
@@ -169,9 +182,11 @@ interface MockedRouter extends Router {
 
 let routerInitialized = false
 let router: MockedRouter
+const history = createWebHistory(isDesktop ? '/desktop' : '/mobile')
 
 export const getTestPlugins = () => [...plugins]
 export const getTestRouter = () => router
+export const getHistory = () => history
 
 // cannot use "as const" here, because ESLint fails with obscure error :shrug:
 const routerMethods = [
@@ -227,7 +242,7 @@ const initializeRouter = (
   }
 
   router = createRouter({
-    history: createWebHistory(isDesktop ? '/desktop' : '/mobile'),
+    history,
     routes: localRoutes,
   }) as MockedRouter
 
@@ -343,13 +358,14 @@ let flyoutMounted = false
 const mountFlyout = () => {
   if (flyoutMounted) return
 
-  const Dialog = {
+  const Flyout = {
     components: { DynamicInitializer },
     template: '<DynamicInitializer name="flyout" />',
   } as any
 
-  const { element } = mount(Dialog, defaultWrapperOptions)
+  const { element } = mount(Flyout, defaultWrapperOptions)
   document.body.appendChild(element)
+  document.body.id = 'app' // used to teleport the flyout
 
   flyoutMounted = true
 }
@@ -426,6 +442,18 @@ const setupVModel = <Props>(wrapperOptions: ExtendedMountingOptions<Props>) => {
   }
 }
 
+const mockProvide = (app: App, provideApi: DependencyProvideApi) => {
+  provideApi.forEach((dependency) => {
+    const [key, data] = dependency
+    // App globals get reused in each test run we have to clear the provides in each test
+    if (app._context.provides[key]) {
+      app._context.provides[key] = data
+    } else {
+      app.provide(key, data)
+    }
+  })
+}
+
 const renderComponent = <Props>(
   component: any,
   wrapperOptions: ExtendedMountingOptions<Props> = {},
@@ -433,25 +461,25 @@ const renderComponent = <Props>(
   initializeAppName(appName)
 
   // Store and Router needs only to be initalized once for a test suit.
-  if (wrapperOptions?.router) {
+  if (wrapperOptions.router) {
     initializeRouter(
-      wrapperOptions?.routerRoutes,
-      wrapperOptions?.routerBeforeGuards,
+      wrapperOptions.routerRoutes,
+      wrapperOptions.routerBeforeGuards,
     )
   }
-  if (wrapperOptions?.store) {
+  if (wrapperOptions.store) {
     initializePiniaStore()
   }
-  if (wrapperOptions?.form) {
+  if (wrapperOptions.form) {
     initializeForm()
   }
-  if (wrapperOptions?.dialog) {
+  if (wrapperOptions.dialog) {
     mountDialog()
   }
-  if (wrapperOptions?.flyout) {
+  if (wrapperOptions.flyout) {
     mountFlyout()
   }
-  if (wrapperOptions?.confirmation) {
+  if (wrapperOptions.confirmation) {
     mountConfirmation()
   }
 
@@ -463,11 +491,21 @@ const renderComponent = <Props>(
     initDefaultVisuals()
   }
 
-  if (wrapperOptions?.form && wrapperOptions?.formField) {
+  if (wrapperOptions.form && wrapperOptions.formField) {
     defaultWrapperOptions.props ||= {}
 
     // Reset the default of 20ms for testing.
     defaultWrapperOptions.props.delay = 0
+  }
+
+  if (wrapperOptions.plugins) {
+    plugins.push(...wrapperOptions.plugins)
+
+    delete wrapperOptions.plugins
+  }
+
+  if (wrapperOptions.provide) {
+    plugins.push((app: App) => mockProvide(app, wrapperOptions.provide!))
   }
 
   const { startWatchingModel } = setupVModel(wrapperOptions)

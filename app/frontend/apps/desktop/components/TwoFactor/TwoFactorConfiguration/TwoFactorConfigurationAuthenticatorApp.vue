@@ -2,7 +2,7 @@
 
 <script setup lang="ts">
 import QRCode from 'qrcode'
-import { computed, ref } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 
 import {
   NotificationTypes,
@@ -11,6 +11,7 @@ import {
 import Form from '#shared/components/Form/Form.vue'
 import type { FormSubmitData } from '#shared/components/Form/types.ts'
 import { useForm } from '#shared/components/Form/useForm.ts'
+import { useCopyToClipboard } from '#shared/composables/useCopyToClipboard.ts'
 import { useTwoFactorPlugins } from '#shared/entities/two-factor/composables/useTwoFactorPlugins.ts'
 import { useUserCurrentTwoFactorVerifyMethodConfigurationMutation } from '#shared/entities/user/current/graphql/mutations/two-factor/userCurrentTwoFactorVerifyMethodConfiguration.api.ts'
 import { useUserCurrentTwoFactorInitiateMethodConfigurationQuery } from '#shared/entities/user/current/graphql/queries/two-factor/userCurrentTwoFactorInitiateMethodConfiguration.api.ts'
@@ -20,7 +21,6 @@ import QueryHandler from '#shared/server/apollo/handler/QueryHandler.ts'
 
 import CommonButton from '#desktop/components/CommonButton/CommonButton.vue'
 import CommonLoader from '#desktop/components/CommonLoader/CommonLoader.vue'
-import { useCopyToClipboard } from '#desktop/composables/useCopyToClipboard.ts'
 
 import type { TwoFactorConfigurationComponentProps } from '../types.ts'
 
@@ -46,7 +46,7 @@ const initiationResult = initiationQuery.result()
 
 const { notify } = useNotifications()
 
-const canvasElement = ref<HTMLCanvasElement>()
+const canvasElement = useTemplateRef('canvas')
 const showSecretOverlay = ref(false)
 const initiationError = ref<string | null>(null)
 
@@ -77,6 +77,7 @@ const submitForm = async ({
     props.successCallback?.()
 
     notify({
+      id: 'two-factor-method-configured',
       type: NotificationTypes.Success,
       message: __('Two-factor method has been configured successfully.'),
     })
@@ -97,7 +98,7 @@ const submitForm = async ({
     }
 
     props.formSubmitCallback?.({})
-  } catch (err) {
+  } catch {
     formSetErrors(
       new UserError([
         {
@@ -227,7 +228,7 @@ defineExpose({
           @keydown.enter="toggleSecretCodeOverlay"
         >
           <canvas
-            ref="canvasElement"
+            ref="canvas"
             class="rounded-lg"
             role="img"
             :aria-label="$t('Authenticator app QR code')"

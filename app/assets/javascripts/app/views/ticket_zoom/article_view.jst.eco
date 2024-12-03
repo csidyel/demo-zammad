@@ -137,10 +137,15 @@
         <% end %>
         <% if @article.preferences?.remote_content_removed: %>
           <div class="remote-content-message js-fetchOriginalFormatting" role="button">
-            <%- @Icon('danger') %> <%- @T('This message contains images or other content hosted by an external source. We blocked it, but you can download the original formatting here.') %>
+            <%- @Icon('danger') %> <%- @T('This message contains images or other content hosted by an external source. It was blocked, but you can download the original formatting here.') %>
           </div>
         <% end %>
         <%- @attachments %>
+        <% if @article.preferences?.whatsapp?.reaction?.emoji: %>
+          <div class="article-reaction">
+            <span><%= @article.preferences?.whatsapp?.reaction?.emoji %></span>
+          </div>
+        <% end %>
       </div>
     </div>
   </div>

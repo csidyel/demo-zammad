@@ -38,13 +38,13 @@ module Channel::Filter::Database # rubocop:disable Metrics/ModuleLength
       end
 
       if !rule_matches?(operator, match_rule, value)
-        Rails.logger.debug { "  not matching content '#{key.downcase}' contains not #{human_match_rule}" }
+        Rails.logger.debug { "  not matching: key '#{key.downcase}' #{operator} '#{human_match_rule}'" }
         return false
       end
 
-      Rails.logger.info { "  matching: content '#{key.downcase}' contains not #{human_match_rule}" }
+      Rails.logger.info { "  matching: key '#{key.downcase}' #{operator} '#{human_match_rule}'" }
     rescue => e
-      Rails.logger.error "can't use match rule #{human_match_rule} on #{value}"
+      Rails.logger.error "can't use match rule '#{human_match_rule}' on '#{value}'"
       Rails.logger.error e.inspect
       return false
     end
@@ -95,7 +95,7 @@ module Channel::Filter::Database # rubocop:disable Metrics/ModuleLength
 
     mail_header_key         = key.downcase.to_sym
     mail[mail_header_key] ||= []
-    tags                    = meta['value'].split(',').map(&:strip).select(&:present?)
+    tags                    = meta['value'].split(',').map(&:strip).compact_blank
 
     case meta['operator']
     when 'add'

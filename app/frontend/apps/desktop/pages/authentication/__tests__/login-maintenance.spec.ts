@@ -11,6 +11,7 @@ import {
 } from '#tests/support/mock-graphql-api.ts'
 import { mockPermissions } from '#tests/support/mock-permissions.ts'
 
+import { OnlineNotificationsCountDocument } from '#shared/entities/online-notification/graphql/subscriptions/onlineNotificationsCount.api.ts'
 import {
   mockPublicLinks,
   mockPublicLinksSubscription,
@@ -20,6 +21,9 @@ import { ApplicationConfigDocument } from '#shared/graphql/queries/applicationCo
 import { ConfigUpdatesDocument } from '#shared/graphql/subscriptions/configUpdates.api.ts'
 import { useApplicationStore } from '#shared/stores/application.ts'
 import { useAuthenticationStore } from '#shared/stores/authentication.ts'
+
+import { UserCurrentTaskbarItemListUpdatesDocument } from '#desktop/entities/user/current/graphql/subscriptions/userCurrentTaskbarItemListUpdates.api.ts'
+import { UserCurrentTaskbarItemUpdatesDocument } from '#desktop/entities/user/current/graphql/subscriptions/userCurrentTaskbarItemUpdates.api.ts'
 
 // TODO: import '#tests/graphql/builders/mocks.ts'
 
@@ -35,6 +39,9 @@ beforeEach(() => {
   mockPublicLinks([])
   mockPublicLinksSubscription()
   mockApplicationConfig({ product_name: 'Zammad' })
+  mockGraphQLSubscription(UserCurrentTaskbarItemUpdatesDocument)
+  mockGraphQLSubscription(UserCurrentTaskbarItemListUpdatesDocument)
+  mockGraphQLSubscription(OnlineNotificationsCountDocument)
 })
 
 describe('testing login maintenance mode', () => {
@@ -115,7 +122,7 @@ describe('testing login maintenance mode', () => {
       maintenance_mode: false,
     })
     mockAuthentication(true)
-    mockPermissions(['agent'])
+    mockPermissions(['ticket.agent'])
 
     mockGraphQLApi(LogoutDocument).willResolve({
       logout: {

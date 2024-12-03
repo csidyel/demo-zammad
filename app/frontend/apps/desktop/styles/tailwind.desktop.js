@@ -1,11 +1,14 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 const path = require('path')
 
 const formKitTailwind = require('@formkit/themes/tailwindcss')
+const containerQueriesTailwind = require('@tailwindcss/container-queries')
 const unimportantTailwind = require('tailwindcss-unimportant')
 
 const zammadTailwind = require('../../../build/zammadTailwindPlugin.js')
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 const desktopDir = path.resolve(__dirname, '..')
 const sharedDir = path.resolve(__dirname, '../../../shared')
@@ -17,15 +20,28 @@ module.exports = {
     `${desktopDir}/**/*.{js,jsx,ts,tsx,vue,css}`,
     `${sharedDir}/**/*.{js,jsx,ts,tsx,vue,css}`,
   ],
-  plugins: [formKitTailwind, zammadTailwind, unimportantTailwind],
+  plugins: [
+    containerQueriesTailwind,
+    formKitTailwind,
+    unimportantTailwind,
+    zammadTailwind,
+  ],
   theme: {
     colors: {
       alpha: {
-        100: '#EDF1F280',
-        800: '#33343880',
+        900: '#00000080',
       },
       black: '#000000',
       white: '#FFFFFF',
+      neutral: {
+        50: '#FAFAFA',
+        100: '#E5E5E5',
+        200: '#E3E3E3',
+        300: '#DCDCDC',
+        400: '#D1D1D1',
+        500: '#999999',
+        950: '#191919',
+      },
       gray: {
         100: '#585856',
         200: '#535355',
@@ -70,6 +86,7 @@ module.exports = {
         300: '#FFCE33',
         500: '#FAAB00',
         600: '#F39804',
+        700: '#F38612',
         800: '#4A3300',
         900: '#453914',
       },
@@ -86,14 +103,6 @@ module.exports = {
         300: '#EA4D84',
         500: '#FF006B',
       },
-      neutral: {
-        100: '#E5E5E5',
-        200: '#E3E3E3',
-        300: '#DCDCDC',
-        400: '#D1D1D1',
-        500: '#999999',
-        950: '#191919',
-      },
     },
     extend: {
       width: {
@@ -105,6 +114,9 @@ module.exports = {
       },
       maxWidth: {
         150: '600px',
+      },
+      gridTemplateColumns: {
+        '2-uneven': 'repeat(2, minmax(0, 1fr))',
       },
     },
   },

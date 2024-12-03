@@ -26,7 +26,7 @@ RSpec.shared_examples 'mobile app: reply article' do |type_label, note, internal
   end
 
   def assert_fields(type_label, internal)
-    expect(find_select('Article Type', visible: :all)).to have_selected_option(type_label)
+    expect(find_select('Channel', visible: :all)).to have_selected_option(type_label)
     expect(find_select('Visibility', visible: :all)).to have_selected_option(internal ? 'Internal' : 'Public')
 
     expect(find_autocomplete('To')).to have_selected_options(to) if to.present?
@@ -61,7 +61,7 @@ RSpec.shared_examples 'mobile app: reply article' do |type_label, note, internal
     find_button('Done', wait: 20).click
     find_button('Save', wait: 20).click
 
-    wait_for_gql('apps/mobile/pages/ticket/graphql/mutations/update.graphql')
+    wait_for_gql('shared/entities/ticket/graphql/mutations/update.graphql')
 
     if attachments
       attributes[:attachments] = result_attachments

@@ -15,12 +15,17 @@ module FormUpdater::Concerns::ChecksCoreWorkflow
     perform_result = CoreWorkflow.perform(payload: perform_payload, user: current_user, assets: false, form_updater: true)
 
     FormUpdater::CoreWorkflow.perform_mapping(perform_result, result, relation_fields: relation_fields)
+
+    return if perform_result[:flags].blank?
+
+    @flags = @flags.merge(perform_result[:flags])
   end
 
   private
 
   def perform_payload
-    params = data
+    # Copy data to avoid changing the original data inside core workflow.
+    params = data.dup
 
     # Add object id information for the perform worklow for already existing objects.
     if object

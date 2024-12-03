@@ -24,10 +24,10 @@ export default {
   'common-alert-success': 'check-circle-outline',
   'common-alert-warning': 'exclamation-triangle',
 
-  'common-notification-warn': 'info-circle',
+  'common-notification-warn': 'exclamation-triangle',
   'common-notification-success': 'check-circle-outline',
-  'common-notification-error': 'exclamation-triangle',
-  'common-notification-info': 'x-circle',
+  'common-notification-error': 'x-circle',
+  'common-notification-info': 'info-circle',
 
   'ticket-escalating': 'warning-triangle',
   'ticket-state-circle': 'check-circle-no',
@@ -83,10 +83,44 @@ export default {
   'phone-in': 'telephone-inbound',
   'phone-out': 'telephone-outbound',
   'mail-out': 'envelope',
+  mail: 'envelope',
+  note: 'pencil-square',
+  phone: 'telephone',
+  message: 'sms',
 
   // these aliases are used in shared context, but they refer to the same name
   search: 'search',
   loading: 'spinner',
   show: 'eye',
   hide: 'eye-slash',
+
+  // WhatsApp status icons
+  read: 'check-double-circle',
+  delivered: 'check-all',
+  send: 'check2',
+
+  // Icons in shared article security composables
+  'signing-success': 'patch-check',
+  'signing-fail': 'patch-x',
+  'encryption-success': 'lock',
+  'encryption-fail': 'unlock',
+
+  // Article actions
+  'lock-open': 'unlock',
+  trash: 'trash3',
+  'reply-alt': 'reply-all',
+  web: 'globe',
+
+  // Conflicting names
+  mobile: 'phone',
+
+  // Avatar indicator
+  'avatar-indicator-inactive': 'user-inactive',
+  'avatar-indicator-without-access': 'no-notifications',
+  'avatar-indicator-out-of-office': 'vacation2',
+  'avatar-indicator-editing-desktop': 'pencil',
+  'avatar-indicator-editing-mobile': 'phone-pencil',
+  'avatar-indicator-desktop': 'avatar-indicator-desktop',
+  'avatar-indicator-mobile': 'phone',
+  'avatar-indicator-idle': 'user-idle-2',
 }

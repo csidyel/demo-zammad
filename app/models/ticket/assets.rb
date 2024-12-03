@@ -23,15 +23,14 @@ returns
 =end
 
   def assets(data)
+    app_model = self.class.to_app_model
 
-    app_model_ticket = Ticket.to_app_model
-
-    if !data[ app_model_ticket ]
-      data[ app_model_ticket ] = {}
+    if !data[ app_model ]
+      data[ app_model ] = {}
     end
-    return data if data[ app_model_ticket ][ id ]
+    return data if data[ app_model ][ id ]
 
-    data[ app_model_ticket ][ id ] = attributes_with_association_ids
+    data[ app_model ][ id ] = attributes_with_association_ids
 
     group.assets(data)
     organization&.assets(data)
@@ -51,5 +50,12 @@ returns
 
       data = user.assets(data)
     end
+  end
+
+  def authorized_asset?
+    return true if UserInfo.current_user.blank?
+    return true if TicketPolicy.new(UserInfo.current_user, self).show?
+
+    false
   end
 end

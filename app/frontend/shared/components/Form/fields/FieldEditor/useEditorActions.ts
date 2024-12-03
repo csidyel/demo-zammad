@@ -55,9 +55,8 @@ export default function useEditorActions(
     }
   }
 
-  const isActive = (type: string, attributes?: Record<string, unknown>) => {
-    return editor.value?.isActive(type, attributes) ?? false
-  }
+  const isActive = (type: string, attributes?: Record<string, unknown>) =>
+    !!editor.value?.isActive(type, attributes)
 
   const canExecute = (func: keyof CanCommands) => {
     if (!editor.value) return false
@@ -138,6 +137,7 @@ export default function useEditorActions(
               input.files,
               editor.value.view.dom,
             )
+
             c.setImages(files).run()
             input.value = ''
             nextTick(() => testFlags.set('editor.inlineImagesAdded'))

@@ -92,7 +92,7 @@ useEventListener('click', (e) => {
       :uid="context.id"
       :model-type="valueFormat"
       :name="context.node.name"
-      :clearable="context.clearable ?? false"
+      :clearable="!!context.clearable"
       :disabled="context.disabled"
       :range="context.range"
       :enable-time-picker="timePicker"
@@ -113,9 +113,9 @@ useEventListener('click', (e) => {
       :aria-labels="ariaLabels"
       :inline="{ input: true }"
       :month-change-on-scroll="false"
+      :text-input="{ openMenu: 'toggle' }"
       auto-apply
       dark
-      text-input
       @open="expandPicker"
       @close="collapsePicker"
       @blur="context.handlers.blur"
@@ -243,7 +243,7 @@ useEventListener('click', (e) => {
       background: theme(colors.gray.200);
     }
 
-    &__clear_icon {
+    &--clear-btn {
       top: 2.3rem;
     }
 
@@ -280,6 +280,10 @@ useEventListener('click', (e) => {
 
     &--arrow-btn-nav .dp__inner_nav {
       color: theme(colors.blue.DEFAULT);
+    }
+
+    &__overlay_container {
+      padding-bottom: theme(padding.2);
     }
 
     &__overlay_container + .dp__button,

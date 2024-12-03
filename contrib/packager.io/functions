@@ -229,9 +229,23 @@ function create_webserver_config () {
 }
 
 function enforce_redis () {
+  REDIS_URL=$(zammad config:get REDIS_URL)
   if [ -n "${REDIS_URL}" ]; then
-    echo "# Redis URL ${REDIS_URL} found."
-    return 0
+    echo "# REDIS_URL variable set to ${REDIS_URL}."
+    echo "# Performing connection check."
+    if zammad run ruby -r redis -e 'Redis.new(driver: :hiredis, url: ENV["REDIS_URL"]).ping'; then
+      echo "# Connection check successful."
+      return 0
+    else
+      echo "# Connection check unsuccessful."
+      echo "ERROR - No redis server found at ${REDIS_URL}."
+      echo "Please install Redis following the instructions at https://redis.io/docs/getting-started/ or set the REDIS_URL environment variable with the following command."
+      echo "zammad config:set REDIS_URL=redis://your.redis.server:6379\n"
+      echo "Acceptable formats for REDIS_URL are:"
+      echo "redis[s]://[[username]:password@]host[:port][/db-number]"
+      echo "Please fix these issues, then run the package installation again."
+      exit 1
+    fi
   fi
 
   echo "# Enforcing Redis..."
@@ -239,6 +253,18 @@ function enforce_redis () {
   local REDIS_SERVICE_NAME=""
   if [ "${OS}" == "DEBIAN" ]; then
       REDIS_SERVICE_NAME="redis-server"
+  elif [ "${OS}" == "SUSE" ]; then
+      REDIS_PID=$(fuser 6379/tcp 2> /dev/null)
+      if [ -z "${REDIS_PID}" ]; then
+        echo -e "# No running instance of Redis detected.\n# Creating systemd-service: redis@zammad.service."
+        [[ -f '/etc/redis/zammad.conf' ]] || cp /etc/redis/default.conf.example /etc/redis/zammad.conf
+        echo "# Ensuring correct file permissions for /etc/redis/zammad.conf."
+        [[ $(stat -c "%U %G" /etc/redis/zammad.conf) == "root redis" ]] || chown root:redis /etc/redis/zammad.conf
+        REDIS_SERVICE_NAME=redis@zammad.service
+      else
+        REDIS_SERVICE_NAME=$(ps -p $REDIS_PID -o unit=)
+        echo "# Redis service ${REDIS_SERVICE_NAME} detected."
+      fi
   else
       REDIS_SERVICE_NAME="redis"
   fi
@@ -248,20 +274,15 @@ function enforce_redis () {
     ${INIT_CMD} enable ${REDIS_SERVICE_NAME}
 
     echo "# Starting Redis server"
-    ${INIT_CMD} restart ${REDIS_SERVICE_NAME}
-    if [ $? -eq 0 ]; then
+    if ${INIT_CMD} restart ${REDIS_SERVICE_NAME}; then
       echo "# Redis server is running."
       return 0
+    else
+      echo -e "\nSomething went wrong. Please check any error output above and fix the issues."
+      echo "Then run the package installation again."
+      exit 1
     fi
   fi
-
-  echo "It seems no redis server runs locally."
-  echo "Please install Redis following the instructions at https://redis.io/docs/getting-started/ or set the REDIS_URL environment variable."
-  echo "e.g. export REDIS_URL=redis://your.redis.server:6379"
-  echo
-  echo "Please try again the Zammad package installation."
-
-  return 1
 }
 
 function setup_elasticsearch () {
@@ -315,8 +336,16 @@ function elasticsearch_searchindex_rebuild () {
   fi
 }
 
+function detect_local_gemfiles () {
+  if ls ${ZAMMAD_DIR}/Gemfile.local* 1> /dev/null 2>&1; then
+    zammad config:set BUNDLE_DEPLOYMENT=0
+    zammad run bundle config set --local deployment 'false'
+    zammad run bundle install
+  fi
+}
+
 function detect_zammad_packages () {
-  if [ "$(zammad run rails r 'puts Package.count.positive?')" == "true" ] && [ -n "$(which yarn 2> /dev/null)" ] ; then
+  if [ "$(zammad run rails r 'puts Package.count.positive?')" == "true" ]; then
     echo "# Detected custom packages..."
     ZAMMAD_PACKAGES="yes"
   else
@@ -331,6 +360,7 @@ function zammad_packages_reinstall_all () {
   if [ "${ZAMMAD_PACKAGES}" == "yes" ]; then
     echo "# Setup custom packages files..."
     zammad run rake zammad:package:reinstall_all
+    detect_local_gemfiles
     zammad run rake zammad:package:post_install
   fi
 }

@@ -331,6 +331,37 @@ RSpec.describe 'Ticket::PerformChanges', :aggregate_failures do
           .with(hash_including(objects: { ticket: object, article: new_article }))
       end
     end
+
+    context 'when dispatching email through an inactive channel' do
+      let!(:article) { create(:ticket_article, ticket: object) }
+      let(:trigger) do
+        build(:trigger,
+              perform: {
+                'notification.email' => {
+                  body:      'Sample notification',
+                  recipient: 'ticket_customer',
+                  subject:   'Sample subject'
+                }
+              })
+      end
+
+      # required by Ticket#perform_changes for email notifications
+      before do
+        allow(NotificationFactory::Mailer).to receive(:template).and_call_original
+        allow(Rails.logger).to receive(:info)
+
+        article.ticket.group.update(email_address: create(:email_address, channel: create(:channel, active: false)))
+      end
+
+      it 'does not pass the article to NotificationFactory::Mailer' do
+        object.perform_changes(trigger, 'trigger', { article_id: article.id }, 1)
+
+        expect(Rails.logger).to have_received(:info).with(match(%r{because the channel .* is not active}))
+
+        # no specific email content awaiting needed, since we do not expect to receive any mail (what ever it is) at the point
+        expect(NotificationFactory::Mailer).not_to have_received(:template)
+      end
+    end
   end
 
   context 'with a notification trigger' do
@@ -584,6 +615,86 @@ RSpec.describe 'Ticket::PerformChanges', :aggregate_failures do
     end
   end
 
+  context 'with a "ticket.subscribe" trigger', current_user_id: 1 do
+    let(:user) { create(:agent, groups: [group]) }
+
+    let(:perform) do
+      { 'ticket.subscribe' => { 'pre_condition' => 'current_user.id', 'value' => '', 'value_completion' => '' } }
+    end
+
+    it 'subscribes current user to ticket' do
+      object.perform_changes(performable, 'trigger', object, user.id)
+
+      expect(Mention.last).to have_attributes(
+        mentionable: object,
+        user:        user,
+      )
+    end
+
+    context 'with specific user' do
+      let(:agent) { create(:agent, groups: [group]) }
+      let(:perform) do
+        { 'ticket.subscribe' => { 'pre_condition' => 'specific', 'value' => agent.id, 'value_completion' => '' } }
+      end
+
+      it 'subscribes specific user to ticket' do
+        object.perform_changes(performable, 'trigger', object, user.id)
+
+        expect(Mention.last).to have_attributes(
+          mentionable: object,
+          user:        agent,
+        )
+      end
+    end
+  end
+
+  context 'with a "ticket.unsubscribe" trigger', current_user_id: 1 do
+    let(:user)       { create(:agent, groups: [group]) }
+    let(:other_user) { create(:agent, groups: [group]) }
+    let!(:mention) do
+      Mention.subscribe!(object, user)
+      Mention.last
+    end
+    let!(:other_mention) do
+      Mention.subscribe!(object, other_user)
+      Mention.last
+    end
+
+    let(:perform) do
+      { 'ticket.unsubscribe' => { 'pre_condition' => 'current_user.id', 'value' => '', 'value_completion' => '' } }
+    end
+
+    it 'unsubscribes current user from ticket' do
+      object.perform_changes(performable, 'trigger', object, user.id)
+
+      expect(Mention).not_to exist(mention.id)
+    end
+
+    context 'with specific user' do
+      let(:perform) do
+        { 'ticket.unsubscribe' => { 'pre_condition' => 'specific', 'value' => other_user.id, 'value_completion' => '' } }
+      end
+
+      it 'un subscribes specific user from ticket' do
+        object.perform_changes(performable, 'trigger', object, other_user.id)
+
+        expect(Mention).not_to exist(other_mention.id)
+      end
+    end
+
+    context 'when unsubscribing all users' do
+      let(:perform) do
+        { 'ticket.unsubscribe' => { 'pre_condition' => 'not_set', 'value' => '', 'value_completion' => '' } }
+      end
+
+      it 'unsubscribes all users from ticket' do
+        expect { object.perform_changes(performable, 'trigger', object, user.id) }
+          .to change { object.mentions.exists? }
+          .to false
+      end
+    end
+  end
+
   describe 'Check if blocking notifications works' do
     context 'when mail delivery failed' do
       let(:ticket)   { create(:ticket) }
@@ -650,6 +761,44 @@ RSpec.describe 'Ticket::PerformChanges', :aggregate_failures do
           end
         end
       end
+    end
+  end
+
+  context 'with a time-event based trigger' do
+    let(:trigger) do
+      condition = { 'ticket.pending_time' => { operator: 'has reached' } }
+      perform = { 'ticket.title' => { 'value' => 'triggered' } }
+
+      create(:trigger, condition:, perform:, activator: 'time', execution_condition_mode: 'always')
+    end
+
+    let(:ticket) { create(:ticket, title: 'Test Ticket', state_name: 'pending reminder', pending_time: 1.hour.ago) }
+
+    before do
+      trigger && ticket
+    end
+
+    it 'performs the trigger' do
+      expect { Ticket.process_pending }.to change { ticket.reload.title }.to('triggered')
+    end
+
+    it 'creates related history entries' do
+      Ticket.process_pending
+
+      expect(History.last).to have_attributes(
+        history_type_id: History::Type.find_by(name: 'time_trigger_performed').id,
+        value_from:      'reminder_reached',
+        sourceable_type: 'Trigger',
+        sourceable_id:   trigger.id,
+        sourceable_name: trigger.name,
+      )
+    end
+
+    it 'blocks the trigger from being performed again' do
+      expect { Ticket.process_pending }.to change { ticket.reload.title }.to('triggered')
+
+      Ticket.process_pending
+      expect(History.where(history_type_id: History::Type.find_by(name: 'time_trigger_performed').id).count).to eq(1)
     end
   end
 end

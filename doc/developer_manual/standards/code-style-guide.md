@@ -21,19 +21,25 @@ Linters can also be run manually:
 $ bundle exec rubocop --parallel
 
 # Type checks, ESLint & Stylelint
-$ yarn lint
+$ pnpm lint
+
+# Type checks, ESLint & Stylelint with automatic fixing
+$ pnpm lint:fix
 
 # Just type checking
-$ yarn lint:ts
+$ pnpm lint:ts
 
-# ESLint checks with automatic fixing
-$ yarn lint:js:fix
+# Just ESLint checks
+$ pnpm lint:js
 
-# Stylelint
-$ yarn lint:css
+# Just ESLint checks with automatic fixing
+$ pnpm lint:js:fix
 
-# Stylelint with automatic fixing
-$ yarn lint:css:fix
+# Just Stylelint checks
+$ pnpm lint:css
+
+# Just Stylelint checks with automatic fixing
+$ pnpm lint:css:fix
 
 # Coffeelint
 $ coffeelint --rules ./.dev/coffeelint/rules/* app/
@@ -109,6 +115,56 @@ lowerCamelCase_ e.g. fileSize
 UpperCamelCase: e.g. CommonDateTime.vue
 
 ##### Typescript-Files / Other
+
+##### Vue Template Refs:
+
+- Use SnakeCase for template ref f.g `ref="resize-line"`
+- Component instance variables should contain `${ComponentName}Instance`
+- Prefer to use `useTemplateRef` over `ref` for template references
+
+###### useTemplateRef
+[docs](https://vuejs.org/api/composition-api-helpers.html#usetemplateref)
+
+```vue 
+<script setup lang="ts">
+import { useTemplateRef } from 'vue'
+  
+const buttonInstance =  useTemplateRef('button')
+const resizeLineInstance = useTemplateRef('resize-line')
+  
+const listElement = useTemplateRef('list')
+</script>
+
+<template>
+  <CommonButton ref="button"/>
+  <ResizeLine ref="resize-line"/>
+  
+  <ul ref="list"/>
+</template>
+```
+
+###### ref
+[docs](https://vuejs.org/api/reactivity-core.html#ref)
+
+```vue
+<script>
+  import { ref } from 'vue'
+
+  export const usePopoverTarget = () => {
+    const popoverTarget = ref()
+    return { popoverTarget }
+  }
+</script>
+
+<script setup lang="ts">
+  const { popoverTarget } = usePopoverTarget()
+
+</script>
+
+<template>
+  <button ref="popoverTarget"/>
+</template>
+```
 
 TBD
 

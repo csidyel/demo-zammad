@@ -2,43 +2,33 @@
 
 import type { FileUploaded } from '#shared/components/Form/fields/FieldFile/types.ts'
 import { i18n } from '#shared/i18n.ts'
+import { domFrom } from '#shared/utils/dom.ts'
 
 import { useConfirmation } from '../useConfirmation.ts'
 
-const referenceMatchwords = [
-  __('Attachment'),
-  __('attachment'),
-  __('Attached'),
-  __('attached'),
-  __('Enclosed'),
-  __('enclosed'),
-  __('Enclosure'),
-  __('enclosure'),
-]
+const referenceMatchwords = __('attachment,attached,enclosed,enclosure')
 
 const removeQuotingFromBody = (body: string) => {
-  const parser = new DOMParser()
-  const document = parser.parseFromString(body, 'text/html')
+  const dom = domFrom(body)
 
-  // Select all blockquote elements
-  const foundBlockquotes = document.querySelectorAll('blockquote')
-  foundBlockquotes.forEach((blockquote) => blockquote.remove())
+  // Remove blockquotes, signatures and images
+  // To not detect matchwords which are not part of the user-written article
+  dom
+    .querySelectorAll('blockquote, img, div[data-signature="true"]')
+    .forEach((elem) => elem.remove())
 
   // Return the modified HTML content as a string.
-  return document.body.innerHTML
+  return dom.innerHTML
 }
 
 const bodyAttachmentReferenceMatchwordExists = (body: string) => {
   const cleanBody = removeQuotingFromBody(body)
 
-  return referenceMatchwords.some((word) => {
-    let findWord = new RegExp(word, 'i')
+  const matchwords = referenceMatchwords.split(',')
+  const translatedMatchwords = i18n.t(referenceMatchwords).split(',')
 
-    if (findWord.test(cleanBody)) return true
-
-    // Translate the word in the user locale.
-    findWord = new RegExp(i18n.t(word), 'i')
-
+  return matchwords.concat(translatedMatchwords).some((word) => {
+    const findWord = new RegExp(`\\b${word}\\b`, 'i')
     return findWord.test(cleanBody)
   })
 }

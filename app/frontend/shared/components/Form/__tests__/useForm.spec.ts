@@ -49,8 +49,10 @@ const renderForm = (options: any = {}) => {
 const getFormContext = (): FormRef => {
   return {
     formId: 'test-form',
+    formInitialSettled: true,
     formNode: getNode('test-form') as FormKitNode,
     values: getNode('test-form')?.value as FormValues,
+    flags: {},
     updateChangedFields: vi.fn(),
     updateSchemaDataField: vi.fn(),
     getNodeByName: vi.fn(),
@@ -92,9 +94,9 @@ describe('useForm', () => {
     expect(isDisabled.value).toBe(false)
   })
 
-  it('disabled when form updater is processing', async () => {
+  it('form updater flag is true when form updater is processing', async () => {
     renderForm()
-    const { form, isDisabled } = useForm()
+    const { form, isFormUpdaterRunning } = useForm()
 
     const formNode = getNode('test-form') as FormKitNode
 
@@ -109,7 +111,7 @@ describe('useForm', () => {
       }),
     )
 
-    expect(isDisabled.value).toBe(true)
+    expect(isFormUpdaterRunning.value).toBe(true)
   })
 
   it('use values', () => {

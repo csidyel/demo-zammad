@@ -12,15 +12,22 @@ import { nullableMock, waitUntil } from '#tests/support/utils.ts'
 import { FormUpdaterDocument } from '#shared/components/Form/graphql/queries/formUpdater.api.ts'
 import { mockOnlineNotificationSeenGql } from '#shared/composables/__tests__/mocks/online-notification.ts'
 import { ObjectManagerFrontendAttributesDocument } from '#shared/entities/object-attributes/graphql/queries/objectManagerFrontendAttributes.api.ts'
+import { TicketArticlesDocument } from '#shared/entities/ticket/graphql/queries/ticket/articles.api.ts'
+import { TicketDocument } from '#shared/entities/ticket/graphql/queries/ticket.api.ts'
+import { TicketArticleUpdatesDocument } from '#shared/entities/ticket/graphql/subscriptions/ticketArticlesUpdates.api.ts'
+import { TicketLiveUserUpdatesDocument } from '#shared/entities/ticket/graphql/subscriptions/ticketLiveUserUpdates.api.ts'
+import { TicketUpdatesDocument } from '#shared/entities/ticket/graphql/subscriptions/ticketUpdates.api.ts'
 import type { TicketView } from '#shared/entities/ticket/types.ts'
 import { TicketState } from '#shared/entities/ticket/types.ts'
 import {
   type TicketArticlesQuery,
   type TicketLiveUserDeletePayload,
   type TicketLiveUserUpsertPayload,
-  type TicketQuery,
+  type TicketWithMentionLimitQuery,
   type PolicyTicket,
   EnumTicketStateColorCode,
+  EnumTicketArticleSenderName,
+  type TicketQuery,
 } from '#shared/graphql/types.ts'
 import { convertToGraphQLId } from '#shared/graphql/utils.ts'
 import { useSessionStore } from '#shared/stores/session.ts'
@@ -29,14 +36,10 @@ import {
   ticketObjectAttributes,
   ticketArticleObjectAttributes,
 } from '#mobile/entities/ticket/__tests__/mocks/ticket-mocks.ts'
+import { TicketWithMentionLimitDocument } from '#mobile/entities/ticket/graphql/queries/ticketWithMentionLimit.api.ts'
 
 import { TicketLiveUserDeleteDocument } from '../../graphql/mutations/live-user/delete.api.ts'
 import { TicketLiveUserUpsertDocument } from '../../graphql/mutations/live-user/ticketLiveUserUpsert.api.ts'
-import { TicketArticlesDocument } from '../../graphql/queries/ticket/articles.api.ts'
-import { TicketDocument } from '../../graphql/queries/ticket.api.ts'
-import { TicketLiveUserUpdatesDocument } from '../../graphql/subscriptions/live-user/ticketLiveUserUpdates.api.ts'
-import { TicketArticleUpdatesDocument } from '../../graphql/subscriptions/ticketArticlesUpdates.api.ts'
-import { TicketUpdatesDocument } from '../../graphql/subscriptions/ticketUpdates.api.ts'
 
 const ticketDate = new Date(2022, 0, 29, 0, 0, 0, 0)
 
@@ -47,7 +50,7 @@ export const defaultTicket = (
 ) => {
   initializeStore()
 
-  return nullableMock<TicketQuery>({
+  return nullableMock<TicketWithMentionLimitQuery>({
     ticket: {
       __typename: 'Ticket',
       id: convertToGraphQLId('Ticket', 1),
@@ -104,6 +107,7 @@ export const defaultTicket = (
         name: 'open',
         stateType: {
           __typename: 'TicketStateType',
+          id: convertToGraphQLId('TicketStateType', 2),
           name: TicketState.Open,
         },
         ...state,
@@ -140,7 +144,7 @@ const address = {
 
 export const defaultArticles = (): TicketArticlesQuery =>
   nullableMock({
-    description: {
+    firstArticles: {
       __typename: 'TicketArticleConnection',
       edges: [
         {
@@ -168,7 +172,7 @@ export const defaultArticles = (): TicketArticlesQuery =>
             bodyWithUrls: '<p>Body <b>of a test ticket</b></p>',
             sender: {
               __typename: 'TicketArticleSender',
-              name: 'Customer',
+              name: EnumTicketArticleSenderName.Customer,
             },
             type: {
               __typename: 'TicketArticleType',
@@ -179,6 +183,7 @@ export const defaultArticles = (): TicketArticlesQuery =>
               // should not be visible
               {
                 __typename: 'StoredFile',
+                id: convertToGraphQLId('Store', 66),
                 internalId: 66,
                 name: 'not-visible-attachment.png',
                 type: 'image/png',
@@ -222,7 +227,7 @@ export const defaultArticles = (): TicketArticlesQuery =>
             bodyWithUrls: '<p>energy equals power times time</p>',
             sender: {
               __typename: 'TicketArticleSender',
-              name: 'Agent',
+              name: EnumTicketArticleSenderName.Agent,
             },
             type: {
               __typename: 'TicketArticleType',
@@ -259,7 +264,7 @@ export const defaultArticles = (): TicketArticlesQuery =>
             bodyWithUrls: '<p>only agents can see this haha</p>',
             sender: {
               __typename: 'TicketArticleSender',
-              name: 'Agent',
+              name: EnumTicketArticleSenderName.Agent,
             },
             type: {
               __typename: 'TicketArticleType',
@@ -357,8 +362,10 @@ export const mockTicketDetailViewGql = (options: MockOptions = {}) => {
     )
     mockGraphQLApi(FormUpdaterDocument).willResolve({
       formUpdater: {
-        pending_time: {
-          show: false,
+        fields: {
+          pending_time: {
+            show: false,
+          },
         },
       },
     })
@@ -366,7 +373,9 @@ export const mockTicketDetailViewGql = (options: MockOptions = {}) => {
 
   const ticket = options.ticket || defaultTicket()
 
-  const mockApiTicket = mockGraphQLApi(TicketDocument).willResolve(ticket)
+  const mockApiTicket = mockGraphQLApi(
+    TicketWithMentionLimitDocument,
+  ).willResolve(ticket)
   const mockApiArticles = mockGraphQLApi(TicketArticlesDocument).willResolve(
     options.articles || defaultArticles(),
   )

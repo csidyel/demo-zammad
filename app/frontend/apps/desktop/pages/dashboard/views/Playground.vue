@@ -5,7 +5,16 @@
 import { reset } from '@formkit/core'
 import gql from 'graphql-tag'
 import { storeToRefs } from 'pinia'
-import { computed, h, onMounted, reactive, ref, watch, type Ref } from 'vue'
+import {
+  computed,
+  h,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+  type Ref,
+  useTemplateRef,
+} from 'vue'
 
 import CommonAlert from '#shared/components/CommonAlert/CommonAlert.vue'
 import CommonPopover from '#shared/components/CommonPopover/CommonPopover.vue'
@@ -14,6 +23,7 @@ import type {
   Placement,
 } from '#shared/components/CommonPopover/types.ts'
 import { usePopover } from '#shared/components/CommonPopover/usePopover.ts'
+import CommonTranslateRenderer from '#shared/components/CommonTranslateRenderer/CommonTranslateRenderer.vue'
 import CommonUserAvatar from '#shared/components/CommonUserAvatar/CommonUserAvatar.vue'
 import Form from '#shared/components/Form/Form.vue'
 import type {
@@ -21,12 +31,14 @@ import type {
   FormValues,
 } from '#shared/components/Form/types.ts'
 import { useConfirmation } from '#shared/composables/useConfirmation.ts'
+import { useCopyToClipboard } from '#shared/composables/useCopyToClipboard.ts'
 import { defineFormSchema } from '#shared/form/defineFormSchema.ts'
 import { EnumObjectManagerObjects } from '#shared/graphql/types.ts'
 import { useApplicationStore } from '#shared/stores/application.ts'
 import { useSessionStore } from '#shared/stores/session.ts'
 
 import CommonActionMenu from '#desktop/components/CommonActionMenu/CommonActionMenu.vue'
+import CommonBreadcrumb from '#desktop/components/CommonBreadcrumb/CommonBreadcrumb.vue'
 import CommonButton from '#desktop/components/CommonButton/CommonButton.vue'
 import CommonButtonGroup from '#desktop/components/CommonButtonGroup/CommonButtonGroup.vue'
 import type { CommonButtonItem } from '#desktop/components/CommonButtonGroup/types.ts'
@@ -34,6 +46,7 @@ import CommonDialog from '#desktop/components/CommonDialog/CommonDialog.vue'
 import { useDialog } from '#desktop/components/CommonDialog/useDialog.ts'
 import CommonFlyout from '#desktop/components/CommonFlyout/CommonFlyout.vue'
 import { useFlyout } from '#desktop/components/CommonFlyout/useFlyout.ts'
+import CommonInlineEdit from '#desktop/components/CommonInlineEdit/CommonInlineEdit.vue'
 import CommonInputCopyToClipboard from '#desktop/components/CommonInputCopyToClipboard/CommonInputCopyToClipboard.vue'
 import CommonPopoverMenu from '#desktop/components/CommonPopoverMenu/CommonPopoverMenu.vue'
 import type { MenuItem } from '#desktop/components/CommonPopoverMenu/types.ts'
@@ -43,7 +56,6 @@ import CommonTabManager from '#desktop/components/CommonTabManager/CommonTabMana
 import { useTabManager } from '#desktop/components/CommonTabManager/useTabManager.ts'
 import LayoutContent from '#desktop/components/layout/LayoutContent.vue'
 import ThemeSwitch from '#desktop/components/ThemeSwitch/ThemeSwitch.vue'
-import type { ThemeSwitchInstance } from '#desktop/components/ThemeSwitch/types.ts'
 
 const alphabetOptions = computed(() =>
   [...Array(26).keys()].map((i) => ({
@@ -52,6 +64,8 @@ const alphabetOptions = computed(() =>
     disabled: Math.random() < 0.5,
   })),
 )
+
+const { copyToClipboard } = useCopyToClipboard()
 
 const longOption = ref({
   value: 999,
@@ -654,6 +668,14 @@ const formSchema = defineFormSchema([
     },
   },
   {
+    type: 'ticket',
+    name: 'ticket',
+    label: 'Ticket',
+    props: {
+      clearable: true,
+    },
+  },
+  {
     type: 'recipient',
     name: 'recipient',
     label: 'Recipient',
@@ -880,10 +902,10 @@ const { user } = storeToRefs(session)
 
 const { isOpen: popoverIsOpen, popover, popoverTarget, toggle } = usePopover()
 
-const themeSwitch = ref<ThemeSwitchInstance>()
+const themeSwitchInstance = useTemplateRef('theme-switch')
 
 const cycleThemeSwitchValue = () => {
-  themeSwitch.value?.cycleValue()
+  themeSwitchInstance.value?.cycleValue()
 }
 
 const appearance = ref('auto')
@@ -1123,13 +1145,45 @@ const popoverPlacementOptions = [
   },
 ]
 
+const breadcrumbItems = [
+  {
+    label: 'Tickets',
+    icon: 'logo-flat',
+  },
+  {
+    label: '123456',
+    route: 'tickets/1',
+  },
+]
+
 const popoverHideArrow = ref(false)
+
+const inlineEditValue = ref('Edit me inline')
 </script>
 
 <template>
   <LayoutContent :breadcrumb-items="[]">
     <div>
       <div class="w-1/2">
+        <div class="flex space-x-3 py-2">
+          <CommonTranslateRenderer
+            source="A %s for advanced %s here. Inside a translation string: %s"
+            :placeholders="[
+              'test',
+              {
+                type: 'link',
+                props: { link: 'https://www.google.com' },
+                content: 'Link',
+              },
+
+              {
+                type: 'link',
+                props: { link: 'https://www.google.com' },
+                content: 'Example',
+              },
+            ]"
+          />
+        </div>
         <h1 id="test" v-tooltip="'Hello world'" class="w-fit">
           Tooltip example
         </h1>
@@ -1199,6 +1253,19 @@ const popoverHideArrow = ref(false)
         <div class="w-1/2 space-x-3 space-y-2 py-2">
           <CommonButtonGroup :items="buttonGroupOptions" />
         </div>
+      </div>
+
+      <div class="flex">
+        <CommonBreadcrumb class="grow" :items="breadcrumbItems">
+          <template #trailing>
+            <CommonIcon
+              name="files"
+              size="xs"
+              class="text-blue-800"
+              @click="copyToClipboard('123456')"
+            />
+          </template>
+        </CommonBreadcrumb>
       </div>
 
       <div class="w-1/2">
@@ -1493,7 +1560,7 @@ const popoverHideArrow = ref(false)
               <template #itemRight-appearance>
                 <div class="flex items-center px-2">
                   <ThemeSwitch
-                    ref="themeSwitch"
+                    ref="theme-switch"
                     v-model="appearance"
                     size="small"
                   />
@@ -1553,6 +1620,19 @@ const popoverHideArrow = ref(false)
           ]"
         />
       </section>
+
+      <div>
+        <span> Inline Edit </span>
+        <CommonInlineEdit
+          id="test"
+          :value="inlineEditValue"
+          @submit-edit="
+            (value) => {
+              inlineEditValue = value
+            }
+          "
+        />
+      </div>
 
       <div class="w-1/2">
         <h2 class="mb-2 mt-8">Flyout and Dialog</h2>

@@ -4,24 +4,28 @@
   <thead>
     
     <th
-      class="h-10 p-2.5 text-xs font-normal text-stone-200 ltr:text-left rtl:text-right dark:text-neutral-500"
+      class="h-10 p-2.5 text-xs ltr:text-left rtl:text-right"
     >
+      
       <common-label-stub
-        class="font-normal text-stone-200 dark:text-neutral-500 text-left"
+        class="-:font-normal -:text-stone-200 -:dark:text-neutral-500 text-left"
         size="small"
         tag="span"
       />
+      
       
       
     </th>
     <th
-      class="h-10 p-2.5 text-xs font-normal text-stone-200 ltr:text-left rtl:text-right dark:text-neutral-500"
+      class="h-10 p-2.5 text-xs ltr:text-left rtl:text-right"
     >
+      
       <common-label-stub
-        class="font-normal text-stone-200 dark:text-neutral-500 text-left"
+        class="-:font-normal -:text-stone-200 -:dark:text-neutral-500 text-left"
         size="small"
         tag="span"
       />
+      
       
       
     </th>
@@ -38,51 +42,11 @@
   </thead>
   <tbody>
     
-    <tr>
-      
-      <td
-        class="h-10 p-2.5 text-sm first:rounded-s-md last:rounded-e-md bg-blue-200 dark:bg-gray-700 text-left"
-      >
-        
-        <common-label-stub
-          class="inline text-black dark:text-white"
-          size="medium"
-          tag="span"
-        />
-        
-        
-        
-      </td>
-      <td
-        class="h-10 p-2.5 text-sm first:rounded-s-md last:rounded-e-md bg-blue-200 dark:bg-gray-700 text-left"
-      >
-        
-        <common-label-stub
-          class="inline text-black dark:text-white"
-          size="medium"
-          tag="span"
-        />
-        
-        
-        
-      </td>
-      
-      <td
-        class="h-10 p-2.5 text-center first:rounded-s-md last:rounded-e-md bg-blue-200 dark:bg-gray-700"
-      >
-        
-        <common-action-menu-stub
-          actions="[object Object],[object Object]"
-          buttonsize="medium"
-          class="flex items-center justify-center"
-          entity="[object Object]"
-          nosingleactionmode="false"
-          orientation="autoVertical"
-          placement="arrowStart"
-        />
-        
-      </td>
-    </tr>
+    <simple-table-row-stub
+      hascheckbox="false"
+      isrowselected="false"
+      item="[object Object]"
+    />
     
   </tbody>
 </table>

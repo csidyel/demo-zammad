@@ -2,7 +2,7 @@
 
 <script setup lang="ts">
 import { onKeyUp } from '@vueuse/core'
-import { nextTick, onMounted, ref } from 'vue'
+import { useTemplateRef, nextTick, onMounted } from 'vue'
 
 import { useTrapTab } from '#shared/composables/useTrapTab.ts'
 import stopEvent from '#shared/utils/events.ts'
@@ -42,14 +42,14 @@ defineOptions({
 })
 
 const emit = defineEmits<{
-  close: [cancel: boolean]
+  close: [cancel?: boolean]
 }>()
 
-const dialogElement = ref<HTMLElement>()
-const footerElement = ref<HTMLElement>()
-const contentElement = ref<HTMLElement>()
+const dialogElement = useTemplateRef<HTMLElement>('dialog')
+const footerElement = useTemplateRef('footer')
+const contentElement = useTemplateRef('content')
 
-const close = async (cancel = true) => {
+const close = async (cancel?: boolean) => {
   emit('close', cancel)
   await closeDialog(props.name)
 }
@@ -85,17 +85,20 @@ onMounted(() => {
     :id="dialogId"
     tag="div"
     class="fixed top-[50%] z-50 w-[500px] translate-y-[-50%] ltr:left-[50%] ltr:translate-x-[-50%] rtl:right-[50%] rtl:-translate-x-[-50%]"
+    backdrop-class="z-40"
     role="dialog"
     :aria-labelledby="`${dialogId}-title`"
     @click-background="close()"
   >
     <component
       :is="wrapperTag"
-      ref="dialogElement"
+      ref="dialog"
       data-common-dialog
-      class="flex flex-col gap-3 rounded-xl border border-neutral-100 bg-white p-3 dark:border-gray-900 dark:bg-gray-500"
+      class="flex flex-col gap-3 rounded-xl border border-neutral-100 bg-neutral-50 p-3 dark:border-gray-900 dark:bg-gray-500"
     >
-      <div class="flex items-center justify-between bg-white dark:bg-gray-500">
+      <div
+        class="flex items-center justify-between bg-neutral-50 dark:bg-gray-500"
+      >
         <slot name="header">
           <div
             class="flex items-center gap-2 text-xl leading-snug text-gray-100 dark:text-neutral-400"
@@ -113,18 +116,18 @@ onMounted(() => {
           @click="close()"
         />
       </div>
-      <div ref="contentElement" v-bind="$attrs" class="py-6 text-center">
+      <div ref="content" v-bind="$attrs" class="py-6 text-center">
         <slot>
           <CommonLabel size="large">{{
             $t(content, ...(contentPlaceholder || []))
           }}</CommonLabel>
         </slot>
       </div>
-      <div v-if="$slots.footer || !hideFooter" ref="footerElement">
+      <div v-if="$slots.footer || !hideFooter" ref="footer">
         <slot name="footer">
           <CommonDialogActionFooter
             v-bind="footerActionOptions"
-            @cancel="close()"
+            @cancel="close(true)"
             @action="close(false)"
           />
         </slot>

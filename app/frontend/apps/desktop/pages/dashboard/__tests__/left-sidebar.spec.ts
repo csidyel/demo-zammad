@@ -56,17 +56,17 @@ describe('Left sidebar', () => {
 
       const aside = view.getByRole('complementary')
       const collapseButton = getByRole(aside, 'button', {
-        name: 'Collapse this element',
+        name: 'Collapse sidebar',
       })
 
       await view.events.click(collapseButton)
 
       expect(aside.parentElement).toHaveStyle({
-        gridTemplateColumns: '48px 1fr',
+        gridTemplateColumns: '56px 1fr',
       })
 
       const expandButton = getByRole(aside, 'button', {
-        name: 'Expand this element',
+        name: 'Expand sidebar',
       })
 
       await view.events.click(expandButton)
@@ -87,7 +87,7 @@ describe('Left sidebar', () => {
       const aside = view.getByRole('complementary')
 
       expect(aside.parentElement).toHaveStyle({
-        gridTemplateColumns: '48px 1fr',
+        gridTemplateColumns: '56px 1fr',
       })
     })
 
@@ -138,13 +138,15 @@ describe('Left sidebar', () => {
         const view = await visitView('/')
 
         const aside = view.getByRole('complementary')
-        const avatarButton = getByRole(aside, 'button', { name: 'User menu' })
+        const avatarButton = getByRole(aside, 'button', {
+          name: 'Nicole Braun',
+        })
 
         expect(avatarButton).toHaveTextContent('NB')
 
         await view.events.click(avatarButton)
 
-        const popover = view.getByRole('region', { name: 'User menu' })
+        const popover = view.getByRole('region', { name: 'Nicole Braun' })
 
         expect(popover).toHaveTextContent('Nicole Braun')
 
@@ -161,7 +163,7 @@ describe('Left sidebar', () => {
       const view = await visitView('/')
 
       const aside = view.getByRole('complementary')
-      const avatarButton = getByRole(aside, 'button', { name: 'User menu' })
+      const avatarButton = getByRole(aside, 'button', { name: 'Nicole Braun' })
 
       await view.events.click(avatarButton)
 
@@ -187,7 +189,7 @@ describe('Left sidebar', () => {
       const view = await visitView('/')
 
       const aside = view.getByRole('complementary')
-      const avatarButton = getByRole(aside, 'button', { name: 'User menu' })
+      const avatarButton = getByRole(aside, 'button', { name: 'Nicole Braun' })
 
       await view.events.click(avatarButton)
 
@@ -214,7 +216,7 @@ describe('Left sidebar', () => {
       const view = await visitView('/')
 
       const aside = view.getByRole('complementary')
-      const avatarButton = getByRole(aside, 'button', { name: 'User menu' })
+      const avatarButton = getByRole(aside, 'button', { name: 'Nicole Braun' })
 
       await view.events.click(avatarButton)
 
@@ -240,7 +242,7 @@ describe('Left sidebar', () => {
       const view = await visitView('/')
 
       const aside = view.getByRole('complementary')
-      const avatarButton = getByRole(aside, 'button', { name: 'User menu' })
+      const avatarButton = getByRole(aside, 'button', { name: 'Nicole Braun' })
 
       await view.events.click(avatarButton)
 

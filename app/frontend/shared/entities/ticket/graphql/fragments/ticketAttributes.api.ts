@@ -11,6 +11,9 @@ export const TicketAttributesFragmentDoc = gql`
   createdAt
   escalationAt
   updatedAt
+  updatedBy {
+    id
+  }
   pendingTime
   owner {
     id
@@ -58,6 +61,7 @@ export const TicketAttributesFragmentDoc = gql`
     id
     name
     stateType {
+      id
       name
     }
   }
@@ -91,9 +95,14 @@ export const TicketAttributesFragmentDoc = gql`
   subscribed
   preferences
   stateColorCode
+  sharedDraftZoomId
   firstResponseEscalationAt
   closeEscalationAt
   updateEscalationAt
   initialChannel
+  externalReferences {
+    github
+    gitlab
+  }
 }
     ${ObjectAttributeValuesFragmentDoc}`;

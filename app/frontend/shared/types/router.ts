@@ -1,5 +1,7 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
+import type { EnumTaskbarEntity } from '#shared/graphql/types.ts'
+
 import type { RequiredPermission } from './permission.ts'
 import type { App } from 'vue'
 import type { Router, RouteRecordRaw, RouteLocationRaw } from 'vue-router'
@@ -20,6 +22,8 @@ export interface RouteRecordMeta {
   customBottomNavigation?: boolean
   hasHeader?: boolean
   hasOwnLandmarks?: boolean
+  taskbarTabEntity?: EnumTaskbarEntity
+  taskbarTabEntityKey?: string
   level?: number
 }
 

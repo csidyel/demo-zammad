@@ -1,7 +1,7 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { useTemplateRef, computed } from 'vue'
 
 interface Props {
   active?: boolean
@@ -15,21 +15,11 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const el = ref()
-
-const emit = defineEmits<{
-  ready: [HTMLElement]
-}>()
-
-onMounted(() => {
-  emit('ready', el.value)
-})
+const el = useTemplateRef('el')
 
 const colorClasses = computed(() => {
   if (props.active)
-    return props.tabMode
-      ? 'text-black dark:text-white'
-      : 'bg-white text-black dark:bg-gray-200 dark:text-white'
+    return 'bg-white text-black dark:bg-gray-200 dark:text-white'
 
   if (props.disabled) return 'text-stone-200 dark:text-neutral-500'
 

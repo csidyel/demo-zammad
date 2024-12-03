@@ -6,7 +6,7 @@ Rails.application.configure do
   # In the development environment your application's code is reloaded on
   # every request. This slows down response time but is perfect for development
   # since you don't have to restart the web server when you make code changes.
-  config.cache_classes = false
+  config.enable_reloading = true
 
   # Do not eager load code on boot.
   config.eager_load = false
@@ -72,4 +72,10 @@ Rails.application.configure do
   # TODO: New in Rails 6
   # See https://www.fngtps.com/2019/rails6-blocked-host/
   config.hosts.clear
+
+  # Set log level via environment variable, defaults to debug
+  config.log_level = ENV.fetch('RAILS_DEVELOPMENT_LOG_LEVEL', 'debug')
+
+  # Enable server timing headers
+  config.server_timing = true
 end

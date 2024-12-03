@@ -56,6 +56,8 @@ class App.GenericHistory extends App.ControllerModal
           item.value_to   = App.Utils.html2text(item.value_to)
       if item.object is 'Ticket::SharedDraftZoom'
         item.object = 'Draft'
+      if item.object is 'Checklist::Item'
+        item.object = __('Checklist Item')
 
       currentItemTime = new Date( item.created_at )
       lastItemTime    = new Date( new Date( lastTime ).getTime() + (15 * 1000) )
@@ -119,6 +121,26 @@ class App.GenericHistory extends App.ControllerModal
                       else
                         item.value_to
         content = App.i18n.translatePlain( 'this ticket was merged into ticket %s', ticket_link)
+      else if item.type is 'checklist_item_checked'
+        content = if item.value_to is 'true'
+          App.i18n.translatePlain("checked checklist item '%s'",  item.value_from)
+        else
+          App.i18n.translatePlain("unchecked checklist item '%s'", item.value_from)
+      else if item.attribute is 'reaction'
+        article_body = App.TicketArticle.find(item.o_id)?.body
+        truncated_article_body = App.Utils.truncate(article_body) or '-'
+        content = if item.type is 'created' or item.type is 'updated'
+          if item.value_to
+            App.i18n.translatePlain("reacted with a %s to message from %s '%s'", item.value_to, item.value_from, truncated_article_body)
+
+          # NB: On MySQL backends, the reaction emoji may get stripped due to column type UTF-8 limitation (`string`).
+          #   Rather than migrating this column on very heavy tables, we are opting to simply change the message here.
+          #   With Zammad 7.0, MySQL support will be dropped anyway.
+          else
+            App.i18n.translatePlain("reacted to message from %s '%s'", item.value_from, truncated_article_body)
+
+        else if item.type is 'removed'
+          App.i18n.translatePlain("removed reaction to message from %s '%s'", item.value_from, truncated_article_body)
       else
         content = "#{ @T( item.type ) } #{ @T(item.object) } "
         if item.attribute
@@ -140,7 +162,7 @@ class App.GenericHistory extends App.ControllerModal
           if item.value_from || item.object is 'Mention'
             content += ' &rarr;'
           content += " '#{ @translateItemValue(item, item.value_to) }'"
-        else if item.value_from
+        else if item.value_from && item.type isnt 'removed'
           content += " &rarr; '-'"
 
       recordsUser.records.push content

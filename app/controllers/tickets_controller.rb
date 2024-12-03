@@ -96,6 +96,11 @@ class TicketsController < ApplicationController
         shared_draft&.destroy
       end
 
+      # Prevent direct access to checklist via API
+      # Otherwise users may get unauthorized access to checklists of other tickets
+      params.delete(:checklist)
+      params.delete(:checklist_id)
+
       clean_params = Ticket.association_name_to_id_convert(params)
 
       # overwrite params
@@ -242,6 +247,11 @@ class TicketsController < ApplicationController
   def update
     ticket = Ticket.find(params[:id])
     authorize!(ticket, :follow_up?)
+
+    # Prevent direct access to checklist via API
+    # Otherwise users may get unauthorized access to checklists of other tickets
+    params.delete(:checklist)
+    params.delete(:checklist_id)
 
     clean_params = Ticket.association_name_to_id_convert(params)
     clean_params = Ticket.param_cleanup(clean_params, true)
@@ -456,49 +466,7 @@ class TicketsController < ApplicationController
 
   # GET /api/v1/tickets/search
   def search
-
-    # permit nested conditions
-    if params[:condition]
-      params.require(:condition).permit!
-    end
-
-    paginate_with(max: 200, default: 50)
-
-    query = params[:query]
-    if query.respond_to?(:permit!)
-      query = query.permit!.to_h
-    end
-
-    # build result list
-    tickets = Ticket.search(
-      query:        query,
-      condition:    params[:condition].to_h,
-      limit:        pagination.limit,
-      offset:       pagination.offset,
-      order_by:     params[:order_by],
-      sort_by:      params[:sort_by],
-      current_user: current_user,
-    )
-
-    if response_expand?
-      list = tickets.map(&:attributes_with_association_names)
-      render json: list, status: :ok
-      return
-    end
-
-    assets = {}
-    ticket_result = []
-    tickets.each do |ticket|
-      ticket_result.push ticket.id
-      assets = ticket.assets(assets)
-    end
-
-    # return result
-    render json: {
-      tickets:       ticket_result,
-      tickets_count: tickets.count,
-      assets:        assets,
-    }
+    model_search_render(Ticket, params)
   end
 
   # GET /api/v1/ticket_stats
@@ -609,7 +577,7 @@ class TicketsController < ApplicationController
   #
   # @summary          Download of example CSV file.
   # @notes            The requester have 'admin' permissions to be able to download it.
-  # @example          curl -u 'me@example.com:test' http://localhost:3000/api/v1/tickets/import_example
+  # @example          curl -u #{login}:#{password} http://localhost:3000/api/v1/tickets/import_example
   #
   # @response_message 200 File download.
   # @response_message 403 Forbidden / Invalid session.
@@ -630,8 +598,8 @@ class TicketsController < ApplicationController
   #
   # @summary          Starts import.
   # @notes            The requester have 'admin' permissions to be create a new import.
-  # @example          curl -u 'me@example.com:test' -F 'file=@/path/to/file/tickets.csv' 'https://your.zammad/api/v1/tickets/import?try=true'
-  # @example          curl -u 'me@example.com:test' -F 'file=@/path/to/file/tickets.csv' 'https://your.zammad/api/v1/tickets/import'
+  # @example          curl -u #{login}:#{password} -F 'file=@/path/to/file/tickets.csv' 'https://your.zammad/api/v1/tickets/import?try=true'
+  # @example          curl -u #{login}:#{password} -F 'file=@/path/to/file/tickets.csv' 'https://your.zammad/api/v1/tickets/import'
   #
   # @response_message 201 Import started.
   # @response_message 403 Forbidden / Invalid session.
@@ -703,6 +671,17 @@ class TicketsController < ApplicationController
 
     if (draft = ticket.shared_draft) && authorized?(draft, :show?)
       assets = draft.assets(assets)
+    end
+
+    if Setting.get('checklist') && current_user.permissions?('ticket.agent')
+      ticket.checklist&.assets(assets)
+
+      ticket.referencing_checklists
+        .includes(:ticket)
+        .each do |elem|
+          elem.assets(assets)
+          elem.ticket.assets(assets) if elem.ticket.authorized_asset?
+        end
     end
 
     # return result

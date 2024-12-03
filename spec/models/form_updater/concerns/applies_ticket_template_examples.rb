@@ -14,13 +14,13 @@ RSpec.shared_examples 'FormUpdater::AppliesTicketTemplate' do
 
     shared_examples 'skips the field' do
       it 'skips the field' do
-        expect(resolved_result.resolve[field_name]).not_to have_key(:value)
+        expect(resolved_result.resolve[:fields][field_name]).not_to have_key(:value)
       end
     end
 
     shared_examples 'sets the template value for the field' do
       it 'sets the template value for the field' do
-        expect(resolved_result.resolve[field_name]).to include(field_result)
+        expect(resolved_result.resolve[:fields][field_name]).to include(field_result)
       end
     end
 
@@ -109,7 +109,7 @@ RSpec.shared_examples 'FormUpdater::AppliesTicketTemplate' do
       end
 
       context 'with recipient autocomplete fields' do
-        let(:search_user)           { create(:user, organization: create(:organization)) }
+        let(:search_user)           { create(:user) }
         let(:object_name)           { 'article' }
         let(:field_name)            { 'cc' }
         let(:field_template_config) { { 'value' => search_user.email } }
@@ -122,13 +122,30 @@ RSpec.shared_examples 'FormUpdater::AppliesTicketTemplate' do
 
         include_examples 'sets the template value for the field'
 
-        context 'with unknown user' do
+        context 'with unknown email' do
           let(:search_user)           { 'dummy@non-existing.com' }
           let(:field_template_config) { { 'value' => search_user } }
           let(:field_result) do
             {
               value:   [search_user],
-              options: [{ value: search_user, label: search_user, heading: nil }]
+              options: [{ value: search_user, label: search_user }]
+            }
+          end
+
+          include_examples 'sets the template value for the field'
+        end
+
+        context 'with multiple recipients' do
+          let(:recipient_user)        { create(:user) }
+          let(:recipient_email)       { 'dummy@non-existing.com' }
+          let(:field_template_config) { { 'value' => "#{recipient_user.email}, #{recipient_email}" } }
+          let(:field_result) do
+            {
+              value:   [recipient_user.email, recipient_email],
+              options: [
+                { value: recipient_user.email, label: recipient_user.email, heading: recipient_user.fullname },
+                { value: recipient_email, label: recipient_email },
+              ],
             }
           end
 
@@ -140,7 +157,7 @@ RSpec.shared_examples 'FormUpdater::AppliesTicketTemplate' do
         let(:search_organization)   { create(:organization) }
         let(:object_attribute)      { create(:object_manager_attribute_organization_autocompletion) }
         let(:field_name)            { object_attribute.name }
-        let(:field_template_config) { { 'value' => search_organization.id, 'value_completion' => search_organization.name } }
+        let(:field_template_config) { { 'value' => search_organization.id.to_s, 'value_completion' => search_organization.name } }
         let(:field_result) do
           {
             value:   search_organization.id,
@@ -204,8 +221,8 @@ RSpec.shared_examples 'FormUpdater::AppliesTicketTemplate' do
         let(:template) { create(:template, options: { 'ticket.group_id' => { 'value' => group.id.to_s }, 'ticket.owner_id' => { 'value' => user.id.to_s } }) }
 
         it 'sets the template value for both fields', :aggregate_failures do
-          expect(resolved_result.resolve['group_id']).to include(value: group.id)
-          expect(resolved_result.resolve['owner_id']).to include(value: user.id.to_s)
+          expect(resolved_result.resolve[:fields]['group_id']).to include(value: group.id)
+          expect(resolved_result.resolve[:fields]['owner_id']).to include(value: user.id)
         end
       end
     end

@@ -12,9 +12,9 @@ const html = String.raw
 
 describe('visuals for common dialog', () => {
   beforeAll(() => {
-    const main = document.createElement('main')
-    main.id = 'page-main-content'
-    document.body.appendChild(main)
+    const app = document.createElement('div')
+    app.id = 'app'
+    document.body.appendChild(app)
   })
 
   beforeEach(() => {
@@ -77,7 +77,7 @@ describe('visuals for common dialog', () => {
     const emitted = view.emitted()
 
     expect(emitted.close).toHaveLength(1)
-    expect(emitted.close[0]).toEqual([true])
+    expect(emitted.close[0]).toEqual([undefined])
 
     await view.events.click(view.getByLabelText('Close dialog'))
     expect(emitted.close).toHaveLength(2)

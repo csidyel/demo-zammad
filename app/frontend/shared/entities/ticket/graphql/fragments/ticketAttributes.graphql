@@ -6,6 +6,9 @@ fragment ticketAttributes on Ticket {
   createdAt
   escalationAt
   updatedAt
+  updatedBy {
+    id
+  }
   pendingTime
   owner {
     id
@@ -53,6 +56,7 @@ fragment ticketAttributes on Ticket {
     id
     name
     stateType {
+      id
       name
     }
   }
@@ -86,8 +90,13 @@ fragment ticketAttributes on Ticket {
   subscribed
   preferences
   stateColorCode
+  sharedDraftZoomId
   firstResponseEscalationAt
   closeEscalationAt
   updateEscalationAt
   initialChannel
+  externalReferences {
+    github
+    gitlab
+  }
 }

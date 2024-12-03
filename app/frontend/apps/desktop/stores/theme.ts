@@ -1,5 +1,6 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
+import { usePreferredColorScheme } from '@vueuse/core'
 import { acceptHMRUpdate, defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
@@ -25,7 +26,10 @@ const sanitizeTheme = (theme: string): AppThemeName => {
 }
 
 const saveDOMTheme = (theme: AppThemeName) => {
-  getRoot().dataset.theme = theme
+  const root = getRoot()
+
+  root.dataset.theme = theme
+  root.style.colorScheme = theme
 }
 
 export const useThemeStore = defineStore('theme', () => {
@@ -57,13 +61,20 @@ export const useThemeStore = defineStore('theme', () => {
       })
   }
 
-  const currentTheme = computed(
-    () => session.user?.preferences?.theme || 'auto',
+  const currentTheme = computed<EnumAppearanceTheme>(
+    () => session.user?.preferences?.theme || EnumAppearanceTheme.Auto,
   )
 
-  const isDarkMode = computed(
-    () => sanitizeTheme(currentTheme.value) === 'dark',
-  )
+  const preferredColorScheme = usePreferredColorScheme()
+
+  const isDarkMode = computed(() => {
+    if (currentTheme.value === EnumAppearanceTheme.Auto) {
+      return preferredColorScheme.value === 'no-preference'
+        ? false // if no system preference, default to light mode
+        : preferredColorScheme.value === EnumAppearanceTheme.Dark
+    }
+    return currentTheme.value === EnumAppearanceTheme.Dark
+  })
 
   const updateTheme = async (value: EnumAppearanceTheme) => {
     try {
@@ -86,13 +97,10 @@ export const useThemeStore = defineStore('theme', () => {
   }
 
   // Update based on global system level preference
-  window
-    .matchMedia('(prefers-color-scheme: dark)')
-    .addEventListener('change', () => {
-      // don't override preferred theme if user has already selected one
-      const theme = (currentTheme.value as AppThemeName) || getPreferredTheme()
-      saveTheme(theme)
-    })
+  watch(preferredColorScheme, (newTheme) => {
+    const theme = (currentTheme.value as AppThemeName) || newTheme
+    saveTheme(theme)
+  })
 
   // in case user changes the theme in another tab
   watch(
@@ -106,6 +114,7 @@ export const useThemeStore = defineStore('theme', () => {
 
   return {
     savingTheme,
+    preferredColorScheme,
     currentTheme,
     isDarkMode,
     updateTheme,

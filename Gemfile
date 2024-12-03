@@ -4,13 +4,12 @@ source 'https://rubygems.org'
 
 # core - base
 ruby '3.2.4'
-gem 'rails', '~> 7.0.8'
+gem 'rails', '~> 7.2.0'
 
 # core - rails additions
 gem 'activerecord-import'
 gem 'activerecord-session_store'
 gem 'bootsnap', require: false
-gem 'composite_primary_keys'
 gem 'json'
 gem 'parallel'
 
@@ -190,7 +189,6 @@ gem 'aws-sdk-s3', require: false
 # Debugging and profiling
 gem 'byebug'
 gem 'pry-byebug'
-gem 'pry-doc'
 gem 'pry-rails'
 gem 'pry-remote'
 gem 'pry-rescue'
@@ -208,7 +206,6 @@ gem 'listen'
 group :development, :test do
 
   # test frameworks
-  gem 'minitest-profile', require: false
   gem 'rails-controller-testing'
   gem 'rspec-rails'
   gem 'rspec-retry'
@@ -260,7 +257,10 @@ group :development, :test do
   gem 'localhost'
 
   # Keycloak admin tool for setting up SAML auth tests
-  gem 'keycloak-admin', git: 'https://github.com/tschaefer/ruby-keycloak-admin/', branch: 'main', require: false
+  gem 'keycloak-admin', github: 'tschaefer/ruby-keycloak-admin', tag: 'v26.0.0', require: false
+
+  # Debugging and profiling
+  gem 'pry-doc' # This gem is very large, so don't include it in production.
 end
 
 # To permanently extend Zammad with additional gems, you can specify them in Gemfile.local.

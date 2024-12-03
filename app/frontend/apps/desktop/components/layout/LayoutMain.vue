@@ -7,6 +7,7 @@ import type { BackgroundVariant } from './types.ts'
 
 export interface Props {
   backgroundVariant?: BackgroundVariant
+  noPadding?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -19,15 +20,15 @@ const backgroundVariantClasses = computed(() => {
       return 'bg-blue-50 dark:bg-gray-800'
     case 'tertiary':
     default:
-      return 'bg-white dark:bg-gray-500'
+      return 'bg-neutral-50 dark:bg-gray-500'
   }
 })
 </script>
 
 <template>
   <main
-    class="h-full w-full overflow-y-auto p-4 text-gray-100 dark:text-neutral-400"
-    :class="backgroundVariantClasses"
+    class="-:overflow-y-auto h-full w-full text-gray-100 dark:text-neutral-400"
+    :class="[backgroundVariantClasses, { 'p-4': !noPadding }]"
   >
     <slot />
   </main>

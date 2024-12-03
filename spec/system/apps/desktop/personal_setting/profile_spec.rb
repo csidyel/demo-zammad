@@ -36,7 +36,30 @@ RSpec.describe 'Desktop > Personal Setting > Profile', app: :desktop_view, authe
 
       find('label', text: 'Your language').click
       find('span', text: 'Deutsch').click
+
       expect(page).to have_text('Sprache')
+    end
+  end
+
+  describe 'overview configuration' do
+    before do
+      create(:overview, name: 'Test Overview')
+    end
+
+    it 'user can change overview order' do
+      click_on 'Profile settings'
+      click_on 'Overviews'
+
+      expect(page).to have_text("Test Overview\nMy Assigned Tickets")
+
+      o1 = find('li.draggable', text: 'Test Overview')
+      o2 = find('li.draggable', text: 'My Assigned Tickets')
+      o1.drag_to(o2)
+
+      expect(page).to have_text('The order of your ticket overviews was updated.')
+      expect(page).to have_text("My Assigned Tickets\nTest Overview")
+
+      # TODO: open overviews section in desktop interface once it's implemented
     end
   end
 

@@ -92,7 +92,7 @@ class String
 
     removed = ''
     each_char.with_object('') do |c, result|
-      if c.bytes.count > 3
+      if c.bytesize > 3
         removed << c
         next
       end
@@ -320,6 +320,7 @@ class String
   def text2html
     text = CGI.escapeHTML(self)
     text.gsub!(%r{\n}, '<br>')
+    text.gsub!('&amp;amp;', '&amp;')
     text.chomp
   end
 

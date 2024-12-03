@@ -4,18 +4,20 @@
 import { computed } from 'vue'
 
 import CommonButton from '#desktop/components/CommonButton/CommonButton.vue'
+import CommonUpdateIndicator from '#desktop/components/CommonUpdateIndicator/CommonUpdateIndicator.vue'
 
 import {
   TicketSidebarButtonBadgeType,
   type TicketSidebarButtonBadgeDetails,
-} from '../types.ts'
+} from '../../types/sidebar.ts'
 
 interface Props {
   name: string
   label: string
   icon: string
-  selected: boolean
+  selected?: boolean
   badge?: TicketSidebarButtonBadgeDetails
+  updateIndicator?: boolean
 }
 
 const props = defineProps<Props>()
@@ -52,20 +54,22 @@ const badgeColor = computed(() => {
 <template>
   <div class="relative">
     <CommonButton
+      v-tooltip="$t(label)"
       :class="{
         'text-black outline outline-1 outline-offset-1 outline-blue-800 focus:outline focus:outline-1 focus:outline-offset-1 focus:outline-blue-800 dark:text-white':
           selected,
       }"
-      size="medium"
+      size="large"
       variant="neutral"
       :icon="icon"
       :aria-label="$t(label)"
       @click="$emit('click', name)"
     />
+    <CommonUpdateIndicator v-if="!selected && updateIndicator" />
     <CommonLabel
       v-if="badge"
       size="xs"
-      class="pointer-events-none absolute -bottom-2 block min-w-4 max-w-10 truncate rounded-full border-2 border-white px-0.5 py-0.5 text-center text-white ltr:-right-1.5 rtl:-left-1.5 dark:border-gray-500"
+      class="pointer-events-none absolute -bottom-2 block min-w-4 max-w-10 truncate rounded-full border-2 border-white px-0.5 py-0.5 text-center font-bold text-white ltr:-right-1.5 rtl:-left-1.5 dark:border-gray-500"
       :class="[badgeColor]"
       :aria-label="$t(badge.label)"
       role="status"

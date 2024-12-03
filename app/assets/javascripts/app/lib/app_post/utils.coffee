@@ -243,7 +243,8 @@ class App.Utils
     attributes = {
       title: href,
     }
-    if /^https?:/.test(href) then attributes.target = '_blank'
+    if /^https?:/.test(href) && !href.startsWith("#{App.Config.get('http_type')}://#{App.Config.get('fqdn')}")
+      attributes.target = '_blank'
     return attributes
 
   # htmlEscapedAndPhoneified = App.Utils.phoneify(rawText)
@@ -927,6 +928,8 @@ class App.Utils
 
               if level is 'value'
                 switch dataType
+                  when 'textarea'
+                    value = App.Utils.text2html(dataRefLast[attributeName])
                   when 'select'
                     key = dataRefLast[attributeName]
                     value = attributes[attributeName]['historical_options'][key]
@@ -939,6 +942,8 @@ class App.Utils
                     value = dataRefLast[attributeName]
               else
                 switch dataType
+                  when 'textarea'
+                    value = if dataRef then App.Utils.text2html(dataRef) else '-'
                   when 'datetime'
                     value = App.i18n.translateTimestamp(dataRef)
                   when 'date'
@@ -1044,21 +1049,24 @@ class App.Utils
   @checkAttachmentReference: (message) ->
     return false if !message
 
-    # remove blockquote from message, check only the unquoted content
+    # remove blockquote, signatures and images from message, check only the unquoted content
     tmp = $('<div>' + message + '</div>')
-    tmp.find('blockquote').remove()
+    tmp.find('blockquote, img, div[data-signature="true"]').remove()
+
     text = tmp.text()
 
-    matchwords = [__('Attachment'), __('attachment'), __('Attached'), __('attached'), __('Enclosed'), __('enclosed'), __('Enclosure'), __('enclosure')]
-    for word in matchwords
-      # en
-      attachmentTranslatedRegExp = new RegExp("\\W#{word}\\W", 'i')
-      return word if text.match(attachmentTranslatedRegExp)
+    matchwords = __('attachment,attached,enclosed,enclosure')
 
-      # user locale
-      attachmentTranslated = App.i18n.translateContent(word)
-      attachmentTranslatedRegExp = new RegExp("\\W#{attachmentTranslated}\\W", 'i')
-      return attachmentTranslated if text.match(attachmentTranslatedRegExp)
+    #en
+    for word in matchwords.split(',')
+      regexp = new RegExp("\\b#{word}\\b", 'i')
+      return word if text.match(regexp)
+
+    # user locale
+    for word in App.i18n.translateContent(matchwords).split(',')
+      regexp = new RegExp("\\b#{word}\\b", 'i')
+      return word if text.match(regexp)
+
     false
 
   # human readable file size
@@ -1184,7 +1192,7 @@ class App.Utils
     # search: <svg class="icon icon-([^\s]+)\s([^"]*).*<\/svg>
     # replace: <%- @Icon('$1', '$2') %>
     #
-    path = if window.svgPolyfill then '' else 'assets/images/icons.svg'
+    path = if window.svgPolyfill then '' else App.Config.get('icons_url')
     "<svg class=\"icon icon-#{name} #{className}\"><use xlink:href=\"#{path}#icon-#{name}\" /></svg>"
 
   @fontIcon: (name, font, className = '') ->
@@ -1608,3 +1616,13 @@ class App.Utils
       display_name = '"' + display_name.replace(/([\\"])/g, '\\$1') + '"'
 
     return display_name + ' <' + email + '>'
+
+  # Truncate the passed text to desired length
+  @truncate: (input, length = 100) ->
+    return input if not input
+
+    string = input.replace(/<([^>]+)>/g, '')
+
+    return string if string.length < length
+
+    string.substring(0, length) + '…'

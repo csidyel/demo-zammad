@@ -10,9 +10,9 @@ import CommonConfirmationDialog from '../CommonConfirmationDialog.vue'
 const { confirmationOptions } = useConfirmation()
 
 beforeAll(() => {
-  const main = document.createElement('main')
-  main.id = 'page-main-content'
-  document.body.appendChild(main)
+  const app = document.createElement('div')
+  app.id = 'app'
+  document.body.appendChild(app)
 })
 
 afterAll(() => {
@@ -33,6 +33,7 @@ describe('dialog confirm behaviour', () => {
       text: 'Test heading',
       confirmCallback: confirmCallbackSpy,
       cancelCallback: vi.fn(),
+      closeCallback: vi.fn(),
     }
 
     await waitForNextTick()
@@ -53,6 +54,7 @@ describe('dialog confirm behaviour', () => {
       confirmationVariant: 'delete',
       confirmCallback: confirmCallbackSpy,
       cancelCallback: vi.fn(),
+      closeCallback: vi.fn(),
     }
 
     await waitForNextTick()
@@ -81,6 +83,7 @@ describe('dialog confirm behaviour', () => {
       buttonVariant: 'danger',
       confirmCallback: confirmCallbackSpy,
       cancelCallback: vi.fn(),
+      closeCallback: vi.fn(),
     }
 
     await waitForNextTick()
@@ -103,6 +106,7 @@ describe('dialog confirm behaviour', () => {
       text: 'Test heading',
       confirmCallback: confirmCallbackSpy,
       cancelCallback: cancelCallbackSpy,
+      closeCallback: vi.fn(),
     }
 
     await waitForNextTick()

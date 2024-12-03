@@ -2,7 +2,7 @@
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
-import { computed, shallowRef } from 'vue'
+import { useTemplateRef, computed } from 'vue'
 
 export interface CommonInputSearchProps {
   modelValue?: string
@@ -27,7 +27,7 @@ const emit = defineEmits<{
 
 const filter = useVModel(props, 'modelValue', emit)
 
-const filterInput = shallowRef<HTMLInputElement>()
+const filterInput = useTemplateRef('filter-input')
 
 const focus = () => {
   filterInput.value?.focus()
@@ -84,7 +84,7 @@ export default {
     <div class="relative inline-flex grow overflow-clip">
       <div class="grow">
         <input
-          ref="filterInput"
+          ref="filter-input"
           v-model="filter"
           v-bind="$attrs"
           :placeholder="i18n.t(placeholder)"
@@ -92,7 +92,7 @@ export default {
           class="w-full min-w-16 text-black outline-none dark:text-white"
           :class="{
             'bg-blue-200 dark:bg-gray-700': !alternativeBackground,
-            'bg-white dark:bg-gray-500': alternativeBackground,
+            'bg-neutral-50 dark:bg-gray-500': alternativeBackground,
           }"
           type="text"
           role="searchbox"

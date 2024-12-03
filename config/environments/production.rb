@@ -9,7 +9,7 @@ def env_trusted_proxies
     eval(ENV['RAILS_TRUSTED_PROXIES']) # rubocop:disable Security/Eval
   else
     # The regular way: variable contains a list if IP addresses/masks: "127.0.0.1,::1"
-    ENV['RAILS_TRUSTED_PROXIES'].split(',').select(&:present?)
+    ENV['RAILS_TRUSTED_PROXIES'].split(',').compact_blank
   end
 end
 
@@ -17,7 +17,7 @@ Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
 
   # Code is not reloaded between requests.
-  config.cache_classes = true
+  config.enable_reloading = false
 
   # Eager load code on boot. This eager loads most of Rails and
   # your application in memory, allowing both threaded web servers

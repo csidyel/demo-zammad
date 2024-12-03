@@ -1,28 +1,20 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import {
-  NotificationTypes,
-  useNotifications,
-} from '#shared/components/CommonNotifications/index.ts'
+import { toRef } from 'vue'
+
 import Form from '#shared/components/Form/Form.vue'
 import type { FormSubmitData } from '#shared/components/Form/types.ts'
 import { useForm } from '#shared/components/Form/useForm.ts'
 import { useConfirmation } from '#shared/composables/useConfirmation.ts'
-import { useTicketFormOganizationHandler } from '#shared/entities/ticket/composables/useTicketFormOrganizationHandler.ts'
-import { useTicketCustomerUpdateMutation } from '#shared/entities/ticket/graphql/mutations/customerUpdate.api.ts'
+import { useTicketChangeCustomer } from '#shared/entities/ticket/composables/useTicketChangeCustomer.ts'
+import { useTicketFormOrganizationHandler } from '#shared/entities/ticket/composables/useTicketFormOrganizationHandler.ts'
 import type {
   TicketById,
   TicketCustomerUpdateFormData,
 } from '#shared/entities/ticket/types.ts'
-import UserError from '#shared/errors/UserError.ts'
 import { defineFormSchema } from '#shared/form/defineFormSchema.ts'
-import {
-  EnumObjectManagerObjects,
-  type TicketCustomerUpdateInput,
-} from '#shared/graphql/types.ts'
-import { convertToGraphQLId } from '#shared/graphql/utils.ts'
-import { MutationHandler } from '#shared/server/apollo/handler/index.ts'
+import { EnumObjectManagerObjects } from '#shared/graphql/types.ts'
 
 import CommonButton from '#mobile/components/CommonButton/CommonButton.vue'
 import CommonDialog from '#mobile/components/CommonDialog/CommonDialog.vue'
@@ -69,50 +61,9 @@ const formSchema = defineFormSchema([
   },
 ])
 
-const changeCustomerMutation = new MutationHandler(
-  useTicketCustomerUpdateMutation({}),
-)
-
-const { notify } = useNotifications()
-
-const changeCustomer = async (
-  formData: FormSubmitData<TicketCustomerUpdateFormData>,
-) => {
-  const input = {
-    customerId: convertToGraphQLId('User', formData.customer_id),
-  } as TicketCustomerUpdateInput
-
-  if (formData.organization_id) {
-    input.organizationId = convertToGraphQLId(
-      'Organization',
-      formData.organization_id,
-    )
-  }
-
-  try {
-    const result = await changeCustomerMutation.send({
-      ticketId: props.ticket.id,
-      input,
-    })
-
-    if (result) {
-      closeDialog(props.name)
-      notify({
-        id: 'ticket-customer-updated',
-        type: NotificationTypes.Success,
-        message: __('Ticket customer updated successfully.'),
-      })
-    }
-  } catch (errors) {
-    if (errors instanceof UserError) {
-      notify({
-        id: 'ticket-customer-update-error',
-        message: errors.generalErrors[0],
-        type: NotificationTypes.Error,
-      })
-    }
-  }
-}
+const { changeCustomer } = useTicketChangeCustomer(toRef(props, 'ticket'), {
+  onSuccess: () => closeDialog(props.name),
+})
 </script>
 
 <template>
@@ -144,7 +95,7 @@ const changeCustomer = async (
       class="w-full p-4"
       should-autofocus
       :schema="formSchema"
-      :handlers="[useTicketFormOganizationHandler()]"
+      :handlers="[useTicketFormOrganizationHandler()]"
       :initial-entity-object="ticket"
       use-object-attributes
       @submit="

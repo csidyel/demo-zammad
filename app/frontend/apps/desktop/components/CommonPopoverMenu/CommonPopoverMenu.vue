@@ -35,6 +35,7 @@ const showHeaderLabel = computed(() => {
 
 const onClickItem = (event: MouseEvent, item: MenuItem) => {
   if (item.onClick) {
+    event.preventDefault()
     item.onClick(props.entity)
   }
 
@@ -57,15 +58,17 @@ const getHoverFocusStyles = (variant?: Variant) => {
 </script>
 
 <template>
-  <section class="min-w-58 flex flex-col gap-0.5">
+  <section class="min-w-58 flex max-w-64 flex-col gap-0.5">
     <div
       v-if="showHeaderLabel"
       role="heading"
       aria-level="2"
-      class="p-2 leading-snug"
+      class="px-2 py-1.5"
     >
       <slot name="header">
-        <CommonLabel size="small" class="text-stone-200 dark:text-neutral-500"
+        <CommonLabel
+          size="small"
+          class="line-clamp-1 text-stone-200 dark:text-neutral-500"
           >{{ i18n.t(headerLabel) }}
         </CommonLabel>
       </slot>
@@ -76,6 +79,36 @@ const getHoverFocusStyles = (variant?: Variant) => {
         <ul role="menu" v-bind="$attrs" class="flex w-full flex-col">
           <template v-for="item in filteredMenuItems" :key="item.key">
             <li
+              v-if="'array' in item"
+              class="flex flex-col overflow-clip pt-2.5 last:rounded-b-[10px] [&:nth-child(n+2)]:border-t [&:nth-child(n+2)]:border-neutral-100 [&:nth-child(n+2)]:dark:border-gray-900"
+              role="menuitem"
+            >
+              <CommonLabel
+                size="small"
+                class="line-clamp-1 px-2 text-stone-200 dark:text-neutral-500"
+                role="heading"
+                aria-level="3"
+                >{{ item.groupLabel }}</CommonLabel
+              >
+              <template v-for="subItem in item.array" :key="subItem.key">
+                <slot :name="`item-${subItem.key}`" v-bind="subItem">
+                  <component
+                    :is="subItem.component || CommonPopoverMenuItem"
+                    class="flex grow p-2.5"
+                    :class="getHoverFocusStyles(subItem.variant)"
+                    :label="subItem.label"
+                    :variant="subItem.variant"
+                    :link="subItem.link"
+                    :icon="subItem.icon"
+                    :label-placeholder="subItem.labelPlaceholder"
+                    @click="onClickItem($event, subItem)"
+                  />
+                  <slot :name="`itemRight-${subItem.key}`" v-bind="subItem" />
+                </slot>
+              </template>
+            </li>
+            <li
+              v-else
               role="menuitem"
               class="group flex items-center justify-between last:rounded-b-[10px]"
               :class="[

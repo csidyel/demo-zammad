@@ -1077,7 +1077,7 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
       },
       'hr': {
         '<strong>Chat</strong> with us!': '<strong>Čavrljajte</strong> sa nama!',
-        'All colleagues are busy.': 'Svi kolege su zauzeti.',
+        'All colleagues are busy.': 'Svi agenti su zauzeti.',
         'Chat closed by %s': '%s zatvara chat',
         'Compose your message…': 'Sastavite poruku…',
         'Connecting': 'Povezivanje',
@@ -1086,12 +1086,12 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
         'Offline': 'Odsutan',
         'Online': 'Dostupan(a)',
         'Scroll down to see new messages': 'Pomaknite se prema dolje da biste vidjeli nove poruke',
-        'Send': 'Šalji',
+        'Send': 'Pošalji',
         'Since you didn\'t respond in the last %s minutes your conversation was closed.': 'Budući da niste odgovorili u posljednjih %s minuta, Vaš je razgovor zatvoren.',
         'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> was closed.': 'Budući da niste odgovorili u posljednjih %s minuta, Vaš je razgovor s <strong>%</strong>s zatvoren.',
         'Start new conversation': 'Započni novi razgovor',
         'Today': 'Danas',
-        'We are sorry, it is taking longer than expected to get a slot. Please try again later or send us an email. Thank you!': 'Oprostite, proces traje duže nego što se očekivalo da biste dobili slobodan termin. Molimo, pokušajte ponovno kasnije ili nam pošaljite e-mail. Hvala!',
+        'We are sorry, it is taking longer than expected to get a slot. Please try again later or send us an email. Thank you!': 'Oprostite, traje duže nego inače za dobiti slobodan termin. Molimo, pokušajte ponovno kasnije ili nam pošaljite e-mail. Hvala!',
         'You are on waiting list position <strong>%s</strong>.': 'Nalazite se u redu čekanja na poziciji <strong>%s</strong>.'
       },
       'hu': {
@@ -1208,6 +1208,25 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
         'We are sorry, it is taking longer than expected to get a slot. Please try again later or send us an email. Thank you!': 'Lamentamos, está demorando mais do que o esperado para conseguir uma vaga. Tente novamente mais tarde ou envie-nos um e-mail. Obrigado!',
         'You are on waiting list position <strong>%s</strong>.': 'Você está na posição <strong>%s</strong> da lista de espera.'
       },
+      'ro': {
+        '<strong>Chat</strong> with us!': '<strong>Comunică</strong> cu noi!',
+        'All colleagues are busy.': 'Toți colegii sunt ocupați momentan.',
+        'Chat closed by %s': 'Chat închis de către %s',
+        'Compose your message…': 'Compune-ți mesajul…',
+        'Connecting': 'Se conectează',
+        'Connection lost': 'Conexiune pierdută',
+        'Connection re-established': 'Conexiune restabilită',
+        'Offline': 'Offline',
+        'Online': 'Online',
+        'Scroll down to see new messages': 'Derulați în jos pentru a vedea mesajele noi',
+        'Send': 'Trimite',
+        'Since you didn\'t respond in the last %s minutes your conversation was closed.': 'Deoarece nu ai răspuns în ultimele %s minute, conversația ta a fost închisă.',
+        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> was closed.': 'Deoarece nu ai răspuns în ultimele %s minute, conversația ta cu <strong>%s</strong> a fost închisă.',
+        'Start new conversation': 'Începe o conversație nouă',
+        'Today': 'Azi',
+        'We are sorry, it is taking longer than expected to get a slot. Please try again later or send us an email. Thank you!': 'Ne pare rău, durează mai mult decât ne așteptam să obținem un loc. Te rugăm să încerci din nou mai târziu sau să ne trimiți un email. Mulțumim!',
+        'You are on waiting list position <strong>%s</strong>.': 'Aveți poziția <strong>%s</strong> în lista de așteptare.'
+      },
       'ru': {
         '<strong>Chat</strong> with us!': '<strong>Напишите</strong> нам!',
         'All colleagues are busy.': 'Все коллеги заняты.',
@@ -1220,11 +1239,11 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
         'Online': 'В сети',
         'Scroll down to see new messages': 'Прокрутите вниз, чтобы увидеть новые сообщения',
         'Send': 'Отправить',
-        'Since you didn\'t respond in the last %s minutes your conversation was closed.': '',
-        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> was closed.': '',
-        'Start new conversation': 'Начать новую беседу',
+        'Since you didn\'t respond in the last %s minutes your conversation was closed.': 'Поскольку Вы не ответили в течение последних %s минут, Ваш разговор был закрыт.',
+        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> was closed.': 'Поскольку Вы не ответили в течение последних %s минут, Ваш разговор с <strong>%s</strong> был закрыт.',
+        'Start new conversation': 'Начать новый разговор',
         'Today': 'Сегодня',
-        'We are sorry, it is taking longer than expected to get a slot. Please try again later or send us an email. Thank you!': '',
+        'We are sorry, it is taking longer than expected to get a slot. Please try again later or send us an email. Thank you!': 'Извините, получение свободного слота занимает больше времени, чем ожидалось. Пожалуйста, повторите попытку позже или отправьте нам электронное письмо. Благодарим Вас!',
         'You are on waiting list position <strong>%s</strong>.': 'Вы находитесь в списке ожидания <strong>%s</strong>.'
       },
       'sr': {
@@ -1287,7 +1306,7 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
       'zh-cn': {
         '<strong>Chat</strong> with us!': '发起<strong>即时对话</strong>!',
         'All colleagues are busy.': '所有同事都很忙。',
-        'Chat closed by %s': '对话被 %s 终止',
+        'Chat closed by %s': '对话已被 %s 关闭',
         'Compose your message…': '编辑您的信息…',
         'Connecting': '连接中',
         'Connection lost': '连接丢失',

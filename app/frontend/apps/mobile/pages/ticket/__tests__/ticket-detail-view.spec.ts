@@ -16,6 +16,10 @@ import { mockPermissions } from '#tests/support/mock-permissions.ts'
 import { mockUserCurrent } from '#tests/support/mock-userCurrent.ts'
 import { nullableMock, waitUntil } from '#tests/support/utils.ts'
 
+import { TicketUpdateDocument } from '#shared/entities/ticket/graphql/mutations/update.api.ts'
+import { TicketArticlesDocument } from '#shared/entities/ticket/graphql/queries/ticket/articles.api.ts'
+import { TicketArticleUpdatesDocument } from '#shared/entities/ticket/graphql/subscriptions/ticketArticlesUpdates.api.ts'
+import { TicketUpdatesDocument } from '#shared/entities/ticket/graphql/subscriptions/ticketUpdates.api.ts'
 import { TicketState } from '#shared/entities/ticket/types.ts'
 import { TicketArticleRetrySecurityProcessDocument } from '#shared/entities/ticket-article/graphql/mutations/ticketArticleRetrySecurityProcess.api.ts'
 import {
@@ -25,13 +29,11 @@ import {
 } from '#shared/graphql/types.ts'
 import { convertToGraphQLId } from '#shared/graphql/utils.ts'
 
+import { TicketWithMentionLimitDocument } from '#mobile/entities/ticket/graphql/queries/ticketWithMentionLimit.api.ts'
+
 import { clearTicketArticlesLoadedState } from '../composable/useTicketArticlesVariables.ts'
 import { TicketLiveUserDeleteDocument } from '../graphql/mutations/live-user/delete.api.ts'
 import { TicketLiveUserUpsertDocument } from '../graphql/mutations/live-user/ticketLiveUserUpsert.api.ts'
-import { TicketArticlesDocument } from '../graphql/queries/ticket/articles.api.ts'
-import { TicketDocument } from '../graphql/queries/ticket.api.ts'
-import { TicketArticleUpdatesDocument } from '../graphql/subscriptions/ticketArticlesUpdates.api.ts'
-import { TicketUpdatesDocument } from '../graphql/subscriptions/ticketUpdates.api.ts'
 
 import { mockArticleQuery } from './mocks/articles.ts'
 import {
@@ -199,7 +201,7 @@ describe('user avatars', () => {
 
   it('renders article user image when he is inactive', async () => {
     const articles = defaultArticles()
-    const { author } = articles.description!.edges[0].node
+    const { author } = articles.firstArticles!.edges[0].node
     author.active = false
     author.image = 'avatar.png'
     author.firstname = 'Max'
@@ -227,7 +229,7 @@ describe('user avatars', () => {
 
   it('renders article user when he is out of office', async () => {
     const articles = defaultArticles()
-    const { author } = articles.description!.edges[0].node
+    const { author } = articles.firstArticles!.edges[0].node
 
     author.outOfOffice = true
     author.outOfOfficeStartAt = '2021-12-01'
@@ -258,9 +260,9 @@ describe('user avatars', () => {
 })
 
 test("redirects to error page, if can't find ticket", async () => {
-  const { calls } = mockGraphQLApi(TicketDocument).willFailWithNotFoundError(
-    'The ticket 9866 could not be found',
-  )
+  const { calls } = mockGraphQLApi(
+    TicketWithMentionLimitDocument,
+  ).willFailWithNotFoundError('The ticket 9866 could not be found')
   mockGraphQLApi(TicketLiveUserDeleteDocument).willFailWithNotFoundError(
     'The ticket 9866 could not be found',
   )
@@ -343,7 +345,7 @@ test('change content on subscription', async () => {
 describe('calling API to retry encryption', () => {
   it('updates ticket description', async () => {
     const articlesQuery = defaultArticles()
-    const article = articlesQuery.description!.edges[0].node
+    const article = articlesQuery.firstArticles!.edges[0].node
     article.securityState = {
       __typename: 'TicketArticleSecurityState',
       encryptionMessage: '',
@@ -463,12 +465,13 @@ describe('calling API to retry encryption', () => {
 describe('remote content removal', () => {
   it('shows blocked content badge', async () => {
     const articlesQuery = defaultArticles()
-    const article = articlesQuery.description!.edges[0].node
+    const article = articlesQuery.firstArticles!.edges[0].node
     article.preferences = {
       remote_content_removed: true,
     }
     article.attachmentsWithoutInline = [
       {
+        id: convertToGraphQLId('Store', 1),
         internalId: 1,
         name: 'message',
         preferences: {
@@ -941,6 +944,55 @@ describe('ticket add/edit reply article', () => {
 
     expect(form?.find('body', 'name')?.value).toBe('Testing')
   })
+
+  it('save one reply and cancel second reply (save button should not be visible)', async () => {
+    const { waitUntilTicketLoaded, ticket } = mockTicketDetailViewGql({
+      mockFrontendObjectAttributes: true,
+    })
+
+    const view = await visitView('/tickets/1')
+
+    await waitUntilTicketLoaded()
+
+    await view.events.click(view.getByRole('button', { name: 'Add reply' }))
+
+    expect(
+      await view.findByRole('dialog', { name: 'Add reply' }),
+    ).toBeInTheDocument()
+
+    await view.events.type(view.getByLabelText('Text'), 'Testing')
+
+    expect(
+      await view.findByRole('button', { name: 'Save' }),
+    ).toBeInTheDocument()
+
+    mockGraphQLApi(TicketUpdateDocument).willResolve({
+      ticketUpdate: {
+        ticket,
+        errors: null,
+        __typename: 'TicketUpdatePayload',
+      },
+    })
+
+    await view.events.click(view.getByRole('button', { name: 'Save' }))
+
+    expect(
+      await view.findByRole('button', { name: 'Add reply' }),
+    ).toBeInTheDocument()
+
+    await view.events.click(view.getByRole('button', { name: 'Add reply' }))
+
+    expect(
+      await view.findByRole('dialog', { name: 'Add reply' }),
+    ).toBeInTheDocument()
+
+    await view.events.click(view.getByRole('button', { name: 'Cancel' }))
+
+    expect(
+      await view.findByRole('button', { name: 'Add reply' }),
+    ).toBeInTheDocument()
+    expect(view.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument()
+  })
 })
 
 it('correctly redirects from ticket hash-based routes', async () => {
@@ -961,6 +1013,21 @@ it('correctly redirects from ticket hash-based routes', async () => {
 it('correctly redirects from ticket hash-based routes with other ids', async () => {
   const { waitUntilTicketLoaded } = mockTicketDetailViewGql({
     ticketView: 'agent',
+    articles: [
+      defaultArticles(),
+      {
+        articles: {
+          edges: [],
+          pageInfo: {
+            endCursor: null,
+            startCursor: null,
+            hasPreviousPage: false,
+            __typename: 'PageInfo',
+          },
+          totalCount: 5,
+        },
+      },
+    ],
   })
 
   await visitView('/#ticket/zoom/1/20')
@@ -970,6 +1037,7 @@ it('correctly redirects from ticket hash-based routes with other ids', async () 
   const route = router.currentRoute.value
 
   expect(route.name).toBe('TicketDetailArticlesView')
+
   expect(route.params).toEqual({ internalId: '1' })
 })
 
@@ -1043,7 +1111,7 @@ describe('with ticket on a whatsapp channel', () => {
     const testDate = new Date()
 
     const articles = defaultArticles()
-    articles.description!.edges[0].node.type!.name = 'whatsapp message'
+    articles.firstArticles!.edges[0].node.type!.name = 'whatsapp message'
 
     const ticket = defaultTicket(
       {},
@@ -1088,7 +1156,7 @@ describe('with ticket on a whatsapp channel', () => {
     const testDate = new Date()
 
     const articles = defaultArticles()
-    articles.description!.edges[0].node.type!.name = 'whatsapp message'
+    articles.firstArticles!.edges[0].node.type!.name = 'whatsapp message'
 
     const ticket = defaultTicket(
       {},
@@ -1134,7 +1202,7 @@ describe('with ticket on a whatsapp channel', () => {
     const testDate = new Date()
 
     const articles = defaultArticles()
-    articles.description!.edges[0].node.type!.name = 'whatsapp message'
+    articles.firstArticles!.edges[0].node.type!.name = 'whatsapp message'
 
     const ticket = defaultTicket(
       {},
@@ -1146,6 +1214,7 @@ describe('with ticket on a whatsapp channel', () => {
       {
         name: 'closed',
         stateType: {
+          id: convertToGraphQLId('TicketStateType', 5),
           name: TicketState.Closed,
         },
       },

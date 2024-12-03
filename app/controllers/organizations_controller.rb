@@ -178,64 +178,7 @@ curl http://localhost/api/v1/organization/{id} -v -u #{login}:#{password} -H "Co
 
   # GET /api/v1/organizations/search
   def search
-    query = params[:query]
-    if query.respond_to?(:permit!)
-      query = query.permit!.to_h
-    end
-    query_params = {
-      query:        query,
-      limit:        pagination.limit,
-      offset:       pagination.offset,
-      sort_by:      params[:sort_by],
-      order_by:     params[:order_by],
-      current_user: current_user,
-    }
-    %i[ids role_ids].each do |key|
-      next if params[key].blank?
-
-      query_params[key] = params[key]
-    end
-
-    # do query
-    organization_all = Organization.search(query_params)
-
-    if response_expand?
-      list = organization_all.map(&:attributes_with_association_names)
-      render json: list, status: :ok
-      return
-    end
-
-    # build result list
-    if params[:label]
-      organizations = []
-      organization_all.each do |organization|
-        a = { id: organization.id, label: organization.name, value: organization.name }
-        organizations.push a
-      end
-
-      # return result
-      render json: organizations
-      return
-    end
-
-    if response_full?
-      organization_ids = []
-      assets = {}
-      organization_all.each do |organization|
-        assets = organization.assets(assets)
-        organization_ids.push organization.id
-      end
-
-      # return result
-      render json: {
-        assets:           assets,
-        organization_ids: organization_ids.uniq,
-      }
-      return
-    end
-
-    list = organization_all.map(&:attributes_with_association_ids)
-    render json: list, status: :ok
+    model_search_render(Organization, params)
   end
 
   # GET /api/v1/organizations/history/1
@@ -251,7 +194,7 @@ curl http://localhost/api/v1/organization/{id} -v -u #{login}:#{password} -H "Co
   #
   # @summary          Download of example CSV file.
   # @notes            The requester have 'admin.organization' permissions to be able to download it.
-  # @example          curl -u 'me@example.com:test' http://localhost:3000/api/v1/organizations/import_example
+  # @example          curl -u #{login}:#{password} http://localhost:3000/api/v1/organizations/import_example
   #
   # @response_message 200 File download.
   # @response_message 403 Forbidden / Invalid session.
@@ -268,8 +211,8 @@ curl http://localhost/api/v1/organization/{id} -v -u #{login}:#{password} -H "Co
   #
   # @summary          Starts import.
   # @notes            The requester have 'admin.text_module' permissions to be create a new import.
-  # @example          curl -u 'me@example.com:test' -F 'file=@/path/to/file/organizations.csv' 'https://your.zammad/api/v1/organizations/import?try=true'
-  # @example          curl -u 'me@example.com:test' -F 'file=@/path/to/file/organizations.csv' 'https://your.zammad/api/v1/organizations/import'
+  # @example          curl -u #{login}:#{password} -F 'file=@/path/to/file/organizations.csv' 'https://your.zammad/api/v1/organizations/import?try=true'
+  # @example          curl -u #{login}:#{password} -F 'file=@/path/to/file/organizations.csv' 'https://your.zammad/api/v1/organizations/import'
   #
   # @response_message 201 Import started.
   # @response_message 403 Forbidden / Invalid session.

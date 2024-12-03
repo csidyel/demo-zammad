@@ -2,7 +2,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, shallowRef } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 
 import CommonAvatar from '#shared/components/CommonAvatar/CommonAvatar.vue'
 import { NotificationTypes } from '#shared/components/CommonNotifications/types.ts'
@@ -43,7 +43,7 @@ import {
 } from '../graphql/queries/userCurrentAvatarList.api.ts'
 import { UserCurrentAvatarUpdatesDocument } from '../graphql/subscriptions/userCurrentAvatarUpdates.api.ts'
 
-import type { ApolloCache, NormalizedCacheObject } from '@apollo/client'
+import type { ApolloCache, NormalizedCacheObject } from '@apollo/client/core'
 
 const { user } = storeToRefs(useSessionStore())
 
@@ -88,7 +88,7 @@ const currentDefaultAvatar = computed(() => {
   return currentAvatars.value.find((avatar) => avatar.default)
 })
 
-const fileUploadInput = shallowRef<HTMLInputElement>()
+const fileUploadElement = useTemplateRef('file-upload')
 
 const cameraFlyout = useFlyout({
   name: 'avatar-camera-capture',
@@ -186,7 +186,7 @@ const storeAvatar = (image: ImageFileData) => {
 }
 
 const addAvatarByUpload = () => {
-  fileUploadInput.value?.click()
+  fileUploadElement.value?.click()
 }
 
 const addAvatarByCamera = () => {
@@ -197,7 +197,7 @@ const addAvatarByCamera = () => {
   })
 }
 
-const loadAvatar = async (input?: HTMLInputElement) => {
+const loadAvatar = async (input: HTMLInputElement | null) => {
   const files = input?.files
   if (!files) return
 
@@ -325,6 +325,8 @@ const activeAvatarButtonClass = (active: boolean) => {
                   size="large"
                   initials-only
                   personal
+                  no-indicator
+                  no-muted
                 />
               </button>
               <div
@@ -365,13 +367,13 @@ const activeAvatarButtonClass = (active: boolean) => {
 
           <div class="w-full p-1 text-center">
             <input
-              ref="fileUploadInput"
+              ref="file-upload"
               :accept="allowedImageTypesString()"
               aria-hidden="true"
               class="hidden"
               data-test-id="fileUploadInput"
               type="file"
-              @change="loadAvatar(fileUploadInput)"
+              @change="loadAvatar(fileUploadElement)"
             />
 
             <CommonButton

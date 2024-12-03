@@ -6,7 +6,7 @@ RSpec.describe TriggerWebhookJob::CustomPayload do
 
   # rubocop:disable Lint/InterpolationCheck
   describe '.generate' do
-    subject(:generate) { described_class.generate(record, { ticket:, article:, notification: }) }
+    subject(:generate) { described_class.generate(record, { ticket:, article:, notification:, config: }) }
 
     let(:ticket)  { create(:ticket) }
     let(:article) { create(:ticket_article, body: "Text with\nnew line.") }
@@ -19,6 +19,7 @@ RSpec.describe TriggerWebhookJob::CustomPayload do
       }
     end
     let(:notification) { TriggerWebhookJob::CustomPayload::Track::Notification.generate({ ticket:, article: }, { event: }) }
+    let(:config)       { TriggerWebhookJob::CustomPayload::Track::Config.generate({ ticket:, article: }, {}) }
 
     context 'when the payload is empty' do
       let(:record)    { {}.to_json }
@@ -111,6 +112,15 @@ RSpec.describe TriggerWebhookJob::CustomPayload do
       end
     end
 
+    context 'when the placeholder contains valid object and invalid method' do
+      let(:record) { { 'ticket' => '#{ticket.1_article}' }.to_json }
+      let(:json_data) { { 'ticket' => '#{ticket.1_article / no such method}' } }
+
+      it 'returns the placeholder reporting "no such method"' do
+        expect(generate).to eq(json_data)
+      end
+    end
+
     context 'when the placeholder contains valid object and method' do
       let(:record) { { 'ticket.id' => '#{ticket.id}' }.to_json }
       let(:json_data) { { 'ticket.id' => ticket.id } }
@@ -185,6 +195,7 @@ RSpec.describe TriggerWebhookJob::CustomPayload do
       let(:record) do
         {
           'current_user' => '#{current_user.fullname}',
+          'fqdn'         => '#{config.fqdn}',
           'ticket'       => {
             'id'      => '#{ticket.id}',
             'owner'   => '#{ticket.owner.fullname}',
@@ -203,6 +214,7 @@ RSpec.describe TriggerWebhookJob::CustomPayload do
       let(:json_data) do
         {
           'current_user' => '#{current_user / no such object}',
+          'fqdn'         => Setting.get('fqdn'),
           'ticket'       => {
             'id'      => ticket.id,
             'owner'   => ticket.owner.fullname.to_s,
@@ -221,7 +233,6 @@ RSpec.describe TriggerWebhookJob::CustomPayload do
 
       it 'returns a valid JSON payload' do
         expect(generate).to eq(json_data)
-
       end
     end
 
@@ -280,7 +291,7 @@ RSpec.describe TriggerWebhookJob::CustomPayload do
       end
 
       context 'when multiselect is used inside the ticket' do
-        let(:object_manager_attribute_name)  { 'multiselect' }
+        let(:object_manager_attribute_name)  { 'multiselect_keys_001' }
         let(:object_manager_attribute_value) { %w[key_1 key_3] }
         let(:create_object_manager_attribute) do
           create(:object_manager_attribute_multiselect, name: object_manager_attribute_name)

@@ -1,9 +1,14 @@
 <!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import { useElementBounding, useWindowSize } from '@vueuse/core'
+import {
+  useDebounceFn,
+  useElementBounding,
+  useElementVisibility,
+  useWindowSize,
+} from '@vueuse/core'
 import { escapeRegExp } from 'lodash-es'
-import { computed, nextTick, ref, toRef, watch } from 'vue'
+import { useTemplateRef, computed, nextTick, ref, toRef, watch } from 'vue'
 
 import type { SelectOption } from '#shared/components/CommonSelect/types.ts'
 import useValue from '#shared/components/Form/composables/useValue.ts'
@@ -13,10 +18,10 @@ import useSelectPreselect from '#shared/composables/useSelectPreselect.ts'
 import { useTrapTab } from '#shared/composables/useTrapTab.ts'
 import { useFormBlock } from '#shared/form/useFormBlock.ts'
 import { i18n } from '#shared/i18n.ts'
+import stopEvent from '#shared/utils/events.ts'
 
 import CommonInputSearch from '#desktop/components/CommonInputSearch/CommonInputSearch.vue'
 import CommonSelect from '#desktop/components/CommonSelect/CommonSelect.vue'
-import type { CommonSelectInstance } from '#desktop/components/CommonSelect/types.ts'
 
 interface Props {
   context: SelectContext & {
@@ -40,13 +45,14 @@ const {
   setupMissingOrDisabledOptionHandling,
 } = useSelectOptions(toRef(props.context, 'options'), contextReactive)
 
-const input = ref<HTMLDivElement>()
-const outputElement = ref<HTMLOutputElement>()
-const filter = ref('')
-const filterInput = ref<HTMLInputElement>()
-const select = ref<CommonSelectInstance>()
+const inputElement = useTemplateRef('input')
+const outputElement = useTemplateRef('output')
+const filterInputElement = useTemplateRef('filter-input')
+const selectInstance = useTemplateRef('select')
 
-const { activateTabTrap, deactivateTabTrap } = useTrapTab(input, true)
+const filter = ref('')
+
+const { activateTabTrap, deactivateTabTrap } = useTrapTab(inputElement, true)
 
 const clearFilter = () => {
   filter.value = ''
@@ -97,7 +103,8 @@ const suggestedOptionLabel = computed(() => {
   return getSelectedOptionLabel(exactMatches[0].value)
 })
 
-const inputElementBounds = useElementBounding(input)
+const inputElementBounds = useElementBounding(inputElement)
+const isInputVisible = !!VITE_TEST_MODE || useElementVisibility(inputElement)
 const windowSize = useWindowSize()
 
 const isBelowHalfScreen = computed(() => {
@@ -105,28 +112,27 @@ const isBelowHalfScreen = computed(() => {
 })
 
 const openSelectDropdown = () => {
-  if (select.value?.isOpen || props.context.disabled) return
+  if (props.context.disabled) return
 
-  select.value?.openDropdown(inputElementBounds, windowSize.height)
+  selectInstance.value?.openDropdown(inputElementBounds, windowSize.height)
 
   requestAnimationFrame(() => {
     activateTabTrap()
     if (props.context.noFiltering) outputElement.value?.focus()
-    else filterInput.value?.focus()
+    else filterInputElement.value?.focus()
   })
 }
 
 const openOrMoveFocusToDropdown = (lastOption = false) => {
-  if (!select.value?.isOpen) {
-    openSelectDropdown()
-    return
+  if (!selectInstance.value?.isOpen) {
+    return openSelectDropdown()
   }
 
   deactivateTabTrap()
 
   nextTick(() => {
     requestAnimationFrame(() => {
-      select.value?.moveFocusToDropdown(lastOption)
+      selectInstance.value?.moveFocusToDropdown(lastOption)
     })
   })
 }
@@ -136,7 +142,40 @@ const onCloseDropdown = () => {
   deactivateTabTrap()
 }
 
-useFormBlock(contextReactive, openSelectDropdown)
+const foldDropdown = (event: MouseEvent) => {
+  if (
+    (event?.target as HTMLElement).tagName !== 'INPUT' &&
+    selectInstance.value
+  ) {
+    selectInstance.value.closeDropdown()
+
+    return onCloseDropdown()
+  }
+}
+
+const handleToggleDropdown = (event: MouseEvent) => {
+  if (selectInstance.value?.isOpen) return foldDropdown(event)
+  openSelectDropdown()
+}
+
+const handleCloseDropdown = (
+  event: KeyboardEvent,
+  expanded: boolean,
+  closeDropdown: () => void,
+) => {
+  if (expanded) {
+    stopEvent(event)
+    closeDropdown()
+  }
+}
+
+useFormBlock(
+  contextReactive,
+  useDebounceFn((event) => {
+    if (selectInstance.value?.isOpen) foldDropdown(event)
+    openSelectDropdown()
+  }, 500),
+)
 
 useSelectPreselect(sortedOptions, contextReactive)
 setupMissingOrDisabledOptionHandling()
@@ -149,11 +188,11 @@ setupMissingOrDisabledOptionHandling()
     :class="[
       context.classes.input,
       {
-        'rounded-lg': !select?.isOpen,
-        'rounded-t-lg': select?.isOpen && !isBelowHalfScreen,
-        'rounded-b-lg': select?.isOpen && isBelowHalfScreen,
+        'rounded-lg': !selectInstance?.isOpen,
+        'rounded-t-lg': selectInstance?.isOpen && !isBelowHalfScreen,
+        'rounded-b-lg': selectInstance?.isOpen && isBelowHalfScreen,
         'bg-blue-200 dark:bg-gray-700': !context.alternativeBackground,
-        'bg-white dark:bg-gray-500': context.alternativeBackground,
+        'bg-neutral-50 dark:bg-gray-500': context.alternativeBackground,
       },
     ]"
     data-test-id="field-select"
@@ -166,6 +205,7 @@ setupMissingOrDisabledOptionHandling()
       :multiple="context.multiple"
       :owner="context.id"
       :filter="filter"
+      :is-target-visible="isInputVisible"
       no-options-label-translation
       no-close
       passive
@@ -175,7 +215,7 @@ setupMissingOrDisabledOptionHandling()
       <!-- eslint-disable vuejs-accessibility/interactive-supports-focus-->
       <output
         :id="context.id"
-        ref="outputElement"
+        ref="output"
         role="combobox"
         aria-controls="common-select"
         aria-owns="common-select"
@@ -189,12 +229,13 @@ setupMissingOrDisabledOptionHandling()
         :aria-describedby="context.describedBy"
         :tabindex="expanded && !context.noFiltering ? '-1' : '0'"
         v-bind="context.attrs"
-        @keydown.escape.prevent="closeDropdown()"
+        @keydown.escape="handleCloseDropdown($event, expanded, closeDropdown)"
         @keypress.enter.prevent="openSelectDropdown()"
         @keydown.down.prevent="openOrMoveFocusToDropdown()"
         @keydown.up.prevent="openOrMoveFocusToDropdown(true)"
         @keypress.space.prevent="openSelectDropdown()"
         @blur="context.handlers.blur"
+        @click.stop="handleToggleDropdown"
       >
         <div
           v-if="hasValue && context.multiple"
@@ -254,7 +295,7 @@ setupMissingOrDisabledOptionHandling()
         </div>
         <CommonInputSearch
           v-if="expanded && !context.noFiltering"
-          ref="filterInput"
+          ref="filter-input"
           v-model="filter"
           :suggestion="suggestedOptionLabel"
           :alternative-background="context.alternativeBackground"

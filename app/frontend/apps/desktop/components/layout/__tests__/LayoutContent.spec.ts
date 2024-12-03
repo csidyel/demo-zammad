@@ -36,9 +36,9 @@ const renderLayoutContent = (
 
 describe('LayoutContent', () => {
   beforeAll(() => {
-    const main = document.createElement('main')
-    main.id = 'page-main-content'
-    document.body.appendChild(main)
+    const app = document.createElement('div')
+    app.id = 'app'
+    document.body.appendChild(app)
   })
 
   afterAll(() => {
@@ -49,8 +49,10 @@ describe('LayoutContent', () => {
     const wrapper = renderLayoutContent({ default: () => 'Hello Test World!' })
 
     expect(wrapper.getByText('Hello Test World!')).toBeInTheDocument()
-    expect(wrapper.getByText('Test Profile')).toBeInTheDocument()
-    expect(wrapper.getByText('Test Foo')).toBeInTheDocument()
+    expect(
+      wrapper.getByRole('link', { name: 'Test Profile' }),
+    ).toBeInTheDocument()
+    expect(wrapper.getByRole('link', { name: 'Test Foo' })).toBeInTheDocument()
   })
 
   it('renders namespaced content', () => {

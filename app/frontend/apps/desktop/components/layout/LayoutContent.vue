@@ -34,6 +34,11 @@ export interface Props {
    */
   showInlineHelp?: boolean
   showSidebar?: boolean
+  noPadding?: boolean
+  /**
+   * Disables the vertical scroll on the main element
+   */
+  noScrollable?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -59,6 +64,9 @@ const { userId } = useSessionStore()
 const storageKeyId = `${userId}-${props.name}`
 
 const {
+  currentSidebarWidth,
+  maxSidebarWidth,
+  minSidebarWidth,
   gridColumns,
   collapseSidebar,
   expandSidebar,
@@ -72,7 +80,7 @@ const { durations } = useTransitionConfig()
 <template>
   <div class="flex h-full max-h-screen flex-col">
     <div
-      class="grid h-full duration-100"
+      class="grid h-full overflow-y-auto duration-100"
       :class="{
         'transition-none': noTransition,
         'max-h-[calc(100%-3.5rem)]': $slots.bottomBar,
@@ -80,10 +88,14 @@ const { durations } = useTransitionConfig()
       }"
       :style="$slots.sideBar && showSidebar ? gridColumns : undefined"
     >
-      <LayoutMain :background-variant="backgroundVariant">
+      <LayoutMain
+        :class="{ 'overflow-y-hidden': noScrollable }"
+        :no-padding="noPadding"
+        :background-variant="backgroundVariant"
+      >
         <div
           data-test-id="layout-wrapper"
-          class="flex grow flex-col gap-3"
+          class="flex h-full grow flex-col gap-3"
           :class="contentAlignmentClass"
           :style="{ maxWidth }"
         >
@@ -118,13 +130,21 @@ const { durations } = useTransitionConfig()
         v-if="$slots.sideBar"
         v-show="showSidebar"
         id="content-sidebar"
-        #default="{ isCollapsed }"
+        #default="{ isCollapsed, toggleCollapse }"
         :name="storageKeyId"
         :position="SidebarPosition.End"
+        :aria-label="$t('Content sidebar')"
         collapsible
         resizable
+        :current-width="currentSidebarWidth"
+        :max-width="maxSidebarWidth"
+        :min-width="minSidebarWidth"
         no-padding
-        class="bg-white dark:bg-gray-500"
+        no-scroll
+        class="bg-neutral-50 dark:bg-gray-500"
+        :class="{
+          'max-h-[calc(100dvh-3.5rem)]': $slots.bottomBar,
+        }"
         @collapse="collapseSidebar"
         @expand="expandSidebar"
         @resize-horizontal="resizeSidebar"
@@ -132,7 +152,7 @@ const { durations } = useTransitionConfig()
         @resize-horizontal-end="noTransition = false"
         @reset-width="resetSidebarWidth"
       >
-        <slot name="sideBar" v-bind="{ isCollapsed }" />
+        <slot name="sideBar" v-bind="{ isCollapsed, toggleCollapse }" />
       </LayoutSidebar>
     </div>
 

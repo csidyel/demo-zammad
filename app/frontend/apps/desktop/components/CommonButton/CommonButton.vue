@@ -71,9 +71,11 @@ const variantClasses = computed(() => {
         'text-gray-100',
         'dark:text-neutral-400',
       ]
+    case 'none':
+      return []
     case 'secondary':
     default:
-      return ['bg-transparent', 'hover:bg-transparent', 'text-blue-800']
+      return ['-:bg-transparent', '-:hover:bg-transparent', 'text-blue-800']
   }
 })
 
@@ -90,6 +92,8 @@ const sizeClasses = computed(() => {
 })
 
 const paddingClasses = computed(() => {
+  if (props.size === 'large' && props.icon) return ['p-2']
+
   if (props.icon) return ['p-1']
 
   switch (props.size) {
@@ -137,7 +141,7 @@ const iconSizeClass = computed(() => {
 
 <template>
   <button
-    class="-:inline-flex -:focus:outline-none -:focus:outline-0 -:focus:outline-offset-0 h-min min-h-min flex-shrink-0 flex-nowrap items-center justify-center gap-x-1 border-0 font-normal shadow-none transition duration-200 hover:outline hover:outline-1 hover:outline-offset-1 hover:outline-blue-600 focus:hover:outline focus:hover:outline-1 focus:hover:outline-offset-1 focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800 focus:active:scale-[95%] dark:hover:outline-blue-900"
+    class="-:inline-flex -:focus:outline-none -:focus:outline-0 -:focus:outline-offset-0 -:border-0 h-min min-h-min flex-shrink-0 flex-nowrap items-center justify-center gap-x-1 font-normal shadow-none transition-transform duration-200 hover:outline hover:outline-1 hover:outline-offset-1 hover:outline-blue-600 focus:hover:outline focus:hover:outline-1 focus:hover:outline-offset-1 focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-blue-800 focus:active:scale-[95%] focus:active:!outline-blue-800 dark:hover:outline-blue-900"
     :class="[
       ...variantClasses,
       ...sizeClasses,
@@ -153,31 +157,33 @@ const iconSizeClass = computed(() => {
     :form="form"
     :aria-disabled="disabled ? 'true' : undefined"
   >
-    <CommonIcon
-      v-if="prefixIcon"
-      class="shrink-0"
-      decorative
-      :size="iconSizeClass"
-      :name="prefixIcon"
-    />
+    <slot name="label">
+      <CommonIcon
+        v-if="prefixIcon"
+        class="pointer-events-none shrink-0"
+        decorative
+        :size="iconSizeClass"
+        :name="prefixIcon"
+      />
 
-    <CommonIcon
-      v-if="icon"
-      class="shrink-0"
-      decorative
-      :size="iconSizeClass"
-      :name="icon"
-    />
-    <span v-else class="truncate">
-      <slot>{{ $t(startCase(variant)) }}</slot>
-    </span>
+      <CommonIcon
+        v-if="icon"
+        class="pointer-events-none block shrink-0"
+        decorative
+        :size="iconSizeClass"
+        :name="icon"
+      />
+      <span v-else class="truncate">
+        <slot>{{ $t(startCase(variant)) }}</slot>
+      </span>
 
-    <CommonIcon
-      v-if="suffixIcon"
-      class="shrink-0"
-      decorative
-      :size="iconSizeClass"
-      :name="suffixIcon"
-    />
+      <CommonIcon
+        v-if="suffixIcon"
+        class="pointer-events-none shrink-0"
+        decorative
+        :size="iconSizeClass"
+        :name="suffixIcon"
+      />
+    </slot>
   </button>
 </template>

@@ -1,52 +1,61 @@
 // Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { computed, nextTick, ref, watch, type Ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { computed, ref, type Ref } from 'vue'
 
-import { useObjectAttributes } from '#shared/entities/object-attributes/composables/useObjectAttributes.ts'
 import type {
   OrganizationUpdatesSubscriptionVariables,
   OrganizationUpdatesSubscription,
 } from '#shared/graphql/types.ts'
-import { EnumObjectManagerObjects } from '#shared/graphql/types.ts'
+import { convertToGraphQLId } from '#shared/graphql/utils.ts'
 import { QueryHandler } from '#shared/server/apollo/handler/index.ts'
 import type { GraphQLHandlerError } from '#shared/types/error.ts'
+import { normalizeEdges } from '#shared/utils/helpers.ts'
 
-import { useOrganizationLazyQuery } from '../graphql/queries/organization.api.ts'
+import { useOrganizationQuery } from '../graphql/queries/organization.api.ts'
 import { OrganizationUpdatesDocument } from '../graphql/subscriptions/organizationUpdates.api.ts'
+import { useOrganizationObjectAttributesStore } from '../stores/objectAttributes.ts'
 
-import type { WatchQueryFetchPolicy } from '@apollo/client'
+import type { WatchQueryFetchPolicy } from '@apollo/client/core'
 
 export const useOrganizationDetail = (
-  organizationId?: Ref<number>,
+  internalId: Ref<number | undefined>,
   errorCallback?: (error: GraphQLHandlerError) => boolean,
   fetchPolicy?: WatchQueryFetchPolicy,
 ) => {
-  const internalId = organizationId || ref(0)
+  const organizationId = computed(() => {
+    if (!internalId.value) return
+
+    return convertToGraphQLId('Organization', internalId.value)
+  })
   const fetchMembersCount = ref<Maybe<number>>(3)
 
   const organizationQuery = new QueryHandler(
-    useOrganizationLazyQuery(
+    useOrganizationQuery(
       () => ({
         organizationInternalId: internalId.value,
         membersCount: 3,
       }),
-      () => ({ enabled: internalId.value > 0, fetchPolicy }),
+      () => ({
+        enabled: Boolean(internalId.value),
+        fetchPolicy,
+      }),
     ),
     {
       errorCallback,
     },
   )
 
-  if (internalId.value) {
-    organizationQuery.load()
-  }
-
-  const loadOrganization = (id: number) => {
-    internalId.value = id
-    nextTick(() => {
-      organizationQuery.load()
-    })
-  }
+  organizationQuery.subscribeToMore<
+    OrganizationUpdatesSubscriptionVariables,
+    OrganizationUpdatesSubscription
+  >(() => ({
+    document: OrganizationUpdatesDocument,
+    variables: {
+      organizationId: organizationId.value!,
+      membersCount: fetchMembersCount.value,
+    },
+  }))
 
   const organizationResult = organizationQuery.result()
   const loading = organizationQuery.loading()
@@ -69,37 +78,20 @@ export const useOrganizationDetail = (
       })
   }
 
-  const { attributes: objectAttributes } = useObjectAttributes(
-    EnumObjectManagerObjects.Organization,
+  const { viewScreenAttributes } = storeToRefs(
+    useOrganizationObjectAttributesStore(),
   )
 
-  watch(
-    () => organization.value?.id,
-    (organizationId) => {
-      if (!organizationId) {
-        return
-      }
-
-      organizationQuery.subscribeToMore<
-        OrganizationUpdatesSubscriptionVariables,
-        OrganizationUpdatesSubscription
-      >(() => ({
-        document: OrganizationUpdatesDocument,
-        variables: {
-          organizationId,
-          membersCount: fetchMembersCount.value,
-        },
-      }))
-    },
-    { immediate: true },
+  const organizationMembers = computed(
+    () => normalizeEdges(organization.value?.allMembers) || [],
   )
 
   return {
     loading,
     organizationQuery,
     organization,
-    objectAttributes,
-    loadOrganization,
+    objectAttributes: viewScreenAttributes,
+    organizationMembers,
     loadAllMembers,
   }
 }

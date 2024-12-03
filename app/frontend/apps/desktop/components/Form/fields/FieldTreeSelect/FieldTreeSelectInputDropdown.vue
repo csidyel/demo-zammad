@@ -7,9 +7,15 @@ import {
   onKeyDown,
   useVModel,
 } from '@vueuse/core'
-import { onUnmounted, computed, nextTick, ref, toRef } from 'vue'
+import {
+  useTemplateRef,
+  onUnmounted,
+  computed,
+  nextTick,
+  ref,
+  toRef,
+} from 'vue'
 
-import CommonLabel from '#shared/components/CommonLabel/CommonLabel.vue'
 import type {
   FlatSelectOption,
   MatchedFlatSelectOption,
@@ -49,6 +55,7 @@ export interface Props {
   flatOptions: FlatSelectOption[]
   currentOptions: FlatSelectOption[]
   optionValueLookup: { [index: string | number]: FlatSelectOption }
+  isTargetVisible?: boolean
 }
 
 const props = defineProps<Props>()
@@ -64,7 +71,7 @@ const emit = defineEmits<{
 
 const locale = useLocaleStore()
 
-const dropdownElement = ref<HTMLElement>()
+const dropdownElement = useTemplateRef('dropdown')
 const localValue = useVModel(props, 'modelValue', emit)
 
 // TODO: do we really want this initial transforming of the value, when it's null?
@@ -108,7 +115,9 @@ const dropdownStyle = computed(() => {
   return style
 })
 
-const { activateTabTrap, deactivateTabTrap } = useTrapTab(dropdownElement)
+const { activateTabTrap, deactivateTabTrap } = useTrapTab(
+  dropdownElement as Ref<HTMLElement>,
+)
 
 let lastFocusableOutsideElement: HTMLElement | null = null
 
@@ -409,7 +418,7 @@ const { collapseDuration, collapseEnter, collapseAfterEnter, collapseLeave } =
   />
   <Teleport to="body">
     <Transition
-      name="collapse"
+      :name="isTargetVisible ? 'collapse' : 'none'"
       :duration="collapseDuration"
       @enter="collapseEnter"
       @after-enter="collapseAfterEnter"
@@ -417,14 +426,15 @@ const { collapseDuration, collapseEnter, collapseAfterEnter, collapseLeave } =
     >
       <div
         v-if="showDropdown"
+        v-show="isTargetVisible"
         id="field-tree-select-input-dropdown"
-        ref="dropdownElement"
+        ref="dropdown"
         class="fixed z-10 flex min-h-9 antialiased"
         :style="dropdownStyle"
       >
         <div class="w-full" role="menu">
           <div
-            class="flex h-full flex-col items-start border-x border-neutral-100 bg-white dark:border-gray-900 dark:bg-gray-500"
+            class="flex h-full flex-col items-start border-x border-neutral-100 bg-neutral-50 dark:border-gray-900 dark:bg-gray-500"
             :class="{
               'rounded-t-lg border-t': hasDirectionUp,
               'rounded-b-lg border-b': !hasDirectionUp,

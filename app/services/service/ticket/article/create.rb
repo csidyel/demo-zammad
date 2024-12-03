@@ -4,20 +4,22 @@ class Service::Ticket::Article::Create < Service::BaseWithCurrentUser
   def execute(article_data:, ticket:)
     article_data.delete(:ticket_id)
 
-    attachments_raw = article_data.delete(:attachments) || {}
-    time_unit       = article_data.delete(:time_unit)
-    subtype         = article_data.delete(:subtype)
+    attachments_raw     = article_data.delete(:attachments) || {}
+    time_unit           = article_data.delete(:time_unit)
+    accounted_time_type = article_data.delete(:accounted_time_type)
+    subtype             = article_data.delete(:subtype)
 
     preprocess_article_data(article_data, ticket)
 
     ticket.articles.new(article_data).tap do |article|
       article.check_mentions_raises_error = true
+      article.check_email_recipient_raises_error = true
 
       transform_article(article, attachments_raw, subtype)
 
       article.save!
 
-      time_accounting(article, time_unit)
+      time_accounting(article, time_unit, accounted_time_type)
       form_id_cleanup(attachments_raw)
     end
   end
@@ -100,25 +102,18 @@ class Service::Ticket::Article::Create < Service::BaseWithCurrentUser
       .new(form_id)
       .attachments
       .select do |elem|
-        file_meta.any? { |file| check_attachment_match(elem, file) }
+        UploadCache.files_include_attachment?(file_meta, elem)
       end
   end
 
-  def check_attachment_match(attachment, file)
-    if file[:type].present? && attachment[:preferences].present? && attachment[:preferences]['Content-Type'].present?
-      file[:name] == attachment[:filename] && file[:type] == attachment[:preferences]['Content-Type']
-    end
-
-    file[:name] == attachment[:filename]
-  end
-
-  def time_accounting(article, time_unit)
+  def time_accounting(article, time_unit, accounted_time_type)
     return if time_unit.blank?
 
     time_accounting = Ticket::TimeAccounting.new(
       ticket_id:         article.ticket_id,
       ticket_article_id: article.id,
       time_unit:         time_unit,
+      type:              accounted_time_type,
     )
 
     policy = Ticket::TimeAccountingPolicy.new(current_user, time_accounting)
@@ -137,7 +132,7 @@ class Service::Ticket::Article::Create < Service::BaseWithCurrentUser
     # clear in-progress state from taskbar
     Taskbar
       .where(user_id: current_user.id)
-      .first { |taskbar| taskbar.persisted_form_id == form_id }&.update!(state: {})
+      .find { |taskbar| taskbar.persisted_form_id == form_id }&.update!(state: {})
 
     # remove temporary attachment cache
     UploadCache

@@ -33,7 +33,7 @@ type TakeInternal<T, K extends string | number> = K extends keyof T
 export type ConfidentTake<T, K extends NestedKeyOf<T>> = TakeInternal<T, K>
 
 export type EventHandlers<E> = {
-  // eslint-disable-next-line @typescript-eslint/ban-types
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   [K in keyof E]?: E[K] extends Function ? E[K] : (payload: E[K]) => void
 }
 
@@ -49,6 +49,10 @@ export type ObjectLike = Record<string, any>
 
 export interface ObjectWithId {
   id: Scalars['ID']['output']
+}
+
+export interface ObjectWithUid {
+  uid: Scalars['String']['output']
 }
 
 export declare type DeepPartial<T> = {

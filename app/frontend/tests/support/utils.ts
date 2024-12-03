@@ -8,7 +8,7 @@ import type { MockGraphQLInstance } from './mock-graphql-api'
 import type { Mock } from 'vitest'
 import type { Ref } from 'vue'
 
-const state = Symbol('test:state')
+const state = Symbol('test-state')
 
 interface TestState {
   imageViewerOptions: Ref<ViewerOptions>
@@ -86,7 +86,10 @@ export const nullableMock = <T extends object>(obj: T): T => {
         return null
       }
       const value = Reflect.get(target, prop, receiver)
-      if (Array.isArray(value)) {
+      if (
+        Array.isArray(value) &&
+        value.every((item) => typeof item === 'object' && item !== null)
+      ) {
         return value.map(nullableMock)
       }
       if (typeof value === 'object' && value !== null) {

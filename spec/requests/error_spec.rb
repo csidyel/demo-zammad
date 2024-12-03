@@ -6,7 +6,7 @@ RSpec.describe 'Error handling', type: :request do
 
   shared_examples 'JSON response format' do
 
-    let(:as) { :json }
+    let(:expected_type) { 'application/json' }
 
     it { expect(response).to have_http_status(http_status) }
     it { expect(json_response).to be_a(Hash) }
@@ -25,24 +25,24 @@ RSpec.describe 'Error handling', type: :request do
   end
 
   shared_examples 'HTML response format' do
-    let(:as) { :html }
+    let(:expected_type) { 'text/html' }
 
     it { expect(response).to have_http_status(http_status) }
     it { expect(response.content_type).to start_with('text/html') }
     it { expect(response.body).to include('<html') }
     it { expect(response.body).to include("<title>#{title}</title>") }
     it { expect(response.body).to match("<h1[^>]*>#{headline}</h1>") }
-    it { expect(response.body).to include(message) }
+    it { expect(response.body).to include(CGI.escapeHTML(message)) }
   end
 
   context 'URL route does not exist' do
 
     before do
-      get url, as: as
+      get url, headers: { 'Accept' => expected_type }
     end
 
     let(:url)         { '/not_existing_url' }
-    let(:message)     { "No route matches [GET] #{url}" }
+    let(:message)     { "This page doesn't exist." }
     let(:http_status) { :not_found }
 
     context 'requesting JSON' do
@@ -57,8 +57,7 @@ RSpec.describe 'Error handling', type: :request do
 
       context 'when request ends with URL' do
 
-        let(:url) { "//////#{message}" }
-        let(:message) { 'this__website__is__closed__visit__our__new__site:_someother.com' }
+        let(:url) { '//////this__website__is__closed__visit__our__new__site:_someother.com' }
 
         include_examples 'HTML response format'
       end
@@ -70,10 +69,10 @@ RSpec.describe 'Error handling', type: :request do
     before do
       stub_const('Auth::BRUTE_FORCE_SLEEP', 0)
       authenticated_as(create(:agent), password: 'wrongpw')
-      get '/api/v1/organizations', as: as
+      get '/api/v1/organizations', headers: { 'Accept' => expected_type }
     end
 
-    let(:message) { 'Invalid BasicAuth credentials' }
+    let(:message)     { 'Invalid BasicAuth credentials' }
     let(:http_status) { :unauthorized }
 
     context 'requesting JSON' do
@@ -91,7 +90,7 @@ RSpec.describe 'Error handling', type: :request do
   context 'request is forbidden' do
 
     before do
-      get '/api/v1/organizations', as: as
+      get '/api/v1/organizations', headers: { 'Accept' => expected_type }
     end
 
     let(:message) { 'Authentication required' }
@@ -114,7 +113,7 @@ RSpec.describe 'Error handling', type: :request do
 
     before do
       authenticated_as(create(user))
-      get '/tests/raised_exception', params: { origin: origin, exception: exception.name, message: message }, as: as
+      get '/tests/raised_exception', params: { origin: origin, exception: exception.name, message: message }, headers: { 'Accept' => expected_type }
     end
 
     shared_examples 'exception check' do |message, exception, http_status, title, headline|

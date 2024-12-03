@@ -6,6 +6,7 @@ class User < ApplicationModel
   include ChecksClientNotification
   include HasHistory
   include HasSearchIndexBackend
+  include CanSelector
   include CanCsvImport
   include ChecksHtmlSanitized
   include HasGroups
@@ -65,6 +66,8 @@ class User < ApplicationModel
 
   core_workflow_screens 'create', 'edit', 'invite_agent'
   core_workflow_admin_screens 'create', 'edit'
+
+  taskbar_entities 'UserProfile'
 
   store :preferences
 
@@ -137,11 +140,17 @@ returns
 
 =end
 
-  def fullname(email_fallback: true)
+  def fullname(email_fallback: true, recipient_line: false)
     name = "#{firstname} #{lastname}".strip
 
     if name.blank? && email.present? && email_fallback
       return email
+    elsif recipient_line
+      begin
+        return Channel::EmailBuild.recipient_line(name, email)
+      rescue
+        return email
+      end
     end
 
     return name if name.present?
@@ -984,7 +993,7 @@ raise 'At least one user need to have admin permissions'
     # set the user's locale to the one of the "executing" user
     return true if !UserInfo.current_user_id
 
-    user = User.find_by(id: UserInfo.current_user_id)
+    user = UserInfo.current_user
     return true if !user
     return true if !user.preferences[:locale]
 

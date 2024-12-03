@@ -5,8 +5,8 @@ import { toRef } from 'vue'
 
 import ColorSchemeList from '#shared/components/Form/fields/FieldEditor/FieldEditorColorMenu/ColorSchemeList.vue'
 import { getEditorColorMenuClasses } from '#shared/components/Form/fields/FieldEditor/FieldEditorColorMenu/initializeEditorColorMenu.ts'
-import { useColorPallet } from '#shared/components/Form/fields/FieldEditor/FieldEditorColorMenu/useColorPallet.ts'
 import { getFieldEditorClasses } from '#shared/components/Form/initializeFieldEditor.ts'
+import { useColorPallet } from '#shared/composables/useColorPallet/useColorPallet.ts'
 
 import type { Editor } from '@tiptap/vue-3'
 
@@ -33,7 +33,6 @@ const handleSelectColor = (color: string) => {
 <template>
   <div v-if="editor" class="relative">
     <div
-      ref="colorMenuActionBar"
       data-test-id="color-menu-action-bar"
       class="Menubar relative flex max-w-md flex-col flex-wrap overflow-x-auto overflow-y-hidden"
       :class="[classes.actionBar.tableMenuContainer]"

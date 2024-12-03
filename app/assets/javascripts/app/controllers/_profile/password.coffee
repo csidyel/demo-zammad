@@ -95,7 +95,7 @@ class ProfilePassword extends App.ControllerSubContent
       @$('[name=password_new_confirm]').val('')
       @notify
         type:      'error'
-        msg:       __('Can\'t update password, your entered passwords do not match. Please try again.')
+        msg:       __("Can't update password, your entered passwords do not match. Please try again.")
         removeAll: true
       return
     if !params['password_new']
@@ -122,14 +122,13 @@ class ProfilePassword extends App.ControllerSubContent
 
     @notify(
       type: 'success'
-      msg:  App.i18n.translateContent( 'Password changed successfully!' )
+      msg:  __('Password changed successfully!')
     )
 
   error: (xhr, status, error) =>
     return if xhr.status != 422
 
-    data = xhr.responseJSON
-
+    data    = xhr.responseJSON
     message = if data.notice
                 App.i18n.translateContent( data.notice[0], data.notice[1] )
               else
@@ -188,7 +187,7 @@ class ProfilePassword extends App.ControllerSubContent
           success: (data, status, xhr) =>
             @notify
               type:      'success'
-              msg:       App.i18n.translateContent('Two-factor authentication method was removed.')
+              msg:       __('Two-factor authentication method was removed.')
               removeAll: true
 
             @load()
@@ -199,7 +198,7 @@ class ProfilePassword extends App.ControllerSubContent
 
             @notify
               type:      'error'
-              msg:       App.i18n.translateContent(message)
+              msg:       message
               removeAll: true
         )
     )
@@ -218,7 +217,7 @@ class ProfilePassword extends App.ControllerSubContent
       success: (data, status, xhr) =>
         @notify
           type:      'success'
-          msg:       App.i18n.translateContent('Two-factor authentication method was set as default.')
+          msg:       __('Two-factor authentication method was set as default.')
           removeAll: true
 
         @load()
@@ -229,7 +228,7 @@ class ProfilePassword extends App.ControllerSubContent
 
         @notify
           type:      'error'
-          msg:       App.i18n.translateContent(message)
+          msg:       message
           removeAll: true
     )
 

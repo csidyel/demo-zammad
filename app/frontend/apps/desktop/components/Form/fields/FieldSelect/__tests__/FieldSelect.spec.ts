@@ -576,6 +576,8 @@ describe('Form - Field - Select - Options', () => {
       wrapper.getByRole('button', { name: 'Clear Search' }),
     )
 
+    // Because of clicking outside the input is a toggle, we need to click twice
+    await wrapper.events.click(wrapper.getByLabelText('Select'))
     await wrapper.events.click(wrapper.getByLabelText('Select'))
 
     search = wrapper.getByRole('searchbox')
@@ -916,10 +918,11 @@ describe('Form - Field - Select - Features', () => {
       },
       {
         value: 2,
-        label: 'Item C (%s)',
-        labelPlaceholder: [2],
+        label: 'Item C',
       },
     ]
+
+    i18n.setTranslationMap(new Map([['Item C', 'Translated Item C']]))
 
     const translatedOptions = untranslatedOptions.map((untranslatedOption) => ({
       ...untranslatedOption,
@@ -964,13 +967,18 @@ describe('Form - Field - Select - Features', () => {
     selectOptions = getAllByRole(listbox, 'option')
 
     selectOptions.forEach((selectOption, index) => {
-      expect(selectOption).toHaveTextContent(untranslatedOptions[index].label)
+      // Forces translation due to placeholder availability.
+      if (untranslatedOptions[index].labelPlaceholder) {
+        expect(selectOption).toHaveTextContent(translatedOptions[index].label)
+      } else {
+        expect(selectOption).toHaveTextContent(untranslatedOptions[index].label)
+      }
     })
 
-    await wrapper.events.click(selectOptions[1])
+    await wrapper.events.click(selectOptions[2])
 
     expect(wrapper.getByRole('listitem')).toHaveTextContent(
-      untranslatedOptions[1].label,
+      untranslatedOptions[2].label,
     )
   })
 
@@ -1156,7 +1164,7 @@ describe('Form - Field - Select - Accessibility', () => {
     })
   })
 
-  it('restores focus on close', async () => {
+  it('keeps focus on select', async () => {
     const wrapper = renderComponent(FormKit, {
       ...wrapperParameters,
       props: {

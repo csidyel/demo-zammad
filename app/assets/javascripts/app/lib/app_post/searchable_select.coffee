@@ -4,10 +4,10 @@ class App.SearchableSelect extends Spine.Controller
     'input .js-input':                                'onInput'
     'blur .js-input':                                 'onBlur'
     'focus .js-input':                                'onFocus'
+    'click .js-input':                                'onClick'
     'focus .js-shadow':                               'onShadowFocus'
     'change .js-shadow':                              'onShadowChange'
     'click .js-option':                               'selectItem'
-    'click .js-option .searchableSelect-option-text': 'selectItem'
     'click .js-enter .searchableSelect-option-text':  'selectItem'
     'click .searchableSelect-option-arrow':           'navigateIn'
     'click .js-back':                                 'navigateOut'
@@ -384,21 +384,22 @@ class App.SearchableSelect extends Spine.Controller
     @attribute.value = value
 
   selectItem: (event) ->
-    if $(event.target).hasClass('is-inactive')
+    row = $(event.currentTarget).closest('li')
+
+    if row.is('.has-inactive')
       event.stopPropagation()
       return
 
-    currentText = $(event.target).text().trim()
-    return if !currentText
+    currentText = row.find('[role=option]')[0]?.firstChild?.textContent?.trim()
+    return if not currentText
 
-    dataId = $(event.target).closest('li').data('value')
-    currentText = $(event.target).text().trim()
-    displayName = $(event.target).closest('li').data('displayName')
+    dataId = row.data('value')
+
     if @attribute.multiple
       event.stopPropagation()
       @addValueToShadowInput(currentText, dataId)
     else
-      @selectValue(dataId, currentText, displayName)
+      @selectValue(dataId, currentText, row.data('displayName'))
       @toggleClear()
 
     @markSelected(dataId)
@@ -573,11 +574,13 @@ class App.SearchableSelect extends Spine.Controller
     @input.off 'keydown.searchable_select'
 
   onFocus: ->
+    @initialValue = @input.val()
     @input.on 'keydown.searchable_select', @navigate
 
+  onClick: ->
     # Clear the input value so the user can start searching immediately (#4830).
-    @input.val('')
-      .removeAttr('title')
+    # Regression which provoked (#5335)
+    @resetSearch()
 
   # propergate focus to our visible input
   onShadowFocus: ->

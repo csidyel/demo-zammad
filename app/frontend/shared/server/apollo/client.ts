@@ -26,7 +26,9 @@ export const createApolloClient = (
       // https://www.apollographql.com/docs/react/data/queries/#setting-a-fetch-policy
       watchQuery: {
         fetchPolicy: 'cache-and-network',
-        nextFetchPolicy: 'cache-and-network',
+        nextFetchPolicy(currentFetchPolicy) {
+          return currentFetchPolicy
+        },
       },
     },
   })

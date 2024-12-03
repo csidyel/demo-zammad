@@ -142,6 +142,15 @@ $(function() {
         'Your Message…': 'Sinu Teade…',
         'Your Name': 'Sinu Nimi',
       },
+      'fa': {
+        'Attachments': 'ضمایم',
+        'Email': 'رایانامه',
+        'Message': 'پیام',
+        'Name': 'نام',
+        'Your Email': 'ایمیل شما',
+        'Your Message…': 'پیام شما…',
+        'Your Name': 'نام شما',
+      },
       'fr': {
         'Attachments': 'Pièces jointes',
         'Email': 'E-mail',
@@ -152,8 +161,8 @@ $(function() {
         'Your Name': 'Votre nom',
       },
       'hr': {
-        'Attachments': 'Privitci',
-        'Email': 'E-pošta',
+        'Attachments': 'Privici',
+        'Email': 'E-Mail',
         'Message': 'Poruka',
         'Name': 'Ime',
         'Your Email': 'Vaš e-mail',
@@ -213,6 +222,15 @@ $(function() {
         'Your Email': 'Seu Email',
         'Your Message…': 'Sua Mensagem…',
         'Your Name': 'Seu nome',
+      },
+      'ro': {
+        'Attachments': 'Atașamente',
+        'Email': 'E-mail',
+        'Message': 'Mesaj',
+        'Name': 'Nume',
+        'Your Email': 'Adresă de e-mail',
+        'Your Message…': 'Mesajul tău…',
+        'Your Name': 'Numele tău',
       },
       'ru': {
         'Attachments': 'Вложения',

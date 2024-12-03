@@ -15,7 +15,7 @@ class Channel::EmailParser
 =begin
 
   parser = Channel::EmailParser.new
-  mail = parser.parse(msg_as_string)
+  mail = parser.parse(msg_as_string, allow_missing_attribute_exceptions: true | false)
 
   mail = {
     from:              'Some Name <some@example.com>',
@@ -74,7 +74,7 @@ class Channel::EmailParser
 
 =end
 
-  def parse(msg)
+  def parse(msg, allow_missing_attribute_exceptions: true)
     msg = msg.force_encoding('binary')
     # mail 2.6 and earlier accepted non-conforming mails that lacked the correct CRLF seperators,
     # mail 2.7 and above require CRLF so we force it on using binary_unsafe_to_crlf
@@ -87,11 +87,21 @@ class Channel::EmailParser
 
     headers = message_header_hash(mail)
     body = message_body_hash(mail)
+    sender_attributes = self.class.sender_attributes(headers)
+
+    if allow_missing_attribute_exceptions && sender_attributes.blank?
+      msg = __('Could not parse any sender attribute from the email. Checked fields:')
+      msg += ' '
+      msg += SENDER_FIELDS.map { |f| f.split('-').map(&:capitalize).join('-') }.join(', ')
+
+      raise Exceptions::MissingAttribute.new('email', msg)
+    end
+
     message_attributes = [
       { mail_instance: mail },
       headers,
       body,
-      self.class.sender_attributes(headers),
+      sender_attributes,
       { raw: msg },
     ]
     message_attributes.reduce({}.with_indifferent_access, &:merge)
@@ -175,7 +185,8 @@ returns
     # check ignore header
     if mail[:'x-zammad-ignore'] == 'true' || mail[:'x-zammad-ignore'] == true
       Rails.logger.info "ignored email with msgid '#{mail[:message_id]}' from '#{mail[:from]}' because of x-zammad-ignore header"
-      return
+
+      return [{}, nil, nil, mail]
     end
 
     ticket       = nil
@@ -613,7 +624,7 @@ returns
       h.replace(imported_fields.slice(*RECIPIENT_FIELDS)
                                .transform_values { |v| v.match?(EMAIL_REGEX) ? v : '' })
 
-      h['x-any-recipient'] = h.values.select(&:present?).join(', ')
+      h['x-any-recipient'] = h.values.compact_blank.join(', ')
       h['message_id']      = imported_fields['message-id']
       h['subject']         = imported_fields['subject']
       h['date']            = begin
@@ -856,6 +867,7 @@ returns
         'image/jpg':               %w[jpg image],
         'image/png':               %w[png image],
         'image/gif':               %w[gif image],
+        'text/calendar':           %w[ics calendar],
       }
       map.each do |type, ext|
         next if !content_type.match?(%r{^#{Regexp.quote(type)}}i)

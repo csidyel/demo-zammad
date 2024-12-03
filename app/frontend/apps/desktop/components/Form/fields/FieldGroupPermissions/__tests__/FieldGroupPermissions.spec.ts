@@ -12,6 +12,8 @@ import {
 import { renderComponent } from '#tests/support/components/index.ts'
 import { waitForNextTick } from '#tests/support/utils.ts'
 
+import { i18n } from '#shared/i18n.ts'
+
 const renderGroupPermissionsInput = async (
   props: Record<string, unknown> = {},
 ) => {
@@ -159,9 +161,11 @@ describe('Fields - FieldGroupPermissions', () => {
     ).toBeInTheDocument()
 
     await view.events.click(options[0])
+    // Because of clicking outside the input is a toggle, we need to click twice
+    await view.events.click(view.getAllByRole('combobox')[1])
     await view.events.click(view.getAllByRole('combobox')[1])
 
-    listbox = view.getByRole('listbox')
+    listbox = await view.findByRole('listbox')
 
     await view.events.click(
       getByRole(listbox, 'button', { name: 'Has submenu' }),
@@ -320,10 +324,11 @@ describe('Fields - FieldGroupPermissions', () => {
     const testOptions = [
       {
         value: 1,
-        label: 'Group name (%s)',
-        labelPlaceholder: ['translated'],
+        label: 'Group name',
       },
     ]
+
+    i18n.setTranslationMap(new Map([['Group name', 'Translated group name']]))
 
     const view = await renderGroupPermissionsInput({
       options: testOptions,

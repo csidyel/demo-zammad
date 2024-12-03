@@ -4,12 +4,15 @@
 import { useLazyQuery } from '@vue/apollo-composable'
 import {
   refDebounced,
+  useDebounceFn,
   useElementBounding,
+  useElementVisibility,
   useWindowSize,
   watchOnce,
 } from '@vueuse/core'
 import gql from 'graphql-tag'
-import { cloneDeep, escapeRegExp, isEqual } from 'lodash-es'
+import { cloneDeep, escapeRegExp, isEqual, uniqBy } from 'lodash-es'
+import { useTemplateRef } from 'vue'
 import {
   computed,
   markRaw,
@@ -33,10 +36,10 @@ import { useFormBlock } from '#shared/form/useFormBlock.ts'
 import { i18n } from '#shared/i18n.ts'
 import { QueryHandler } from '#shared/server/apollo/handler/index.ts'
 import type { ObjectLike } from '#shared/types/utils.ts'
+import stopEvent from '#shared/utils/events.ts'
 
 import CommonInputSearch from '#desktop/components/CommonInputSearch/CommonInputSearch.vue'
 import CommonSelect from '#desktop/components/CommonSelect/CommonSelect.vue'
-import type { CommonSelectInstance } from '#desktop/components/CommonSelect/types'
 
 import FieldAutoCompleteOptionIcon from './FieldAutoCompleteOptionIcon.vue'
 
@@ -54,19 +57,20 @@ interface Props {
 }
 
 const emit = defineEmits<{
-  searchInteractionUpdate: [
+  'search-interaction-update': [
     filter: string,
     optionValues: AutoCompleteOptionValueDictionary,
     selectOption: SelectOptionFunction,
     clearFilter: ClearFilterInputFunction,
   ]
-  keydownFilterInput: [
+  'keydown-filter-input': [
     event: KeyboardEvent,
     filter: string,
     optionValues: AutoCompleteOptionValueDictionary,
     selectOption: SelectOptionFunction,
     clearFilter: ClearFilterInputFunction,
   ]
+  'close-select-dropdown': []
 }>()
 
 const props = defineProps<Props>()
@@ -90,6 +94,8 @@ const {
 watch(
   () => props.context.options,
   (options) => {
+    if (!options) return
+
     localOptions.value = options || []
   },
 )
@@ -140,11 +146,12 @@ if (!props.context.multiple && props.context.initialOptionBuilder) {
   }
 }
 
-const input = ref<HTMLDivElement>()
-const outputElement = ref<HTMLOutputElement>()
+const input = useTemplateRef('input')
+const outputElement = useTemplateRef('output')
+const filterInput = useTemplateRef('filter-input')
+const select = useTemplateRef('select')
+
 const filter = ref('')
-const filterInput = ref<HTMLInputElement>()
-const select = ref<CommonSelectInstance>()
 
 const { activateTabTrap, deactivateTabTrap } = useTrapTab(input, true)
 
@@ -152,7 +159,11 @@ const clearFilter = () => {
   filter.value = ''
 }
 
-const trimmedFilter = computed(() => filter.value.trim())
+const trimmedFilter = computed(() => {
+  if (!props.context.stripFilter) return filter.value.trim()
+
+  return props.context.stripFilter(filter.value.trim())
+})
 
 const debouncedFilter = refDebounced(
   trimmedFilter,
@@ -172,6 +183,7 @@ const additionalQueryParams = () => {
 }
 
 const defaultFilter = computed(() => {
+  if (props.context.alwaysApplyDefaultFilter) return props.context.defaultFilter
   if (hasValue.value) return ''
   return props.context.defaultFilter
 })
@@ -263,10 +275,13 @@ const selectOption = (option: SelectOption, focus = false) => {
     isCurrentValue(elem.value),
   )
 
-  if (focus !== true) return
+  if (!focus) return
 
   filterInput.value?.focus()
 }
+
+const isLoading = autocompleteQueryHandler.loading()
+const isUserTyping = ref(false)
 
 const selectNewOption = (option: SelectOption, focus = false) => {
   if (isCurrentValue(option.value)) return
@@ -281,13 +296,17 @@ const availableOptions = computed<AutoCompleteOption[]>((oldValue) => {
 
   if (oldValue && isEqual(oldValue, currentOptions)) return oldValue
 
-  return currentOptions
+  // :TODO check why bug occurs when selecting by keyboard
+  // Remove duplicates. Sometimes option appears twice in the list.
+  // ... The problem is that it sometimes it can not be unique related to same id from different objects in one field.
+  return uniqBy(currentOptions, 'value')
+  // return currentOptions
 })
 
 const emitResultUpdated = () => {
   nextTick(() => {
     emit(
-      'searchInteractionUpdate',
+      'search-interaction-update',
       debouncedFilter.value,
       { ...autocompleteOptionValueLookup.value, ...optionValueLookup.value },
       selectNewOption,
@@ -296,13 +315,18 @@ const emitResultUpdated = () => {
   })
 }
 
+// Controls state to avoid user showing no results while typing and previous search was no results.
+const debouncedSetTypingFalse = useDebounceFn(() => {
+  isUserTyping.value = false
+}, 500)
+
 watch(debouncedFilter, (newValue) => {
   if (newValue !== '' || defaultFilter.value) return
 
   emitResultUpdated()
 })
 
-watch(autocompleteQueryHandler.loading(), (newValue, oldValue) => {
+watch(isLoading, (newValue, oldValue) => {
   // We need not to trigger when query was started.
   if (newValue && !oldValue) return
 
@@ -312,7 +336,7 @@ watch(autocompleteQueryHandler.loading(), (newValue, oldValue) => {
 const onKeydownFilterInput = (event: KeyboardEvent) => {
   nextTick(() => {
     emit(
-      'keydownFilterInput',
+      'keydown-filter-input',
       event,
       filter.value,
       { ...autocompleteOptionValueLookup.value, ...optionValueLookup.value },
@@ -379,14 +403,29 @@ const suggestedOptionLabel = computed(() => {
 })
 
 const inputElementBounds = useElementBounding(input)
+const isInputVisible = !!VITE_TEST_MODE || useElementVisibility(input)
 const windowSize = useWindowSize()
 
 const isBelowHalfScreen = computed(() => {
   return inputElementBounds.y.value > windowSize.height.value / 2
 })
 
+const onCloseDropdown = () => {
+  clearChildOptions()
+  clearFilter()
+  deactivateTabTrap()
+  emit('close-select-dropdown')
+}
+
+const foldDropdown = (event?: MouseEvent) => {
+  if ((event?.target as HTMLElement)?.tagName !== 'INPUT' && select.value) {
+    select.value.closeDropdown()
+    return onCloseDropdown()
+  }
+}
+
 const openSelectDropdown = () => {
-  if (select.value?.isOpen || props.context.disabled) return
+  if (props.context.disabled) return
 
   select.value?.openDropdown(inputElementBounds, windowSize.height)
 
@@ -397,10 +436,11 @@ const openSelectDropdown = () => {
   })
 }
 
+defineExpose({ openSelectDropdown })
+
 const openOrMoveFocusToDropdown = (lastOption = false) => {
   if (!select.value?.isOpen) {
-    openSelectDropdown()
-    return
+    return openSelectDropdown()
   }
 
   deactivateTabTrap()
@@ -412,21 +452,50 @@ const openOrMoveFocusToDropdown = (lastOption = false) => {
   })
 }
 
-const onCloseDropdown = () => {
-  clearChildOptions()
-  clearFilter()
-  deactivateTabTrap()
-}
-
 const onFocusFilterInput = () => {
   filterInput.value?.focus()
+}
+
+const handleToggleDropdown = (event: MouseEvent) => {
+  if (select.value?.isOpen) return foldDropdown(event)
+  openSelectDropdown()
 }
 
 const OptionIconComponent =
   props.context.optionIconComponent ??
   (FieldAutoCompleteOptionIcon as ConcreteComponent)
 
-useFormBlock(contextReactive, openSelectDropdown)
+const handleCloseDropdown = (
+  event: KeyboardEvent,
+  expanded: boolean,
+  closeDropdown: () => void,
+) => {
+  if (expanded) {
+    stopEvent(event)
+    closeDropdown()
+  }
+}
+
+watch(filter, (newValue, oldValue) => {
+  if (newValue !== oldValue) {
+    isUserTyping.value = true
+
+    if (newValue === '') {
+      // Instant update if filter is empty.
+      isUserTyping.value = false
+    }
+
+    debouncedSetTypingFalse()
+  }
+})
+
+useFormBlock(
+  contextReactive,
+  useDebounceFn((event) => {
+    if (select.value?.isOpen) foldDropdown(event)
+    openSelectDropdown()
+  }, 500),
+)
 </script>
 
 <template>
@@ -440,7 +509,7 @@ useFormBlock(contextReactive, openSelectDropdown)
         'rounded-t-lg': select?.isOpen && !isBelowHalfScreen,
         'rounded-b-lg': select?.isOpen && isBelowHalfScreen,
         'bg-blue-200 dark:bg-gray-700': !context.alternativeBackground,
-        'bg-white dark:bg-gray-500': context.alternativeBackground,
+        'bg-neutral-50 dark:bg-gray-500': context.alternativeBackground,
       },
     ]"
     data-test-id="field-autocomplete"
@@ -458,6 +527,8 @@ useFormBlock(contextReactive, openSelectDropdown)
       :actions="context.actions"
       :is-child-page="childOptions.length > 0"
       no-options-label-translation
+      :is-loading="isLoading || isUserTyping"
+      :is-target-visible="isInputVisible"
       no-close
       passive
       initially-empty
@@ -469,7 +540,7 @@ useFormBlock(contextReactive, openSelectDropdown)
     >
       <output
         :id="context.id"
-        ref="outputElement"
+        ref="output"
         role="combobox"
         aria-controls="common-select"
         aria-owns="common-select"
@@ -484,12 +555,13 @@ useFormBlock(contextReactive, openSelectDropdown)
         :data-multiple="context.multiple"
         tabindex="0"
         v-bind="context.attrs"
-        @keydown.escape.prevent="closeDropdown()"
+        @keydown.escape="handleCloseDropdown($event, expanded, closeDropdown)"
         @keypress.enter.prevent="openSelectDropdown()"
         @keydown.down.prevent="openOrMoveFocusToDropdown()"
         @keydown.up.prevent="openOrMoveFocusToDropdown(true)"
         @keypress.space.prevent="openSelectDropdown()"
         @blur="context.handlers.blur"
+        @click.stop="handleToggleDropdown"
       >
         <div
           v-if="hasValue && context.multiple"
@@ -518,11 +590,11 @@ useFormBlock(contextReactive, openSelectDropdown)
                 decorative
               />
               <span
-                class="line-clamp-3 whitespace-pre-wrap break-words"
-                :title="
+                v-tooltip="
                   getSelectedOptionLabel(selectedValue) ||
                   i18n.t('%s (unknown)', selectedValue.toString())
                 "
+                class="line-clamp-3 whitespace-pre-wrap break-words"
               >
                 {{
                   getSelectedOptionLabel(selectedValue) ||
@@ -560,15 +632,22 @@ useFormBlock(contextReactive, openSelectDropdown)
         </div>
         <CommonInputSearch
           v-if="expanded || !hasValue"
-          ref="filterInput"
+          ref="filter-input"
           v-model="filter"
           :class="{ 'pointer-events-none': !expanded }"
+          :tabindex="!expanded ? '-1' : undefined"
           :suggestion="suggestedOptionLabel"
           :alternative-background="context.alternativeBackground"
+          :placeholder="context.filterInputPlaceholder"
           @keypress.space.stop
           @keydown="onKeydownFilterInput"
         />
-        <div v-if="!expanded" class="flex grow flex-wrap gap-1" role="list">
+        <div
+          v-if="!expanded"
+          class="flex grow flex-wrap gap-1"
+          :class="{ grow: hasValue && !context.multiple }"
+          role="list"
+        >
           <div
             v-if="hasValue && !context.multiple"
             class="flex items-center gap-1.5 text-sm"
@@ -582,11 +661,11 @@ useFormBlock(contextReactive, openSelectDropdown)
               decorative
             />
             <span
-              class="line-clamp-3 whitespace-pre-wrap break-words"
-              :title="
+              v-tooltip="
                 getSelectedOptionLabel(currentValue) ||
                 i18n.t('%s (unknown)', currentValue.toString())
               "
+              class="line-clamp-3 whitespace-pre-wrap break-words"
             >
               {{
                 getSelectedOptionLabel(currentValue) ||

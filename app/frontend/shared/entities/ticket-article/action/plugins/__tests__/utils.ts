@@ -7,7 +7,11 @@ import type {
   TicketArticle,
   TicketById,
 } from '#shared/entities/ticket/types.ts'
-import type { PolicyTicket, Ticket } from '#shared/graphql/types.ts'
+import {
+  EnumTicketArticleSenderName,
+  type PolicyTicket,
+  type Ticket,
+} from '#shared/graphql/types.ts'
 import type { AppName } from '#shared/types/app.ts'
 import type { DeepPartial } from '#shared/types/utils.ts'
 
@@ -35,7 +39,7 @@ export const createEligibleTicketArticleReplyData = (
   policies: Partial<PolicyTicket> = {},
 ) => {
   const article = createTicketArticle({
-    sender: { name: 'Customer' },
+    sender: { name: EnumTicketArticleSenderName.Customer },
     type: {
       name: type,
       communication: false,
@@ -51,10 +55,10 @@ export const createEligibleTicketArticleReplyData = (
 export const createTestArticleActions = (
   ticket: TicketById,
   article: TicketArticle,
-  options = defaultOptions,
+  app: AppName = 'mobile',
 ) => {
   initializeStore()
-  return createArticleActions(ticket, article, 'mobile', options)
+  return createArticleActions(ticket, article, app, defaultOptions)
 }
 
 export const createTestArticleTypes = (
