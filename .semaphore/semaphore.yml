@@ -21,6 +21,7 @@ global_job_config:
       - echo '127.0.0.1 redis postgresql' | sudo tee -a /etc/hosts
       - rbenv rehash
       - bundle install --path vendor/bundle
+      - npm install -g pnpm
       - pnpm install
       - 'pnpm cypress:install'
   env_vars:
