@@ -12,7 +12,7 @@ global_job_config:
     commands:
       - checkout
       - cache restore
-      - sem-service start postgres 16 --username=zammad --password=zammad
+      - sem-service start postgres 17 --username=zammad --password=zammad
       - sem-service start redis 5
       - sem-version ruby 3.2.4
       - sem-version node 20.11.0
@@ -21,10 +21,8 @@ global_job_config:
       - echo '127.0.0.1 redis postgresql' | sudo tee -a /etc/hosts
       - rbenv rehash
       - bundle install --path vendor/bundle
-      - yarn set version 1.22.22
-      - yarn install
-      - 'yarn cypress:install'
-      - cache store
+      - pnpm install
+      - 'pnpm cypress:install'
   env_vars:
     - name: RAILS_ENV
       value: test
@@ -51,11 +49,9 @@ blocks:
             - .gitlab/check_graphql_api_consistency.sh
             - bundle exec .rubocop/validate_todos.rb
             - bundle exec rubocop --parallel
-            - 'yarn lint:css'
-            - yarn lint
             - 'bundle exec rake assets:precompile'
-            - yarn test
-            - 'yarn test:ci:ct'
+            - pnpm lint
+            - pnpm test
             - bundle exec rspec --exclude-pattern "spec/system/**/*_spec.rb" -t ~searchindex -t ~integration -t ~required_envs
             - 'bundle exec rake zammad:db:reset'
             - 'bundle exec rake test:units'
