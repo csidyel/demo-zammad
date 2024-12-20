@@ -46,5 +46,10 @@ export interface UserTaskbarTabPlugin {
     entity?: ObjectWithId | ObjectWithUid | null,
     entityKey?: string,
   ) => string | undefined
-  confirmTabRemove?: (dirty?: boolean) => Promise<boolean>
+  confirmTabRemove?: boolean
+}
+
+export interface BackRoute {
+  path: string
+  taskbarTabEntityKey?: string
 }

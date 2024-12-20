@@ -2,9 +2,10 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
+import { useRouter } from 'vue-router'
 
+import { useConfirmation } from '#shared/composables/useConfirmation.ts'
 import { useTouchDevice } from '#shared/composables/useTouchDevice.ts'
-import { useWalker } from '#shared/router/walker.ts'
 
 import CommonButton from '#desktop/components/CommonButton/CommonButton.vue'
 import { useUserCurrentTaskbarTabsStore } from '#desktop/entities/user/current/stores/taskbarTabs.ts'
@@ -25,22 +26,41 @@ const { activeTaskbarTabEntityKey } = storeToRefs(taskbarTabStore)
 
 const { isTouchDevice } = useTouchDevice()
 
-const walker = useWalker()
+const router = useRouter()
 
 const confirmRemoveUserTaskbarTab = async () => {
   if (!props.taskbarTab.taskbarTabId) return
 
-  if (
-    typeof props.plugin?.confirmTabRemove === 'function' &&
-    !(await props.plugin?.confirmTabRemove(props.dirty))
-  )
-    return
+  if (props.plugin?.confirmTabRemove) {
+    // Redirect to taskbar tab that is to be closed, if:
+    //   * it has a dirty state
+    //   * it's not the currently active tab
+    //   * the tab link can be computed
+    if (
+      props.dirty &&
+      props.taskbarTab.tabEntityKey !== activeTaskbarTabEntityKey.value &&
+      typeof props.plugin?.buildTaskbarTabLink === 'function'
+    ) {
+      const link = props.plugin.buildTaskbarTabLink(
+        props.taskbarTab.entity,
+        props.taskbarTab.tabEntityKey,
+      )
+      if (link) await router.push(link)
+    }
 
-  // In case the tab is currently active, go back to previous route in the history stack.
-  if (props.taskbarTab.tabEntityKey === activeTaskbarTabEntityKey.value)
-    // TODO: Adjust the following redirect fallback to Overviews page instead, when ready.
-    walker.back('/')
+    if (props.dirty) {
+      const { waitForVariantConfirmation } = useConfirmation()
+      const confirmed = await waitForVariantConfirmation(
+        'unsaved',
+        undefined,
+        `ticket-unsaved-${props.taskbarTab.tabEntityKey}`,
+      )
 
+      if (!confirmed) return
+    }
+  }
+
+  // Redirection to a historical route will be handled by the store.
   taskbarTabStore.deleteTaskbarTab(props.taskbarTab.taskbarTabId)
 }
 </script>
