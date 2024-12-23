@@ -48,7 +48,7 @@ blocks:
             - bundle exec brakeman -o /dev/stdout -o tmp/brakeman-report.html
             - 'bundle exec rails zeitwerk:check'
             - .gitlab/check_graphql_api_consistency.sh
-            - bundle exec .rubocop/validate_todos.rb
+            - bundle exec .dev/rubocop/validate_todos.rb
             - bundle exec rubocop --parallel
             - 'bundle exec rake assets:precompile'
             - pnpm lint
