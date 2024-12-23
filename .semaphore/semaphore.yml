@@ -3,44 +3,27 @@ name: Zammad CI
 agent:
   machine:
     type: f1-standard-2
-    os_image: ubuntu2204
-auto_cancel:
-  running:
-    when: 'true'
-global_job_config:
-  prologue:
-    commands:
-      - checkout
-      - cache restore
-      - sem-service start postgres 17 --username=zammad --password=zammad
-      - sem-service start redis 5
-      - sem-version ruby 3.2.4
-      - sem-version node 20.11.0
-      - sudo apt-get update
-      - sudo apt-get install -y -f optipng jhead imagemagick libimlib2 openssl direnv shellcheck libimlib2-dev libxss1
-      - echo '127.0.0.1 redis postgresql' | sudo tee -a /etc/hosts
-      - rbenv rehash
-      - bundle install --path vendor/bundle
-      - npm install -g pnpm
-      - pnpm install
-      - 'pnpm cypress:install'
-  env_vars:
-    - name: RAILS_ENV
-      value: test
-    - name: Z_LOCALES
-      value: 'en-us:de-de'
-    - name: TZ
-      value: Europe/London
-    - name: CI_SKIP_ASSETS_PRECOMPILE
-      value: 'true'
-    - name: CI_SKIP_DB_RESET
-      value: 'true'
+    os_image: ubuntu2004
 blocks:
   - name: CI test
     task:
       jobs:
         - name: CI
           commands:
+            - checkout
+            - cache restore
+            - sem-service start postgres 17 --username=zammad --password=zammad
+            - sem-service start redis 5
+            - sem-version ruby 3.2.4
+            - sem-version node 20.11.0
+            - sudo apt-get update
+            - sudo apt-get install -y -f optipng jhead imagemagick libimlib2 openssl direnv shellcheck libimlib2-dev libxss1
+            - echo '127.0.0.1 redis postgresql' | sudo tee -a /etc/hosts
+            - rbenv rehash
+            - bundle install --path vendor/bundle
+            - npm install -g pnpm
+            - pnpm install
+            - 'pnpm cypress:install'
             - bundle exec ruby .gitlab/configure_environment.rb
             - 'bundle exec rake zammad:db:init'
             - for FILE in i18n/*.pot i18n/*.po; do echo "Checking $FILE"; msgfmt -o /dev/null -c "$FILE"; done
@@ -50,9 +33,11 @@ blocks:
             - .gitlab/check_graphql_api_consistency.sh
             - bundle exec .dev/rubocop/validate_todos.rb
             - bundle exec rubocop --parallel
-            - 'bundle exec rake assets:precompile'
+            - coffeelint --rules ./.dev/coffeelint/rules/* app/
             - pnpm lint
+            - 'bundle exec rake assets:precompile'
             - pnpm test
+            - 'bundle exec rake zammad:db:init'
             - bundle exec rspec --exclude-pattern "spec/system/**/*_spec.rb" -t ~searchindex -t ~integration -t ~required_envs
             - 'bundle exec rake zammad:db:reset'
             - 'bundle exec rake test:units'
