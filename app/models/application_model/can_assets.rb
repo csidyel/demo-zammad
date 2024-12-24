@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module ApplicationModel::CanAssets
   extend ActiveSupport::Concern
@@ -22,6 +22,7 @@ returns
 =end
 
   def assets(data = {})
+    return data if !authorized_asset?
 
     app_model = self.class.to_app_model
 
@@ -45,6 +46,10 @@ returns
       data = user.assets(data)
     end
     data
+  end
+
+  def authorized_asset?
+    true
   end
 
 =begin
@@ -73,6 +78,7 @@ get assets and record_ids of selector
   def assets_of_single_selector(item, content, assets = {})
     area, key = item.split('.')
     return if !key
+    return if %w[ticket_customer ticket_owner].include?(area)
 
     area = 'user' if %w[customer session].include? area
 
@@ -204,7 +210,7 @@ Compiles an assets hash for given items
 
     def reduce(items, data = {}, suffix = nil)
       items.reduce(data) do |memo, elem|
-        method_name = if suffix.present? && elem.respond_to?("assets_#{suffix}")
+        method_name = if suffix.present? && elem.respond_to?(:"assets_#{suffix}")
                         "assets_#{suffix}"
                       else
                         :assets

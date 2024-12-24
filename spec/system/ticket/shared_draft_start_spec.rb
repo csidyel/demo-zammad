@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -37,7 +37,7 @@ RSpec.describe 'Ticket Shared Draft Start', authenticated_as: :authenticate, typ
       within :active_content do
         elem = find('.ticket-create input[name=shared_draft_id]', visible: :all)
 
-        expect(Ticket::SharedDraftStart).to be_exist(elem.value)
+        expect(Ticket::SharedDraftStart).to exist(elem.value)
       end
     end
   end
@@ -212,7 +212,7 @@ RSpec.describe 'Ticket Shared Draft Start', authenticated_as: :authenticate, typ
 
       click_on 'Yes'
 
-      expect(Ticket::SharedDraftStart).not_to be_exist(draft.id)
+      expect(Ticket::SharedDraftStart).not_to exist(draft.id)
 
       within :draft_sidebar do
         expect(page).to have_no_text(draft.name)

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -94,6 +94,11 @@ RSpec.describe Auth do
 
       context 'with valid user and required two factor' do
         let!(:two_factor_pref) { create(:user_two_factor_preference, :authenticator_app, user: user) }
+        let(:enabled)          { true }
+
+        before do
+          Setting.set('two_factor_authentication_method_authenticator_app', enabled)
+        end
 
         context 'without valid two factor token' do
           it 'raises an error and does not the failed login count' do
@@ -107,6 +112,14 @@ RSpec.describe Auth do
           it 'raises an error and does not increase the failed login count' do
             expect { instance.valid! }.to raise_error(Auth::Error::TwoFactorFailed).and(not_change { user.reload.login_failed })
           end
+
+          context 'with disabled authenticator method' do
+            let(:enabled) { false }
+
+            it 'allows the log-in' do
+              expect(instance.valid!).to be true
+            end
+          end
         end
 
         context 'with a valid two factor token' do
@@ -115,6 +128,14 @@ RSpec.describe Auth do
 
           it 'allows the log-in' do
             expect(instance.valid!).to be true
+          end
+
+          context 'with disabled authenticator method' do
+            let(:enabled) { false }
+
+            it 'allows the log-in' do
+              expect(instance.valid!).to be true
+            end
           end
         end
 

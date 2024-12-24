@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class PublicLinksController < ApplicationController
   include CanPrioritize
@@ -20,6 +20,10 @@ class PublicLinksController < ApplicationController
 
   def update
     model_update_render(PublicLink, params)
+  end
+
+  def search
+    model_search_render(PublicLink, params)
   end
 
   def destroy

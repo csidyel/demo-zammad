@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 # This customization removes the tagged logging functionality in favour of logging exception backtraces via the Rails.logger.
 # Zammad uses Logger::Formatter which partly provides the functionality to log exceptions if given.
@@ -25,7 +25,7 @@ module ActiveSupport
       # This method is invoked when a log event occurs.
       def call(severity, timestamp, progname, msg) # rubocop:disable Lint/UselessMethodDefinition
         # super(severity, timestamp, progname, "#{tags_text}#{msg}")
-        super(severity, timestamp, progname, msg)
+        super
       end
     end
   end

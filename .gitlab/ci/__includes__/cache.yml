@@ -5,23 +5,23 @@
     files:
       - Gemfile.lock
   paths:
-    - vendor/ruby
-    - fresh.env
+    - vendor/bundle
 
 # Cache node_modules likewise
 .cache_nodejs: &cache_nodejs
   key:
     prefix: nodejs
     files:
-      - yarn.lock
+      - pnpm-lock.yaml
   paths:
-    - .yarn/cache
+    - tmp/cache/pnpm-store
+    - tmp/cache/cypress
 
 .cache_eslint: &cache_eslint
   key:
     prefix: eslint
     files:
-      - yarn.lock
+      - pnpm-lock.yaml
       - .eslintrc.js
   paths:
     - tmp/eslintcache.js

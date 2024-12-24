@@ -1,15 +1,17 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { watch } from 'vue'
+
+import { useApplicationStore } from '#shared/stores/application.ts'
+import { useAuthenticationStore } from '#shared/stores/authentication.ts'
+import log from '#shared/utils/log.ts'
+
 import type { WatchStopHandle } from 'vue'
 import type {
   NavigationGuard,
   RouteLocationNormalized,
   NavigationGuardNext,
 } from 'vue-router'
-import log from '#shared/utils/log.ts'
-import { useApplicationStore } from '#shared/stores/application.ts'
-import { useAuthenticationStore } from '#shared/stores/authentication.ts'
 
 const checkAuthenticated = (
   to: RouteLocationNormalized,
@@ -27,7 +29,7 @@ const checkAuthenticated = (
     } else {
       next({ path: '/login' })
     }
-  } else if (to.name === 'Login' && authenticated) {
+  } else if (to.meta.redirectToDefaultRoute && authenticated) {
     // Use the default route here.
     log.debug(
       `Route guard for '${to.path}': authentication - forbidden - authenticated.`,

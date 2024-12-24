@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 Ticket::Article::Type.create_if_not_exists(id: 1, name: __('email'), communication: true)
 Ticket::Article::Type.create_if_not_exists(id: 2, name: __('sms'), communication: true)
@@ -13,3 +13,4 @@ Ticket::Article::Type.create_if_not_exists(id: 10, name: __('note'), communicati
 Ticket::Article::Type.create_if_not_exists(id: 11, name: __('web'), communication: true)
 Ticket::Article::Type.create_if_not_exists(id: 12, name: __('telegram personal-message'), communication: true)
 Ticket::Article::Type.create_if_not_exists(id: 13, name: __('facebook direct-message'), communication: true)
+Ticket::Article::Type.create_if_not_exists(id: 14, name: __('whatsapp message'), communication: true)

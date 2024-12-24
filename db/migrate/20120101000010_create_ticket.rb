@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class CreateTicket < ActiveRecord::Migration[4.2]
   def up
@@ -135,20 +135,6 @@ class CreateTicket < ActiveRecord::Migration[4.2]
     add_foreign_key :tickets, :users, column: :created_by_id
     add_foreign_key :tickets, :users, column: :updated_by_id
 
-    create_table :ticket_flags do |t|
-      t.references :ticket,                          null: false
-      t.column :key,            :string, limit: 50,  null: false
-      t.column :value,          :string, limit: 50,  null: true
-      t.column :created_by_id,  :integer,            null: false
-      t.timestamps limit: 3, null: false
-    end
-    add_index :ticket_flags, %i[ticket_id created_by_id]
-    add_index :ticket_flags, %i[ticket_id key]
-    add_index :ticket_flags, [:ticket_id]
-    add_index :ticket_flags, [:created_by_id]
-    add_foreign_key :ticket_flags, :tickets, column: :ticket_id
-    add_foreign_key :ticket_flags, :users, column: :created_by_id
-
     create_table :ticket_article_types do |t|
       t.column :name,                 :string, limit: 250, null: false
       t.column :note,                 :string, limit: 250, null: true
@@ -186,7 +172,6 @@ class CreateTicket < ActiveRecord::Migration[4.2]
       t.column :message_id_md5,       :string, limit: 32,      null: true
       t.column :in_reply_to,          :string, limit: 3000,    null: true
       t.column :content_type,         :string, limit: 20,      null: false, default: 'text/plain'
-      t.column :references,           :string, limit: 3200,    null: true
       t.column :body,                 :text,   limit: 20.megabytes + 1, null: false
       t.column :internal,             :boolean, null: false, default: false
       t.column :preferences,          :text, limit: 500.kilobytes + 1, null: true
@@ -313,6 +298,8 @@ class CreateTicket < ActiveRecord::Migration[4.2]
       t.column :condition,                :text, limit: 500.kilobytes + 1, null: false
       t.column :perform,                  :text, limit: 500.kilobytes + 1, null: false
       t.column :disable_notification,     :boolean,               null: false, default: true
+      t.column :localization,             :string, limit: 20,     null: true # thx to ApplicationModel::CanCreatesAndUpdates ...
+      t.column :timezone,                 :string, limit: 250,    null: true
       t.column :note,                     :string, limit: 250,    null: true
       t.column :activator,                :string, limit: 50,     null: false, default: 'action'
       t.column :execution_condition_mode, :string, limit: 50,     null: false, default: 'selective'
@@ -325,28 +312,6 @@ class CreateTicket < ActiveRecord::Migration[4.2]
     add_index :triggers, %i[active activator]
     add_foreign_key :triggers, :users, column: :created_by_id
     add_foreign_key :triggers, :users, column: :updated_by_id
-
-    create_table :jobs do |t|
-      t.column :name,                 :string,  limit: 250,    null: false
-      t.column :timeplan,             :string,  limit: 2500,   null: false
-      t.column :condition,            :text, limit: 500.kilobytes + 1, null: false
-      t.column :perform,              :text, limit: 500.kilobytes + 1, null: false
-      t.column :disable_notification, :boolean,                null: false, default: true
-      t.column :last_run_at,          :timestamp, limit: 3,    null: true
-      t.column :next_run_at,          :timestamp, limit: 3,    null: true
-      t.column :running,              :boolean,                null: false, default: false
-      t.column :processed,            :integer,                null: false, default: 0
-      t.column :matching,             :integer,                null: false
-      t.column :pid,                  :string,  limit: 250,    null: true
-      t.column :note,                 :string,  limit: 250,    null: true
-      t.column :active,               :boolean,                null: false, default: false
-      t.column :updated_by_id,        :integer,                null: false
-      t.column :created_by_id,        :integer,                null: false
-      t.timestamps limit: 3, null: false
-    end
-    add_index :jobs, [:name], unique: true
-    add_foreign_key :jobs, :users, column: :created_by_id
-    add_foreign_key :jobs, :users, column: :updated_by_id
 
     create_table :link_types do |t|
       t.column :name,         :string, limit: 250,   null: false
@@ -424,15 +389,6 @@ class CreateTicket < ActiveRecord::Migration[4.2]
     add_index :templates, [:name]
     add_foreign_key :templates, :users, column: :created_by_id
     add_foreign_key :templates, :users, column: :updated_by_id
-
-    create_table :templates_groups, id: false do |t|
-      t.references :template
-      t.references :group
-    end
-    add_index :templates_groups, [:template_id]
-    add_index :templates_groups, [:group_id]
-    add_foreign_key :templates_groups, :templates
-    add_foreign_key :templates_groups, :groups
 
     create_table :channels do |t|
       t.references :group,                             null: true
@@ -591,9 +547,70 @@ class CreateTicket < ActiveRecord::Migration[4.2]
       t.column :updated_by_id, :integer, null: false
       t.timestamps limit: 3
     end
+
+    create_table :checklists do |t|
+      t.string :name,      limit: 250,     null: false, default: ''
+      if Rails.application.config.db_column_array
+        t.string :sorted_item_ids, null: false, array: true, default: []
+      else
+        t.json :sorted_item_ids, null: false
+      end
+      t.references :created_by, null: false, foreign_key: { to_table: :users }
+      t.references :updated_by, null: false, foreign_key: { to_table: :users }
+      t.timestamps limit: 3, null: false
+    end
+
+    change_table :tickets do |t|
+      t.references :checklist, null: true, foreign_key: true, index: { unique: true }
+    end
+
+    create_table :checklist_items do |t|
+      if ActiveRecord::Base.connection_db_config.configuration_hash[:adapter] == 'mysql2'
+        t.text :text, null: false
+      else
+        t.text :text, null: false, default: ''
+      end
+      t.boolean :checked,       null: false, default: false
+      t.references :checklist,  null: false, foreign_key: true
+      t.references :created_by, null: false, foreign_key: { to_table: :users }
+      t.references :updated_by, null: false, foreign_key: { to_table: :users }
+      t.references :ticket,     null: true,  foreign_key: true
+      t.timestamps limit: 3,    null: false
+    end
+    add_index :checklist_items, [:checked]
+
+    create_table :checklist_templates do |t|
+      t.string  :name,      limit: 250,     null: false, default: ''
+      t.boolean :active,    default: true,  null: false
+      if Rails.application.config.db_column_array
+        t.string :sorted_item_ids, null: false, array: true, default: []
+      else
+        t.json :sorted_item_ids, null: false
+      end
+      t.references :created_by, null: false, foreign_key: { to_table: :users }
+      t.references :updated_by, null: false, foreign_key: { to_table: :users }
+      t.timestamps limit: 3, null: false
+    end
+    add_index :checklist_templates, [:active]
+
+    create_table :checklist_template_items do |t|
+      if ActiveRecord::Base.connection_db_config.configuration_hash[:adapter] == 'mysql2'
+        t.text :text, null: false
+      else
+        t.text :text, null: false, default: ''
+      end
+      t.references :checklist_template,  null: false, foreign_key: true
+      t.references :created_by, null: false, foreign_key: { to_table: :users }
+      t.references :updated_by, null: false, foreign_key: { to_table: :users }
+      t.timestamps limit: 3, null: false
+    end
   end
 
   def self.down
+    drop_table :checklist_template_items
+    drop_table :checklist_templates
+    drop_table :checklist_items
+    drop_table :checklists
     drop_table :report_profiles
     drop_table :chat_sessions
     drop_table :chat_messages
@@ -602,7 +619,6 @@ class CreateTicket < ActiveRecord::Migration[4.2]
     drop_table :macros
     drop_table :slas
     drop_table :channels
-    drop_table :templates_groups
     drop_table :templates
     drop_table :text_modules_groups
     drop_table :text_modules
@@ -618,7 +634,6 @@ class CreateTicket < ActiveRecord::Migration[4.2]
     drop_table :ticket_articles
     drop_table :ticket_article_types
     drop_table :ticket_article_senders
-    drop_table :ticket_flags
     drop_table :tickets
     drop_table :ticket_priorities
     drop_table :ticket_states

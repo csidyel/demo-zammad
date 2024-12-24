@@ -1,7 +1,13 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
+import log from '#shared/utils/log.ts'
+
+import { useIcons } from './useIcons.ts'
 import { usePrivateIcon } from './usePrivateIcon.ts'
+
 import type { Animations, Sizes } from './types.ts'
 
 export interface Props {
@@ -19,7 +25,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  (e: 'click', event: MouseEvent): void
+  click: [MouseEvent]
 }>()
 
 const onClick = (event: MouseEvent) => {
@@ -27,6 +33,16 @@ const onClick = (event: MouseEvent) => {
 }
 
 const { iconClass, finalSize } = usePrivateIcon(props)
+const { icons, aliases } = useIcons()
+
+const iconName = computed(() => {
+  const alias = aliases[props.name]
+  const name = alias || props.name
+  if (!icons[name]) {
+    log.warn(`Icon ${name} not found`)
+  }
+  return name
+})
 </script>
 
 <template>
@@ -36,10 +52,10 @@ const { iconClass, finalSize } = usePrivateIcon(props)
     :class="iconClass"
     :width="finalSize.width"
     :height="finalSize.height"
-    :aria-label="decorative ? undefined : $t(label || name)"
+    :aria-label="decorative ? undefined : $t(label || iconName)"
     :aria-hidden="decorative"
     @click="onClick"
   >
-    <use :href="`#icon-${name}`" />
+    <use :href="`#icon-${iconName}`" />
   </svg>
 </template>

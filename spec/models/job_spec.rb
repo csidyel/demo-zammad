@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 require 'models/application_model_examples'
@@ -97,6 +97,10 @@ RSpec.describe Job, type: :model do
           expect { job.run }.to not_change { job.reload.last_run_at }
         end
 
+        it 'does not update #matching' do
+          expect { job.run }.to not_change { job.reload.matching }
+        end
+
         context 'but "force" flag is given' do
           it 'performs changes on matching tickets' do
             expect { job.run(true) }
@@ -107,6 +111,11 @@ RSpec.describe Job, type: :model do
           it 'updates #last_run_at' do
             expect { job.run(true) }
               .to change { job.reload.last_run_at }
+          end
+
+          it 'updates #matching' do
+            expect { job.run(true) }
+              .to change { job.reload.matching }
           end
         end
       end
@@ -119,6 +128,27 @@ RSpec.describe Job, type: :model do
 
           it 'updates #last_run_at' do
             expect { job.run }.to change { job.reload.last_run_at }
+          end
+
+          it 'updates #matching' do
+            expect { job.run }.to change { job.reload.matching }
+          end
+
+          context 'with exactly 2 tickets' do
+            before do
+              Ticket.destroy_all
+              create_list(:ticket, 2, state_name: 'new', created_at: 3.days.ago)
+            end
+
+            it 'sets processed tickets count' do
+              expect { job.run }.to change(job, :processed).to(2)
+            end
+
+            it 'sets processed tickets count to tickets processed in this batch' do
+              stub_const "#{described_class}::OBJECTS_BATCH_SIZE", 1
+
+              expect { job.run }.to change(job, :processed).to(1)
+            end
           end
 
           it 'performs changes on matching tickets' do
@@ -186,6 +216,12 @@ RSpec.describe Job, type: :model do
 
           it 'does not update #last_run_at' do
             expect { job.run }.to not_change { job.reload.last_run_at }
+          end
+
+          it 'updates #matching' do
+            create(:ticket, state_name: 'new', created_at: 3.days.ago)
+
+            expect { job.run }.to change { job.reload.matching }
           end
 
           it 'updates #next_run_at' do
@@ -606,6 +642,24 @@ RSpec.describe Job, type: :model do
           )
         end
       end
+    end
+  end
+
+  describe 'Adding article attachments to scheduler actions is ignored #5071' do
+    subject(:job) { create(:job, perform: { 'notification.email'=>{ 'body' => "<div>test</div><div><br></div><div>\#{article.body}</div>", 'internal' => 'false', 'recipient' => ['ticket_customer'], 'subject' => job_subject, 'include_attachments' => 'true' } }) }
+
+    let(:job_subject) { SecureRandom.uuid }
+    let(:ticket) do
+      ticket = create(:ticket)
+      create(:ticket_article, :outbound_email, :with_attachment, ticket: ticket)
+      ticket
+    end
+
+    it 'does send mails with attachments for the last article' do
+      ticket
+      job.run(true)
+      expect(Ticket::Article.last.subject).to eq(job_subject)
+      expect(Ticket::Article.last.attachments).to be_present
     end
   end
 end

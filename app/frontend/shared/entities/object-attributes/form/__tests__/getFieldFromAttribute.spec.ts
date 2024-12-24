@@ -1,4 +1,6 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { EnumObjectManagerObjects } from '#shared/graphql/types.ts'
 
 import getFieldFromAttribute, {
   transformResolvedFieldForScreen,
@@ -28,7 +30,10 @@ const expectedFieldSchemaBase = {
 
 describe('object attribute correctly resolved as field schema', () => {
   it('should return the correct field schema', () => {
-    const fieldSchema = getFieldFromAttribute(objectAttribute)
+    const fieldSchema = getFieldFromAttribute(
+      EnumObjectManagerObjects.Ticket,
+      objectAttribute,
+    )
 
     expect(fieldSchema).toEqual(expectedFieldSchemaBase)
   })
@@ -36,7 +41,10 @@ describe('object attribute correctly resolved as field schema', () => {
 
 describe('transform resolved field for given screen', () => {
   it('should return the correct required value', () => {
-    const fieldSchema = getFieldFromAttribute(objectAttribute)
+    const fieldSchema = getFieldFromAttribute(
+      EnumObjectManagerObjects.Ticket,
+      objectAttribute,
+    )
 
     transformResolvedFieldForScreen({ required: true }, fieldSchema)
 
@@ -47,7 +55,10 @@ describe('transform resolved field for given screen', () => {
   })
 
   it('should return the correct required value for null screen value', () => {
-    const fieldSchema = getFieldFromAttribute(objectAttribute)
+    const fieldSchema = getFieldFromAttribute(
+      EnumObjectManagerObjects.Ticket,
+      objectAttribute,
+    )
 
     transformResolvedFieldForScreen({ null: false }, fieldSchema)
 
@@ -58,7 +69,10 @@ describe('transform resolved field for given screen', () => {
   })
 
   it('should return the correct required value for null screen value', () => {
-    const fieldSchema = getFieldFromAttribute(objectAttribute)
+    const fieldSchema = getFieldFromAttribute(
+      EnumObjectManagerObjects.Ticket,
+      objectAttribute,
+    )
 
     transformResolvedFieldForScreen({ null: true }, fieldSchema)
 

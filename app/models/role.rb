@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Role < ApplicationModel
   include HasDefaultModelUserRelations
@@ -9,6 +9,9 @@ class Role < ApplicationModel
   include ChecksHtmlSanitized
   include HasGroups
   include HasCollectionUpdate
+  include HasSearchIndexBackend
+  include CanSelector
+  include CanSearch
 
   include Role::Assets
 
@@ -18,7 +21,7 @@ class Role < ApplicationModel
                           after_add:     %i[cache_update cache_add_kb_permission],
                           before_remove: :last_admin_check_by_permission,
                           after_remove:  %i[cache_update cache_remove_kb_permission]
-  validates               :name, presence: true
+  validates               :name, presence: true, uniqueness: { case_sensitive: false }
   store                   :preferences
   has_many                :knowledge_base_permissions, class_name: 'KnowledgeBase::Permission', dependent: :destroy
 
@@ -261,7 +264,7 @@ returns
         if !has_editor && !has_reader
           elem.destroy!
         elsif !has_editor && has_reader
-          elem.update!(access: 'reader') if permission.access == 'editor'
+          elem.update!(access: 'reader') if elem.access == 'editor'
         end
 
       end

@@ -311,6 +311,7 @@ class ChannelEmailAccountWizard extends App.ControllerWizardModal
     'change .js-inbound [name=adapter]':   'toggleInboundAdapter'
     'change .js-outbound [name=adapter]':  'toggleOutboundAdapter'
     'change [name="options::ssl"]':        'toggleSslVerifyVisibility'
+    'change [name="options::port"]':       'toggleSslVerifyVisibility'
     'change [name="options::ssl_verify"]': 'toggleSslVerifyAlert'
     'submit .js-outbound':                 'probleOutbound'
     'click  .js-goToSlide':                'goToSlide'
@@ -393,7 +394,7 @@ class ChannelEmailAccountWizard extends App.ControllerWizardModal
 
     # outbound
     configureAttributesOutbound = [
-      { name: 'adapter', display: __('Send Mails via'), tag: 'select', multiple: false, null: false, options: @channelDriver.email.outbound },
+      { name: 'adapter', display: __('Send Mails via'), tag: 'select', multiple: false, null: false, options: @channelDriver.email.outbound, translate: true },
     ]
     new App.ControllerForm(
       el:    @$('.base-outbound-type')
@@ -407,7 +408,7 @@ class ChannelEmailAccountWizard extends App.ControllerWizardModal
 
     # inbound
     configureAttributesInbound = [
-      { name: 'adapter',                 display: __('Type'),     tag: 'select', multiple: false, null: false, options: @channelDriver.email.inbound },
+      { name: 'adapter',                 display: __('Type'),     tag: 'select', multiple: false, null: false, options: @channelDriver.email.inbound, translate: true },
       { name: 'options::host',           display: __('Host'),     tag: 'input',  type: 'text', limit: 120, null: false, autocapitalize: false },
       { name: 'options::user',           display: __('User'),     tag: 'input',  type: 'text', limit: 120, null: false, autocapitalize: false, autocomplete: 'off' },
       { name: 'options::password',       display: __('Password'), tag: 'input',  type: 'password', limit: 120, null: false, autocapitalize: false, autocomplete: 'new-password', single: true },
@@ -497,7 +498,11 @@ class ChannelEmailAccountWizard extends App.ControllerWizardModal
 
   toggleSslVerifyVisibility: (e) ->
     elem      = $(e.target)
-    isEnabled = elem.val() isnt 'off'
+
+    # Skip the handler for port field in inbound dialog.
+    return if elem.attr('name') is 'options::port' and elem.closest('form').find('[name="options::ssl"]').length
+
+    isEnabled = if elem.attr('name') is 'options::port' then (elem.val() is '' or elem.val() is '465' or elem.val() is '587') else elem.val() isnt 'off'
 
     sslVerifyField = elem.closest('form')
       .find('[name="options::ssl_verify"]')
@@ -654,7 +659,7 @@ class ChannelEmailAccountWizard extends App.ControllerWizardModal
     )
 
   probeInboundMessagesFound: (data, verify) =>
-    message = App.i18n.translateContent('We have already found %s email(s) in your mailbox. We will move them all from your mailbox into Zammad.', data.content_messages)
+    message = App.i18n.translateContent('%s email(s) were found in your mailbox. They will all be moved from your mailbox into Zammad.', data.content_messages)
     @$('.js-inbound-acknowledge .js-messageFound').html(message)
 
     if !verify
@@ -675,7 +680,11 @@ class ChannelEmailAccountWizard extends App.ControllerWizardModal
       return
 
     @$('.js-archiveMessage').removeClass('hide')
-    message = App.i18n.translateContent('In addition, we have found emails in your mailbox that are older than %s weeks. You can import such emails as an "archive", which means that no notifications are sent and the tickets have the status "closed". However, you can find them in Zammad anytime using the search function.', data.archive_week_range)
+
+    if data.archive_possible_is_fallback is true
+      message = App.i18n.translateContent('Since the mail server does not support sorting messages by date, it was not possible to detect if there is any mail older than %s weeks in the connected mailbox. You can import such emails as an "archive", which means that no notifications are sent and the tickets have the status "closed". However, you can find them in Zammad anytime using the search function.', data.archive_week_range)
+    else
+      message = App.i18n.translateContent('In addition, emails were found in your mailbox that are older than %s weeks. You can import such emails as an "archive", which means that no notifications are sent and the tickets have the status "closed". However, you can find them in Zammad anytime using the search function.', data.archive_week_range)
     @$('.js-inbound-acknowledge .js-archiveMessageCount').html(message)
 
     configureAttributesAcknowledge = [
@@ -726,6 +735,11 @@ class ChannelEmailAccountWizard extends App.ControllerWizardModal
       email_addresses = App.EmailAddress.search(filter: { channel_id: @channel.id })
       if email_addresses && email_addresses[0]
         params['email'] = email_addresses[0].email
+
+    sslVerifyField = $(e.target).closest('form').find('[name="options::ssl_verify"]')
+
+    if sslVerifyField[0]?.disabled
+      params.options.ssl_verify = false
 
     # let backend know about the channel
     if @channel
@@ -820,6 +834,7 @@ class ChannelEmailNotificationWizard extends App.ControllerWizardModal
     '.modal-body': 'body'
   events:
     'change [name="options::ssl_verify"]': 'toggleSslVerifyAlert'
+    'change [name="options::port"]':       'toggleSslVerifyVisibility'
     'change .js-outbound [name=adapter]':  'toggleOutboundAdapter'
     'submit .js-outbound':                 'probleOutbound'
     'click  .js-close':                    'hide'
@@ -883,7 +898,7 @@ class ChannelEmailNotificationWizard extends App.ControllerWizardModal
 
     # outbound
     configureAttributesOutbound = [
-      { name: 'adapter', display: __('Send Mails via'), tag: 'select', multiple: false, null: false, options: @channelDriver.email.outbound },
+      { name: 'adapter', display: __('Send Mails via'), tag: 'select', multiple: false, null: false, options: @channelDriver.email.outbound, translate: true },
     ]
     new App.ControllerForm(
       el:    @$('.base-outbound-type')
@@ -916,6 +931,21 @@ class ChannelEmailNotificationWizard extends App.ControllerWizardModal
         params: @account.outbound
       )
 
+  toggleSslVerifyVisibility: (e) ->
+    elem      = $(e.target)
+
+    isEnabled = elem.val() is '' or elem.val() is '465' or elem.val() is '587'
+
+    sslVerifyField = elem.closest('form')
+      .find('[name="options::ssl_verify"]')
+
+    if isEnabled
+      sslVerifyField.removeAttr('disabled')
+    else
+      sslVerifyField.attr('disabled', 'disabled')
+
+    @toggleSslVerifyAlert(target: sslVerifyField, !isEnabled)
+
   toggleSslVerifyAlert: (e, forceInvisible) ->
     elem           = $(e.target)
     isAlertVisible = if forceInvisible then false else elem.val() != 'true'
@@ -935,6 +965,11 @@ class ChannelEmailNotificationWizard extends App.ControllerWizardModal
 
     # let backend know about the channel
     params.channel_id = @channel.id
+
+    sslVerifyField = $(e.target).closest('form').find('[name="options::ssl_verify"]')
+
+    if sslVerifyField[0]?.disabled
+      params.options.ssl_verify = false
 
     @disable(e)
 

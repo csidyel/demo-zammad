@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module MonitoringHelper
   class HealthChecker
@@ -34,7 +34,7 @@ module MonitoringHelper
       def last_execution_deadline(scheduler)
         return scheduler.last_run if scheduler.timeplan.blank?
 
-        calculator = TimeplanCalculation.new(scheduler.timeplan, Setting.get('timezone_default_sanitized'))
+        calculator = TimeplanCalculation.new(scheduler.timeplan, Setting.get('timezone_default'))
         intermediary = calculator.next_at(scheduler.last_run + 10.minutes)
         calculator.next_at(intermediary + 10.minutes)
       end

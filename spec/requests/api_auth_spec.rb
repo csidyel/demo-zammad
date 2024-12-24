@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -15,18 +15,15 @@ RSpec.describe 'Api Auth', type: :request do
     end
   end
 
-  let(:admin) do
-    create(:admin)
-  end
-  let(:agent) do
-    create(:agent)
-  end
-  let(:customer) do
-    create(:customer)
-  end
+  let(:admin)    { create(:admin) }
+  let(:agent)    { create(:agent) }
+  let(:customer) { create(:customer) }
+
+  let(:two_factor_method_enabled) { true }
 
   before do
     stub_const('Auth::BRUTE_FORCE_SLEEP', 0)
+    Setting.set('two_factor_authentication_method_authenticator_app', two_factor_method_enabled)
   end
 
   describe 'request handling' do
@@ -136,7 +133,7 @@ RSpec.describe 'Api Auth', type: :request do
       get '/api/v1/sessions', params: {}, as: :json
       expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a(Hash)
-      expect(json_response['error']).to eq('Not authorized (token)!')
+      expect(json_response['error']).to eq('Token authorization failed.')
 
       admin_token.preferences[:permission] = []
       admin_token.save!
@@ -144,7 +141,7 @@ RSpec.describe 'Api Auth', type: :request do
       get '/api/v1/sessions', params: {}, as: :json
       expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a(Hash)
-      expect(json_response['error']).to eq('Not authorized (token)!')
+      expect(json_response['error']).to eq('Token authorization failed.')
 
       admin.active = false
       admin.save!
@@ -173,7 +170,7 @@ RSpec.describe 'Api Auth', type: :request do
       get '/api/v1/roles', params: {}, as: :json
       expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a(Hash)
-      expect(json_response['error']).to eq('Not authorized (token)!')
+      expect(json_response['error']).to eq('Token authorization failed.')
 
       admin_token.preferences[:permission] = ['admin.session_not_existing', 'admin.role']
       admin_token.save!
@@ -405,7 +402,7 @@ RSpec.describe 'Api Auth', type: :request do
     it 'does session auth - admin' do
       admin = create(:admin)
 
-      get '/'
+      post '/api/v1/signshow', params: {}, as: :json
       token = response.headers['CSRF-TOKEN']
 
       post '/api/v1/signin', params: { username: admin.login, password: admin.password, fingerprint: '123456789' }, headers: { 'X-CSRF-Token' => token }
@@ -427,7 +424,7 @@ RSpec.describe 'Api Auth', type: :request do
       let!(:two_factor_pref)    { create(:user_two_factor_preference, :authenticator_app, user: admin) }
 
       before do
-        get '/'
+        post '/api/v1/signshow', params: {}, as: :json
         token = response.headers['CSRF-TOKEN']
         post '/api/v1/signin', params: { username: admin.login, password: admin.password, two_factor_method: two_factor_method, two_factor_payload: two_factor_payload, fingerprint: '123456789' }, headers: { 'X-CSRF-Token' => token }
       end
@@ -453,6 +450,14 @@ RSpec.describe 'Api Auth', type: :request do
 
         it 'accepts the log-in' do
           expect(response).to have_http_status(:created)
+        end
+
+        context 'with disabled authenticator method' do
+          let(:two_factor_method_enabled) { false }
+
+          it 'accepts the log-in' do
+            expect(response).to have_http_status(:created)
+          end
         end
       end
     end

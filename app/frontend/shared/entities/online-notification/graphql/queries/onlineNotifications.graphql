@@ -13,6 +13,8 @@ query onlineNotifications {
           email
           vip
           outOfOffice
+          outOfOfficeStartAt
+          outOfOfficeEndAt
           active
           image
         }
@@ -23,6 +25,20 @@ query onlineNotifications {
             id
             internalId
             title
+          }
+          ... on TicketArticle {
+            id
+            internalId
+            ticket {
+              id
+              internalId
+              title
+            }
+            to {
+              raw
+            }
+            bodyWithUrls
+            preferences
           }
         }
       }

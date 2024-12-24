@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module ApplicationController::RendersModels
   extend ActiveSupport::Concern
@@ -121,10 +121,7 @@ module ApplicationController::RendersModels
     generic_objects = object.reorder(Arel.sql(order_sql)).offset(pagination.offset).limit(pagination.limit)
 
     if response_expand?
-      list = []
-      generic_objects.each do |generic_object|
-        list.push generic_object.attributes_with_association_names
-      end
+      list = generic_objects.map(&:attributes_with_association_names)
       render json: list, status: :ok
       return
     end
@@ -144,10 +141,7 @@ module ApplicationController::RendersModels
       return
     end
 
-    generic_objects_with_associations = []
-    generic_objects.each do |item|
-      generic_objects_with_associations.push item.attributes_with_association_ids
-    end
+    generic_objects_with_associations = generic_objects.map(&:attributes_with_association_ids)
     model_index_render_result(generic_objects_with_associations)
   end
 
@@ -164,4 +158,80 @@ module ApplicationController::RendersModels
   rescue => e
     raise Exceptions::UnprocessableEntity, e
   end
+
+  def model_search_render(object, params)
+    paginate_with(max: 200, default: 50)
+
+    generic_objects = object.search(
+      query:            params[:query] || params[:term],
+      condition:        params[:condition],
+      ids:              params[:ids],
+      role_ids:         params[:role_ids],
+      group_ids:        params[:group_ids],
+      permissions:      params[:permissions],
+      only_total_count: response_only_total_count?,
+      sort_by:          params[:sort_by],
+      order_by:         params[:order_by],
+      offset:           pagination.offset,
+      limit:            pagination.limit,
+      current_user:     current_user,
+      full:             true,
+      with_total_count: true,
+    ) || { objects: [], total_count: 0 }
+
+    if response_only_total_count?
+      model_search_render_result_only_total_count(generic_objects[:total_count])
+    elsif response_full?
+      model_search_render_result_full(generic_objects)
+    elsif response_expand?
+      model_search_render_result_expand(generic_objects)
+    elsif params[:label] || params[:term]
+      model_search_render_result_label(object, generic_objects)
+    else
+      generic_objects_with_associations = generic_objects[:objects].map(&:attributes_with_association_ids)
+      model_index_render_result(generic_objects_with_associations)
+    end
+  end
+
+  def model_search_render_result_only_total_count(total)
+    render json: {
+      total_count: total,
+    }, status: :ok
+  end
+
+  def model_search_render_result_full(generic_objects)
+    assets = {}
+    item_ids = []
+    generic_objects[:objects].each do |item|
+      item_ids.push item.id
+      assets = item.assets(assets)
+    end
+    render json: {
+      record_ids:  item_ids,
+      assets:      assets,
+      total_count: generic_objects[:total_count],
+    }, status: :ok
+  end
+
+  def model_search_render_result_expand(generic_objects)
+    list = generic_objects[:objects].map(&:attributes_with_association_names)
+
+    render json: list, status: :ok
+  end
+
+  def model_search_render_result_label(object, generic_objects)
+    rows = generic_objects[:objects].map do |row|
+      realname = row.try(:fullname, recipient_line: true) || row.try(:fullname) || row.try(:name) || row.try(:id)
+      value    = row.try(:email) || realname
+
+      if params[:term] && object.column_names.include?('active')
+        { id: row.id, label: realname, value: value, inactive: !row.active }
+      else
+        { id: row.id, label: realname, value: realname }
+      end
+    end
+
+    render json: rows
+  end
+
 end

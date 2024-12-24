@@ -1,7 +1,9 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { getNode } from '@formkit/core'
+
 import type { FieldEditorContext } from '#shared/components/Form/fields/FieldEditor/types.ts'
+
 import { mountEditor } from './utils.ts'
 
 const html = String.raw
@@ -65,6 +67,7 @@ describe('correctly adds signature', () => {
         })
     })
   })
+
   it('add bottom signature when content is already there', () => {
     mountEditor()
 
@@ -95,6 +98,7 @@ describe('correctly adds signature', () => {
           })
       })
   })
+
   it('add signature before marker', () => {
     const originalBody = html`<p data-marker="signature-before"></p>
       <blockquote type="cite">
@@ -120,7 +124,9 @@ describe('correctly adds signature', () => {
         'contain.html',
         '<p data-marker="signature-before"><br class="ProseMirror-trailingBreak"></p><blockquote ',
       )
-      .type('text')
+      .type('{moveToStart}text')
+
+    cy.findByRole('textbox')
       .should('contain.html', '<p>text</p><div data-signature')
       .then(resolveContext)
       .then((context) => {

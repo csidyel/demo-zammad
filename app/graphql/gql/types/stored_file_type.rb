@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Gql::Types
   class StoredFileType < Gql::Types::BaseObject
@@ -14,7 +14,7 @@ module Gql::Types
     field :preferences, GraphQL::Types::JSON
 
     def type
-      object.preferences['Content-Type']
+      object.preferences['Content-Type'] || object.preferences['Mime-Type']
     end
   end
 end

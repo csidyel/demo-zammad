@@ -1,19 +1,20 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { FormKit } from '@formkit/vue'
+import { getByText, queryByRole } from '@testing-library/vue'
+
+import { getByIconName } from '#tests/support/components/iconQueries.ts'
+import { renderComponent } from '#tests/support/components/index.ts'
+import { mockGraphQLApi } from '#tests/support/mock-graphql-api.ts'
+import type { MockGraphQLInstance } from '#tests/support/mock-graphql-api.ts'
+import { waitUntil } from '#tests/support/utils.ts'
+
 import {
   NotificationTypes,
   useNotifications,
 } from '#shared/components/CommonNotifications/index.ts'
+import type { FieldTagsContext } from '#shared/components/Form/fields/FieldTags/types.ts'
 import { AutocompleteSearchTagDocument } from '#shared/entities/tags/graphql/queries/autocompleteTags.api.ts'
-import { getByText, queryByRole } from '@testing-library/vue'
-import { renderComponent } from '#tests/support/components/index.ts'
-import { getByIconName } from '#tests/support/components/iconQueries.ts'
-import type { MockGraphQLInstance } from '#tests/support/mock-graphql-api.ts'
-import { waitUntil } from '#tests/support/utils.ts'
-import { mockGraphQLApi } from '#tests/support/mock-graphql-api.ts'
-import type { FieldTagsProps } from '#shared/components/Form/fields/FieldTags/types.ts'
-import type { FormFieldContext } from '#shared/components/Form/types/field.ts'
 
 const defaultTags = [
   { label: 'test', value: 'test' },
@@ -23,11 +24,7 @@ const defaultTags = [
 
 let mockApi: MockGraphQLInstance
 
-const renderFieldTags = (
-  props: Partial<
-    FieldTagsProps & { options: FormFieldContext['options'] }
-  > = {},
-) => {
+const renderFieldTags = (props: Partial<FieldTagsContext> = {}) => {
   mockApi = mockGraphQLApi(AutocompleteSearchTagDocument).willResolve({
     autocompleteSearchTag: defaultTags,
   })
@@ -71,13 +68,9 @@ describe('Form - Field - Tags', () => {
     await view.events.click(options[0])
     await view.events.click(options[1])
 
-    expect(
-      getByIconName(options[0], 'mobile-check-box-yes'),
-    ).toBeInTheDocument()
+    expect(getByIconName(options[0], 'check-box-yes')).toBeInTheDocument()
 
-    expect(
-      getByIconName(options[1], 'mobile-check-box-yes'),
-    ).toBeInTheDocument()
+    expect(getByIconName(options[1], 'check-box-yes')).toBeInTheDocument()
 
     await view.events.click(view.getByRole('button', { name: 'Done' }))
 
@@ -173,6 +166,7 @@ describe('Form - Field - Tags', () => {
     const { notify } = useNotifications()
 
     expect(notify).toHaveBeenCalledWith({
+      id: 'tag-exists',
       message: 'Tag "%s" already exists.',
       messagePlaceholder: ['paid'],
       type: NotificationTypes.Warn,

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -46,7 +46,7 @@ RSpec.describe 'Authentication', type: :system do
     expect_current_route 'login'
   end
 
-  it 'will unset user attributes after logout' do
+  it 'unsets user attributes after logout' do
     logout
     expect_current_route 'login'
 

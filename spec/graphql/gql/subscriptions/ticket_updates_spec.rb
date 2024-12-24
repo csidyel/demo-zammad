@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -9,8 +9,8 @@ RSpec.describe Gql::Subscriptions::TicketUpdates, type: :graphql do
   let(:mock_channel) { build_mock_channel }
   let(:subscription) do
     <<~QUERY
-      subscription ticketUpdates($ticketId: ID!) {
-        ticketUpdates(ticketId: $ticketId) {
+      subscription ticketUpdates($ticketId: ID!, $initial: Boolean = false) {
+        ticketUpdates(ticketId: $ticketId, initial: $initial) {
           ticket {
             title
           }
@@ -29,6 +29,14 @@ RSpec.describe Gql::Subscriptions::TicketUpdates, type: :graphql do
 
       it 'subscribes' do
         expect(gql.result.data).to eq({ 'ticket' => nil })
+      end
+
+      context 'with initial data' do
+        let(:variables) { { ticketId: gql.id(ticket), initial: true } }
+
+        it 'subscribes with initial data' do
+          expect(gql.result.data[:ticket][:title]).to eq(ticket.title)
+        end
       end
 
       it 'receives ticket updates' do
@@ -67,7 +75,7 @@ RSpec.describe Gql::Subscriptions::TicketUpdates, type: :graphql do
       context 'when the group is changed and permission is lost' do
         it 'does stop receiving ticket updates' do
           ticket.update!(group: create(:group))
-          expect(mock_channel.mock_broadcasted_messages.first[:result]['errors'].first['message']).to eq('not allowed to show? this Ticket')
+          expect(mock_channel.mock_broadcasted_messages.first[:result]['errors'].first['message']).to eq('not allowed to TicketPolicy#show? this Ticket')
         end
       end
 

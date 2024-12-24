@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Gql::Types::Ticket::Article
   class SenderType < Gql::Types::BaseObject
@@ -6,6 +6,6 @@ module Gql::Types::Ticket::Article
 
     description 'Ticket article senders'
 
-    field :name, String
+    field :name, Gql::Types::Enum::TicketArticleSenderNameType
   end
 end

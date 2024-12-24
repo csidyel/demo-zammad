@@ -1,20 +1,14 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
 RSpec.describe UploadCache do
+  subject(:upload_cache) { described_class.new(form_id) }
 
-  subject(:upload_cache) { described_class.new(1337) }
+  let(:form_id) { SecureRandom.uuid }
 
   # required for adding items to the Store
   before { UserInfo.current_user_id = 1 }
-
-  describe '#initialize' do
-
-    it 'converts given (form_)id to an Integer' do
-      expect(described_class.new('1337').id).to eq(1337)
-    end
-  end
 
   describe '#add' do
 
@@ -109,7 +103,50 @@ RSpec.describe UploadCache do
     end
 
     it 'fails for non existing UploadCache Store items' do
-      expect { upload_cache.remove_item(1337) }.to raise_error(ActiveRecord::RecordNotFound)
+      expect { upload_cache.remove_item(form_id) }.to raise_error(ActiveRecord::RecordNotFound)
+    end
+  end
+
+  describe '.files_include_attachment?' do
+    let(:files) do
+      [
+        { name: 'name.jpg', type: 'image/jpg' },
+        { name: 'name.png', type: 'wrong' },
+        { name: 'name2.exe' },
+        { name: 'other.jpg' }
+      ]
+    end
+
+    context 'when one of files match by name' do
+      let(:attachment) { create(:store, :image, filename: 'other.jpg') }
+
+      it 'returns true' do
+        expect(described_class).to be_files_include_attachment files, attachment
+      end
+    end
+
+    context 'when one of files match by name but not type' do
+      let(:attachment) { create(:store, :image, filename: 'name.png') }
+
+      it 'returns false' do
+        expect(described_class).not_to be_files_include_attachment files, attachment
+      end
+    end
+
+    context 'when one of files match by name and type' do
+      let(:attachment) { create(:store, :image, filename: 'name.jpg') }
+
+      it 'returns true' do
+        expect(described_class).to be_files_include_attachment files, attachment
+      end
+    end
+
+    context 'when no files match' do
+      let(:attachment) { create(:store, :txt) }
+
+      it 'returns false' do
+        expect(described_class).not_to be_files_include_attachment files, attachment
+      end
     end
   end
 end

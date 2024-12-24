@@ -1,9 +1,12 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 require 'system/examples/pagination_examples'
 
 RSpec.describe 'Manage > Trigger', type: :system do
+  context 'when ajax pagination' do
+    include_examples 'pagination', model: :trigger, klass: Trigger, path: 'manage/trigger'
+  end
 
   def open_new_trigger_dialog
     visit '/#manage/trigger'
@@ -101,10 +104,6 @@ RSpec.describe 'Manage > Trigger', type: :system do
     end
   end
 
-  context 'ajax pagination' do
-    include_examples 'pagination', model: :trigger, klass: Trigger, path: 'manage/trigger'
-  end
-
   context "with elements which do not support 'has changed' operator" do
     it "check 'created_at' element" do
       open_new_trigger_dialog
@@ -181,7 +180,7 @@ RSpec.describe 'Manage > Trigger', type: :system do
           end
         end
 
-        click_button
+        click_on 'Submit'
       end
 
       visit "#ticket/zoom/#{ticket.id}"
@@ -192,7 +191,7 @@ RSpec.describe 'Manage > Trigger', type: :system do
         end
       end
 
-      click_button 'Update'
+      click_on 'Update'
 
     end
 

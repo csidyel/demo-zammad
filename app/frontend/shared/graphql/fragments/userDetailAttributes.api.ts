@@ -1,4 +1,4 @@
-import * as Types from '../types';
+import * as Types from '#shared/graphql/types.ts';
 
 import gql from 'graphql-tag';
 import { ObjectAttributeValuesFragmentDoc } from './objectAttributeValues.api';
@@ -9,12 +9,14 @@ export const UserDetailAttributesFragmentDoc = gql`
   firstname
   lastname
   fullname
+  outOfOffice
+  outOfOfficeStartAt
+  outOfOfficeEndAt
   image
   email
   web
   vip
   phone
-  outOfOffice
   mobile
   fax
   note

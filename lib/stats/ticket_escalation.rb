@@ -1,10 +1,10 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Stats::TicketEscalation
 
   def self.generate(user)
 
-    open_state_ids = Ticket::State.by_category(:open).pluck(:id)
+    open_state_ids = Ticket::State.by_category_ids(:open)
 
     # get users groups
     group_ids = user.group_ids_access('full')

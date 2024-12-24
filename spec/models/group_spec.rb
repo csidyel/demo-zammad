@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 require 'models/application_model_examples'
@@ -17,6 +17,8 @@ RSpec.describe Group, type: :model do
   it_behaves_like 'HasCollectionUpdate', collection_factory: :group
   it_behaves_like 'HasXssSanitizedNote', model_factory: :group
   it_behaves_like 'HasImageSanitizedNote', model_factory: :group
+  it_behaves_like 'Association clears cache', association: :users
+  it_behaves_like 'Association clears cache', association: :roles
 
   describe 'name compatibility layer' do
     context 'when creating a new group' do
@@ -150,7 +152,7 @@ RSpec.describe Group, type: :model do
       end
     end
 
-    describe '#check_max_depth' do
+    describe '#check_max_depth (mysql)', db_adapter: :mysql do
       let(:group_1_1)  { create(:group, name: 'tree_group_1_1') }
       let(:group_1_2)  { create(:group, name: 'tree_group_1_2', parent: group_1_1) }
       let(:group_1_3)  { create(:group, name: 'tree_group_1_3', parent: group_1_2) }
@@ -172,7 +174,7 @@ RSpec.describe Group, type: :model do
           group_1_5
           group_1_6
         end.not_to raise_error
-        expect { group_1_7 }.to raise_error(Exceptions::UnprocessableEntity, 'Group or children exceeded max depth!')
+        expect { group_1_7 }.to raise_error(Exceptions::UnprocessableEntity, 'This group or its children exceed the allowed nesting depth.')
       end
 
       it 'does check depth on tree merge', :aggregate_failures do
@@ -180,7 +182,45 @@ RSpec.describe Group, type: :model do
           group_1_6
           group_2_4
         end.not_to raise_error
-        expect { group_2_1.update(parent: group_1_6) }.to raise_error(Exceptions::UnprocessableEntity, 'Group or children exceeded max depth!')
+        expect { group_2_1.update(parent: group_1_6) }.to raise_error(Exceptions::UnprocessableEntity, 'This group or its children exceed the allowed nesting depth.')
+      end
+    end
+
+    describe '#check_max_depth (psql)', db_adapter: :postgresql do
+      def groups_with_depth(depth)
+        groups = []
+
+        groups << create(:group)
+        groups += create_list(:group, depth - 1)
+
+        groups.each_with_index do |group, idx|
+          next if idx.zero?
+
+          group.update!(parent: groups[idx - 1])
+        end
+
+        groups
+      end
+
+      let(:groups_1) { groups_with_depth(10) }
+      let(:groups_2) { groups_with_depth(4) }
+
+      let(:group_1_11) { create(:group, parent: groups_1.last) }
+      let(:group_2_5)  { create(:group, parent: groups_2.last) }
+
+      it 'does check depth on creation', :aggregate_failures do
+        expect { groups_1 }.not_to raise_error
+        expect { group_1_11 }.to raise_error(Exceptions::UnprocessableEntity, 'This group or its children exceed the allowed nesting depth.')
+        expect { group_2_5 }.not_to raise_error
+      end
+
+      it 'does check depth on tree merge', :aggregate_failures do
+        expect do
+          groups_1.last
+          groups_2.last
+        end.not_to raise_error
+
+        expect { groups_2.last.update!(parent: groups_1.last) }.to raise_error(Exceptions::UnprocessableEntity, 'This group or its children exceed the allowed nesting depth.')
       end
     end
   end

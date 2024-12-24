@@ -1,10 +1,11 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 Zammad::Application.routes.draw do
   api_path = Rails.configuration.api_path
 
   # public_links
   match api_path + '/public_links',         to: 'public_links#index',     via: :get
+  match api_path + '/public_links/search',  to: 'public_links#search',  via: %i[get post]
   match api_path + '/public_links/:id',     to: 'public_links#show',      via: :get
   match api_path + '/public_links',         to: 'public_links#create',    via: :post
   match api_path + '/public_links/:id',     to: 'public_links#update',    via: :put

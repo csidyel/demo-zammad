@@ -1,19 +1,22 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 import { computed, toRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { truthy } from '#shared/utils/helpers.ts'
+
 import CommonUserAvatar from '#shared/components/CommonUserAvatar/CommonUserAvatar.vue'
-import { useDialog, closeDialog } from '#shared/composables/useDialog.ts'
+import { useTicketSubscribe } from '#shared/entities/ticket/composables/useTicketSubscribe.ts'
 import { useTicketView } from '#shared/entities/ticket/composables/useTicketView.ts'
-import CommonSectionMenuLink from '#mobile/components/CommonSectionMenu/CommonSectionMenuLink.vue'
-import CommonSectionMenu from '#mobile/components/CommonSectionMenu/CommonSectionMenu.vue'
+import type { TicketById } from '#shared/entities/ticket/types.ts'
+import { truthy } from '#shared/utils/helpers.ts'
+
 import CommonButtonGroup from '#mobile/components/CommonButtonGroup/CommonButtonGroup.vue'
 import CommonDialog from '#mobile/components/CommonDialog/CommonDialog.vue'
-import type { TicketById } from '#shared/entities/ticket/types.ts'
+import CommonSectionMenu from '#mobile/components/CommonSectionMenu/CommonSectionMenu.vue'
+import CommonSectionMenuLink from '#mobile/components/CommonSectionMenu/CommonSectionMenuLink.vue'
+import { useDialog, closeDialog } from '#mobile/composables/useDialog.ts'
+
 import { useTicketsMerge } from '../../composable/useTicketsMerge.ts'
-import { useTicketSubscribe } from '../../composable/useTicketSubscribe.ts'
 
 // TODO I think the complete dialog should not be available for none agent user (and maybe also for agents without write permission?)
 
@@ -46,15 +49,15 @@ const topButtons = computed(() =>
   [
     {
       label: __('Merge tickets'),
-      icon: 'mobile-merge',
+      icon: 'merge',
       hidden: !isTicketEditable.value || !isTicketAgent.value,
       onAction: openMergeTicketsDialog,
     },
     {
       label: isSubscribed.value ? __('Unsubscribe') : __('Subscribe'),
       icon: isSubscribed.value
-        ? 'mobile-notification-unsubscribed'
-        : 'mobile-notification-subscribed',
+        ? 'notification-unsubscribed'
+        : 'notification-subscribed',
       value: 'subscribe',
       hidden: !canManageSubscription.value,
       selected: isSubscribed.value,
@@ -63,7 +66,7 @@ const topButtons = computed(() =>
     },
     {
       label: __('Ticket info'),
-      icon: 'mobile-info',
+      icon: 'info',
       onAction() {
         const informationRoute = {
           name: 'TicketInformationDetails',
@@ -109,15 +112,15 @@ const showChangeCustomer = () => {
         :label="__('Find a ticket')"
         :gql-query="gqlQuery"
         :action-label="__('Confirm merge')"
-        :additional-query-params="{ sourceTicketId: ticket.id }"
+        :additional-query-params="{ exceptTicketInternalId: ticket.internalId }"
         :label-empty="__('Start typing to find the ticket to merge into.')"
-        action-icon="mobile-merge"
+        action-icon="merge"
       />
       <!-- Postponed
       <CommonSectionMenu>
         <CommonSectionMenuLink
           :label="__('Execute configured macros')"
-          icon="mobile-macros"
+          icon="macros"
           icon-bg="bg-green"
         />
       </CommonSectionMenu> -->
@@ -125,7 +128,7 @@ const showChangeCustomer = () => {
       <CommonSectionMenu>
         <CommonSectionMenuLink
           :label="__('History')"
-          icon="mobile-history"
+          icon="history"
           icon-bg="bg-gray"
         />
       </CommonSectionMenu> -->

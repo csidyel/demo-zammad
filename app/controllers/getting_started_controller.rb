@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class GettingStartedController < ApplicationController
   prepend_before_action -> { authorize! }, only: [:base]
@@ -53,43 +53,18 @@ curl http://localhost/api/v1/getting_started -v -u #{login}:#{password}
     # check if system setup is already done
     return if setup_done_response
 
-    # check it auto wizard is enabled
-    if !AutoWizard.enabled?
-      render json: {
+    begin
+      auto_wizard_admin = Service::System::RunAutoWizard.new.execute(token: params[:token])
+    rescue Service::System::RunAutoWizard::AutoWizardNotEnabledError
+      return render json: {
         auto_wizard: false,
       }
-      return
-    end
-
-    # verify auto wizard file
-    auto_wizard_data = AutoWizard.data
-    if auto_wizard_data.blank?
-      render json: {
+    rescue Service::System::RunAutoWizard::AutoWizardExecutionError => e
+      return render json: {
         auto_wizard:         true,
         auto_wizard_success: false,
-        message:             __('Invalid auto wizard file.'),
+        message:             e.message,
       }
-      return
-    end
-
-    # verify auto wizard token
-    if auto_wizard_data['Token'] && auto_wizard_data['Token'] != params[:token]
-      render json: {
-        auto_wizard:         true,
-        auto_wizard_success: false,
-      }
-      return
-    end
-
-    # execute auto wizard
-    auto_wizard_admin = AutoWizard.setup
-    if !auto_wizard_admin
-      render json: {
-        auto_wizard:         true,
-        auto_wizard_success: false,
-        message:             __('Error during execution of auto wizard.'),
-      }
-      return
     end
 
     # set current session user
@@ -105,83 +80,32 @@ curl http://localhost/api/v1/getting_started -v -u #{login}:#{password}
   end
 
   def base
-    # validate url
-    messages = {}
-    settings = {}
-    if !Setting.get('system_online_service')
-      if (result = self.class.validate_uri(params[:url]))
-        settings[:http_type] = result[:scheme]
-        settings[:fqdn]      = result[:fqdn]
-      else
-        messages[:url] = __('A URL looks like this: https://zammad.example.com')
-      end
+    args = params.slice(:url, :locale_default, :timezone_default, :organization)
+
+    %i[logo logo_resize].each do |key|
+      data = params[key]
+
+      next if !data&.match? %r{^data:image}i
+
+      file = ImageHelper.data_url_attributes(data)
+
+      args[key] = file[:content] if file
     end
 
-    # validate organization
-    if params[:organization].blank?
-      messages[:organization] = 'Invalid!'
-    else
-      settings[:organization] = params[:organization]
-    end
+    begin
+      set_system_information_service = Service::System::SetSystemInformation.new(data: args)
+      result = set_system_information_service.execute
 
-    # validate image
-    if params[:logo] && params[:logo] =~ %r{^data:image}i
-      file = ImageHelper.data_url_attributes(params[:logo])
-      if !file[:content] || !file[:mime_type]
-        messages[:logo] = __('The uploaded image could not be processed.')
-      end
-    end
-
-    # add locale_default
-    if params[:locale_default].present?
-      settings[:locale_default] = params[:locale_default]
-    end
-
-    # add timezone_default
-    if params[:timezone_default].present?
-      settings[:timezone_default] = params[:timezone_default]
-    end
-
-    if messages.present?
+      render json: {
+        result:   'ok',
+        settings: result,
+      }
+    rescue Exceptions::MissingAttribute, Exceptions::InvalidAttribute => e
       render json: {
         result:   'invalid',
-        messages: messages,
+        messages: { e.attribute => e.message }
       }
-      return
     end
-
-    if (logo_timestamp = Service::SystemAssets::ProductLogo.store(params[:logo], params[:logo_resize]))
-      settings[:product_logo] = logo_timestamp
-    end
-
-    # set changed settings
-    settings.each do |key, value|
-      Setting.set(key, value)
-    end
-
-    render json: {
-      result:   'ok',
-      settings: settings,
-    }
-  end
-
-  def self.validate_uri(string)
-    uri = URI(string)
-
-    return false if %w[http https].exclude?(uri.scheme) || uri.host.blank?
-
-    defaults = [['http', 80], ['https', 443]]
-    actual   = [uri.scheme, uri.port]
-
-    fqdn = if defaults.include? actual
-             uri.host
-           else
-             "#{uri.host}:#{uri.port}"
-           end
-
-    { scheme: uri.scheme, fqdn: fqdn }
-  rescue
-    false
   end
 
   private

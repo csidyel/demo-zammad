@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 require 'models/application_model_examples'
@@ -11,7 +11,7 @@ require 'models/ticket/article/has_ticket_contact_attributes_impact_examples'
 RSpec.describe Ticket::Article, type: :model do
   subject(:article) { create(:ticket_article) }
 
-  it_behaves_like 'ApplicationModel'
+  it_behaves_like 'ApplicationModel', can_param: { sample_data_attribute: :body }
   it_behaves_like 'CanBeImported'
   it_behaves_like 'CanCsvImport'
   it_behaves_like 'HasHistory'
@@ -520,6 +520,209 @@ RSpec.describe Ticket::Article, type: :model do
 
             include_examples 'does not send email'
           end
+        end
+      end
+    end
+
+    describe '#check_mentions' do
+      def text_blob_with(user)
+        "Lorem ipsum dolor <a data-mention-user-id='#{user.id}'>#{user.fullname}</a>"
+      end
+
+      let(:ticket)              { create(:ticket) }
+      let(:agent_with_access)   { create(:agent, groups: [ticket.group]) }
+      let(:user_without_access) { create(:agent) }
+
+      let(:passing_body) { text_blob_with(agent_with_access) }
+      let(:failing_body) { text_blob_with(user_without_access) }
+      let(:partial_body) { text_blob_with(user_without_access) + text_blob_with(agent_with_access) }
+
+      context 'when created in email parsing' do
+        before { ApplicationHandleInfo.current = 'postmaster' }
+
+        it 'silently ignores mentions if agent cannot mention users' do
+          UserInfo.current_user_id = user_without_access.id
+          record = create(:ticket_article, body: passing_body)
+
+          expect(record).to be_persisted
+          expect(Mention.count).to be_zero
+        end
+
+        it 'silently ignores mentions if given users cannot be mentioned' do
+          UserInfo.current_user_id = agent_with_access.id
+          article = build(:ticket_article, ticket: ticket, body: failing_body)
+          article.save
+
+          expect(article).to be_persisted
+          expect(Mention.count).to eq(0)
+        end
+
+        it 'silently saves passing user while failing user is skipped' do
+          UserInfo.current_user_id = agent_with_access.id
+
+          article = create(:ticket_article, ticket: ticket, body: partial_body)
+
+          expect(article).to be_persisted
+          expect(Mention.count).to eq(1)
+        end
+
+        it 'mentioned user is added' do
+          UserInfo.current_user_id = agent_with_access.id
+
+          create(:ticket_article, ticket: ticket, body: passing_body)
+
+          expect(article).to be_persisted
+          expect(Mention.count).to eq(1)
+        end
+      end
+
+      context 'when created with check_mentions_raises_error set to true' do
+        it 'raises an error if agent cannot mention users' do
+          UserInfo.current_user_id = create(:customer).id
+
+          article = build(:ticket_article, ticket: ticket, body: passing_body)
+          article.check_mentions_raises_error = true
+
+          expect { article.save! }
+            .to raise_error(Pundit::NotAuthorizedError)
+          expect(Mention.count).to eq(0)
+        end
+
+        it 'raises an error if given users cannot be mentioned' do
+          UserInfo.current_user_id = agent_with_access.id
+
+          article = build(:ticket_article, ticket: ticket, body: failing_body)
+          article.check_mentions_raises_error = true
+
+          expect { article.save! }
+            .to raise_error(ActiveRecord::RecordInvalid)
+          expect(Mention.count).to eq(0)
+        end
+
+        it 'raises an error if one if given users cannot be mentioned' do
+          UserInfo.current_user_id = agent_with_access.id
+
+          article = build(:ticket_article, ticket: ticket, body: partial_body)
+          article.check_mentions_raises_error = true
+
+          expect { article.save! }
+            .to raise_error(ActiveRecord::RecordInvalid)
+          expect(Mention.count).to eq(0)
+        end
+
+        it 'mentioned user is added' do
+          UserInfo.current_user_id = agent_with_access.id
+
+          article = build(:ticket_article, ticket: ticket, body: passing_body)
+          article.check_mentions_raises_error = true
+          article.save!
+
+          expect(article).to be_persisted
+          expect(Mention.count).to eq(1)
+        end
+      end
+
+      context 'when created with check_mentions_raises_error set to false' do
+        it 'silently ignores mentions if agent cannot mention users' do
+          UserInfo.current_user_id = create(:customer).id
+
+          article = build(:ticket_article, ticket: ticket, body: failing_body)
+          article.save
+
+          expect(article).to be_persisted
+          expect(Mention.count).to eq(0)
+        end
+
+        it 'silently ignores mentions if given users cannot be mentioned' do
+          UserInfo.current_user_id = agent_with_access.id
+
+          article = build(:ticket_article, ticket: ticket, body: failing_body)
+          article.save
+
+          expect(article).to be_persisted
+          expect(Mention.count).to eq(0)
+        end
+
+        it 'silently saves passing user while failing user is skipped' do
+          UserInfo.current_user_id = agent_with_access.id
+
+          article = create(:ticket_article, ticket: ticket, body: partial_body)
+
+          expect(article).to be_persisted
+          expect(Mention.count).to eq(1)
+        end
+
+        it 'mentioned user is added' do
+          UserInfo.current_user_id = agent_with_access.id
+
+          create(:ticket_article, ticket: ticket, body: passing_body)
+
+          expect(article).to be_persisted
+          expect(Mention.count).to eq(1)
+        end
+      end
+    end
+
+    describe '#check_email_recipient_validity' do
+      subject(:article) do
+        create(:ticket_article, type_name: type, to: to, check_email_recipient_raises_error: validate)
+      end
+
+      let(:type)     { 'email' }
+      let(:to)       { nil }
+      let(:validate) { false }
+
+      shared_examples 'not raising an error' do
+        it 'does not raise an error' do
+          expect { article }.not_to raise_error
+        end
+      end
+
+      shared_examples 'raising an error' do
+        it 'raises an error' do
+          expect { article }.to raise_error(Exceptions::InvalidAttribute, 'Sending an email without a valid recipient is not possible.')
+        end
+      end
+
+      context 'when the validation is not explicitly turned on' do
+        it_behaves_like 'not raising an error'
+      end
+
+      context 'when the validation is explicitly turned on' do
+        let(:validate) { true }
+
+        it_behaves_like 'raising an error'
+
+        context 'when the system is in the import mode' do
+          before do
+            Setting.set('import_mode', true)
+          end
+
+          it_behaves_like 'not raising an error'
+        end
+
+        context 'when the type is not an email' do
+          let(:type) { 'phone' }
+
+          it_behaves_like 'not raising an error'
+        end
+
+        context 'when the recipient is empty' do
+          let(:to) { '' }
+
+          it_behaves_like 'raising an error'
+        end
+
+        context 'when the recipient is unparseable' do
+          let(:to) { '@unparseable_address' }
+
+          it_behaves_like 'raising an error'
+        end
+
+        context 'when the recipient is not a valid email address' do
+          let(:to) { 'not_a_mail' }
+
+          it_behaves_like 'raising an error'
         end
       end
     end

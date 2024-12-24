@@ -1,10 +1,13 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { prettyDOM } from '@testing-library/vue'
+import { useDateFormat } from '@vueuse/shared'
 
 export interface ToBeAvatarOptions {
   vip?: boolean
   outOfOffice?: boolean
+  outOfOfficeStartAt?: string | null
+  outOfOfficeEndAt?: string | null
   active?: boolean
   image?: string
   type: 'user' | 'organization'
@@ -42,8 +45,8 @@ export default function toBeAvatar(
   const errors: string[] = []
 
   if (options.vip != null) {
-    const iconName =
-      options.type === 'user' ? 'mobile-crown' : 'mobile-crown-silver'
+    // TODO: if names are different in desktop, we should use a different name here
+    const iconName = options.type === 'user' ? 'crown' : 'crown-silver'
     const icon = received.querySelector(`use[href="#icon-${iconName}"]`)
     const localPass = options.vip ? !!icon : !icon
     if (!localPass) {
@@ -52,24 +55,32 @@ export default function toBeAvatar(
     pass = pass && localPass
   }
 
-  if (options.outOfOffice != null) {
-    const isOutOfOffice =
-      received.classList.contains('opacity-100') &&
-      received.classList.contains('grayscale-[70%]')
-    const localPass = options.outOfOffice ? isOutOfOffice : !isOutOfOffice
-    if (!localPass) {
-      errors.push(
-        `out of office class is ${options.outOfOffice ? 'missing' : 'present'}`,
-      )
+  if (
+    options.outOfOffice != null &&
+    options.outOfOfficeEndAt != null &&
+    options.outOfOfficeStartAt != null
+  ) {
+    const today = useDateFormat(new Date(), 'YYYY-MM-DD')
+    const startDate = options.outOfOfficeStartAt
+    const endDate = options.outOfOfficeEndAt
+
+    if (startDate <= today.value && endDate >= today.value) {
+      const isOutOfOffice = received.classList.contains('opacity-60')
+      const localPass = options.outOfOffice ? isOutOfOffice : !isOutOfOffice
+      if (!localPass) {
+        errors.push(
+          `out of office class is ${options.outOfOffice ? 'missing' : 'present'}`,
+        )
+      }
+      pass = pass && localPass
     }
-    pass = pass && localPass
   }
 
   if (options.active != null) {
     const isActive =
       options.type === 'user'
         ? !received.classList.contains('opacity-20 grayscale')
-        : !!received.querySelector('use[href="#icon-mobile-organization"]')
+        : !!received.querySelector('use[href="#icon-organization"]')
     const localPass = options.active ? isActive : !isActive
     if (!localPass) {
       errors.push(`active class is ${options.active ? 'missing' : 'present'}`)

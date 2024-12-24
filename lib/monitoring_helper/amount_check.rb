@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module MonitoringHelper
   class AmountCheck
@@ -69,7 +69,7 @@ module MonitoringHelper
     end
 
     def ticket_count
-      @ticket_count ||= Ticket.where('created_at >= ?', created_at_threshold).count
+      @ticket_count ||= Ticket.where(created_at: created_at_threshold..).count
     end
 
     def check_single_row(row, value)

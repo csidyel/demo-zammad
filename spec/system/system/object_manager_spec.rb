@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -84,7 +84,7 @@ RSpec.describe 'System > Objects', type: :system do
           expect(page).to have_text('Database Update Required')
           click '.js-execute', wait: 7.minutes
           expect(page).to have_text('Zammad requires a restart')
-          page.refresh
+          refresh_with_wait
 
           # Update
           click 'tbody tr:last-child'
@@ -104,12 +104,15 @@ RSpec.describe 'System > Objects', type: :system do
             click '.js-submit'
           end
 
+          # After the reload, we must explictly wait for the app to be completely ready.
+          wait_for_loading_to_complete(wait_ws: true)
+
           # Delete
           click 'tbody tr:last-child .js-delete'
           expect(page).to have_text('Database Update Required')
           click '.js-execute', wait: 7.minutes
           expect(page).to have_text('Zammad requires a restart')
-          page.refresh
+          refresh_with_wait
           expect(page).to have_no_text('New field updated')
         end
       end
@@ -136,7 +139,6 @@ RSpec.describe 'System > Objects', type: :system do
       # Create the field via API.
       object_attribute
       visit '/#system/object_manager'
-      page.refresh
       click 'tbody tr:last-child'
 
       in_modal do
@@ -193,8 +195,6 @@ RSpec.describe 'System > Objects', type: :system do
     before do
       object_attribute
       ObjectManager::Attribute.migration_execute
-
-      refresh
 
       visit '/#system/object_manager'
       click 'tbody tr:last-child td:first-child'
@@ -256,7 +256,7 @@ RSpec.describe 'System > Objects', type: :system do
               end
             end
 
-            click_button 'Submit'
+            click_on 'Submit'
           end
 
           click 'tbody tr:last-child td:first-child'
@@ -308,7 +308,6 @@ RSpec.describe 'System > Objects', type: :system do
 
     it 'handles removed options correctly' do
       object_attribute
-      page.refresh
 
       # Make sure option is present in the first place.
       ticket = create(:ticket, group: Group.find_by(name: 'Users'), object_attribute.name => 'delete')
@@ -373,7 +372,6 @@ RSpec.describe 'System > Objects', type: :system do
     it 'shows user and organization attributes even if they are set to false' do
       organization_object_attribute
       user_object_attribute
-      page.refresh
       visit "/#ticket/zoom/#{ticket.id}"
       click('.content.active .tabsSidebar-tab[data-tab="organization"]')
       expect(page).to have_text('organization:false')
@@ -551,17 +549,18 @@ RSpec.describe 'System > Objects', type: :system do
 
         page.find('.js-submit').click
 
-        expect(page).to have_text 'Data option max must be lower than 2147483648'
+        expect(page).to have_text 'Maximal value must be lower than 2147483648'
       end
     end
 
     it 'verifies max value does not go below limit' do
       in_modal do
+        fill_in 'Minimal', with: '-9999999999999'
         fill_in 'Maximal', with: '-999999999999'
 
         page.find('.js-submit').click
 
-        expect(page).to have_text 'Data option max must be higher than -2147483648'
+        expect(page).to have_text 'Maximal value must be higher than -2147483648'
       end
     end
 
@@ -589,10 +588,11 @@ RSpec.describe 'System > Objects', type: :system do
     it 'verifies min value does not go above limit' do
       in_modal do
         fill_in 'Minimal', with: '999999999999'
+        fill_in 'Maximal', with: '123'
 
         page.find('.js-submit').click
 
-        expect(page).to have_text 'Data option min must be lower than 2147483648'
+        expect(page).to have_text 'Minimal value must be lower than 2147483648'
       end
     end
 
@@ -602,7 +602,7 @@ RSpec.describe 'System > Objects', type: :system do
 
         page.find('.js-submit').click
 
-        expect(page).to have_text 'Data option min must be higher than -2147483648'
+        expect(page).to have_text 'Minimal value must be higher than -2147483648'
       end
     end
 
@@ -633,7 +633,7 @@ RSpec.describe 'System > Objects', type: :system do
 
         page.find('.js-submit').click
 
-        expect(page).to have_text 'Data option min must be lower than max'
+        expect(page).to have_text 'Maximal value must be higher than or equal to minimal value'
       end
     end
   end
@@ -723,7 +723,7 @@ RSpec.describe 'System > Objects', type: :system do
           it 'saves a customsort data option attribute' do
             in_modal do
               check 'data_option::customsort', allow_label_click: true
-              click_button
+              click_on 'Submit'
             end
 
             # Update Database
@@ -737,7 +737,7 @@ RSpec.describe 'System > Objects', type: :system do
           it 'does not have a customsort data option attribute' do
             in_modal do
               uncheck 'data_option::customsort', allow_label_click: true
-              click_button
+              click_on 'Submit'
             end
 
             # Update Database
@@ -775,6 +775,109 @@ RSpec.describe 'System > Objects', type: :system do
       select 'Multiple tree selection field', from: 'data_type'
       click '.js-remove'
       expect(page).to have_css('.js-dataMap table tbody tr')
+    end
+  end
+
+  describe 'with external data source format', db_adapter: :postgresql, searchindex: true do
+    let(:users)       { create_list(:user, 10) }
+    let(:link_prefix) { "#{Setting.get('http_type')}://#{Setting.get('fqdn')}/#user/profile/" }
+
+    before do
+      users
+      searchindex_model_reload([User])
+    end
+
+    shared_examples 'showing preview table below data options' do
+      it 'shows preview table below data options' do
+        fill_in 'Preview', with: '*'
+
+        users.each do |user|
+          within ".js-searchResultSample tr[data-id='#{user.id}']" do
+            expect(page.find('.search-result-value')).to have_text(user.id)
+            expect(page.find('.search-result-label')).to have_text(user.email)
+            expect(page.find('.search-result-link')).to have_css("a[href='#{link_prefix}#{user.id}']")
+          end
+        end
+      end
+    end
+
+    context 'when creating new fields' do
+      before do
+        visit '/#system/object_manager'
+        page.find('.js-new').click
+        fill_in 'Name', with: 'test_json'
+        set_select_field_label('data_type', 'External data source field')
+        fill_in 'Search URL', with: "#{Setting.get('es_url')}/#{Setting.get('es_index')}_test_user/_search?q=\#{search.term}"
+        fill_in 'Search result list key', with: 'hits.hits'
+        fill_in 'Search result value key', with: '_id'
+        fill_in 'Search result label key', with: '_source.email'
+        fill_in 'Link template', with: "#{link_prefix}\#{ticket.test_json}"
+      end
+
+      it_behaves_like 'showing preview table below data options'
+
+      it 'displays helpful messages' do
+        within '.preview' do
+          expect(page).to have_text('To trigger the preview, please enter some search term(s) above.')
+        end
+
+        fill_in 'Search URL', with: ''
+        fill_in 'Preview', with: '*'
+
+        within '.preview' do
+          expect(page).to have_text('Search URL is missing.')
+        end
+
+        fill_in 'Search URL', with: "#{Setting.get('es_url')}/#{Setting.get('es_index')}_test_user/_search?q=\#{search.term}"
+        fill_in 'Search result list key', with: ''
+
+        within '.preview' do
+          expect(page).to have_text('Search result list is not an array.')
+        end
+      end
+    end
+
+    context 'with existing field' do
+      let(:search_url) { "#{Setting.get('es_url')}/#{Setting.get('es_index')}_test_user/_search?q=\#{search.term}" }
+      let(:attribute)  { create(:object_manager_attribute_autocompletion_ajax_external_data_source, :elastic_search, search_url: search_url) }
+
+      before do
+        attribute
+        visit '/#system/object_manager'
+        click "tr[data-id='#{attribute.id}']"
+      end
+
+      it_behaves_like 'showing preview table below data options'
+    end
+  end
+
+  describe 'New created Boolean Ticket Attribute does not work is "No" is set as default #5075', authenticated_as: :agent, db_strategy: :reset do
+    let(:agent) { create(:agent, groups: Group.all) }
+    let(:attribute) do
+      attribute = create(:object_manager_attribute_boolean, :required_screen, name: SecureRandom.uuid)
+      ObjectManager::Attribute.migration_execute
+      attribute
+    end
+
+    it 'does show the ticket without unsaved changes if a new boolean field is created' do
+
+      # preload ticket to build up backend and frontend cache and close it afterwards
+      visit "#ticket/zoom/#{Ticket.first.id}"
+      ensure_websocket
+      expect(page).to have_text(Ticket.first.title)
+
+      # add attribute and reload app
+      attribute
+      refresh
+      await_empty_ajax_queue
+      expect(page).to have_no_css('.icon-loading')
+
+      # revisit ticket and watch out for unsaved changes
+      # we have trigger the form diff by entering something into the textarea
+      # for more stability
+      find('.js-textarea').send_keys('some note')
+      expect(page).to have_text('Discard your unsaved changes.')
+      expect(page).to have_no_css(".sidebar-content div[data-attribute-name='#{attribute.name}'].is-changed")
     end
   end
 end

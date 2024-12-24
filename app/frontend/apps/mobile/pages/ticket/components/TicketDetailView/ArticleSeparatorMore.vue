@@ -1,4 +1,4 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 interface Props {
@@ -20,7 +20,7 @@ defineProps<Props>()
   </div>
 </template>
 
-<style scoped lang="scss">
+<style scoped>
 .line-more {
   height: 1px;
   background: repeating-linear-gradient(

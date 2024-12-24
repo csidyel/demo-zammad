@@ -16,6 +16,9 @@
 # storage (copy from config/zammad/storage.yml.dist)
 /config/zammad/storage.yml
 
+# Personal initializers
+/config/initializers/*.local.rb
+
 # local backup config file
 /contrib/backup/config
 
@@ -29,6 +32,7 @@
 # Bundler
 /.bundle
 /Gemfile.local
+/vendor/bundle
 
 # Clutter ======================================================================
 # These files are automatically generated;
@@ -50,8 +54,8 @@
 # logfiles and tempfiles
 /log
 /public/assets/*.*
-/public/assets/mobile/vite
-/public/assets/mobile/vite-dev
+/public/assets/frontend/vite
+/public/assets/frontend/vite-dev
 /public/assets/addons
 /public/assets/app
 /public/assets/custom
@@ -62,8 +66,6 @@
 /tmp/pids/*
 !/tmp/pids/.keep
 /storage/fs
-/var/*
-!/var/README.md
 
 # doorkeeper (OAuth 2)
 /public/assets/doorkeeper
@@ -104,13 +106,10 @@
 yarn-error.log
 .yarn/cache
 
-# Generated Stories
-.histoire
-
 # Cypress
-.cypress/screenshots/*
-.cypress/videos/*
-.cypress/**/__diff_output__/**
+.dev/cypress/screenshots/*
+.dev/cypress/videos/*
+.dev/cypress/**/__diff_output__/**
 **/__image_snapshots__/**/*.diff.png
 **/__image_snapshots__/**/*.actual.png
 

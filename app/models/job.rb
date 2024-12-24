@@ -1,16 +1,23 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Job < ApplicationModel
   include ChecksClientNotification
   include ChecksConditionValidation
   include ChecksHtmlSanitized
   include HasTimeplan
+  include HasSearchIndexBackend
+  include CanSelector
+  include CanSearch
 
   include Job::Assets
+  include Job::SearchIndex
+
+  OBJECTS_BATCH_SIZE = 2_000
 
   store     :condition
   store     :perform
-  validates :name,    presence: true
+  validates :name,    presence: true, uniqueness: { case_sensitive: false }
+  validates :object,  presence: true, inclusion: { in: %w[Ticket User Organization] }
   validates :perform, 'validations/verify_perform_rules': true
 
   before_save :updated_matching, :update_next_run_at
@@ -28,12 +35,13 @@ Job.run
 
   def self.run
     start_at = Time.zone.now
-    jobs = Job.where(active: true)
-    jobs.each do |job|
+
+    Job.where(active: true).each do |job|
       next if !job.executable?
 
       job.run(false, start_at)
     end
+
     true
   end
 
@@ -54,11 +62,11 @@ job.run(true)
   def run(force = false, start_at = Time.zone.now)
     logger.debug { "Execute job #{inspect}" }
 
-    ticket_ids = start_job(start_at, force)
+    object_ids = start_job(start_at, force)
 
-    return if ticket_ids.nil?
+    return if object_ids.nil?
 
-    ticket_ids&.each_slice(10) do |slice|
+    object_ids.each_slice(10) do |slice|
       run_slice(slice)
     end
 
@@ -82,8 +90,8 @@ job.run(true)
   end
 
   def matching_count
-    ticket_count, _tickets = Ticket.selectors(condition, limit: 1, execution_time: true)
-    ticket_count || 0
+    object_count, _objects = object.constantize.selectors(condition, limit: 1, execution_time: true)
+    object_count || 0
   end
 
   private
@@ -120,15 +128,16 @@ job.run(true)
 
   def start_job(start_at, force)
     Transaction.execute(reset_user_id: true) do
-      if start_job_executable?(start_at, force) && start_job_ensure_matching_count && start_job_in_timeplan?(start_at, force)
-        ticket_count, tickets = Ticket.selectors(condition, limit: 2_000, execution_time: true)
+      next if !start_job_executable?(start_at, force)
+      next if !start_job_in_timeplan?(start_at, force)
 
-        logger.debug { "Job #{name} with #{ticket_count} tickets" }
+      object_count, objects = object.constantize.selectors(condition, limit: OBJECTS_BATCH_SIZE, execution_time: true)
 
-        mark_as_started(ticket_count)
+      logger.debug { "Job #{name} with #{object_count} object(s)" }
 
-        tickets&.pluck(:id) || []
-      end
+      mark_as_started(objects&.count || 0)
+
+      objects&.pluck(:id) || []
     end
   end
 
@@ -142,29 +151,16 @@ job.run(true)
     false
   end
 
-  def start_job_ensure_matching_count
-    matching = matching_count
-
-    if self.matching != matching
-      self.matching = matching
-      save!
-    end
-
-    true
-  end
-
   def start_job_in_timeplan?(start_at, force)
     return true if in_timeplan?(start_at) || force
 
-    if next_run_at && next_run_at <= Time.zone.now
-      save!
-    end
+    save! # trigger updating matching tickets count and next_run_at time even if not in timeplan
 
     false
   end
 
-  def mark_as_started(ticket_count)
-    self.processed = ticket_count || 0
+  def mark_as_started(batch_count)
+    self.processed = batch_count
     self.running = true
     self.last_run_at = Time.zone.now
     save!
@@ -172,12 +168,14 @@ job.run(true)
 
   def run_slice(slice)
     Transaction.execute(disable_notification: disable_notification, reset_user_id: true) do
-      _, tickets = Ticket.selectors(condition, limit: 2_000, execution_time: true)
+      _, objects = object.constantize.selectors(condition, limit: OBJECTS_BATCH_SIZE, execution_time: true)
 
-      tickets
-        &.where(id: slice)
-        &.each do |ticket|
-          ticket.perform_changes(self, 'job')
+      return if objects.nil?
+
+      objects
+        .where(id: slice)
+        .each do |object|
+          object.perform_changes(self, 'job')
         end
     end
   end

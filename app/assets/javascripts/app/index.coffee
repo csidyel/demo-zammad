@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 #= require_self
 #= require_tree ./lib/app_init
@@ -51,9 +51,18 @@ class App extends Spine.Controller
 
   # define print name helper
   @viewPrintItem: (item, attributeConfig = {}, valueRef, table, object) ->
+
+    # Show all "empty" values as a simple dash (-):
+    #   - undefined
+    #   - empty string
+    #   - null
+    #   - empty object ({})
+    #   - empty array ([] or [''])
     return '-' if item is undefined
     return '-' if item is ''
     return '-' if item is null
+    return '-' if typeof item isnt 'function' and _.isObject(item) and _.isEmpty(item)
+    return '-' if _.isArray(item) and (_.isEmpty(item) or _.isEmpty(_.filter(item, (i) -> i isnt '')))
     result = ''
     items = [item]
     if _.isArray(item)
@@ -65,8 +74,28 @@ class App extends Spine.Controller
         hasMoreItems = true
       items = items.slice(0, attributeConfig.display_limit)
 
+    sorted = if attributeConfig.tag is 'multiselect'
+               if _.isArray(attributeConfig.options)
+                 _.sortBy(items, (elem) -> _.findIndex(attributeConfig.options, (option) -> option.value == elem))
+               else
+                 _.sortBy(items, (elem) ->
+                   displayValue = attributeConfig.options[elem]
+
+                   if displayValue && attributeConfig.translate
+                     displayValue = App.i18n.translatePlain(displayValue)
+
+                   value = displayValue || elem
+
+                   if typeof value is 'string'
+                     value = value.toLocaleLowerCase()
+
+                   value
+                 )
+             else
+               items.sort()
+
     # lookup relation
-    for item in items.sort()
+    for item in sorted
       resultLocal = item
       if attributeConfig.relation || valueRef
         if valueRef
@@ -86,8 +115,13 @@ class App extends Spine.Controller
           resultLocal = item.displayNameLong()
         else if item.displayName
           resultLocal = item.displayName()
-        else
+        else if not _.isUndefined(item.name)
           resultLocal = item.name
+        else
+          resultLocal = item.label
+
+        if attributeConfig.translate
+          resultLocal = App.i18n.translatePlain(resultLocal)
 
       # execute callback on content
       if attributeConfig.callback
@@ -164,8 +198,8 @@ class App extends Spine.Controller
         title = timestamp
         timezone = ''
         if attributeConfig.include_timezone
-          timezone = " timezone=\"#{App.Config.get('timezone_default_sanitized')}\""
-          title += ' ' + App.Config.get('timezone_default_sanitized')
+          timezone = " timezone=\"#{App.Config.get('timezone_default')}\""
+          title += ' ' + App.Config.get('timezone_default')
 
         resultLocal = "<time class=\"humanTimeFromNow #{cssClass}\" datetime=\"#{resultLocal}\" title=\"#{title}\"#{timezone}>#{humanTime}</time>"
 

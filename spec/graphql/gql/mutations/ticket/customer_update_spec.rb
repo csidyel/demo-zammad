@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -47,7 +47,7 @@ RSpec.describe Gql::Mutations::Ticket::CustomerUpdate, :aggregate_failures, type
     context 'with an agent', authenticated_as: :agent do
       it 'updates customer and organization' do
         gql.execute(query, variables: variables)
-        expect(gql.result.data['ticket']).to eq(expected_response)
+        expect(gql.result.data[:ticket]).to eq(expected_response)
       end
 
       context 'without organization' do
@@ -57,7 +57,7 @@ RSpec.describe Gql::Mutations::Ticket::CustomerUpdate, :aggregate_failures, type
 
         it 'updates the customer' do
           gql.execute(query, variables: variables)
-          expect(gql.result.data['ticket']).to eq(expected_response)
+          expect(gql.result.data[:ticket]).to eq(expected_response)
         end
       end
     end

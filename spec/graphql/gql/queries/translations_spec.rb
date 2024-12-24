@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -34,11 +34,11 @@ RSpec.describe Gql::Queries::Translations, type: :graphql do
         end
 
         it 'returns translations' do
-          expect(gql.result.data['translations']).to include({ 'yes' => 'ja' })
+          expect(gql.result.data[:translations]).to include({ 'yes' => 'ja' })
         end
 
         it 'does not return empty or "untranslated" translations' do
-          expect(gql.result.data['translations'].select { |k, v| v.empty? || k == v }).to be_empty
+          expect(gql.result.data[:translations].select { |k, v| v.empty? || k == v }).to be_empty
         end
       end
 

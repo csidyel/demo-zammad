@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class BackgroundServices
   class Service
@@ -20,6 +20,8 @@ class BackgroundServices
         private
 
         def skip?
+          return true if BackgroundServices.shutdown_requested
+
           return true if skip_already_running?
 
           # check job.last_run

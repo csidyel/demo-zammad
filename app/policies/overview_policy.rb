@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class OverviewPolicy < ApplicationPolicy
 
@@ -35,7 +35,7 @@ class OverviewPolicy < ApplicationPolicy
   private
 
   def user_is_admin?
-    user.permissions?(['admin.overview'])
+    user.permissions?('admin.overview')
   end
 
   def user_has_assigned_role?

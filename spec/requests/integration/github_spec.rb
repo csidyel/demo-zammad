@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -57,11 +57,11 @@ RSpec.describe 'GitHub', required_envs: %w[GITHUB_ENDPOINT GITHUB_APITOKEN], typ
       expect(response).to have_http_status(:forbidden)
       expect(json_response).to be_a(Hash)
       expect(json_response).not_to be_blank
-      expect(json_response['error']).to eq('Not authorized (user)!')
+      expect(json_response['error']).to eq('User authorization failed.')
 
       authenticated_as(admin)
       instance = instance_double(GitHub)
-      expect(GitHub).to receive(:new).with(endpoint, token).and_return instance
+      expect(GitHub).to receive(:new).with(endpoint: endpoint, api_token: token).and_return instance
       expect(instance).to receive(:verify!).and_return(true)
 
       post '/api/v1/integration/github/verify', params: params, as: :json
@@ -71,22 +71,34 @@ RSpec.describe 'GitHub', required_envs: %w[GITHUB_ENDPOINT GITHUB_APITOKEN], typ
       expect(json_response['result']).to eq('ok')
     end
 
-    it 'does query objects' do
-      params = {
-        links: [ ENV['GITHUB_ISSUE_LINK'] ],
-      }
-      authenticated_as(agent)
-      instance = instance_double(GitHub)
-      expect(GitHub).to receive(:new).and_return instance
-      expect(instance).to receive(:issues_by_urls).and_return([issue_data])
+    context 'with activated github integration' do
+      before do
+        Setting.set('github_integration', true)
+        Setting.set('github_config', { 'endpoint' => ENV['GITHUB_ENDPOINT'], 'api_token' => ENV['GITHUB_APITOKEN'] })
+      end
 
-      post '/api/v1/integration/github', params: params, as: :json
-      expect(response).to have_http_status(:ok)
+      it 'does query objects without ticket id' do
+        params = {
+          links: [ ENV['GITHUB_ISSUE_LINK'] ],
+        }
+        authenticated_as(agent)
+        instance = instance_double(GitHub)
+        expect(GitHub).to receive(:new).and_return instance
+        expect(instance).to receive(:issues_by_urls).and_return(
+          {
+            issues:           [issue_data],
+            url_replacements: []
+          }
+        )
 
-      expect(json_response).to be_a(Hash)
-      expect(json_response).not_to be_blank
-      expect(json_response['result']).to eq('ok')
-      expect(json_response['response']).to eq([issue_data.deep_stringify_keys])
+        post '/api/v1/integration/github', params: params, as: :json
+        expect(response).to have_http_status(:ok)
+
+        expect(json_response).to be_a(Hash)
+        expect(json_response).not_to be_blank
+        expect(json_response['result']).to eq('ok')
+        expect(json_response['response']).to eq([issue_data.deep_stringify_keys])
+      end
     end
 
     it 'does save ticket issues' do

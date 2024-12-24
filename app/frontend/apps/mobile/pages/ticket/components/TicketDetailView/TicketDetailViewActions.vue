@@ -1,4 +1,4 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 defineProps<{
@@ -16,10 +16,14 @@ const emit = defineEmits<{
   save: []
 }>()
 
+// Turn off transitions in test mode.
 const bannerTransitionDuration = VITE_TEST_MODE ? 0 : { enter: 300, leave: 200 }
 
+// Switch to instant scrolling in test mode as it may interfere with subsequent scroll actions in headless mode.
+const behavior = VITE_TEST_MODE ? 'instant' : 'smooth'
+
 const scrollDown = () => {
-  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+  window.scrollTo({ top: document.body.scrollHeight, behavior })
 }
 </script>
 
@@ -35,9 +39,9 @@ const scrollDown = () => {
   >
     <div
       v-if="!hidden"
-      class="fixed bottom-0 z-10 bg-gray-600/90 px-2 text-white backdrop-blur-lg transition pb-safe-1 ltr:left-0 ltr:right-0 rtl:left-0 rtl:right-0"
+      class="pb-safe-1 fixed bottom-0 z-10 bg-gray-600/90 px-2 text-white backdrop-blur-lg transition ltr:left-0 ltr:right-0 rtl:left-0 rtl:right-0"
     >
-      <div class="relative flex flex-1 items-center p-2 gap-2">
+      <div class="relative flex flex-1 items-center gap-2 p-2">
         <div class="flex-1">
           <Transition
             :duration="bannerTransitionDuration"
@@ -48,7 +52,7 @@ const scrollDown = () => {
           >
             <button
               v-if="canScrollDown"
-              class="flex h-8 relative cursor-pointer items-center rounded-2xl bg-blue px-2 transition"
+              class="bg-blue relative flex h-8 cursor-pointer items-center rounded-2xl px-2 transition"
               :aria-label="
                 newRepliesCount
                   ? $t('Scroll down to see %s new replies', newRepliesCount)
@@ -56,15 +60,15 @@ const scrollDown = () => {
               "
               @click="scrollDown"
             >
-              <CommonIcon name="mobile-arrow-down" size="small" decorative />
-              <div
+              <CommonIcon name="arrow-down" size="small" decorative />
+              <span
                 v-if="newRepliesCount"
                 aria-hidden="true"
                 data-test-id="new-replies-count"
-                class="absolute h-4 z-10 min-w-[1rem] top-0 rounded-full bg-yellow px-1 text-center text-xs text-black ltr:ml-4 rtl:mr-4"
+                class="bg-yellow absolute top-0 z-10 h-4 min-w-[1rem] rounded-full px-1 text-center text-xs text-black ltr:ml-4 rtl:mr-4"
               >
                 {{ newRepliesCount }}
-              </div>
+              </span>
             </button>
           </Transition>
         </div>
@@ -78,7 +82,7 @@ const scrollDown = () => {
             @click.prevent="emit('reply')"
           >
             <div>
-              <CommonIcon name="mobile-chat" size="small" decorative />
+              <CommonIcon name="chat" size="small" decorative />
             </div>
             <span class="line-clamp-1 break-all">
               {{ newArticlePresent ? $t('Edit reply') : $t('Add reply') }}
@@ -95,20 +99,20 @@ const scrollDown = () => {
           >
             {{ $t('Save') }}
           </FormKit>
-          <div
-            v-if="formInvalid"
-            role="status"
-            :aria-label="$t('Validation failed')"
-            class="absolute bottom-7 h-5 w-5 cursor-pointer rounded-full bg-red text-center text-xs leading-5 text-black ltr:right-2 rtl:left-2"
-            @click="emit('save')"
-          >
-            <CommonIcon
-              class="mx-auto h-5"
-              name="mobile-close"
-              size="tiny"
-              decorative
-            />
-          </div>
+          <button v-if="formInvalid" @click="emit('save')">
+            <span
+              role="status"
+              :aria-label="$t('Validation failed')"
+              class="bg-red absolute bottom-7 h-5 w-5 cursor-pointer rounded-full text-center text-xs leading-5 text-black ltr:right-2 rtl:left-2"
+            >
+              <CommonIcon
+                class="mx-auto h-5"
+                name="close"
+                size="tiny"
+                decorative
+              />
+            </span>
+          </button>
         </div>
       </div>
     </div>

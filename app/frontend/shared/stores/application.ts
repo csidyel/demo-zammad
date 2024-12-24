@@ -1,21 +1,22 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { computed, ref, type Ref } from 'vue'
 import { defineStore } from 'pinia'
+import { computed, effectScope, ref, type Ref } from 'vue'
+
 import { useNotifications } from '#shared/components/CommonNotifications/index.ts'
-import type { ConfigList } from '#shared/types/store.ts'
+import { useApplicationLoaded } from '#shared/composables/useApplicationLoaded.ts'
+import { useApplicationConfigQuery } from '#shared/graphql/queries/applicationConfig.api.ts'
+import { useConfigUpdatesSubscription } from '#shared/graphql/subscriptions/configUpdates.api.ts'
 import type {
   ApplicationConfigQuery,
   ApplicationConfigQueryVariables,
 } from '#shared/graphql/types.ts'
-import { useConfigUpdatesSubscription } from '#shared/graphql/subscriptions/configUpdates.api.ts'
-import { useApplicationConfigQuery } from '#shared/graphql/queries/applicationConfig.api.ts'
 import {
   QueryHandler,
   SubscriptionHandler,
 } from '#shared/server/apollo/handler/index.ts'
+import type { ConfigList } from '#shared/types/store.ts'
 import testFlags from '#shared/utils/testFlags.ts'
-import { useApplicationLoaded } from '#shared/composables/useApplicationLoaded.ts'
 
 let configUpdatesSubscriptionInitialized = false
 
@@ -27,9 +28,12 @@ let applicationConfigQuery: QueryHandler<
 const getApplicationConfigQuery = () => {
   if (applicationConfigQuery) return applicationConfigQuery
 
-  applicationConfigQuery = new QueryHandler(
-    useApplicationConfigQuery({ fetchPolicy: 'no-cache' }),
-  )
+  const scope = effectScope()
+  scope.run(() => {
+    applicationConfigQuery = new QueryHandler(
+      useApplicationConfigQuery({ fetchPolicy: 'no-cache' }),
+    )
+  })
 
   return applicationConfigQuery
 }
@@ -77,20 +81,23 @@ export const useApplicationStore = defineStore(
     const config = ref<Record<string, unknown>>({})
 
     const initializeConfigUpdateSubscription = (): void => {
-      const configUpdatesSubscription = new SubscriptionHandler(
-        useConfigUpdatesSubscription(),
-      )
+      const scope = effectScope()
+      scope.run(() => {
+        const configUpdatesSubscription = new SubscriptionHandler(
+          useConfigUpdatesSubscription(),
+        )
 
-      configUpdatesSubscription.onResult((result) => {
-        const updatedSetting = result.data?.configUpdates.setting
-        if (updatedSetting) {
-          config.value[updatedSetting.key] = updatedSetting.value
-        } else {
-          testFlags.set('useConfigUpdatesSubscription.subscribed')
-        }
+        configUpdatesSubscription.onResult((result) => {
+          const updatedSetting = result.data?.configUpdates.setting
+          if (updatedSetting) {
+            config.value[updatedSetting.key] = updatedSetting.value
+          } else {
+            testFlags.set('useConfigUpdatesSubscription.subscribed')
+          }
+        })
+
+        configUpdatesSubscriptionInitialized = true
       })
-
-      configUpdatesSubscriptionInitialized = true
     }
 
     const getConfig = async (): Promise<void> => {

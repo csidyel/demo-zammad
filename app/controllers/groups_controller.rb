@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class GroupsController < ApplicationController
   prepend_before_action :authenticate_and_authorize!
@@ -133,6 +133,10 @@ curl http://localhost/api/v1/groups -v -u #{login}:#{password} -H "Content-Type:
 
   def update
     model_update_render(Group, params)
+  end
+
+  def search
+    model_search_render(Group, params)
   end
 
 =begin

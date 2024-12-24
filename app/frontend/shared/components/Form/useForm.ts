@@ -1,23 +1,39 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { FormKitNode } from '@formkit/core'
 import { computed, shallowRef } from 'vue'
-import type { ShallowRef } from 'vue'
-import type { ObjectLike } from '#shared/types/utils.ts'
-import type { FormRef, FormResetOptions, FormValues } from './types.ts'
 
-export const useForm = () => {
-  const form: ShallowRef<FormRef | undefined> = shallowRef()
+import type { MutationSendError } from '#shared/types/error.ts'
+import type { FormUpdaterOptions } from '#shared/types/form.ts'
+
+import { setErrors } from './utils.ts'
+
+import type {
+  FormRef,
+  FormResetOptions,
+  FormFieldValue,
+  FormValues,
+  FormSchemaField,
+  FormResetData,
+} from './types.ts'
+import type { FormKitNode } from '@formkit/core'
+import type { ShallowRef, Ref } from 'vue'
+
+export const useForm = <T = FormValues>(formRef?: Ref<FormRef | undefined>) => {
+  const form: ShallowRef<FormRef | undefined> = formRef || shallowRef()
 
   const node = computed(() => form.value?.formNode)
 
   const context = computed(() => node.value?.context)
 
-  const values = computed(() => context.value?.value)
+  const nodeValues = computed<FormValues>(() => context.value?.value)
 
   const state = computed(() => context.value?.state)
 
   const isValid = computed(() => !!state.value?.valid)
+
+  const isSettled = computed(() => !!state.value?.settled)
+
+  const isInitialSettled = computed(() => !!form.value?.formInitialSettled)
 
   const isDirty = computed(() => !!state.value?.dirty)
 
@@ -26,7 +42,15 @@ export const useForm = () => {
   const isSubmitted = computed(() => !!state.value?.submitted)
 
   const isDisabled = computed(() => {
-    return !!context.value?.disabled || !!state.value?.formUpdaterProcessing
+    return !!context.value?.disabled
+  })
+
+  const isFormUpdaterRunning = computed(() => {
+    return !!state.value?.formUpdaterProcessing
+  })
+
+  const formNodeId = computed(() => {
+    return context.value?.id
   })
 
   /**
@@ -41,21 +65,16 @@ export const useForm = () => {
     return isDirty.value
   })
 
-  const formReset = (
-    values?: FormValues,
-    object?: ObjectLike,
-    options?: FormResetOptions,
-  ) => {
-    form.value?.resetForm(values, object, options)
+  const formReset = (data?: FormResetData, options?: FormResetOptions) => {
+    form.value?.resetForm(data, options)
   }
 
   const formGroupReset = (
     groupNode: FormKitNode,
-    values?: FormValues,
-    object?: ObjectLike,
+    data: FormResetData,
     options?: FormResetOptions,
   ) => {
-    form.value?.resetForm(values, object, options, groupNode)
+    form.value?.resetForm(data, { groupNode, ...options })
   }
 
   const formSubmit = () => {
@@ -74,21 +93,85 @@ export const useForm = () => {
     })
   }
 
+  const onChangedField = (
+    name: string,
+    callback: (
+      newValue: FormFieldValue,
+      oldValue: FormFieldValue,
+      node: FormKitNode,
+    ) => void,
+  ) => {
+    const registerChangeEvent = (node: FormKitNode) => {
+      node.on(`changed:${name}`, ({ payload }) => {
+        callback(payload.newValue, payload.oldValue, payload.fieldNode)
+      })
+    }
+
+    if (node.value) {
+      registerChangeEvent(node.value)
+    } else {
+      waitForFormSettled().then((node) => {
+        registerChangeEvent(node)
+      })
+    }
+  }
+
+  const updateFieldValues = (fieldValues: Record<string, FormFieldValue>) => {
+    const changedFieldValues: Record<
+      string,
+      Pick<FormSchemaField, 'value'>
+    > = {}
+
+    Object.keys(fieldValues).forEach((fieldName) => {
+      changedFieldValues[fieldName] = {
+        value: fieldValues[fieldName],
+      }
+    })
+
+    form.value?.updateChangedFields(changedFieldValues)
+  }
+
+  const values = computed<T>(() => {
+    return (form.value?.values || {}) as T
+  })
+
+  const flags = computed(() => form.value?.flags || {})
+
+  const formSetErrors = (errors: MutationSendError) => {
+    if (!node.value) return
+
+    setErrors(node.value, errors)
+  }
+
+  const triggerFormUpdater = (options?: FormUpdaterOptions) => {
+    form.value?.triggerFormUpdater(options)
+  }
+
   return {
     form,
     node,
     context,
+    nodeValues,
     values,
+    flags,
     state,
     isValid,
     isDirty,
+    isSettled,
+    isInitialSettled,
     isComplete,
     isSubmitted,
     isDisabled,
+    isFormUpdaterRunning,
+    formNodeId,
     canSubmit,
+    formSetErrors,
     formReset,
     formGroupReset,
     formSubmit,
     waitForFormSettled,
+    updateFieldValues,
+    onChangedField,
+    triggerFormUpdater,
   }
 }

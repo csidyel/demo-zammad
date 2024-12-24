@@ -1,4 +1,4 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import type { RouteRecordRaw } from 'vue-router'
 
@@ -20,9 +20,9 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/account/avatar',
-    name: 'AccountAvatar',
+    name: 'PersonalSettingAvatar',
     props: true,
-    component: () => import('./views/AccountAvatar.vue'),
+    component: () => import('./views/PersonalSettingAvatar.vue'),
     alias: '/profile/avatar',
     meta: {
       title: __('Avatar'),

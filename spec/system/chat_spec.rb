@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -385,7 +385,7 @@ RSpec.describe 'Chat Handling', type: :system do
 
           visit chat_url
           click '.zammad-chat .js-chat-open'
-          expect(page).to have_selector('.js-restart', wait: 60)
+          expect(page).to have_css('.js-restart', wait: 60)
           click '.js-chat-toggle .zammad-chat-header-icon'
           expect(page).to have_no_selector('zammad-chat-is-open', wait: 60)
         end

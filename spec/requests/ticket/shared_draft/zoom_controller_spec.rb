@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -48,7 +48,7 @@ RSpec.describe 'Ticket Shared Drafts Zoom API endpoints', authenticated_as: :age
     end
 
     describe '#update' do
-      let(:form_id) { 12_345 }
+      let(:form_id) { SecureRandom.uuid }
       let(:params) do
         {
           form_id:           form_id,
@@ -114,7 +114,7 @@ RSpec.describe 'Ticket Shared Drafts Zoom API endpoints', authenticated_as: :age
 
         delete path, as: :json
 
-        expect(Ticket::SharedDraftZoom).not_to be_exists(draft.id)
+        expect(Ticket::SharedDraftZoom).not_to exist(draft.id)
       end
 
       it 'raises error if draft does not exist' do
@@ -132,7 +132,7 @@ RSpec.describe 'Ticket Shared Drafts Zoom API endpoints', authenticated_as: :age
 
     describe 'import_attachments' do
       let(:import_path) { "#{path}/import_attachments" }
-      let(:form_id)     { 456 }
+      let(:form_id)     { SecureRandom.uuid }
       let(:params) do
         {
           form_id: form_id,
@@ -170,13 +170,13 @@ RSpec.describe 'Ticket Shared Drafts Zoom API endpoints', authenticated_as: :age
     it 'removes draft when updating a ticket' do
       put_ticket_update(draft_a.ticket.id, draft_a.id)
 
-      expect(Ticket::SharedDraftZoom).not_to be_exist(draft_a.id)
+      expect(Ticket::SharedDraftZoom).not_to exist(draft_a.id)
     end
 
     it 'not removes draft when fails updating a ticket' do
       put_ticket_update(draft_a.ticket.id, draft_a.id, valid: false)
 
-      expect(Ticket::SharedDraftZoom).to be_exist(draft_a.id)
+      expect(Ticket::SharedDraftZoom).to exist(draft_a.id)
     end
 
     it 'raises error if draft is not applicable in this context' do
@@ -188,7 +188,7 @@ RSpec.describe 'Ticket Shared Drafts Zoom API endpoints', authenticated_as: :age
     it 'keeps draft if not applicable in this context' do
       put_ticket_update(draft_a.ticket.id, draft_b.id)
 
-      expect(Ticket::SharedDraftZoom).to be_exist(draft_b.id)
+      expect(Ticket::SharedDraftZoom).to exist(draft_b.id)
     end
 
     it 'succeeds even if group is not eligible anymore' do
@@ -202,7 +202,7 @@ RSpec.describe 'Ticket Shared Drafts Zoom API endpoints', authenticated_as: :age
       group.update(shared_drafts: false)
       put_ticket_update(draft_a.ticket.id, draft_a.id)
 
-      expect(Ticket::SharedDraftZoom).not_to be_exist(draft_a.id)
+      expect(Ticket::SharedDraftZoom).not_to exist(draft_a.id)
     end
 
     it 'succeeds when draft does not exist' do

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -164,7 +164,7 @@ RSpec.describe 'External Credentials > Twitter', type: :request do
         post '/api/v1/external_credentials/twitter/app_verify', params: {}, as: :json
 
         expect(response).to have_http_status(:forbidden)
-        expect(json_response).to include('error' => 'Not authorized (user)!')
+        expect(json_response).to include('error' => 'User authorization failed.')
       end
     end
 

@@ -1,7 +1,9 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { renderComponent } from '#tests/support/components/index.ts'
 
 import { TicketState } from '#shared/entities/ticket/types.ts'
-import { renderComponent } from '#tests/support/components/index.ts'
+
 import CommonTicketStateList from '../CommonTicketStateList.vue'
 
 describe('show tickets', () => {

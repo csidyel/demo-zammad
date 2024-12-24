@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 require 'models/application_model_examples'
@@ -241,5 +241,14 @@ RSpec.describe Organization, type: :model do
       end
     end
 
+  end
+
+  describe '#all_members' do
+    let!(:primary_user) { create(:user, organization:, organizations: create_list(:organization, 3)) }
+    let!(:secondary_user) { create(:user, organization: create(:organization), organizations: [organization]) }
+
+    it 'lists all assigned members' do
+      expect(organization.all_members).to contain_exactly(primary_user, secondary_user)
+    end
   end
 end

@@ -1,14 +1,20 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { uniq } from 'lodash-es'
 
 import type {
   TicketById,
   TicketArticle,
 } from '#shared/entities/ticket/types.ts'
-import type { AddressesField } from '#shared/graphql/types.ts'
+import {
+  EnumTicketArticleSenderName,
+  type AddressesField,
+} from '#shared/graphql/types.ts'
 import type { ConfigList } from '#shared/types/store.ts'
-import { uniq } from 'lodash-es'
-import type { TicketArticlePerformOptions } from '../types.ts'
+
 import { getArticleSelection, getReplyQuoteHeader } from './selection.ts'
+
+import type { TicketArticlePerformOptions } from '../types.ts'
 
 const getEmailAddresses = (field?: Maybe<AddressesField>) => {
   if (!field) return []
@@ -40,7 +46,7 @@ const getPhoneArticle = (ticket: TicketById, article: TicketArticle) => {
   const sender = article.sender?.name
 
   // the article we are replying to is an outbound call
-  if (sender === 'Agent') {
+  if (sender === EnumTicketArticleSenderName.Agent) {
     if (article.to?.raw.includes('@')) {
       newArticle.to = getEmailAddresses(article.to)
     }
@@ -134,10 +140,10 @@ const getRecipientArticle = (
   const senderEmail = article.author.email
   const isSystem =
     !recipientIsSystem &&
-    sender === 'Agent' &&
+    sender === EnumTicketArticleSenderName.Agent &&
     senderEmail &&
-    article.from?.parsed?.some(
-      (address) => address.emailAddress?.toLowerCase().includes(senderEmail),
+    article.from?.parsed?.some((address) =>
+      address.emailAddress?.toLowerCase().includes(senderEmail),
     )
 
   if (senderIsSystem) {
@@ -203,7 +209,7 @@ export const replyToEmail = (
     (currentBody && selection ? `<p></p>${currentBody}` : currentBody)
 
   // signature is handled in article type "onSelected" hook
-  options.openReplyDialog({
+  options.openReplyForm({
     ...newArticle,
     subtype: 'reply',
     body,

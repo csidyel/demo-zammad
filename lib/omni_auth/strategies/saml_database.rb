@@ -1,12 +1,10 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class OmniAuth::Strategies::SamlDatabase < OmniAuth::Strategies::SAML
   option :name, 'saml'
 
   def self.setup
     auth_saml_credentials = Setting.get('auth_saml_credentials') || {}
-
-    verify_tls(auth_saml_credentials)
 
     http_type = Setting.get('http_type')
     fqdn      = Setting.get('fqdn')
@@ -45,26 +43,6 @@ class OmniAuth::Strategies::SamlDatabase < OmniAuth::Strategies::SAML
     args[0] = self.class.setup
 
     super
-  end
-
-  def self.verify_tls(settings)
-    return if !settings[:ssl_verify]
-
-    url = settings[:idp_sso_target_url]
-    return if !url.starts_with?('https://')
-
-    resp = UserAgent.get(
-      url,
-      {},
-      {
-        verify_ssl: true,
-        log:        { facility: 'SAML' }
-      }
-    )
-
-    return if resp.error.empty? || !resp.error.starts_with?('#<OpenSSL::SSL::SSLError')
-
-    Rails.logger.error { 'SAML: The verification of the TLS connection failed. Please check the IDP certificate.' }
   end
 
   def self.apply_security_settings(settings)
@@ -135,7 +113,6 @@ class OmniAuth::Strategies::SamlDatabase < OmniAuth::Strategies::SAML
     apply_security_default_settings
     apply_encrypt_only_settings
     apply_sign_only_settings
-    verify_tls
   ].freeze
 
   private
@@ -145,7 +122,13 @@ class OmniAuth::Strategies::SamlDatabase < OmniAuth::Strategies::SAML
     logout_response.soft = false
     logout_response.validate
 
-    redirect_path = session['omniauth.origin']&.include?('/mobile') ? '/mobile' : '/'
+    redirect_path = if session['omniauth.origin']&.include?('/mobile')
+                      '/mobile'
+                    elsif session['omniauth.origin']&.include?('/desktop')
+                      '/desktop'
+                    else
+                      '/'
+                    end
 
     self.class.destroy_session(env, session)
 

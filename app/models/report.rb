@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Report
 
@@ -69,6 +69,13 @@ class Report
         dataDownload: true,
         adapter:      Report::TicketMoved,
         params:       { type: 'out' }
+      },
+      {
+        name:         'merged',
+        display:      __('Merged'),
+        selected:     false,
+        dataDownload: true,
+        adapter:      Report::TicketMerged,
       },
     ]
     config[:metric][:count][:backend] = backend

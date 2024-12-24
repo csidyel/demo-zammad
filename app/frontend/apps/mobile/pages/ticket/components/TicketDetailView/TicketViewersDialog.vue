@@ -1,11 +1,14 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 import { toRef } from 'vue'
+
+import { useTicketLiveUsersDisplay } from '#shared/entities/ticket/composables/useTicketLiveUsersDisplay.ts'
 import type { TicketLiveAppUser } from '#shared/entities/ticket/types.ts'
+
 import CommonDialog from '#mobile/components/CommonDialog/CommonDialog.vue'
 import CommonSectionMenu from '#mobile/components/CommonSectionMenu/CommonSectionMenu.vue'
-import { useTicketLiveUsersDisplay } from '#shared/entities/ticket/composables/useTicketLiveUsersDisplay.ts'
+
 import TicketViewerItem from './TicketViewerItem.vue'
 
 interface Props {
@@ -28,7 +31,7 @@ const { viewingUsers, idleUsers } = useTicketLiveUsersDisplay(
   >
     <CommonSectionMenu
       v-if="viewingUsers.length > 0"
-      class="py-2"
+      class="shrink-0 gap-3 py-2"
       :header-label="__('Viewing ticket')"
     >
       <TicketViewerItem
@@ -41,7 +44,7 @@ const { viewingUsers, idleUsers } = useTicketLiveUsersDisplay(
     </CommonSectionMenu>
     <CommonSectionMenu
       v-if="idleUsers.length > 0"
-      class="py-2"
+      class="shrink-0 gap-3 py-2"
       :header-label="__('Opened in tabs')"
       :help="
         __(

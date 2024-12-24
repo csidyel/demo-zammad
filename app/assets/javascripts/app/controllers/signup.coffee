@@ -95,7 +95,13 @@ class Signup extends App.ControllerFullPage
         ))
       fail: (settings, details) =>
         @formEnable(e)
-        @form.showAlert(details.error_human || details.error || __('User could not be created.'))
+
+        message = if _.isArray(details.notice)
+                    App.i18n.translateContent(details.notice[0], details.notice[1])
+                  else
+                    details.error_human || details.error || __('User could not be created.')
+
+        @form.showAlert(message)
     )
 
   resend: (e) =>
@@ -130,7 +136,7 @@ class Signup extends App.ControllerFullPage
 
     @notify(
       type:      'error'
-      msg:       App.i18n.translateContent(details.error || 'Could not process your request')
+      msg:       details.error || __('Could not process your request')
       removeAll: true
     )
 App.Config.set('signup', Signup, 'Routes')

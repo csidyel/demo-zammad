@@ -1,9 +1,9 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 FactoryBot.define do
   factory :user do
     transient do
-      intro_clues { true }
+      hide_clues  { true }
       slug        { "#{firstname}.#{lastname}".parameterize }
     end
 
@@ -18,10 +18,11 @@ FactoryBot.define do
     created_by_id    { 1 }
 
     callback(:after_stub, :before_create) do |object, context|
-      next if !context.intro_clues
+      next if !context.hide_clues
 
       object.preferences ||= {}
-      object.preferences[:intro] = true
+      object.preferences[:intro]                    = true
+      object.preferences[:keyboard_shortcuts_clues] = true
     end
 
     factory :customer do
@@ -99,7 +100,7 @@ FactoryBot.define do
       out_of_office { true }
       out_of_office_start_at { 1.day.ago }
       out_of_office_end_at { 1.day.from_now }
-      out_of_office_replacement_id { ooo_agent.id }
+      out_of_office_replacement_id { ooo_agent&.id }
     end
 
     trait :with_org do

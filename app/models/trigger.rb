@@ -1,15 +1,18 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Trigger < ApplicationModel
   include ChecksConditionValidation
   include ChecksHtmlSanitized
   include CanSeed
+  include HasSearchIndexBackend
+  include CanSelector
+  include CanSearch
 
   include Trigger::Assets
 
   store     :condition
   store     :perform
-  validates :name,    presence: true
+  validates :name,    presence: true, uniqueness: { case_sensitive: false }
   validates :perform, 'validations/verify_perform_rules': true
 
   validates :activator, presence: true, inclusion: { in: %w[action time] }
@@ -30,7 +33,7 @@ class Trigger < ApplicationModel
   def performable_on?(object, activator_type:)
     return if !time_based?
 
-    already_notified_cutoff = Time.use_zone(Setting.get('timezone_default_sanitized')) { Time.current.beginning_of_day }
+    already_notified_cutoff = Time.use_zone(Setting.get('timezone_default')) { Time.current.beginning_of_day }
 
     !history_scope(object, activator_type:).exists?(['created_at > ?', already_notified_cutoff])
   end

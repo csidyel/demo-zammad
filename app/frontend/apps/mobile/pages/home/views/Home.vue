@@ -1,11 +1,13 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 import { computed } from 'vue'
+
 import CommonInputSearch from '#shared/components/CommonInputSearch/CommonInputSearch.vue'
 import { useSessionStore } from '#shared/stores/session.ts'
-import type { MenuItem } from '#mobile/components/CommonSectionMenu/index.ts'
+
 import CommonSectionMenu from '#mobile/components/CommonSectionMenu/CommonSectionMenu.vue'
+import type { MenuItem } from '#mobile/components/CommonSectionMenu/index.ts'
 import CommonTicketCreateLink from '#mobile/components/CommonTicketCreateLink/CommonTicketCreateLink.vue'
 import { useTicketOverviews } from '#mobile/entities/ticket/composables/useTicketOverviews.ts'
 
@@ -18,7 +20,7 @@ const menu: MenuItem[] = [
     type: 'link',
     link: '/tickets/view',
     label: __('Ticket Overviews'),
-    icon: { name: 'mobile-all-tickets', size: 'base' },
+    icon: { name: 'all-tickets', size: 'base' },
     iconBg: 'bg-pink',
     permission: ['ticket.agent', 'ticket.customer'],
   },
@@ -29,7 +31,7 @@ const menu: MenuItem[] = [
           type: 'link' as const,
           link: '/playground',
           label: 'Playground',
-          icon: { name: 'mobile-settings', size: 'small' as const },
+          icon: { name: 'settings', size: 'small' as const },
           iconBg: 'bg-orange',
         },
       ]
@@ -72,11 +74,11 @@ const ticketOverview = computed<MenuItem[]>(() => {
       :items="ticketOverview"
       :header-label="__('Ticket Overview')"
       :action-label="__('Edit')"
-      action-link="/favorite/ticker-overviews/edit"
+      action-link="/favorite/ticket-overviews/edit"
     >
       <template v-if="overviews.loading" #before-items>
         <div class="flex w-full justify-center">
-          <CommonIcon name="mobile-loading" animation="spin" />
+          <CommonIcon name="loading" animation="spin" />
         </div>
       </template>
     </CommonSectionMenu>

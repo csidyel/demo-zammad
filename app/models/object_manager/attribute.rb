@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class ObjectManager::Attribute < ApplicationModel
   include HasDefaultModelUserRelations
@@ -22,15 +22,12 @@ class ObjectManager::Attribute < ApplicationModel
     integer
     autocompletion_ajax
     autocompletion_ajax_customer_organization
+    autocompletion_ajax_external_data_source
     boolean
     user_permission
     group_permissions
     active
   ].freeze
-
-  VALIDATE_INTEGER_MIN    = -2_147_483_647
-  VALIDATE_INTEGER_MAX    = 2_147_483_647
-  VALIDATE_INTEGER_REGEXP = %r{^-?\d+$}
 
   self.table_name = 'object_manager_attributes'
 
@@ -39,8 +36,10 @@ class ObjectManager::Attribute < ApplicationModel
   validates :name, presence: true
   validates :data_type, inclusion: { in: DATA_TYPES, msg: '%{value} is not a valid data type' }
   validate :inactive_must_be_unused_by_references, unless: :active?
-  validate :data_option_must_have_appropriate_values
   validate :data_type_must_not_change, on: :update
+  validate :json_field_only_on_postgresql, on: :create
+
+  validates_with ObjectManager::Attribute::DataOptionValidator
 
   store :screens
   store :data_option
@@ -474,11 +473,9 @@ get the attribute model based on object and name
       data[:object_lookup_id] = ObjectLookup.by_name(data[:object])
     end
 
-    data[:name].downcase!
-
     ObjectManager::Attribute.find_by(
       object_lookup_id: data[:object_lookup_id],
-      name:             data[:name],
+      name:             data[:name].downcase,
     )
   end
 
@@ -621,6 +618,8 @@ to send no browser reload event, pass false
       case attribute.data_type
       when %r{^(input|select|tree_select|richtext|textarea|checkbox)$}
         data_type = :string
+      when 'autocompletion_ajax_external_data_source'
+        data_type = :jsonb
       when %r{^(multiselect|multi_tree_select)$}
         data_type = if Rails.application.config.db_column_array
                       :string
@@ -655,6 +654,17 @@ to send no browser reload event, pass false
           if Rails.application.config.db_column_array
             options[:array] = true
           end
+
+          ActiveRecord::Migration.change_column(
+            model.table_name,
+            attribute.name,
+            data_type,
+            options,
+          )
+        when 'autocompletion_ajax_external_data_source'
+          options = {
+            null: true,
+          }
 
           ActiveRecord::Migration.change_column(
             model.table_name,
@@ -708,6 +718,16 @@ to send no browser reload event, pass false
           data_type,
           **options,
         )
+      when 'autocompletion_ajax_external_data_source'
+        options = {
+          null: true,
+        }
+        ActiveRecord::Migration.add_column(
+          model.table_name,
+          attribute.name,
+          data_type,
+          **options,
+        )
       when %r{^(integer|user_autocompletion)$}, %r{^(boolean|active)$}, %r{^(datetime|date)$}
         ActiveRecord::Migration.add_column(
           model.table_name,
@@ -730,12 +750,15 @@ to send no browser reload event, pass false
       execute_db_count += 1
     end
 
+    # Clear caches so new attribute defaults can be set (#5075)
+    Rails.cache.clear
+
     # sent maintenance message to clients
     if send_event
       if execute_db_count.nonzero?
-        Zammad::Restart.perform
+        AppVersion.trigger_restart
       elsif execute_config_count.nonzero?
-        AppVersion.set(true, 'config_changed')
+        AppVersion.trigger_browser_reload AppVersion::MSG_CONFIG_CHANGED
       end
     end
     true
@@ -767,7 +790,7 @@ where attributes are used in conditions
       .map { |elem| elem.select(:name, :condition) }
       .flatten
       .each do |item|
-        item.condition.each do |condition_key, _condition_attributes|
+        item.condition.each_key do |condition_key|
           attribute_list[condition_key] ||= {}
           attribute_list[condition_key][item.class.name] ||= []
           next if attribute_list[condition_key][item.class.name].include?(item.name)
@@ -798,7 +821,7 @@ is certain attribute used by triggers, overviews or schedulers
 =end
 
   def self.attribute_used_by_references?(object_name, attribute_name, references = attribute_to_references_hash)
-    references.each do |reference_key, _relations|
+    references.each_key do |reference_key|
       local_object, local_attribute = reference_key.split('.')
       next if local_object != object_name.downcase
       next if local_attribute != attribute_name
@@ -886,7 +909,7 @@ is certain attribute used by triggers, overviews or schedulers
     end
 
     # do not allow model method names as attributes
-    reserved_words = %w[destroy true false integer select drop create alter index table varchar blob date datetime timestamp url icon initials avatar permission validate subscribe unsubscribe translate search _type _doc _id id action]
+    reserved_words = %w[destroy true false integer select drop create alter index table varchar blob date datetime timestamp url icon initials avatar permission validate subscribe unsubscribe translate search _type _doc _id id action scope constructor]
     if name.match?(%r{^(#{reserved_words.join('|')})$})
       errors.add(:name, __('%{name} is a reserved word'), name: name)
     end
@@ -917,6 +940,14 @@ is certain attribute used by triggers, overviews or schedulers
     raise ActiveRecord::RecordInvalid, self
   end
 
+  def local_data_option
+    send(local_data_attr)
+  end
+
+  def local_data_option=(val)
+    send(:"#{local_data_attr}=", val)
+  end
+
   private
 
   # when setting default values for boolean fields,
@@ -928,13 +959,9 @@ is certain attribute used by triggers, overviews or schedulers
     when %r{^((multi|tree_)?select|checkbox)$}
       local_data_option[:nulloption] = true if local_data_option[:nulloption].nil?
       local_data_option[:maxlength] ||= 255
+    when 'autocompletion_ajax_external_data_source'
+      local_data_option[:nulloption] = true if local_data_option[:nulloption].nil?
     end
-  end
-
-  def data_option_must_have_appropriate_values
-    data_option_validations
-      .select { |validation| validation[:failed] }
-      .each { |validation| errors.add(local_data_attr, validation[:message]) }
   end
 
   def inactive_must_be_unused_by_references
@@ -956,78 +983,15 @@ is certain attribute used by triggers, overviews or schedulers
     errors.add(:data_type, __("can't be altered after creation (you can delete the attribute and create another with the desired value)"))
   end
 
-  def local_data_option
-    @local_data_option ||= send(local_data_attr)
+  def json_field_only_on_postgresql
+    return if data_type != 'autocompletion_ajax_external_data_source'
+    return if ActiveRecord::Base.connection_db_config.configuration_hash[:adapter] == 'postgresql'
+
+    errors.add(:data_type, __('can only be created on postgresql databases'))
   end
 
   def local_data_attr
     @local_data_attr ||= to_config ? :data_option_new : :data_option
-  end
-
-  def local_data_option=(val)
-    send("#{local_data_attr}=", val)
-  end
-
-  def data_option_maxlength_check
-    [{ failed: !local_data_option[:maxlength].to_s.match?(%r{^\d+$}), message: 'must have integer for :maxlength' }]
-  end
-
-  def data_option_type_check
-    [{ failed: %w[text password tel fax email url].exclude?(local_data_option[:type]), message: 'must have one of text/password/tel/fax/email/url for :type' }]
-  end
-
-  def data_option_min_max_check
-    min = local_data_option[:min]
-    max = local_data_option[:max]
-
-    [
-      { failed:  !VALIDATE_INTEGER_REGEXP.match?(min.to_s), message: 'must have integer for :min' },
-      { failed:  !VALIDATE_INTEGER_REGEXP.match?(max.to_s), message: 'must have integer for :max' },
-      { failed:  !(min.is_a?(Integer) && min >= VALIDATE_INTEGER_MIN), message: 'min must be higher than -2147483648' },
-      { failed:  !(min.is_a?(Integer) && min <= VALIDATE_INTEGER_MAX), message: 'min must be lower than 2147483648' },
-      { failed:  !(max.is_a?(Integer) && max >= VALIDATE_INTEGER_MIN), message: 'max must be higher than -2147483648' },
-      { failed:  !(max.is_a?(Integer) && max <= VALIDATE_INTEGER_MAX), message: 'max must be lower than 2147483648' },
-      { failed:  !(max.is_a?(Integer) && min.is_a?(Integer) && min <= max), message: 'min must be lower than max' }
-    ]
-  end
-
-  def data_option_default_check
-    [{ failed: !local_data_option.key?(:default), message: 'must have value for :default' }]
-  end
-
-  def data_option_relation_check
-    [{ failed: local_data_option[:options].nil? && local_data_option[:relation].nil?, message: 'must have non-nil value for either :options or :relation' }]
-  end
-
-  def data_option_nil_check
-    [{ failed: local_data_option[:options].nil?, message: 'must have non-nil value for :options' }]
-  end
-
-  def data_option_future_check
-    [{ failed: local_data_option[:future].nil?, message: 'must have boolean value for :future' }]
-  end
-
-  def data_option_past_check
-    [{ failed: local_data_option[:past].nil?, message: 'must have boolean value for :past' }]
-  end
-
-  def data_option_validations
-    case data_type
-    when 'input'
-      data_option_type_check + data_option_maxlength_check
-    when %r{^(textarea|richtext)$}
-      data_option_maxlength_check
-    when 'integer'
-      data_option_min_max_check
-    when %r{^((multi_)?tree_select|(multi)?select|checkbox)$}
-      data_option_default_check + data_option_relation_check
-    when 'boolean'
-      data_option_default_check + data_option_nil_check
-    when 'datetime'
-      data_option_future_check + data_option_past_check
-    else
-      []
-    end
   end
 
   def ensure_multiselect

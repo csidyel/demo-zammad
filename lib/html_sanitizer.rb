@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class HtmlSanitizer
   PROCESSING_TIMEOUT     = Setting.get('html_sanitizer_processing_timeout').to_i.seconds
@@ -53,6 +53,18 @@ sanitize style of img tags
 
   def self.dynamic_image_size(string)
     HtmlSanitizer::DynamicImageSize.new.sanitize(string)
+  end
+
+=begin
+
+Adjust image size in html email for MS Outlook to always contain `width` and `height` as tags, not only as part of the `style`.
+
+  string = HtmlSanitizer.adjust_inline_image_size(article.body)
+
+=end
+
+  def self.adjust_inline_image_size(string)
+    HtmlSanitizer::AdjustInlineImageSize.new.sanitize(string)
   end
 
 end

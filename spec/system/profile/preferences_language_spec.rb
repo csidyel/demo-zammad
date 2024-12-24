@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -80,7 +80,7 @@ RSpec.describe 'Profile > Language', type: :system do
             find('input.searchableSelect-main.js-input').click
             find("[data-value=#{new_locale}].js-option").click
 
-            click_button
+            click_on 'Submit'
             session_user.reload
           end
         end
@@ -176,7 +176,7 @@ RSpec.describe 'Profile > Language', type: :system do
             find('input.searchableSelect-main.js-input').click
             find("[data-value=#{new_locale}].js-option").click
 
-            click_button
+            click_on 'Übermitteln'
             session_user.reload
           end
         end

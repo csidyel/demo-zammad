@@ -1,6 +1,8 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import type { EnumSecurityStateType } from '#shared/graphql/types.ts'
+
+import type { FormFieldContext } from '../../types/field.ts'
 
 export { EnumSecurityStateType } from '#shared/graphql/types.ts'
 
@@ -19,3 +21,13 @@ export type SecurityMessages = Record<
   EnumSecurityStateType,
   Record<SecurityOption, SecurityMessage>
 >
+
+export type FieldSecurityContext = {
+  securityAllowed?: SecurityAllowed
+  securityDefaultOptions?: SecurityDefaultOptions
+  securityMessages?: SecurityMessages
+}
+
+export interface FieldSecurityProps {
+  context: FormFieldContext<FieldSecurityContext>
+}

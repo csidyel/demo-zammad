@@ -1,12 +1,15 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { OnlineNotificationsCountDocument } from '#shared/entities/online-notification/graphql/subscriptions/onlineNotificationsCount.api.ts'
-import { useSessionStore } from '#shared/stores/session.ts'
-import type { UserData } from '#shared/types/store.ts'
+import { flushPromises } from '@vue/test-utils'
+
 import { renderComponent } from '#tests/support/components/index.ts'
 import { mockGraphQLSubscription } from '#tests/support/mock-graphql-api.ts'
-import { flushPromises } from '@vue/test-utils'
+
+import { OnlineNotificationsCountDocument } from '#shared/entities/online-notification/graphql/subscriptions/onlineNotificationsCount.api.ts'
 import { convertToGraphQLId } from '#shared/graphql/utils.ts'
+import { useSessionStore } from '#shared/stores/session.ts'
+import type { UserData } from '#shared/types/store.ts'
+
 import LayoutBottomNavigation from '../LayoutBottomNavigation.vue'
 
 describe('bottom navigation in layout', () => {
@@ -26,14 +29,10 @@ describe('bottom navigation in layout', () => {
 
     await flushPromises()
 
-    expect(view.getByIconName('mobile-home')).toBeInTheDocument()
-    expect(view.getByIconName('mobile-home').closest('a')).toHaveClass(
-      'text-blue',
-    )
+    expect(view.getByIconName('home')).toBeInTheDocument()
+    expect(view.getByIconName('home').closest('a')).toHaveClass('text-blue')
 
-    expect(
-      view.getByIconName('mobile-notification-subscribed'),
-    ).toBeInTheDocument()
+    expect(view.getByIconName('notification-subscribed')).toBeInTheDocument()
     expect(view.getByText('UT')).toBeInTheDocument()
   })
 

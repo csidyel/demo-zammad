@@ -1,13 +1,24 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import type { FileUploaded } from '#shared/components/Form/fields/FieldFile/types.ts'
 import { useApplicationStore } from '#shared/stores/application.ts'
+
 import log from './log.ts'
+
+import type { Except } from 'type-fest'
+
+export type FilePreview = 'image' | 'calendar'
 
 export interface ImageFileData {
   name: string
   type: string
   content: string
+}
+
+export interface ImageFileSource extends Except<ImageFileData, 'content'> {
+  name: string
+  type: string
+  src: string
 }
 
 interface CompressData {
@@ -20,7 +31,21 @@ interface CompressData {
 
 interface CompressOptions {
   compress?: boolean
+
   onCompress?(image: HTMLImageElement, type: string): CompressData
+}
+
+interface ValidatedFile {
+  file: File
+  label: string
+  maxSize: number
+  allowedTypes: string[]
+}
+
+export interface AllowedFile {
+  label: string
+  types: string[]
+  size: number
 }
 
 const allowCompressMime = ['image/jpeg', 'image/png']
@@ -138,6 +163,16 @@ export const blobToBase64 = async (blob: Blob) =>
     reader.readAsDataURL(blob)
   })
 
+export const dataURLToBlob = (dataURL: string) => {
+  const byteString = window.atob(dataURL.split(',')[1])
+  const mimeString = dataURL.split(',')[0].split(':')[1].split(';')[0]
+
+  // Create Uint8Array directly from the byteString
+  const ia = Uint8Array.from(byteString, (c) => c.charCodeAt(0))
+
+  return new Blob([ia], { type: mimeString })
+}
+
 export const convertFileList = async (
   filesList: Maybe<FileList | File[]>,
   options: CompressOptions = {},
@@ -199,15 +234,23 @@ export const canDownloadFile = (type?: Maybe<string>) => {
   return Boolean(type && type !== 'text/html')
 }
 
-export const canPreviewFile = (type?: Maybe<string>) => {
-  if (!type) return false
-
+export const allowedImageTypes = () => {
   const { config } = useApplicationStore()
 
-  const allowedPreviewContentTypes =
-    config['active_storage.web_image_content_types'] || []
+  return config['active_storage.web_image_content_types'] || []
+}
 
-  return allowedPreviewContentTypes.includes(type)
+export const allowedImageTypesString = () => {
+  return allowedImageTypes().join(',')
+}
+
+export const canPreviewFile = (type?: Maybe<string>): FilePreview | false => {
+  if (!type) return false
+
+  if (allowedImageTypes().includes(type)) return 'image'
+  if (type === 'text/calendar') return 'calendar'
+
+  return false
 }
 
 export const convertFilesToAttachmentInput = (
@@ -223,4 +266,59 @@ export const convertFilesToAttachmentInput = (
     files,
     formId,
   }
+}
+
+/**
+ * @param file - file Size is in bytes
+ * @param allowedSize - allowed size in bytes
+ * * */
+export const validateFileSizeLimit = (file: File, allowedSize: number) => {
+  return file.size <= allowedSize
+}
+
+export const validateFileSizes = (
+  files: File[],
+  allowedFiles: AllowedFile[],
+) => {
+  const failedFiles: Omit<ValidatedFile, 'allowedTypes'>[] = []
+  files.forEach((file) => {
+    allowedFiles.forEach((allowedFile) => {
+      if (!allowedFile.types.includes(file.type)) return
+      if (!validateFileSizeLimit(file, allowedFile.size))
+        failedFiles.push({
+          file,
+          label: allowedFile.label,
+          maxSize: allowedFile.size,
+        })
+    })
+  })
+  return failedFiles
+}
+
+/**
+ * @return {string} - A string of acceptable file types for input element.
+ * * */
+export const getAcceptableFileTypesString = (
+  allowedFiles: AllowedFile[],
+): string => {
+  const result: Set<string> = new Set([])
+  allowedFiles.forEach((file) => {
+    file.types.forEach((type) => {
+      result.add(type)
+    })
+  })
+  return Array.from(result).join(', ')
+}
+
+/**
+ * @param size file size in bytes
+ ** */
+export const humanizeFileSize = (size: number) => {
+  if (size > 1024 * 1024 * 1024) {
+    return `${Math.round((size * 10) / (1024 * 1024)) / 10} MB`
+  }
+  if (size > 1024) {
+    return `${Math.round(size / 1024)} KB`
+  }
+  return `${size} Bytes`
 }

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Gql::Mutations
   class Ticket::Merge < BaseMutation
@@ -11,7 +11,7 @@ module Gql::Mutations
     field :target_ticket, Gql::Types::TicketType, description: 'The target ticket after merging.'
 
     def self.authorize(_obj, ctx)
-      ctx[:current_user].permissions?(['ticket.agent'])
+      ctx.current_user.permissions?('ticket.agent')
     end
 
     def resolve(source_ticket:, target_ticket:)

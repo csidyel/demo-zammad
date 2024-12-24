@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Facebook
 
@@ -59,15 +59,13 @@ result
 =end
 
   def pages
-    pages = []
-    @client.get_connections('me', 'accounts').each do |page|
-      pages.push(
+    @client.get_connections('me', 'accounts').map do |page|
+      {
         id:           page['id'],
         name:         page['name'],
-        access_token: page['access_token'],
-      )
+        access_token: page['access_token']
+      }
     end
-    pages
   end
 
 =begin
@@ -319,7 +317,6 @@ result
   end
 
   def from_article(article)
-    post = nil
     if article[:type] != 'facebook feed comment'
       raise "Can't handle unknown facebook article type '#{article[:type]}'."
     end

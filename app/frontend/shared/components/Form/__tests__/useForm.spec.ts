@@ -1,12 +1,16 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { createMessage, getNode, type FormKitNode } from '@formkit/core'
+
+import { renderComponent } from '#tests/support/components/index.ts'
+import { waitForNextTick } from '#tests/support/utils.ts'
 
 import Form from '#shared/components/Form/Form.vue'
 import { useForm } from '#shared/components/Form/useForm.ts'
-import { createMessage, getNode, type FormKitNode } from '@formkit/core'
-import { renderComponent } from '#tests/support/components/index.ts'
-import { waitForNextTick } from '#tests/support/utils.ts'
-import type { FormRef } from '../types.ts'
+
 import { FormValidationVisibility } from '../types.ts'
+
+import type { FormRef, FormValues } from '../types.ts'
 
 const wrapperParameters = {
   form: true,
@@ -19,6 +23,7 @@ const schema = [
     type: 'text',
     name: 'title',
     label: 'Title',
+    delay: 20, // Add default delay to simulate live situation.
   },
   {
     type: 'textarea',
@@ -44,10 +49,16 @@ const renderForm = (options: any = {}) => {
 const getFormContext = (): FormRef => {
   return {
     formId: 'test-form',
+    formInitialSettled: true,
     formNode: getNode('test-form') as FormKitNode,
+    values: getNode('test-form')?.value as FormValues,
+    flags: {},
+    updateChangedFields: vi.fn(),
+    updateSchemaDataField: vi.fn(),
     getNodeByName: vi.fn(),
     findNodeByName: vi.fn(),
     resetForm: vi.fn(),
+    triggerFormUpdater: vi.fn(),
   }
 }
 
@@ -83,9 +94,9 @@ describe('useForm', () => {
     expect(isDisabled.value).toBe(false)
   })
 
-  it('disabled when form updater is processing', async () => {
+  it('form updater flag is true when form updater is processing', async () => {
     renderForm()
-    const { form, isDisabled } = useForm()
+    const { form, isFormUpdaterRunning } = useForm()
 
     const formNode = getNode('test-form') as FormKitNode
 
@@ -100,7 +111,7 @@ describe('useForm', () => {
       }),
     )
 
-    expect(isDisabled.value).toBe(true)
+    expect(isFormUpdaterRunning.value).toBe(true)
   })
 
   it('use values', () => {
@@ -224,5 +235,25 @@ describe('submitting form rules', () => {
     // will work, only if @submit is async
     // or manually called "resetForm"
     expect(canSubmit.value).toBeFalsy()
+  })
+
+  it('can register on change event of singlem field', async () => {
+    const onChangedFieldCallbackSpy = vi.fn()
+
+    const { view, utils } = renderForm()
+    const { form, onChangedField } = utils
+
+    // Register callback on changed title field.
+    onChangedField('title', onChangedFieldCallbackSpy)
+
+    await view.events.debounced(() =>
+      view.events.type(view.getByLabelText('Title'), 'Some title'),
+    )
+
+    expect(onChangedFieldCallbackSpy).toHaveBeenCalledWith(
+      'Some title',
+      '',
+      form.value?.getNodeByName('title'),
+    )
   })
 })

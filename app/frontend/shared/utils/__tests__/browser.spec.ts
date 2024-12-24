@@ -1,4 +1,4 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { generateFingerprint } from '../browser.ts'
 
@@ -11,6 +11,6 @@ vi.hoisted(() => {
 
 describe('browser', () => {
   it('generate fingerprint', () => {
-    expect(generateFingerprint()).toBe('1613472439')
+    expect(generateFingerprint()).toBe('91006247')
   })
 })

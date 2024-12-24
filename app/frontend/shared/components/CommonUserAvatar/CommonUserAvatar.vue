@@ -1,47 +1,56 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useApplicationStore } from '#shared/stores/application.ts'
-import { getInitials } from '#shared/utils/formatter.ts'
+import { computed, toRef } from 'vue'
+
+import { useAppName } from '#shared/composables/useAppName.ts'
+import { useAvatarIndicator } from '#shared/composables/useAvatarIndicator.ts'
+import { EnumTaskbarApp } from '#shared/graphql/types.ts'
+import { getIdFromGraphQLId } from '#shared/graphql/utils.ts'
 import { i18n } from '#shared/i18n.ts'
+import { getUserAvatarClasses } from '#shared/initializer/initializeUserAvatarClasses.ts'
+import { useApplicationStore } from '#shared/stores/application.ts'
 import {
   SYSTEM_USER_ID,
   SYSTEM_USER_INTERNAL_ID,
 } from '#shared/utils/constants.ts'
-import { getIdFromGraphQLId } from '#shared/graphql/utils.ts'
+import { getInitials } from '#shared/utils/formatter.ts'
+
 import CommonAvatar from '../CommonAvatar/CommonAvatar.vue'
-import type { AvatarSize } from '../CommonAvatar/index.ts'
-import type { AvatarUser } from './types.ts'
+
 import logo from './assets/logo.svg'
+
+import type { AvatarUserAccess, AvatarUserLive, AvatarUser } from './types.ts'
+import type { AvatarSize } from '../CommonAvatar/index.ts'
 
 export interface Props {
   entity: AvatarUser
   size?: AvatarSize
   personal?: boolean
   decorative?: boolean
+  initialsOnly?: boolean
+  live?: AvatarUserLive
+  access?: AvatarUserAccess
+  noMuted?: boolean
+  noIndicator?: boolean
 }
 
-const props = defineProps<Props>()
-
-const initials = computed(() => {
-  const { lastname, firstname, email } = props.entity
-
-  return getInitials(firstname, lastname, email)
+const props = withDefaults(defineProps<Props>(), {
+  size: 'medium',
 })
 
-const colors = [
-  'bg-gray',
-  'bg-red-bright',
-  'bg-yellow',
-  'bg-blue',
-  'bg-green',
-  'bg-pink',
-  'bg-orange',
-]
+const initials = computed(() => {
+  const { lastname, firstname, email, phone, mobile } = props.entity
+
+  return getInitials(firstname, lastname, email, phone, mobile)
+})
+
+const { backgroundColors } = getUserAvatarClasses()
 
 const fullName = computed(() => {
-  const { lastname, firstname } = props.entity
+  const { lastname, firstname, fullname } = props.entity
+
+  if (fullname) return fullname
 
   return [firstname, lastname].filter(Boolean).join(' ')
 })
@@ -53,23 +62,24 @@ const colorClass = computed(() => {
 
   if (internalId === SYSTEM_USER_INTERNAL_ID) return 'bg-white'
 
-  // get color based on mod of the fullname length
+  // get color based on mod of the integer ID
   // so it stays consistent between different interfaces and logins
-  return colors[internalId % (colors.length - 1)]
+  return backgroundColors[internalId % (backgroundColors.length - 1)]
 })
 
 const sources = ['facebook', 'twitter']
 
 const icon = computed(() => {
   const { source } = props.entity
-  if (source && sources.includes(source)) return `mobile-${source}`
+  if (source && sources.includes(source)) return source
   return null
 })
 
+const appName = useAppName()
 const application = useApplicationStore()
 
 const image = computed(() => {
-  if (icon.value) return null
+  if (icon.value || props.initialsOnly) return null
   if (props.entity.id === SYSTEM_USER_ID) return logo
   if (!props.entity.image) return null
 
@@ -86,13 +96,20 @@ const isVip = computed(() => {
   return !props.personal && props.entity.vip
 })
 
+const { indicatorIcon, indicatorLabel, indicatorIsIdle } = useAvatarIndicator(
+  toRef(props, 'entity'),
+  toRef(props, 'personal'),
+  toRef(props, 'live'),
+  toRef(props, 'access'),
+)
+
+const isMuted = computed(() => !props.noMuted && indicatorIsIdle.value)
+
 const className = computed(() => {
   const classes = [colorClass.value]
 
-  if (props.entity.outOfOffice) {
-    classes.push('opacity-100 grayscale-[70%]')
-  } else if (props.entity.active === false) {
-    classes.push('opacity-20 grayscale')
+  if (isMuted.value) {
+    classes.push('opacity-60')
   }
 
   return classes
@@ -105,17 +122,52 @@ const label = computed(() => {
   if (isVip.value) label += ` (${i18n.t('VIP')})`
   return label
 })
+
+const indicator = computed(() => {
+  if (appName === EnumTaskbarApp.Mobile || props.noIndicator) return null
+  return indicatorIcon.value
+})
+
+const indicatorClass = computed(() => {
+  if (isMuted.value) return 'fill-stone-200 dark:fill-neutral-500'
+  return 'text-black dark:text-white'
+})
+
+const indicatorSizes = {
+  xs: 'xs',
+  small: 'xs',
+  medium: 'xs',
+  normal: 'tiny',
+  large: 'small',
+  xl: 'medium',
+} as const
+
+const indicatorSize = computed(() => indicatorSizes[props.size])
 </script>
 
 <template>
-  <CommonAvatar
-    :initials="initials"
-    :size="size"
-    :icon="icon"
-    :class="className"
-    :image="image"
-    :vip-icon="isVip ? 'mobile-crown' : undefined"
-    :decorative="decorative"
-    :aria-label="label"
-  />
+  <div class="relative">
+    <CommonAvatar
+      :initials="initials"
+      :size="size"
+      :icon="icon"
+      :class="className"
+      :image="image"
+      :vip-icon="isVip ? 'vip-user' : undefined"
+      :decorative="decorative"
+      :aria-label="label"
+    />
+    <div
+      v-if="indicator"
+      v-tooltip="indicatorLabel"
+      class="absolute bottom-0 end-0 flex translate-y-1 items-center justify-center rounded-full bg-blue-200 p-[3px] outline outline-1 -outline-offset-1 outline-neutral-100 ltr:translate-x-2 rtl:-translate-x-2 dark:bg-gray-700 dark:outline-gray-900"
+    >
+      <CommonIcon
+        :class="indicatorClass"
+        :label="indicatorLabel"
+        :size="indicatorSize"
+        :name="indicator"
+      />
+    </div>
+  </div>
 </template>

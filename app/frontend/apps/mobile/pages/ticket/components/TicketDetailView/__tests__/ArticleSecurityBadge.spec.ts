@@ -1,9 +1,12 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { convertToGraphQLId } from '#shared/graphql/utils.ts'
-import { getByRole, getByText } from '@testing-library/vue'
+import { within } from '@testing-library/vue'
+
 import { renderComponent } from '#tests/support/components/index.ts'
+
 import { EnumSecurityStateType } from '#shared/graphql/types.ts'
+import { convertToGraphQLId } from '#shared/graphql/utils.ts'
+
 import ArticleSecurityBadge, { type Props } from '../ArticleSecurityBadge.vue'
 
 const renderBadge = (propsData: Props) => {
@@ -33,11 +36,11 @@ describe('rendering security badge', () => {
     it('renders successful encryption, if provided', async () => {
       const view = renderEncryption(true, SUCCESS_COMMENT)
 
-      expect(view.getByIconName('mobile-lock')).toBeInTheDocument()
+      expect(view.getByIconName('lock')).toBeInTheDocument()
       expect(view.getByLabelText('Encrypted')).toBeInTheDocument()
-      expect(view.queryByIconName('mobile-unlock')).not.toBeInTheDocument()
-      expect(view.queryByIconName('mobile-signed')).not.toBeInTheDocument()
-      expect(view.queryByIconName('mobile-not-signed')).not.toBeInTheDocument()
+      expect(view.queryByIconName('unlock')).not.toBeInTheDocument()
+      expect(view.queryByIconName('signed')).not.toBeInTheDocument()
+      expect(view.queryByIconName('not-signed')).not.toBeInTheDocument()
 
       await view.events.click(view.getByRole('button'))
 
@@ -50,7 +53,7 @@ describe('rendering security badge', () => {
     it('ignores encryption error, if comment is not provided', () => {
       const view = renderEncryption(false, '')
 
-      expect(view.queryByIconName('mobile-lock')).not.toBeInTheDocument()
+      expect(view.queryByIconName('lock')).not.toBeInTheDocument()
       expect(view.queryByLabelText('Encrypted')).not.toBeInTheDocument()
     })
 
@@ -59,17 +62,15 @@ describe('rendering security badge', () => {
 
       expect(view.getByText('Security Error')).toBeInTheDocument()
 
-      const icon = view.getByIconName('mobile-unlock')
+      const icon = view.getByIconName('unlock')
       expect(icon).toBeInTheDocument()
 
       await view.events.click(icon)
 
       const popup = view.getByTestId('popupWindow')
-      expect(getByText(popup, 'Security Error')).toBeInTheDocument()
-      expect(getByText(popup, 'Encryption: error!')).toBeInTheDocument()
-      expect(
-        getByRole(popup, 'button', { name: 'Try again' }),
-      ).toBeInTheDocument()
+      expect(within(popup).getByText('Security Error')).toBeInTheDocument()
+      expect(within(popup).getByText('Encryption: error!')).toBeInTheDocument()
+      expect(within(popup).getByText('Try again')).toBeInTheDocument()
     })
   })
 
@@ -85,9 +86,9 @@ describe('rendering security badge', () => {
       const view = renderSign(true, SUCCESS_COMMENT)
 
       expect(view.getByLabelText('Signed')).toBeInTheDocument()
-      expect(view.getByIconName('mobile-signed')).toBeInTheDocument()
-      expect(view.queryByIconName('mobile-not-signed')).not.toBeInTheDocument()
-      expect(view.queryByIconName('mobile-lock')).not.toBeInTheDocument()
+      expect(view.getByIconName('signed')).toBeInTheDocument()
+      expect(view.queryByIconName('not-signed')).not.toBeInTheDocument()
+      expect(view.queryByIconName('lock')).not.toBeInTheDocument()
       expect(view.queryByLabelText('Encrypted')).not.toBeInTheDocument()
 
       await view.events.click(view.getByRole('button'))
@@ -99,8 +100,8 @@ describe('rendering security badge', () => {
     it('ignores sign error, if comment is not provided', () => {
       const view = renderSign(false, '')
 
-      expect(view.queryByIconName('mobile-signed')).not.toBeInTheDocument()
-      expect(view.queryByIconName('mobile-not-signed')).not.toBeInTheDocument()
+      expect(view.queryByIconName('signed')).not.toBeInTheDocument()
+      expect(view.queryByIconName('not-signed')).not.toBeInTheDocument()
       expect(view.queryByLabelText('Signed')).not.toBeInTheDocument()
       expect(view.queryByLabelText('Unsigned')).not.toBeInTheDocument()
     })
@@ -110,17 +111,15 @@ describe('rendering security badge', () => {
 
       expect(view.getByText('Security Error')).toBeInTheDocument()
 
-      const icon = view.getByIconName('mobile-not-signed')
+      const icon = view.getByIconName('not-signed')
       expect(icon).toBeInTheDocument()
 
       await view.events.click(icon)
 
       const popup = view.getByTestId('popupWindow')
-      expect(getByText(popup, 'Security Error')).toBeInTheDocument()
-      expect(getByText(popup, 'Sign: error!')).toBeInTheDocument()
-      expect(
-        getByRole(popup, 'button', { name: 'Try again' }),
-      ).toBeInTheDocument()
+      expect(within(popup).getByText('Security Error')).toBeInTheDocument()
+      expect(within(popup).getByText('Sign: error!')).toBeInTheDocument()
+      expect(within(popup).getByText('Try again')).toBeInTheDocument()
     })
   })
 
@@ -137,8 +136,8 @@ describe('rendering security badge', () => {
 
     expect(view.queryByText('Security Error')).not.toBeInTheDocument()
     expect(view.getByLabelText('Signed')).toBeInTheDocument()
-    expect(view.getByIconName('mobile-signed')).toBeInTheDocument()
-    expect(view.getByIconName('mobile-lock')).toBeInTheDocument()
+    expect(view.getByIconName('signed')).toBeInTheDocument()
+    expect(view.getByIconName('lock')).toBeInTheDocument()
     expect(view.getByLabelText('Encrypted')).toBeInTheDocument()
   })
 
@@ -156,19 +155,19 @@ describe('rendering security badge', () => {
     expect(view.getByText('Security Error')).toBeInTheDocument()
 
     // signed icon has priority over lock icon, when both failed
-    const icon = view.getByIconName('mobile-not-signed')
+    const icon = view.getByIconName('not-signed')
     expect(icon).toBeInTheDocument()
 
     await view.events.click(icon)
 
     const popup = view.getByTestId('popupWindow')
-    expect(getByText(popup, 'Security Error')).toBeInTheDocument()
-    expect(getByText(popup, 'Encryption: encryption error')).toBeInTheDocument()
-    expect(getByText(popup, 'Sign: sign error')).toBeInTheDocument()
-
+    expect(within(popup).getByText('Security Error')).toBeInTheDocument()
     expect(
-      getByRole(popup, 'button', { name: 'Try again' }),
+      within(popup).getByText('Encryption: encryption error'),
     ).toBeInTheDocument()
+    expect(within(popup).getByText('Sign: sign error')).toBeInTheDocument()
+
+    expect(within(popup).getByText('Try again')).toBeInTheDocument()
   })
 
   it('renders no information available, if article is secure, but there are no messages', async () => {

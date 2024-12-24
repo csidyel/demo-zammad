@@ -1,17 +1,31 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { createApp } from 'vue'
-import initializeApp from '#mobile/initialize.ts'
-import App from '#mobile/App.vue'
-import { useSessionStore } from '#shared/stores/session.ts'
+
+import '#mobile/styles/main.css'
+
+import { initializeAppName } from '#shared/composables/useAppName.ts'
+import { useForceDesktop } from '#shared/composables/useForceDesktop.ts'
+import initializeGlobalComponents from '#shared/initializer/globalComponents.ts'
+import initializeGlobalProperties from '#shared/initializer/globalProperties.ts'
+import { initializeAbstracts } from '#shared/initializer/initializeAbstracts.ts'
 import initializeStoreSubscriptions from '#shared/initializer/storeSubscriptions.ts'
 import { useApplicationStore } from '#shared/stores/application.ts'
-import { useLocaleStore } from '#shared/stores/locale.ts'
-import initializeApolloClient from '#mobile/server/apollo/index.ts'
-import initializeRouter from '#mobile/router/index.ts'
 import { useAuthenticationStore } from '#shared/stores/authentication.ts'
-import { useForceDesktop } from '#shared/composables/useForceDesktop.ts'
-import { ensureAfterAuth } from './pages/login/after-auth/composable/useAfterAuthPlugins.ts'
+import initializeStore from '#shared/stores/index.ts'
+import { useLocaleStore } from '#shared/stores/locale.ts'
+import { useSessionStore } from '#shared/stores/session.ts'
+
+import { initializeForm, initializeFormFields } from '#mobile/form/index.ts'
+import { initializeGlobalComponentStyles } from '#mobile/initializer/initializeGlobalComponentStyles.ts'
+import initializeGlobalDirectives from '#mobile/initializer/initializeGlobalDirectives.ts'
+import { initializeMobileIcons } from '#mobile/initializer/initializeMobileIcons.ts'
+import { initializeMobileVisuals } from '#mobile/initializer/mobileVisuals.ts'
+import initializeRouter from '#mobile/router/index.ts'
+import initializeApolloClient from '#mobile/server/apollo/index.ts'
+
+import App from './AppMobile.vue'
+import { ensureAfterAuth } from './pages/authentication/after-auth/composable/useAfterAuthPlugins.ts'
 
 const { forceDesktopLocalStorage } = useForceDesktop()
 
@@ -21,15 +35,28 @@ if (forceDesktopLocalStorage.value) window.location.href = '/'
 
 export default async function mountApp(): Promise<void> {
   const app = createApp(App)
+  initializeAppName('mobile')
+
+  initializeApolloClient(app)
 
   const router = initializeRouter(app)
 
   Object.defineProperty(window, 'Router', { value: router, configurable: true })
 
-  initializeApp(app)
-  initializeApolloClient(app)
-
+  initializeStore(app)
+  initializeMobileIcons()
+  initializeForm(app)
+  initializeFormFields()
+  initializeGlobalComponentStyles()
+  initializeGlobalComponents(app)
+  initializeGlobalProperties(app)
+  initializeGlobalDirectives(app)
+  initializeMobileVisuals()
   initializeStoreSubscriptions()
+
+  initializeAbstracts({
+    durations: { normal: { enter: 300, leave: 200 } },
+  }) // :TODO move this argument to own config?
 
   const session = useSessionStore()
   const authentication = useAuthenticationStore()

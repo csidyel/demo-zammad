@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class MacrosController < ApplicationController
   prepend_before_action :authenticate_and_authorize!
@@ -134,6 +134,10 @@ curl http://localhost/api/v1/macros.json -v -u #{login}:#{password} -H "Content-
 
   def update
     model_update_render(Macro, params)
+  end
+
+  def search
+    model_search_render(Macro, params)
   end
 
 =begin

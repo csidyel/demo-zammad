@@ -1,8 +1,8 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module KnowledgeBaseHumanDateHelper
   def human_time_tag(time, locale: system_locale_via_uri)
-    timezone     = Setting.get('timezone_default_sanitized')
+    timezone     = Setting.get('timezone_default')
     time_in_zone = time.in_time_zone(timezone)
     locale_name  = locale.locale
 

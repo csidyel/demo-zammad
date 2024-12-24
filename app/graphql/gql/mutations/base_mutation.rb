@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Gql::Mutations
   # class BaseMutation < GraphQL::Schema::RelayClassicMutation
@@ -48,6 +48,10 @@ module Gql::Mutations
       schema.field graphql_field_name, mutation: self
     end
 
+    # Generate a response with user errors
+    #
+    #   error_response({ message: 'Helpful error message.', field: 'error_field' }, ...)
+    #
     def error_response(*errors)
       { errors: errors }
     end

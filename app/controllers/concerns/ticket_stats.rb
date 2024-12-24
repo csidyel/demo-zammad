@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module TicketStats
   extend ActiveSupport::Concern
@@ -20,7 +20,7 @@ module TicketStats
     volume_by_year = []
     now            = Time.zone.now
 
-    (0..11).each do |month_back| # rubocop:disable Style/EachForSimpleLoop
+    (0..11).each do |month_back|
       date_to_check = now - month_back.month
       date_start = "#{date_to_check.year}-#{date_to_check.month}-01 00:00:00"
       date_end   = "#{date_to_check.year}-#{date_to_check.month}-#{date_to_check.end_of_month.day} 00:00:00"

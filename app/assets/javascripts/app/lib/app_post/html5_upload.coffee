@@ -26,6 +26,7 @@ class App.Html5Upload extends App.Controller
       key:                    @key
       data:                   @data
       onFileAdded:            @onFileAdded
+      canUploadFiles:         @canUploadFiles
     )
     @inputField.attr('data-initialized', true)
 
@@ -76,6 +77,9 @@ class App.Html5Upload extends App.Controller
     @hideFileUploading()
     @inputField.val('')
 
+    if message
+      message = JSON.parse(message)
+
     @callbackFileUploadStop?()
 
     new App.ControllerModal(
@@ -83,7 +87,7 @@ class App.Html5Upload extends App.Controller
       buttonCancel: 'Cancel'
       buttonCancelClass: 'btn--danger'
       buttonSubmit: false
-      message: message || __('The file could not be uploaded.')
+      message: message['error_human'] || message['error'] || __('The file could not be uploaded.')
       shown: true
       small: true
       container: @inputField.closest('.content')

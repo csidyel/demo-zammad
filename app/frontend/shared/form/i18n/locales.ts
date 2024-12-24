@@ -1,10 +1,13 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { FormKitValidationMessages } from '@formkit/validation'
 import { createMessageName } from '@formkit/validation'
-import type { FormKitLocale } from '@formkit/i18n'
+
 import { i18n } from '#shared/i18n.ts'
 import { commaSeparatedList, order } from '#shared/utils/formatter.ts'
+
+import type { FormKitLocale } from '@formkit/i18n'
+import type { FormKitValidationMessages } from '@formkit/validation'
+import type { ComputedRef } from 'vue'
 
 interface FormKitLocaleExtended extends FormKitLocale {
   validation: FormKitValidationMessages
@@ -90,10 +93,6 @@ const loadLocales = (): FormKitLocaleExtended => {
        */
       changeDate: () => i18n.t('Change date'),
       /**
-       * Shown when the date is invalid.
-       */
-      invalidDate: () => i18n.t('The selected date is invalid.'),
-      /**
        * Shown above error summaries when someone attempts to submit a form with
        * errors and the developer has implemented `<FormKitSummary />`.
        */
@@ -102,6 +101,10 @@ const loadLocales = (): FormKitLocaleExtended => {
        * Shown when there is something to close
        */
       close: () => i18n.t('Close'),
+      /**
+       * Shown when there is something to open.
+       */
+      open: () => i18n.t('Open'),
     },
 
     validation: {
@@ -310,6 +313,7 @@ const loadLocales = (): FormKitLocaleExtended => {
        * @see {@link https://docs.formkit.com/essentials/validation#confirm}
        */
       confirm() {
+        // TODO: Check if message is in a good shape (e.g. for the usage for password + confirm password).
         /* <i18n case="Shown when the user-provided value does not equal the value of the matched input."> */
         return i18n.t("This field doesn't correspond to the expected value.")
         /* </i18n> */
@@ -519,11 +523,18 @@ const loadLocales = (): FormKitLocaleExtended => {
             }
             return false
           })
-          .filter((name) => !!name)
-        labels.unshift(name)
+          .filter((name) => !!name) as unknown as ComputedRef<string>[]
+        labels.unshift(name as unknown as ComputedRef<string>)
 
         /* <i18n case="Shown when the user-provided has not provided a value for at least one of the required fields."> */
-        return `${labels.join(' or ')} is required.`
+        // return `${labels.join(' or ')} is required.`
+        const translatedSeparator = i18n.t('or')
+        return i18n.t(
+          '%s is required.',
+          labels
+            .map((label: ComputedRef<string>) => label.value)
+            .join(` ${translatedSeparator} `),
+        )
         /* </i18n> */
       },
 
@@ -549,6 +560,11 @@ const loadLocales = (): FormKitLocaleExtended => {
         return i18n.t('Please include a valid url.')
         /* </i18n> */
       },
+
+      /**
+       * Shown when the date is invalid.
+       */
+      invalidDate: () => i18n.t('The selected date is invalid.'),
     },
   }
 }

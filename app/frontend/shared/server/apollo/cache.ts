@@ -1,12 +1,14 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { InMemoryCache } from '@apollo/client/core'
-import type { InMemoryCacheConfig } from '@apollo/client/cache/inmemory/types'
-import type { ImportGlobEagerDefault } from '#shared/types/utils.ts'
+
 import type {
   CacheInitializerModules,
   RegisterInMemoryCacheConfig,
 } from '#shared/types/server/apollo/client.ts'
+import type { ImportGlobEagerDefault } from '#shared/types/utils.ts'
+
+import type { InMemoryCacheConfig } from '@apollo/client/cache/inmemory/types'
 
 let cacheConfig: InMemoryCacheConfig = {}
 
@@ -36,7 +38,6 @@ const createCache = (
   additionalCacheInitializerModules: CacheInitializerModules = {},
 ): InMemoryCache => {
   registerInitializeModules(additionalCacheInitializerModules)
-
   return new InMemoryCache(cacheConfig)
 }
 

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Gql::Types
   class OrganizationType < Gql::Types::BaseObject
@@ -19,7 +19,9 @@ module Gql::Types
       field :vip, Boolean
       field :domain, String
       field :domain_assignment, Boolean
-      field :members, Gql::Types::UserType.connection_type
+      field :members, Gql::Types::UserType.connection_type, description: 'Users assigned via primary organization'
+      field :secondary_members, Gql::Types::UserType.connection_type, description: 'Users assigned via secondary organization'
+      field :all_members, Gql::Types::UserType.connection_type, description: 'All assigned users'
       field :tickets_count, Gql::Types::TicketCountType, method: :itself
     end
 

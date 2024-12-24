@@ -29,7 +29,7 @@
   variables:
     MATTERMOST_URL: 'http://ci-service-mattermost:8065'
     MATTERMOST_USER: 'zammad'
-    MATTERMOST_PASSWORD: 'zammad'
+    MATTERMOST_PASSWORD: 'ZammaD-2024-Mattermost!'
     MATTERMOST_CHANNEL: 'zammad-channel'
 
 .variables_idoit:
@@ -84,7 +84,7 @@
     alias: selenium-firefox
 
   redis:
-    name: $CI_REGISTRY/docker/zammad-redis:stable
+    name: $CI_REGISTRY/docker/zammad-redis:$REDIS_TAG
     alias: redis
 
   memcached:
@@ -101,7 +101,7 @@
     alias: ci-service-proxy
 
   auth:
-    name: $CI_REGISTRY/docker/zammad-auth:develop
+    name: $CI_REGISTRY/docker/zammad-auth:stable
     alias: ci-service-auth
 
   mattermost:

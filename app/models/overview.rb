@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Overview < ApplicationModel
   include HasDefaultModelUserRelations
@@ -7,9 +7,13 @@ class Overview < ApplicationModel
   include ChecksConditionValidation
   include CanSeed
   include CanPriorization
+  include HasSearchIndexBackend
+  include CanSelector
+  include CanSearch
 
   include Overview::Assets
   include Overview::TriggersSubscriptions
+  include Overview::SearchIndex
 
   has_and_belongs_to_many :roles, after_add: :cache_update, after_remove: :cache_update, class_name: 'Role'
   has_and_belongs_to_many :users, after_add: :cache_update, after_remove: :cache_update, class_name: 'User'
@@ -18,6 +22,9 @@ class Overview < ApplicationModel
   store     :view
   validates :name, presence: true
   validates :roles, presence: true
+
+  has_many :overview_sortings, class_name: 'User::OverviewSorting', dependent: :destroy
+  association_attributes_ignored :overview_sortings
 
   before_create :fill_link_on_create
   before_update :fill_link_on_update

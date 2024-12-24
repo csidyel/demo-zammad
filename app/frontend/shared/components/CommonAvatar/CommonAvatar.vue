@@ -1,8 +1,11 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import { i18n } from '#shared/i18n.ts'
 import { computed } from 'vue'
+
+import { i18n } from '#shared/i18n.ts'
+import { getAvatarClasses } from '#shared/initializer/initializeAvatarClasses.ts'
+
 import type { AvatarSize } from './types.ts'
 
 export interface Props {
@@ -12,7 +15,7 @@ export interface Props {
   // name of the icon
   icon?: Maybe<string>
   size?: AvatarSize
-  vipIcon?: Maybe<'mobile-crown' | 'mobile-crown-silver'>
+  vipIcon?: Maybe<'vip-user' | 'vip-organization'>
   ariaLabel?: Maybe<string>
   decorative?: boolean
 }
@@ -23,7 +26,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const iconSizes = {
-  xs: 'tiny',
+  xs: 'xs',
   small: 'small',
   medium: 'base',
   normal: 'medium',
@@ -40,19 +43,18 @@ const avatarLabel = computed(() => {
   if (props.decorative) return undefined
   return props.ariaLabel || i18n.t('Avatar with initials %s', props.initials)
 })
+
+const classMap = getAvatarClasses()
 </script>
 
 <template>
   <span
+    class="relative flex shrink-0 select-none items-center justify-center rounded-full bg-cover bg-center"
+    :class="[`size-${size}`, classMap.base]"
     :style="{
       backgroundImage: image ? `url(${image})` : undefined,
       backgroundRepeat: image ? 'no-repeat' : undefined,
     }"
-    :class="[
-      'relative inline-flex h-10 w-10 shrink-0 select-none text-black',
-      'items-center justify-center rounded-full bg-cover bg-center',
-      `size-${size}`,
-    ]"
     role="img"
     :aria-label="avatarLabel"
     :aria-hidden="decorative ? 'true' : undefined"
@@ -60,12 +62,14 @@ const avatarLabel = computed(() => {
   >
     <CommonIcon
       v-if="vipIcon"
-      size="xl"
-      class="vip pointer-events-none absolute -top-[48px] w-10 ltr:left-1/2 ltr:-ml-5 rtl:right-1/2 rtl:-mr-5"
+      class="vip pointer-events-none absolute"
       :class="
-        vipIcon === 'mobile-crown-silver' ? 'text-gray-100' : 'text-yellow'
+        vipIcon === 'vip-organization'
+          ? classMap.vipOrganization
+          : classMap.vipUser
       "
       :name="vipIcon"
+      :size="iconSizes[props.size]"
       decorative
     />
     <CommonIcon v-if="icon" :name="icon" :size="iconSize" />
@@ -75,12 +79,12 @@ const avatarLabel = computed(() => {
   </span>
 </template>
 
-<style scoped lang="scss">
+<style scoped>
 .size-xs {
   @apply h-6 w-6 text-xs leading-6;
 
   .vip {
-    @apply -top-[49px] -ml-2 w-4;
+    @apply -translate-y-3;
   }
 }
 
@@ -88,7 +92,15 @@ const avatarLabel = computed(() => {
   @apply h-8 w-8 text-xs leading-8;
 
   .vip {
-    @apply -top-[49px] -ml-3 w-6;
+    @apply -translate-y-4;
+  }
+}
+
+.size-medium {
+  @apply h-10 w-10 text-base leading-10;
+
+  .vip {
+    @apply -translate-y-5;
   }
 }
 
@@ -96,7 +108,7 @@ const avatarLabel = computed(() => {
   @apply h-14 w-14 text-2xl leading-[5rem];
 
   .vip {
-    @apply -top-[49px] -ml-6 w-12;
+    @apply -translate-y-[1.85rem];
   }
 }
 
@@ -104,7 +116,7 @@ const avatarLabel = computed(() => {
   @apply h-20 w-20 text-4xl leading-[5rem];
 
   .vip {
-    @apply -top-[51px] -ml-8 w-16;
+    @apply -translate-y-[2.65rem];
   }
 }
 
@@ -112,7 +124,7 @@ const avatarLabel = computed(() => {
   @apply h-36 w-36 text-6xl leading-[5rem];
 
   .vip {
-    @apply -top-[55px] -ml-12 w-24;
+    @apply -translate-y-[4.85rem];
   }
 }
 </style>

@@ -1,9 +1,10 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { useRouter } from 'vue-router'
 
 import { redirectToError } from '#shared/router/error.ts'
 import type { GraphQLHandlerError } from '#shared/types/error.ts'
 import { ErrorStatusCodes, GraphQLErrorTypes } from '#shared/types/error.ts'
-import { useRouter } from 'vue-router'
 
 interface ErrorMessages {
   notFound?: string
@@ -21,7 +22,7 @@ export const useErrorHandler = () => {
       let statusCode: number
 
       if (errorHandler.type === GraphQLErrorTypes.RecordNotFound) {
-        title = __('Not found')
+        title = __('Not Found')
         message = messages.notFound
         statusCode = ErrorStatusCodes.NotFound
       } else if (errorHandler.type === GraphQLErrorTypes.Forbidden) {
@@ -31,8 +32,8 @@ export const useErrorHandler = () => {
       } else if (errorHandler.type !== GraphQLErrorTypes.NotAuthorized) {
         title = __('Internal Error')
         message = errorHandler.message
-          ? __("We're sorry, but something went wrong. Received message: %s")
-          : __("We're sorry, but something went wrong.")
+          ? __('Something went wrong. Received message: %s')
+          : __('Something went wrong.')
         messagePlaceholder = errorHandler.message ? [errorHandler.message] : []
         statusCode = ErrorStatusCodes.InternalError
       } else {

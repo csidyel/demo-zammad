@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class LdapSource < ApplicationModel
   include CanPriorization
@@ -10,6 +10,7 @@ class LdapSource < ApplicationModel
   store :preferences
 
   def self.by_user(user)
+    return if user.blank? || user.source.blank?
     return if !%r{^Ldap::(\d+)$}.match?(user.source)
 
     LdapSource.find(user.source.split('::')[1])

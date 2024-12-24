@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 # Adds certain (missing) meta data when creating articles.
 # This module depends on AddsMetadataOriginById to run before it.
@@ -11,7 +11,8 @@ module Ticket::Article::AddsMetadataGeneral
     'twitter direct-message',
     'facebook feed post',
     'facebook feed comment',
-    'sms'
+    'sms',
+    'whatsapp message',
   ].freeze
 
   included do
@@ -62,11 +63,12 @@ module Ticket::Article::AddsMetadataGeneral
   def metadata_general_process_from
     type        = Ticket::Article::Type.lookup(id: type_id)
     is_customer = !author.permissions?('ticket.agent')
+    fullname    = author.fullname(email_fallback: false).presence
 
-    self.from = if %w[web phone].include?(type.name) && is_customer
-                  Channel::EmailBuild.recipient_line "#{author.firstname} #{author.lastname}", author.email
+    self.from = if %w[web phone].include?(type.name) && is_customer && author.email.present?
+                  Channel::EmailBuild.recipient_line fullname, author.email
                 else
-                  "#{author.firstname} #{author.lastname}"
+                  fullname
                 end
   end
 end

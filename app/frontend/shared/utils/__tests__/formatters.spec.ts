@@ -1,4 +1,4 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { getInitials, toClassName } from '../formatter.ts'
 
@@ -27,6 +27,11 @@ describe('getInitials', () => {
     expect(getInitials('John', 'Doe')).toBe('JD')
     expect(getInitials('John', 'Doe', '')).toBe('JD')
     expect(getInitials('John', 'Doe', 'email@mail.com')).toBe('JD')
+  })
+
+  it('returns last two numbers from phone and mobile', () => {
+    expect(getInitials('', '', '', '490123456789')).toBe('89')
+    expect(getInitials('', '', '', '', '491234567890')).toBe('90')
   })
 })
 

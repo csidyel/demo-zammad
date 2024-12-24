@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Gql::Queries
   class Search < BaseQuery
@@ -12,11 +12,15 @@ module Gql::Queries
     type [Gql::Types::SearchResultType, { null: false }], null: false
 
     def resolve(search:, only_in: nil, limit: 10)
-      Service::Search.new(current_user: context.current_user).execute(
-        term:    search,
-        objects: only_in ? [only_in] : Gql::Types::SearchResultType.searchable_models,
-        options: { limit: limit }
-      )
+      Service::Search
+        .new(
+          current_user: context.current_user,
+          query:        search,
+          objects:      only_in ? [only_in] : Gql::Types::SearchResultType.searchable_models,
+          options:      { limit: limit }
+        )
+        .execute
+        .flattened
     end
   end
 end

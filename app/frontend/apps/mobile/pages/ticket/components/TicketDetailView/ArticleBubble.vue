@@ -1,31 +1,36 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 /* eslint-disable vue/no-v-html */
 
-import CommonUserAvatar from '#shared/components/CommonUserAvatar/CommonUserAvatar.vue'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { i18n } from '#shared/i18n.ts'
-import { textToHtml } from '#shared/utils/helpers.ts'
-import { useSessionStore } from '#shared/stores/session.ts'
+
+import CommonFilePreview from '#shared/components/CommonFilePreview/CommonFilePreview.vue'
+import CommonUserAvatar from '#shared/components/CommonUserAvatar/CommonUserAvatar.vue'
+import { useArticleToggleMore } from '#shared/composables/useArticleToggleMore.ts'
+import { useAttachments } from '#shared/composables/useAttachments.ts'
+import { useHtmlInlineImages } from '#shared/composables/useHtmlInlineImages.ts'
+import { useHtmlLinks } from '#shared/composables/useHtmlLinks.ts'
+import type { ImageViewerFile } from '#shared/composables/useImageViewer.ts'
+import { useImageViewer } from '#shared/composables/useImageViewer.ts'
+import type { Attachment } from '#shared/entities/attachment/types.ts'
 import type {
   TicketArticleSecurityState,
   TicketArticlesQuery,
 } from '#shared/graphql/types.ts'
-import type { ConfidentTake } from '#shared/types/utils.ts'
-import type { ImageViewerFile } from '#shared/composables/useImageViewer.ts'
-import { useImageViewer } from '#shared/composables/useImageViewer.ts'
-import CommonFilePreview from '#mobile/components/CommonFilePreview/CommonFilePreview.vue'
-import stopEvent from '#shared/utils/events.ts'
 import { getIdFromGraphQLId } from '#shared/graphql/utils.ts'
-import type { TicketArticleAttachment } from '#shared/entities/ticket/types.ts'
-import { useRouter } from 'vue-router'
-import { useApplicationStore } from '#shared/stores/application.ts'
-import { isStandalone } from '#shared/utils/pwa.ts'
-import { useArticleToggleMore } from '../../composable/useArticleToggleMore.ts'
-import { useArticleAttachments } from '../../composable/useArticleAttachments.ts'
-import ArticleSecurityBadge from './ArticleSecurityBadge.vue'
+import { i18n } from '#shared/i18n.ts'
+import { useSessionStore } from '#shared/stores/session.ts'
+import type { ConfidentTake } from '#shared/types/utils.ts'
+import stopEvent from '#shared/utils/events.ts'
+import { textToHtml } from '#shared/utils/helpers.ts'
+
 import { useArticleSeen } from '../../composable/useArticleSeen.ts'
+
+import ArticleReactionBadge from './ArticleReactionBadge.vue'
+import ArticleRemoteContentBadge from './ArticleRemoteContentBadge.vue'
+import ArticleSecurityBadge from './ArticleSecurityBadge.vue'
+import ArticleWhatsappMediaBadge from './ArticleWhatsappMediaBadge.vue'
 
 interface Props {
   position: 'left' | 'right'
@@ -36,13 +41,16 @@ interface Props {
   contentType: string
   ticketInternalId: number
   articleId: string
-  attachments: TicketArticleAttachment[]
+  attachments: Attachment[]
+  remoteContentWarning?: string
+  mediaError?: boolean | null
+  reaction?: string
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<{
-  (e: 'showContext'): void
-  (e: 'seen'): void
+  'show-context': []
+  seen: []
 }>()
 
 const session = useSessionStore()
@@ -85,14 +93,14 @@ const body = computed(() => {
 const colorsClasses = computed(() => {
   if (props.internal) {
     return {
-      top: 'border-t-[0.5px] border-t-white/50',
+      top: body.value.length ? 'border-t-[0.5px] border-t-white/50' : '',
       amount: 'text-white/60',
       file: 'border-white/40',
       icon: 'border-white/40',
     }
   }
   return {
-    top: 'border-t-[0.5px] border-black',
+    top: body.value.length ? 'border-t-[0.5px] border-black' : '',
     amount: 'text-black/60',
     file: 'border-black',
     icon: 'border-black',
@@ -104,99 +112,25 @@ const { shownMore, bubbleElement, hasShowMore, toggleShowMore } =
 
 const articleInternalId = computed(() => getIdFromGraphQLId(props.articleId))
 
-const { attachments: articleAttachments } = useArticleAttachments({
-  ticketInternalId: props.ticketInternalId,
-  articleInternalId: articleInternalId.value,
+const { attachments: articleAttachments } = useAttachments({
   attachments: computed(() => props.attachments),
 })
 
-const inlineAttachments = ref<ImageViewerFile[]>([])
+const inlineImages = ref<ImageViewerFile[]>([])
 
 const { showImage } = useImageViewer(
-  computed(() => [...inlineAttachments.value, ...articleAttachments.value]),
+  computed(() => [...inlineImages.value, ...articleAttachments.value]),
 )
 
-const previewImage = (event: Event, attachment: TicketArticleAttachment) => {
+const previewImage = (event: Event, attachment: Attachment) => {
   stopEvent(event)
   showImage(attachment)
 }
 
-const router = useRouter()
-const app = useApplicationStore()
-
-const getRedirectRoute = (url: URL): string | undefined => {
-  if (url.pathname.startsWith('/mobile')) {
-    return url.href.slice(`${url.origin}/mobile`.length)
-  }
-
-  const route = router.resolve(`/${url.hash.slice(1)}${url.search}`)
-  if (route.name !== 'Error') {
-    return route.fullPath
-  }
-}
-
-const openLink = (target: string, path: string) => {
-  // keep links inside PWA inside the app
-  if (!isStandalone() && target && target !== '_self') {
-    window.open(`/mobile${path}`, target)
-  } else {
-    router.push(path)
-  }
-}
-
-const handleLinkClick = (link: HTMLAnchorElement, event: Event) => {
-  const fqdnOrigin = `${window.location.protocol}//${app.config.fqdn}${
-    window.location.port ? `:${window.location.port}` : ''
-  }`
-  try {
-    const url = new URL(link.href)
-    if (url.origin === window.location.origin || url.origin === fqdnOrigin) {
-      const redirectRoute = getRedirectRoute(url)
-      if (redirectRoute) {
-        openLink(link.target, redirectRoute)
-        event.preventDefault()
-      }
-    }
-  } catch {
-    // skip
-  }
-}
-
-// user links has fqdn in its href, but if it changes the link becomes invalid
-// to bypass that we replace the href with the correct one
-const patchUserMentionLinks = (link: HTMLAnchorElement) => {
-  const userId = link.dataset.mentionUserId
-  if (userId) {
-    link.href = `${window.location.origin}/mobile/users/${userId}`
-  }
-}
-
-const setupLinksHandlers = (element: HTMLDivElement) => {
-  const links = element.querySelectorAll('a')
-  links.forEach((link) => {
-    if ('__handled' in link) return
-    Object.defineProperty(link, '__handled', { value: true })
-    patchUserMentionLinks(link)
-    link.addEventListener('click', (event) => handleLinkClick(link, event))
-  })
-}
-
-const populateInlineAttachments = (element: HTMLDivElement) => {
-  const images = element.querySelectorAll('img')
-  inlineAttachments.value = []
-
-  images.forEach((image) => {
-    const mime = image.alt?.match(/\.(jpe?g)$/i) ? 'image/jpeg' : 'image/png'
-    const preview: ImageViewerFile = {
-      name: image.alt,
-      inline: image.src,
-      type: mime,
-    }
-    image.classList.add('cursor-pointer')
-    const index = inlineAttachments.value.push(preview) - 1
-    image.onclick = () => showImage(inlineAttachments.value[index])
-  })
-}
+const { setupLinksHandlers } = useHtmlLinks('/mobile')
+const { populateInlineImages } = useHtmlInlineImages(inlineImages, (index) =>
+  showImage(inlineImages.value[index]),
+)
 
 watch(
   () => props.content,
@@ -204,7 +138,7 @@ watch(
     await nextTick()
     if (bubbleElement.value) {
       setupLinksHandlers(bubbleElement.value)
-      populateInlineAttachments(bubbleElement.value)
+      populateInlineImages(bubbleElement.value)
     }
   },
 )
@@ -212,14 +146,25 @@ watch(
 onMounted(() => {
   if (bubbleElement.value) {
     setupLinksHandlers(bubbleElement.value)
-    populateInlineAttachments(bubbleElement.value)
+    populateInlineImages(bubbleElement.value)
   }
 })
 
 useArticleSeen(bubbleElement, emit)
+
+const onContextClick = () => {
+  emit('show-context')
+  nextTick(() => {
+    // remove selection because pointerdown event will leave it as is,
+    // all actions inside the context should already have accessed it synchronously
+    window.getSelection()?.removeAllRanges()
+  })
+}
 </script>
 
 <template>
+  <!-- It is the correct role comment -->
+  <!-- eslint-disable vuejs-accessibility/aria-role -->
   <div
     :id="`article-${articleInternalId}`"
     role="comment"
@@ -301,11 +246,26 @@ useArticleSeen(bubbleElement, emit)
               : 'ltr:right-10 rtl:left-10',
           ]"
         >
+          <ArticleReactionBadge
+            v-if="reaction"
+            :class="[colorClasses]"
+            :reaction="reaction"
+          />
+          <ArticleWhatsappMediaBadge
+            v-if="props.mediaError"
+            :article-id="articleId"
+            :media-error="props.mediaError"
+          />
           <ArticleSecurityBadge
             v-if="security"
             :article-id="articleId"
             :success-class="colorClasses"
             :security="security"
+          />
+          <ArticleRemoteContentBadge
+            v-if="remoteContentWarning"
+            :class="colorClasses"
+            :original-formatting-url="remoteContentWarning"
           />
           <button
             v-if="hasShowMore"
@@ -327,10 +287,15 @@ useArticleSeen(bubbleElement, emit)
             type="button"
             data-name="article-context"
             :aria-label="$t('Article actions')"
-            @click="emit('showContext')"
-            @keydown.enter.prevent="emit('showContext')"
+            @pointerdown="onContextClick()"
+            @keydown.enter.prevent="onContextClick()"
           >
-            <CommonIcon name="mobile-more-vertical" size="small" decorative />
+            <CommonIcon
+              name="more-vertical"
+              size="small"
+              decorative
+              data-ignore-click
+            />
           </button>
         </div>
       </div>
@@ -338,7 +303,7 @@ useArticleSeen(bubbleElement, emit)
   </div>
 </template>
 
-<style scoped lang="scss">
+<style scoped>
 .Content {
   word-break: break-word;
 }

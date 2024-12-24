@@ -1,21 +1,23 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import CommonInputSearch from '#shared/components/CommonInputSearch/CommonInputSearch.vue'
-import CommonDialog from '#mobile/components/CommonDialog/CommonDialog.vue'
-import CommonTicketStateIndicator from '#shared/components/CommonTicketStateIndicator/CommonTicketStateIndicator.vue'
-import { closeDialog } from '#shared/composables/useDialog.ts'
-import { computed, nextTick, onMounted, ref, toRef, watch } from 'vue'
 import { escapeRegExp } from 'lodash-es'
-import { useTraverseOptions } from '#shared/composables/useTraverseOptions.ts'
-import { useLocaleStore } from '#shared/stores/locale.ts'
-import useSelectOptions from '#shared/composables/useSelectOptions.ts'
+import { computed, nextTick, onMounted, ref, toRef, watch } from 'vue'
+
+import CommonInputSearch from '#shared/components/CommonInputSearch/CommonInputSearch.vue'
+import type { SelectOption } from '#shared/components/CommonSelect/types.ts'
 import useValue from '#shared/components/Form/composables/useValue.ts'
 import type {
   FlatSelectOption,
   TreeSelectContext,
 } from '#shared/components/Form/fields/FieldTreeSelect/types.ts'
-import type { SelectOption } from '#shared/components/CommonSelect/types.ts'
+import useSelectOptions from '#shared/composables/useSelectOptions.ts'
+import { useTraverseOptions } from '#shared/composables/useTraverseOptions.ts'
+import { useLocaleStore } from '#shared/stores/locale.ts'
+
+import CommonDialog from '#mobile/components/CommonDialog/CommonDialog.vue'
+import CommonTicketStateIndicator from '#mobile/components/CommonTicketStateIndicator/CommonTicketStateIndicator.vue'
+import { closeDialog } from '#mobile/composables/useDialog.ts'
 
 const props = defineProps<{
   context: TreeSelectContext
@@ -28,8 +30,8 @@ const props = defineProps<{
 const { isCurrentValue } = useValue(toRef(props, 'context'))
 
 const emit = defineEmits<{
-  (e: 'push', option: FlatSelectOption): void
-  (e: 'pop'): void
+  push: [FlatSelectOption]
+  pop: []
 }>()
 
 const locale = useLocaleStore()
@@ -189,7 +191,7 @@ const getCurrentIndex = (option: FlatSelectOption) => {
       :class="{
         'px-6': !context.noFiltering,
       }"
-      class="flex h-[58px] cursor-pointer items-center self-stretch px-4 py-5 text-base leading-[19px] text-white focus:bg-blue-highlight focus:outline-none"
+      class="focus:bg-blue-highlight flex h-[58px] cursor-pointer items-center self-stretch px-4 py-5 text-base leading-[19px] text-white focus:outline-none"
       tabindex="0"
       role="button"
       :aria-label="$t('Back to previous page')"
@@ -199,9 +201,7 @@ const getCurrentIndex = (option: FlatSelectOption) => {
       <CommonIcon
         size="base"
         class="ltr:mr-3 rtl:ml-3"
-        :name="`mobile-chevron-${
-          locale.localeData?.dir === 'rtl' ? 'right' : 'left'
-        }`"
+        :name="`chevron-${locale.localeData?.dir === 'rtl' ? 'right' : 'left'}`"
       />
       <span class="grow font-semibold text-white/80">
         {{ currentParent.label || currentParent.value }}
@@ -227,8 +227,8 @@ const getCurrentIndex = (option: FlatSelectOption) => {
           'px-6': !context.noFiltering,
           'pointer-events-none': option.disabled,
         }"
-        class="relative flex h-[58px] cursor-pointer items-center self-stretch px-4 py-5 text-base leading-[19px] text-white focus:bg-blue-highlight focus:outline-none"
-        :tabindex="option.disabled ? '-1' : '0'"
+        class="focus:bg-blue-highlight relative flex h-[58px] cursor-pointer items-center self-stretch px-4 py-5 text-base leading-[19px] text-white focus:outline-none"
+        tabindex="0"
         role="option"
         :aria-selected="
           option.disabled ? undefined : isCurrentValue(option.value)
@@ -268,9 +268,7 @@ const getCurrentIndex = (option: FlatSelectOption) => {
             'opacity-30': option.disabled,
           }"
           :name="
-            isCurrentValue(option.value)
-              ? 'mobile-check-box-yes'
-              : 'mobile-check-box-no'
+            isCurrentValue(option.value) ? 'check-box-yes' : 'check-box-no'
           "
           size="base"
           decorative
@@ -327,13 +325,13 @@ const getCurrentIndex = (option: FlatSelectOption) => {
           }"
           size="tiny"
           decorative
-          name="mobile-check"
+          name="check"
         />
         <CommonIcon
           v-if="option.hasChildren && !filter"
           class="pointer-events-auto"
           size="base"
-          :name="`mobile-chevron-${
+          :name="`chevron-${
             locale.localeData?.dir === 'rtl' ? 'left' : 'right'
           }`"
           role="link"

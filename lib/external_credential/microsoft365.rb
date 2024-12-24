@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class ExternalCredential::Microsoft365
 
@@ -203,7 +203,7 @@ class ExternalCredential::Microsoft365
     uri    = authorize_tokens_uri(credentials[:client_tenant])
     params = authorize_tokens_params(credentials, authorization_code)
 
-    response = Net::HTTP.post_form(uri, params)
+    response = UserAgent.post(uri.to_s, params)
     if response.code != 200 && response.body.blank?
       Rails.logger.error "Request failed! (code: #{response.code})"
       raise "Request failed! (code: #{response.code})"
@@ -243,7 +243,7 @@ class ExternalCredential::Microsoft365
     params = refresh_token_params(token)
     uri    = refresh_token_uri(token)
 
-    response = Net::HTTP.post_form(uri, params)
+    response = UserAgent.post(uri.to_s, params)
     if response.code != 200 && response.body.blank?
       Rails.logger.error "Request failed! (code: #{response.code})"
       raise "Request failed! (code: #{response.code})"

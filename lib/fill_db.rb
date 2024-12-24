@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 # rubocop:disable Rails/Output
 module FillDb
@@ -92,7 +92,7 @@ or if you only want to create 100 tickets
             amount.times do |index|
               name = "#{attribute_type}_#{counter}"
 
-              object_attribute_creation = public_send("create_object_attribute_type_#{attribute_type}",
+              object_attribute_creation = public_send(:"create_object_attribute_type_#{attribute_type}",
                                                       object:     object.capitalize,
                                                       name:       name,
                                                       display:    name,
@@ -277,7 +277,7 @@ or if you only want to create 100 tickets
             condition: {
               'ticket.state_id' => {
                 operator: 'is',
-                value:    Ticket::State.by_category(:work_on_all).pluck(:id),
+                value:    Ticket::State.by_category_ids(:work_on_all),
               },
             },
             order:     {
@@ -596,7 +596,7 @@ or if you only want to create 100 tickets
     }
   end
 
-  def self.create_object_attribute_type_datettime(params)
+  def self.create_object_attribute_type_datetime(params)
     {
       attribute_params: params.merge(
         data_type:   'datetime',

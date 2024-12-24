@@ -1,11 +1,14 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { FormRef } from '#shared/components/Form/types.ts'
-import { useDialog } from '#shared/composables/useDialog.ts'
-import type { TicketById } from '#shared/entities/ticket/types.ts'
-import type { Ref, ShallowRef } from 'vue'
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
+
+import type { FormRef } from '#shared/components/Form/types.ts'
+import type { TicketById } from '#shared/entities/ticket/types.ts'
+
+import { useDialog } from '#mobile/composables/useDialog.ts'
+
+import type { Ref, ShallowRef } from 'vue'
 
 interface ReplyDialogOptions {
   updateFormLocation: (location: string) => void
@@ -23,7 +26,7 @@ export const useTicketArticleReply = (
     if (!newTicketArticlePresent.value && !newTicketArticleRequested.value)
       return undefined
 
-    return form.value?.formNode?.at('article')
+    return form.value?.getNodeByName('article')
   })
 
   const isArticleFormGroupValid = computed(() => {

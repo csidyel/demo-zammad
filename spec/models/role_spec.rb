@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 require 'models/application_model_examples'
@@ -15,6 +15,8 @@ RSpec.describe Role do
   it_behaves_like 'HasGroups', group_access_factory: :role
   it_behaves_like 'HasCollectionUpdate', collection_factory: :role
   it_behaves_like 'HasXssSanitizedNote', model_factory: :role
+  it_behaves_like 'Association clears cache', association: :permissions
+  it_behaves_like 'Association clears cache', association: :users
 
   describe 'Default state' do
     describe 'of whole table:' do
@@ -42,6 +44,7 @@ RSpec.describe Role do
         expect(described_class.find_by(name: 'Customer').permissions.pluck(:name))
           .to match_array(
             %w[
+              user_preferences.two_factor_authentication
               user_preferences.password
               user_preferences.language
               user_preferences.linked_accounts
@@ -279,6 +282,19 @@ RSpec.describe Role do
       it 'returns true as long as ANY match' do
         expect(role.with_permission?(['admin', 'ticket.customer'])).to be(true)
       end
+    end
+  end
+
+  # https://github.com/zammad/zammad/issues/5123
+  describe 'Removing KB editor permission with existing KB' do
+    it 'allows to remove editor but keep reader permission' do
+      role = create(:role, permission_names: %w[knowledge_base.reader knowledge_base.editor])
+
+      kb_permission = create(:knowledge_base_permission, role: role)
+
+      role.permission_revoke('knowledge_base.editor')
+
+      expect(kb_permission.reload).to have_attributes(access: 'reader')
     end
   end
 end

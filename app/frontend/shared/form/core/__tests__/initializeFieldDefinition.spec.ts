@@ -1,16 +1,17 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import {
   text as inputTextDefinition,
   select as selectDefinition,
   casts,
 } from '@formkit/inputs'
-import initializeFieldDefinition from '#shared/form/core/initializeFieldDefinition.ts'
 import { cloneDeep } from 'lodash-es'
-import translateWrapperProps from '#shared/form/features/translateWrapperProps.ts'
+
+import initializeFieldDefinition from '#shared/form/core/initializeFieldDefinition.ts'
 import addBlurEvent from '#shared/form/features/addBlurEvent.ts'
-import hideField from '#shared/form/features/hideField.ts'
 import formLocaleDir from '#shared/form/features/formLocaleDir.ts'
+import hideField from '#shared/form/features/hideField.ts'
+import translateWrapperProps from '#shared/form/features/translateWrapperProps.ts'
 
 describe('initializeFieldDefinition', () => {
   it('check for added default props without already existing props', () => {
@@ -30,7 +31,7 @@ describe('initializeFieldDefinition', () => {
     initializeFieldDefinition(definition)
 
     expect(definition.props).toEqual([
-      ...(selectDefinition.props || []),
+      ...(Array.isArray(selectDefinition.props) ? selectDefinition.props : []),
       'formId',
       'labelSrOnly',
       'labelPlaceholder',

@@ -1,8 +1,9 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { faker } from '@faker-js/faker'
 
 import type { AddressesField } from '#shared/graphql/types.ts'
 import type { DeepPartial } from '#shared/types/utils.ts'
-import { faker } from '@faker-js/faker'
 
 export default (): DeepPartial<AddressesField> => {
   const email = faker.internet.email()
@@ -11,7 +12,7 @@ export default (): DeepPartial<AddressesField> => {
   return {
     parsed: [
       {
-        __typename: 'EmailAddress',
+        __typename: 'EmailAddressParsed',
         emailAddress: email,
         isSystemAddress: false,
         name,

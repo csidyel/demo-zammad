@@ -1,11 +1,12 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { computed, type ComputedRef } from 'vue'
-import type {
-  EnumObjectManagerObjects,
-  ObjectManagerFrontendAttribute,
-} from '#shared/graphql/types.ts'
+
+import type { EnumObjectManagerObjects } from '#shared/graphql/types.ts'
+
 import { useObjectAttributes } from './useObjectAttributes.ts'
+
+import type { ObjectAttribute } from '../types/store.ts'
 
 export const useObjectAttributesScreen = (
   object: EnumObjectManagerObjects,
@@ -16,14 +17,14 @@ export const useObjectAttributesScreen = (
   const getScreenAttributes = (
     screen: string,
     screens: ComputedRef<Record<string, string[]>>,
-    attributesLookup: ComputedRef<Map<string, ObjectManagerFrontendAttribute>>,
+    attributesLookup: ComputedRef<Map<string, ObjectAttribute>>,
   ) => {
+    if (!screens.value[screen]) return []
+
     return screens.value[screen].reduce(
-      (screenAttributes: ObjectManagerFrontendAttribute[], attributeName) => {
+      (screenAttributes: ObjectAttribute[], attributeName) => {
         screenAttributes.push(
-          attributesLookup.value.get(
-            attributeName,
-          ) as ObjectManagerFrontendAttribute,
+          attributesLookup.value.get(attributeName) as ObjectAttribute,
         )
         return screenAttributes
       },

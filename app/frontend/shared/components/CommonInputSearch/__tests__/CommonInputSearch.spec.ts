@@ -1,7 +1,9 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { onMounted, ref } from 'vue'
 
 import { renderComponent } from '#tests/support/components/index.ts'
-import { onMounted, ref } from 'vue'
+
 import CommonInputSearch, {
   type CommonInputSearchExpose,
 } from '../CommonInputSearch.vue'
@@ -14,12 +16,12 @@ describe('testing input for searching', () => {
       },
     })
 
-    expect(view.getByIconName('mobile-search')).toBeInTheDocument()
-    expect(view.queryByIconName('mobile-close-small')).not.toBeInTheDocument()
+    expect(view.getByIconName('search')).toBeInTheDocument()
+    expect(view.queryByIconName('close-small')).not.toBeInTheDocument()
 
     await view.events.type(view.getByRole('searchbox'), 'test')
 
-    const clearButton = view.getByIconName('mobile-close-small')
+    const clearButton = view.getByIconName('close-small')
 
     expect(clearButton).toBeInTheDocument()
 

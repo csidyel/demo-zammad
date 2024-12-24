@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 RSpec.shared_examples 'authenticator app setup' do
   let(:password_check) { true }
@@ -21,7 +21,7 @@ def setup_authenticator_app_method(user:, password_check:, expect_recovery_codes
 
       fill_in 'Password', with: password_check
 
-      click_button 'Next'
+      click_on 'Next'
     end
   end
 
@@ -35,7 +35,7 @@ def setup_authenticator_app_method(user:, password_check:, expect_recovery_codes
 
     fill_in 'Security Code', with: security_code
 
-    click_button 'Set Up'
+    click_on 'Set Up'
   end
 
   if expect_recovery_codes
@@ -46,7 +46,7 @@ def setup_authenticator_app_method(user:, password_check:, expect_recovery_codes
       expect(page).to have_text('Set up two-factor authentication: Save Codes')
       expect(stored_codes_amount).to eq(displayed_codes_amount)
 
-      click_button "OK, I've saved my recovery codes"
+      click_on "OK, I've saved my recovery codes"
     end
   end
 

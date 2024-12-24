@@ -1,10 +1,13 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { ApolloClient } from '@apollo/client/core'
+
+import type { CacheInitializerModules } from '#shared/types/server/apollo/client.ts'
+
+import createCache from './cache.ts'
+import link from './link.ts'
 
 import type { NormalizedCacheObject } from '@apollo/client/core'
-import { ApolloClient } from '@apollo/client/core'
-import type { CacheInitializerModules } from '#shared/types/server/apollo/client.ts'
-import link from './link.ts'
-import createCache from './cache.ts'
 
 let apolloClient: ApolloClient<NormalizedCacheObject>
 
@@ -23,7 +26,9 @@ export const createApolloClient = (
       // https://www.apollographql.com/docs/react/data/queries/#setting-a-fetch-policy
       watchQuery: {
         fetchPolicy: 'cache-and-network',
-        nextFetchPolicy: 'cache-and-network',
+        nextFetchPolicy(currentFetchPolicy) {
+          return currentFetchPolicy
+        },
       },
     },
   })

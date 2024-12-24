@@ -1,9 +1,12 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Webhook < ApplicationModel
   include ChecksClientNotification
   include ChecksHtmlSanitized
   include HasCollectionUpdate
+  include HasSearchIndexBackend
+  include CanSelector
+  include CanSearch
 
   before_save    :reset_custom_payload
   before_destroy Webhook::EnsureNoRelatedObjects

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -59,14 +59,14 @@ RSpec.describe 'Ticket zoom', type: :system do
     it 'does show the edit link for the customer' do
       click '.tabsSidebar-tab[data-tab=customer]'
       click '#userAction'
-      click_link 'Edit Customer'
+      click_on 'Edit Customer'
       modal_ready
     end
 
     it 'does show the edit link for the organization' do
       click '.tabsSidebar-tab[data-tab=organization]'
       click '#userAction'
-      click_link 'Edit Organization'
+      click_on 'Edit Organization'
       modal_ready
     end
 
@@ -146,7 +146,7 @@ RSpec.describe 'Ticket zoom', type: :system do
       before do
         within :active_ticket_article, article do
           within '.attachment.file-calendar' do
-            click_button 'Preview'
+            click_on 'Preview'
           end
         end
       end
@@ -318,7 +318,7 @@ RSpec.describe 'Ticket zoom', type: :system do
         select User.find_by(email: 'admin@example.com').fullname, from: 'Owner'
         find('.js-textarea').send_keys('test 1234')
         find('.js-submit').click
-        expect(page).to have_selector('div.scrollPageHeader .js-ticketTitleContainer')
+        expect(page).to have_css('div.scrollPageHeader .js-ticketTitleContainer')
       end
     end
   end
@@ -793,6 +793,7 @@ RSpec.describe 'Ticket zoom', type: :system do
 
       it 'previously created private note shows up via WS push' do
         visit "ticket/zoom/#{ticket_article.ticket.id}"
+        ensure_websocket
 
         # make sure ticket is done loading and change will be pushed via WS
         find(:active_ticket_article, ticket_article)
@@ -825,7 +826,7 @@ RSpec.describe 'Ticket zoom', type: :system do
         visit "ticket/zoom/#{ticket.id}"
 
         find('.articleNewEdit-body').send_keys('Some reply')
-        expect(page).to have_selector('.js-selectedArticleType')
+        expect(page).to have_css('.js-selectedArticleType')
       end
     end
   end
@@ -1010,24 +1011,42 @@ RSpec.describe 'Ticket zoom', type: :system do
 
   describe 'mentions' do
     context 'when logged in as agent' do
-      let(:ticket)       { create(:ticket, group: Group.find_by(name: 'Users')) }
-      let!(:other_agent) { create(:agent, groups: [Group.find_by(name: 'Users')]) }
-      let!(:admin)       { User.find_by(email: 'admin@example.com') }
+      let(:ticket)        { create(:ticket, group: Group.find_by(name: 'Users')) }
+      let!(:other_agent)  { create(:agent, groups: [Group.find_by(name: 'Users')]) }
+      let!(:admin)        { User.find_by(email: 'admin@example.com') }
+
+      before do
+        create(:macro, name: 'Subscribe', ux_flow_next_up: 'none', perform: { 'ticket.subscribe': { value: 'current_user.id' } })
+        create(:macro, name: 'Unsubscribe', ux_flow_next_up: 'none', perform: { 'ticket.unsubscribe': { value: 'current_user.id' } })
+      end
 
       it 'can subscribe and unsubscribe' do
         ensure_websocket do
           visit "ticket/zoom/#{ticket.id}"
 
+          # subscribe via sidebar
           click '.js-subscriptions .js-subscribe input'
-          expect(page).to have_selector('.js-subscriptions .js-unsubscribe input')
-          expect(page).to have_selector('.js-subscriptions span.avatar')
+          expect(page).to have_css('.js-subscriptions .js-unsubscribe input')
+          expect(page).to have_css('.js-subscriptions span.avatar')
 
+          # unsubscribe via sidebar
           click '.js-subscriptions .js-unsubscribe input'
-          expect(page).to have_selector('.js-subscriptions .js-subscribe input')
+          expect(page).to have_css('.js-subscriptions .js-subscribe input')
+          expect(page).to have_no_selector('.js-subscriptions span.avatar')
+
+          # subscribe via macro
+          click '.js-openDropdownMacro'
+          find(:macro, 2).click # Subscribe macro button
+          expect(page).to have_css('.js-subscriptions span.avatar')
+
+          # unsubscribe via macro
+          click '.js-openDropdownMacro'
+          find(:macro, 3).click # Unsubscribe macro button
+
           expect(page).to have_no_selector('.js-subscriptions span.avatar')
 
           create(:mention, mentionable: ticket, user: other_agent)
-          expect(page).to have_selector('.js-subscriptions span.avatar')
+          expect(page).to have_css('.js-subscriptions span.avatar')
 
           # check history for mention entries
           click 'h2.sidebar-header-headline.js-headline'
@@ -1164,7 +1183,7 @@ RSpec.describe 'Ticket zoom', type: :system do
     end
 
     context 'when long articles are present' do
-      it 'will properly show the "See more" link if you switch between the ticket and the dashboard on new articles' do
+      it 'shows the "See more" link if you switch between the ticket and the dashboard on new articles' do
         ensure_websocket do
           # prerender ticket
           visit "ticket/zoom/#{ticket.id}"
@@ -1877,6 +1896,7 @@ RSpec.describe 'Ticket zoom', type: :system do
 
     before do
       visit "#ticket/zoom/#{ticket.id}"
+      ensure_websocket
     end
 
     it 'does show up the new priority' do
@@ -1898,7 +1918,7 @@ RSpec.describe 'Ticket zoom', type: :system do
       ticket.update(state: pending_state, pending_time: 1.day.from_now)
       wait.until { page.find("select[name='state_id']").value == pending_state.id.to_s }
       expect(page.find("select[name='state_id']").value).to eq(pending_state.id.to_s)
-      expect(page).to have_selector("div[data-name='pending_time']")
+      expect(page).to have_css("div[data-name='pending_time']")
     end
 
     it 'does merge attributes with remote priority (ajax) and local state (user)' do
@@ -1954,7 +1974,7 @@ RSpec.describe 'Ticket zoom', type: :system do
     it 'does open and close by usage' do
       find('.js-writeArea').click
       find('.js-textarea').send_keys(' ')
-      expect(page).to have_selector('form.article-add.is-open')
+      expect(page).to have_css('form.article-add.is-open')
       find('input#global-search').click
       expect(page).to have_no_selector('form.article-add.is-open')
     end
@@ -1963,14 +1983,14 @@ RSpec.describe 'Ticket zoom', type: :system do
       find('.js-textarea').send_keys('test')
       wait.until { Taskbar.find_by(key: "Ticket-#{ticket.id}").state.dig('article', 'body').present? }
       refresh
-      expect(page).to have_selector('form.article-add.is-open')
+      expect(page).to have_css('form.article-add.is-open')
     end
 
     it 'does open automatically when attachment is given from sidebar' do
       page.find('input#fileUpload_1[data-initialized="true"]', visible: :all).set(Rails.root.join('test/data/mail/mail001.box'))
       wait.until { Taskbar.find_by(key: "Ticket-#{ticket.id}").attributes_with_association_ids['attachments'].present? }
       refresh
-      expect(page).to have_selector('form.article-add.is-open')
+      expect(page).to have_css('form.article-add.is-open')
     end
   end
 
@@ -2295,9 +2315,9 @@ RSpec.describe 'Ticket zoom', type: :system do
     end
 
     it 'does show the attachment once' do
-      expect(page).to have_selector('.sidebar-content .attachment.attachment--preview', count: 2)
-      expect(page).to have_selector('.sidebar-content', text: 'some_file.txt')
-      expect(page).to have_selector('.sidebar-content', text: 'some_file2.txt')
+      expect(page).to have_css('.sidebar-content .attachment.attachment--preview', count: 2)
+      expect(page).to have_css('.sidebar-content', text: 'some_file.txt')
+      expect(page).to have_css('.sidebar-content', text: 'some_file2.txt')
     end
 
     it 'does show up new attachments' do
@@ -2306,7 +2326,7 @@ RSpec.describe 'Ticket zoom', type: :system do
       expect(page).to have_text('mail001.box')
       wait.until { Taskbar.find_by(key: "Ticket-#{ticket.id}").attributes_with_association_ids['attachments'].present? }
       click '.js-submit'
-      expect(page).to have_selector('.sidebar-content', text: 'mail001.box')
+      expect(page).to have_css('.sidebar-content', text: 'mail001.box')
     end
   end
 
@@ -2499,7 +2519,7 @@ RSpec.describe 'Ticket zoom', type: :system do
 
           expect(elem)
             .to have_no_selector('.tabsSidebar-tab-count--danger')
-            .and have_selector('.tabsSidebar-tab-count--warning')
+            .and have_css('.tabsSidebar-tab-count--warning')
         end
       end
 
@@ -2508,7 +2528,7 @@ RSpec.describe 'Ticket zoom', type: :system do
 
         it 'highlights as danger' do
           expect(elem)
-            .to have_selector('.tabsSidebar-tab-count--danger')
+            .to have_css('.tabsSidebar-tab-count--danger')
             .and have_no_selector('.tabsSidebar-tab-count--warning')
         end
       end

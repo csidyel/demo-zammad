@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Ticket::SharedDraftStartPolicy < ApplicationPolicy
   def create?
@@ -20,8 +20,9 @@ class Ticket::SharedDraftStartPolicy < ApplicationPolicy
   private
 
   def access?(_method)
-    return if !user.permissions?('ticket.agent')
+    return true if user.group_access? record.group_id, :create
 
-    user.groups.access(:create).include? record.group
+    not_authorized Exceptions::UnprocessableEntity
+      .new __('This user does not have access to the given group')
   end
 end

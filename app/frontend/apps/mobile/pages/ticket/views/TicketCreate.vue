@@ -1,57 +1,49 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRouter } from 'vue-router'
-import { useEventListener } from '@vueuse/core'
+
 import Form from '#shared/components/Form/Form.vue'
-import {
-  EnumFormUpdaterId,
-  EnumObjectManagerObjects,
-  type TicketCreateInput,
-} from '#shared/graphql/types.ts'
-import { useForm } from '#shared/components/Form/useForm.ts'
-import { useMultiStepForm } from '#shared/components/Form/useMultiStepForm.ts'
-import { useApplicationStore } from '#shared/stores/application.ts'
-import { useTicketCreate } from '#shared/entities/ticket/composables/useTicketCreate.ts'
-import { useTicketCreateArticleType } from '#shared/entities/ticket/composables/useTicketCreateArticleType.ts'
-import { useTicketFormOganizationHandler } from '#shared/entities/ticket/composables/useTicketFormOrganizationHandler.ts'
 import type {
   FormSubmitData,
   FormSchemaNode,
 } from '#shared/components/Form/types.ts'
-import { i18n } from '#shared/i18n.ts'
-import { MutationHandler } from '#shared/server/apollo/handler/index.ts'
-import { useObjectAttributes } from '#shared/entities/object-attributes/composables/useObjectAttributes.ts'
-import { useObjectAttributeFormData } from '#shared/entities/object-attributes/composables/useObjectAttributeFormData.ts'
+import { useForm } from '#shared/components/Form/useForm.ts'
+import { useMultiStepForm } from '#shared/components/Form/useMultiStepForm.ts'
+import { useConfirmation } from '#shared/composables/useConfirmation.ts'
+import { useStickyHeader } from '#shared/composables/useStickyHeader.ts'
+import { useTicketSignature } from '#shared/composables/useTicketSignature.ts'
+import { useTicketCreate } from '#shared/entities/ticket/composables/useTicketCreate.ts'
+import { useTicketCreateArticleType } from '#shared/entities/ticket/composables/useTicketCreateArticleType.ts'
+import { useTicketCreateView } from '#shared/entities/ticket/composables/useTicketCreateView.ts'
+import { useTicketFormOrganizationHandler } from '#shared/entities/ticket/composables/useTicketFormOrganizationHandler.ts'
+import type { TicketFormData } from '#shared/entities/ticket/types.ts'
+import { useUserQuery } from '#shared/entities/user/graphql/queries/user.api.ts'
+import { defineFormSchema } from '#shared/form/defineFormSchema.ts'
 import {
-  NotificationTypes,
-  useNotifications,
-} from '#shared/components/CommonNotifications/index.ts'
-import { ErrorStatusCodes, GraphQLErrorTypes } from '#shared/types/error.ts'
-import type UserError from '#shared/errors/UserError.ts'
-import { defineFormSchema } from '#mobile/form/defineFormSchema.ts'
-import { populateEditorNewLines } from '#shared/components/Form/fields/FieldEditor/utils.ts'
-import CommonStepper from '#mobile/components/CommonStepper/CommonStepper.vue'
-import CommonButton from '#mobile/components/CommonButton/CommonButton.vue'
-import CommonBackButton from '#mobile/components/CommonBackButton/CommonBackButton.vue'
+  EnumFormUpdaterId,
+  EnumObjectManagerObjects,
+} from '#shared/graphql/types.ts'
+import { i18n } from '#shared/i18n.ts'
 import { errorOptions } from '#shared/router/error.ts'
+import { useApplicationStore } from '#shared/stores/application.ts'
+import { ErrorStatusCodes } from '#shared/types/error.ts'
+
+import CommonButton from '#mobile/components/CommonButton/CommonButton.vue'
+import CommonStepper from '#mobile/components/CommonStepper/CommonStepper.vue'
+import LayoutHeader from '#mobile/components/layout/LayoutHeader.vue'
+import { useDialog } from '#mobile/composables/useDialog.ts'
+
 import {
   useTicketDuplicateDetectionHandler,
   type TicketDuplicateDetectionPayload,
-} from '#mobile/pages/ticket/composable/useTicketDuplicateDetectionHandler.ts'
-import { useTicketSignature } from '#shared/composables/useTicketSignature.ts'
-import type { TicketFormData } from '#shared/entities/ticket/types.ts'
-import { convertFilesToAttachmentInput } from '#shared/utils/files.ts'
-import { useDialog } from '#shared/composables/useDialog.ts'
-import { useStickyHeader } from '#shared/composables/useStickyHeader.ts'
-import type { ApolloError } from '@apollo/client'
-import { waitForConfirmation } from '#shared/utils/confirmation.ts'
-import { useTicketCreateMutation } from '../graphql/mutations/create.api.ts'
+} from '../composable/useTicketDuplicateDetectionHandler.ts'
 
 const router = useRouter()
 
-// Add meta header with selected ticket create article type
+// TODO: Add meta header with selected ticket create article type.
 
 const { canSubmit, form, node, isDirty, formSubmit } = useForm()
 
@@ -71,15 +63,28 @@ const onSubmit = () => {
   setMultiStep()
 }
 
-const { ticketCreateArticleType, ticketArticleSenderTypeField } =
-  useTicketCreateArticleType({ onSubmit })
+const { ticketArticleSenderTypeField } = useTicketCreateArticleType({
+  onSubmit,
+  buttons: true,
+})
 
-const { isTicketCustomer } = useTicketCreate()
+const redirectAfterCreate = (internalId?: number) => {
+  if (internalId) {
+    router.replace(`/tickets/${internalId}`)
+  } else {
+    router.replace({ name: 'Home' })
+  }
+}
+
+const { createTicket, isTicketCustomer } = useTicketCreate(
+  form,
+  redirectAfterCreate,
+)
 
 const getFormSchemaGroupSection = (
   stepName: string,
   sectionTitle: string,
-  childrens: FormSchemaNode[],
+  children: FormSchemaNode[],
   itemsCenter = false,
 ) => {
   return {
@@ -110,7 +115,7 @@ const getFormSchemaGroupSection = (
             },
             children: i18n.t(sectionTitle),
           },
-          ...childrens,
+          ...children,
         ],
       },
     ],
@@ -158,7 +163,6 @@ const ticketArticleTypeSection = getFormSchemaGroupSection(
       isLayout: true,
       element: 'p',
       attrs: {
-        // TODO: check styling for this hint
         class: 'my-10 text-base text-center text-yellow',
       },
       children: '$getAdditionalCreateNote($values.articleSenderType)',
@@ -166,6 +170,41 @@ const ticketArticleTypeSection = getFormSchemaGroupSection(
   ],
   true,
 )
+
+const locationParams = new URL(window.location.href).searchParams
+const customUserId = locationParams.get('customer_id') || undefined
+
+const userOptions = ref<unknown[]>([])
+
+const userQuery = useUserQuery(
+  () => ({
+    userInternalId: Number(customUserId),
+    secondaryOrganizationsCount: 3,
+  }),
+  {
+    // we probably opened this because user was already loaded user on another page,
+    // so we should try to get it from cache first, but if someone passed down id
+    // we need to still provide correct value
+    fetchPolicy: 'cache-first',
+    enabled: !!customUserId,
+  },
+)
+userQuery.onResult((r) => {
+  if (r.loading) return
+  const user = r.data?.user
+  if (!user) {
+    userOptions.value = []
+    return
+  }
+  userOptions.value = [
+    {
+      value: user.internalId,
+      label: user.fullname || user.phone,
+      heading: user.organization?.name,
+      user,
+    },
+  ]
+})
 
 const ticketMetaInformationSection = getFormSchemaGroupSection(
   'ticketMetaInformation',
@@ -181,6 +220,15 @@ const ticketMetaInformationSection = getFormSchemaGroupSection(
           value: {
             count: 0,
             items: [],
+          },
+        },
+        {
+          screen: 'create_top',
+          object: EnumObjectManagerObjects.Ticket,
+          name: 'customer_id',
+          value: customUserId ? Number(customUserId) : undefined,
+          props: {
+            options: userOptions,
           },
         },
         {
@@ -265,6 +313,8 @@ const ticketArticleMessageSection = getFormSchemaGroupSection(
         {
           type: 'file',
           name: 'attachments',
+          label: __('Attachment'),
+          labelSrOnly: true,
           props: {
             multiple: true,
           },
@@ -291,105 +341,12 @@ const formSchema = defineFormSchema(
   isTicketCustomer.value ? customerSchema : agentSchema,
 )
 
-const ticketCreateMutation = new MutationHandler(useTicketCreateMutation({}), {
-  errorShowNotification: false,
-})
-
-const redirectAfterCreate = (internalId?: number) => {
-  if (internalId) {
-    router.replace(`/tickets/${internalId}`)
-  } else {
-    router.replace({ name: 'Home' })
-  }
-}
-
 const securityIntegration = computed<boolean>(
   () =>
     (application.config.smime_integration ||
       application.config.pgp_integration) ??
     false,
 )
-
-const { notify } = useNotifications()
-
-const notifySuccess = () => {
-  notify({
-    type: NotificationTypes.Success,
-    message: __('Ticket has been created successfully.'),
-  })
-}
-
-const handleTicketCreateError = (error: UserError | ApolloError) => {
-  if ('graphQLErrors' in error) {
-    const graphQLErrors = error.graphQLErrors?.[0]
-    // treat this as successful
-    if (graphQLErrors?.extensions?.type === GraphQLErrorTypes.Forbidden) {
-      notifySuccess()
-
-      return () => redirectAfterCreate()
-    }
-
-    notify({
-      message: __('Ticket could not be created.'),
-      type: NotificationTypes.Error,
-    })
-  } else {
-    notify({
-      message: error.generalErrors[0],
-      type: NotificationTypes.Error,
-    })
-  }
-}
-
-const createTicket = async (formData: FormSubmitData<TicketFormData>) => {
-  const { attributesLookup: ticketObjectAttributesLookup } =
-    useObjectAttributes(EnumObjectManagerObjects.Ticket)
-
-  const { internalObjectAttributeValues, additionalObjectAttributeValues } =
-    useObjectAttributeFormData(ticketObjectAttributesLookup.value, formData)
-
-  const input = {
-    ...internalObjectAttributeValues,
-    article: {
-      cc: formData.cc,
-      body: populateEditorNewLines(formData.body),
-      sender: isTicketCustomer.value
-        ? 'Customer'
-        : ticketCreateArticleType[formData.articleSenderType].sender,
-      type: isTicketCustomer.value
-        ? 'web'
-        : ticketCreateArticleType[formData.articleSenderType].type,
-      contentType: 'text/html',
-      security: formData.security,
-    },
-    objectAttributeValues: additionalObjectAttributeValues,
-  } as TicketCreateInput
-
-  if (formData.attachments && input.article) {
-    input.article.attachments = convertFilesToAttachmentInput(
-      formData.formId,
-      formData.attachments,
-    )
-  }
-
-  return ticketCreateMutation
-    .send({ input })
-    .then((result) => {
-      if (result?.ticketCreate?.ticket) {
-        notifySuccess()
-
-        return () => {
-          const ticket = result.ticketCreate?.ticket
-
-          redirectAfterCreate(
-            ticket?.policy.update ? ticket.internalId : undefined,
-          )
-        }
-      }
-      return null
-    })
-    .catch(handleTicketCreateError)
-}
 
 const additionalCreateNotes = computed(
   () =>
@@ -454,10 +411,12 @@ useEventListener('resize', setIsScrolledToBottom)
 onBeforeRouteLeave(async () => {
   if (!isDirty.value) return true
 
+  const { waitForConfirmation } = useConfirmation()
+
   const confirmed = await waitForConfirmation(
     __('Are you sure? You have unsaved changes that will get lost.'),
     {
-      buttonTitle: __('Discard changes'),
+      buttonLabel: __('Discard changes'),
       buttonVariant: 'danger',
     },
   )
@@ -481,12 +440,19 @@ const showTicketDuplicateDetectionDialog = (
     tickets: data.items,
   })
 }
+
+const changedFields = reactive({
+  // Workaround until the object attribute for body is required so core worklow is returning it correctly.
+  body: {
+    required: true,
+  },
+})
 </script>
 
 <script lang="ts">
 export default {
   beforeRouteEnter(to, from, next) {
-    const { ticketCreateEnabled } = useTicketCreate()
+    const { ticketCreateEnabled } = useTicketCreateView()
 
     if (!ticketCreateEnabled.value) {
       errorOptions.value = {
@@ -513,35 +479,25 @@ export default {
 </script>
 
 <template>
-  <header
+  <LayoutHeader
     ref="headerElement"
+    class="!h-16"
     :style="stickyStyles.header"
-    class="border-b-[0.5px] border-white/10 bg-black px-4"
+    back-url="/"
+    :title="__('Create Ticket')"
   >
-    <div class="grid h-16 grid-cols-[75px_auto_75px]">
-      <div
-        class="flex cursor-pointer items-center justify-self-start text-base"
+    <template #after>
+      <CommonButton
+        variant="submit"
+        form="ticket-create"
+        type="submit"
+        :disabled="submitButtonDisabled"
+        transparent-background
       >
-        <CommonBackButton fallback="/" />
-      </div>
-      <h1
-        class="flex flex-1 items-center justify-center text-center text-lg font-bold"
-      >
-        {{ $t('Create Ticket') }}
-      </h1>
-      <div class="flex items-center justify-self-end text-base">
-        <CommonButton
-          variant="submit"
-          form="ticket-create"
-          type="submit"
-          :disabled="submitButtonDisabled"
-          transparent-background
-        >
-          {{ $t('Create') }}
-        </CommonButton>
-      </div>
-    </div>
-  </header>
+        {{ $t('Create') }}
+      </CommonButton>
+    </template>
+  </LayoutHeader>
   <div
     ref="bodyElement"
     :style="stickyStyles.body"
@@ -553,14 +509,15 @@ export default {
       class="pb-32 text-left"
       :schema="formSchema"
       :handlers="[
-        useTicketFormOganizationHandler(),
+        useTicketFormOrganizationHandler(),
         signatureHandling('body'),
         useTicketDuplicateDetectionHandler(showTicketDuplicateDetectionDialog),
       ]"
       :flatten-form-groups="Object.keys(allSteps)"
       :schema-data="schemaData"
+      :change-fields="changedFields"
       :form-updater-id="EnumFormUpdaterId.FormUpdaterUpdaterTicketCreate"
-      :autofocus="true"
+      should-autofocus
       use-object-attributes
       @submit="createTicket($event as FormSubmitData<TicketFormData>)"
     />

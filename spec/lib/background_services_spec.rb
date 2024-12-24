@@ -1,9 +1,13 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
 class SampleService
   def self.pre_run; end
+
+  def initialize(manager:, fork_id: nil)
+    # no-op
+  end
 
   def run
     sleep 1
@@ -11,6 +15,10 @@ class SampleService
 
   def self.service_name
     'Sample'
+  end
+
+  def self.skip?(manager:)
+    false
   end
 
   def self.max_workers
@@ -37,7 +45,12 @@ RSpec.describe BackgroundServices do
 
   describe '.available_services' do
     it 'matches existing classes' do
-      expect(described_class.available_services).to contain_exactly(BackgroundServices::Service::ProcessScheduledJobs, BackgroundServices::Service::ProcessDelayedJobs)
+      expect(described_class.available_services).to contain_exactly(
+        BackgroundServices::Service::ManageSessionsJobs,
+        BackgroundServices::Service::ProcessScheduledJobs,
+        BackgroundServices::Service::ProcessSessionsJobs,
+        BackgroundServices::Service::ProcessDelayedJobs
+      )
     end
   end
 
@@ -46,8 +59,21 @@ RSpec.describe BackgroundServices do
 
     it 'runs given services' do
       allow(instance).to receive(:run_service)
-      ensure_block_keeps_running { instance.run }
+      instance.run
       expect(instance).to have_received(:run_service).with(config)
+    end
+
+    context 'when config has multiple services' do
+      let(:forked)   { described_class::ServiceConfig.new(service: SampleService, disabled: false, workers: 3) }
+      let(:threaded) { described_class::ServiceConfig.new(service: SampleService, disabled: false, workers: 0) }
+      let(:config)   { [threaded, forked] }
+
+      it 'runs forked services before threaded', aggregate_failures: true do
+        allow(instance).to receive(:run_service)
+        instance.run
+        expect(instance).to have_received(:run_service).with(forked).ordered
+        expect(instance).to have_received(:run_service).with(threaded).ordered
+      end
     end
   end
 
@@ -65,10 +91,10 @@ RSpec.describe BackgroundServices do
         let(:is_disabled) { true }
 
         it 'stops early if disabled', :aggregate_failures do
-          allow(Rails.logger).to receive(:debug)
+          allow(Rails.logger).to receive(:info)
           instance.send(:run_service, config)
 
-          expect(Rails.logger).to have_received(:debug).with(no_args) do |&block|
+          expect(Rails.logger).to have_received(:info).with(no_args) do |&block|
             expect(block.call).to match(%r{Skipping disabled service})
           end
         end

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Models
   include ApplicationLib
@@ -97,7 +97,8 @@ returns
 
 =begin
 
-get reference list of a models
+This method counts how many time the given object was referenced.
+It returns the count partitioned by the class and attribute name.
 
   result = Models.references('User', 2)
 

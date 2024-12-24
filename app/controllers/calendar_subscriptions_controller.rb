@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class CalendarSubscriptionsController < ApplicationController
   prepend_before_action { authentication_check(basic_auth_prompt: true) && authorize! }
@@ -35,7 +35,7 @@ class CalendarSubscriptionsController < ApplicationController
   # @response_message 422          Unprocessable Entity.
   def object
     calendar_subscriptions = CalendarSubscriptions.new(current_user)
-    ical                   = calendar_subscriptions.generic(params[:object], params[:method])
+    ical                   = calendar_subscriptions.generic(params[:object], params[:method].presence || 'all')
 
     send_data(
       ical,

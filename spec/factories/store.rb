@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 FactoryBot.define do
   factory :store do
@@ -15,8 +15,15 @@ FactoryBot.define do
     end
 
     trait :image do
-      filename { '1x1.png' }
-      data     { Rails.root.join('test/data/image/1x1.png').binread }
+      filename    { '1x1.png' }
+      preferences { { 'Content-Type' => "image/#{File.extname(filename).delete_prefix('.')}" } }
+      data        { Rails.root.join('test/data/image/1x1.png').binread }
+    end
+
+    trait :ics do
+      filename    { 'basic.ics' }
+      preferences { { 'Content-Type' => 'text/calendar' } }
+      data        { Rails.root.join('spec/fixtures/files/calendar/basic.ics').binread }
     end
   end
 end

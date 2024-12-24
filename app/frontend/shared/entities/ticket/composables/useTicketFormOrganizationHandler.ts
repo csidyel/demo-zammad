@@ -1,9 +1,6 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { FormHandlerExecution } from '#shared/components/Form/types.ts'
-import { useSessionStore } from '#shared/stores/session.ts'
-import type { Organization, Scalars } from '#shared/graphql/types.ts'
-import type { UserData } from '#shared/types/store.ts' // TODO: remove this import
 import type {
   FormSchemaField,
   ReactiveFormSchemData,
@@ -12,9 +9,12 @@ import type {
   FormHandler,
 } from '#shared/components/Form/types.ts'
 import { getAutoCompleteOption } from '#shared/entities/organization/utils/getAutoCompleteOption.ts'
+import type { Organization, Scalars } from '#shared/graphql/types.ts'
+import { useSessionStore } from '#shared/stores/session.ts'
+import type { UserData } from '#shared/types/store.ts' // TODO: remove this import
 
 // TODO: needs to be aligned, when auto completes has a final state.
-export const useTicketFormOganizationHandler = (): FormHandler => {
+export const useTicketFormOrganizationHandler = (): FormHandler => {
   const executeHandler = (
     execution: FormHandlerExecution,
     schemaData: ReactiveFormSchemData,
@@ -33,15 +33,13 @@ export const useTicketFormOganizationHandler = (): FormHandler => {
 
   const handleOrganizationField: FormHandlerFunction = (
     execution,
-    formNode,
-    values,
-    changeFields,
-    updateSchemaDataField,
-    schemaData,
-    changedField,
-    initialEntityObject,
+    reactivity,
+    data,
     // eslint-disable-next-line sonarjs/cognitive-complexity
   ) => {
+    const { formNode, values, initialEntityObject, changedField } = data
+    const { schemaData, changeFields, updateSchemaDataField } = reactivity
+
     if (!executeHandler(execution, schemaData, changedField)) return
 
     const session = useSessionStore()
@@ -54,10 +52,17 @@ export const useTicketFormOganizationHandler = (): FormHandler => {
     const setCustomer = (): Maybe<UserData> | undefined => {
       if (session.hasPermission('ticket.agent')) {
         if (changedField?.newValue) {
+          // TODO: user <=> object ?!?!?
+          const optionValue = formNode?.find('customer_id', 'name')?.context
+            ?.optionValueLookup as Record<
+            number,
+            Record<'object' | 'user', UserData>
+          >
+          // ⚠️ :INFO mobile query retrieves .user and .object for desktop
           return (
-            formNode?.find('customer_id', 'name')?.context
-              ?.optionValueLookup as Record<number, { user: UserData }>
-          )[changedField.newValue as number].user as UserData
+            (optionValue[changedField.newValue as number].object as UserData) ||
+            (optionValue[changedField.newValue as number].user as UserData)
+          )
         }
 
         if (
@@ -89,6 +94,7 @@ export const useTicketFormOganizationHandler = (): FormHandler => {
         name: 'organization_id',
         props: {
           defaultFilter: '*',
+          alwaysApplyDefaultFilter: true,
           options: [currentValueOption],
           additionalQueryParams: {
             customerId,

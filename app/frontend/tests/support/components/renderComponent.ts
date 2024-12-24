@@ -1,37 +1,115 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { Plugin, Ref } from 'vue'
-import { isRef, nextTick, ref, watchEffect, unref } from 'vue'
-import type { Router, RouteRecordRaw } from 'vue-router'
-import { createRouter, createWebHistory } from 'vue-router'
-import type { ComponentMountingOptions } from '@vue/test-utils'
-import { mount } from '@vue/test-utils'
-import type { Matcher, RenderResult } from '@testing-library/vue'
-import { render } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { merge, cloneDeep } from 'lodash-es'
+// import of these files takes 2.5 seconds for each test file!
+// need to optimize this somehow
+
 import { plugin as formPlugin } from '@formkit/vue'
-import { buildFormKitPluginConfig } from '#shared/form/index.ts'
-import applicationConfigPlugin from '#shared/plugins/applicationConfigPlugin.ts'
-import CommonIcon from '#shared/components/CommonIcon/CommonIcon.vue'
-import CommonLink from '#shared/components/CommonLink/CommonLink.vue'
+import userEvent from '@testing-library/user-event'
+import { render } from '@testing-library/vue'
+import { mount } from '@vue/test-utils'
+import { merge, cloneDeep } from 'lodash-es'
+import { afterEach, vi } from 'vitest'
+import {
+  isRef,
+  nextTick,
+  ref,
+  watchEffect,
+  unref,
+  type App,
+  type Plugin,
+  type Ref,
+} from 'vue'
+import { createRouter, createWebHistory } from 'vue-router'
+
+import type { DependencyProvideApi } from '#tests/support/components/types.ts'
+
+import CommonAlert from '#shared/components/CommonAlert/CommonAlert.vue'
+import CommonBadge from '#shared/components/CommonBadge/CommonBadge.vue'
 import CommonDateTime from '#shared/components/CommonDateTime/CommonDateTime.vue'
-import CommonConfirmation from '#mobile/components/CommonConfirmation/CommonConfirmation.vue'
-import { imageViewerOptions } from '#shared/composables/useImageViewer.ts'
+import CommonIcon from '#shared/components/CommonIcon/CommonIcon.vue'
+import { provideIcons } from '#shared/components/CommonIcon/useIcons.ts'
+import CommonLabel from '#shared/components/CommonLabel/CommonLabel.vue'
+import CommonLink from '#shared/components/CommonLink/CommonLink.vue'
 import DynamicInitializer from '#shared/components/DynamicInitializer/DynamicInitializer.vue'
-import { initializeWalker } from '#shared/router/walker.ts'
-import { initializeMobileVisuals } from '#mobile/initializer/mobileVisuals.ts'
-import { i18n } from '#shared/i18n.ts'
+import { initializeAppName } from '#shared/composables/useAppName.ts'
+import { imageViewerOptions } from '#shared/composables/useImageViewer.ts'
 import {
   setupCommonVisualConfig,
   type SharedVisualConfig,
 } from '#shared/composables/useSharedVisualConfig.ts'
-import { mobileFormFieldModules } from '#mobile/form/index.ts'
+import { initializeTwoFactorPlugins } from '#shared/entities/two-factor/composables/initializeTwoFactorPlugins.ts'
+import { buildFormKitPluginConfig } from '#shared/form/index.ts'
+import { i18n } from '#shared/i18n.ts'
+import applicationConfigPlugin from '#shared/plugins/applicationConfigPlugin.ts'
+import tooltip from '#shared/plugins/directives/tooltip/index.ts'
+import { initializeWalker } from '#shared/router/walker.ts'
 import type { AppName } from '#shared/types/app.ts'
-import buildIconsQueries from './iconQueries.ts'
-import buildLinksQueries from './linkQueries.ts'
+import type { FormFieldTypeImportModules } from '#shared/types/form.ts'
+import type { ImportGlobEagerOutput } from '#shared/types/utils.ts'
+
+import { setCurrentApp } from '#desktop/currentApp.ts'
+import { twoFactorConfigurationPluginLookup } from '#desktop/entities/two-factor-configuration/plugins/index.ts'
+import desktopIconsAliases from '#desktop/initializer/desktopIconsAliasesMap.ts'
+import mobileIconsAliases from '#mobile/initializer/mobileIconsAliasesMap.ts'
+
 import { setTestState, waitForNextTick } from '../utils.ts'
+
+import { getTestAppName } from './app.ts'
+import buildIconsQueries from './iconQueries.ts'
 import { cleanupStores, initializeStore } from './initializeStore.ts'
+import buildLinksQueries from './linkQueries.ts'
+
+import type { Matcher, RenderResult } from '@testing-library/vue'
+import type { ComponentMountingOptions } from '@vue/test-utils'
+import type { Router, RouteRecordRaw, NavigationGuard } from 'vue-router'
+
+const appName = getTestAppName()
+
+const isMobile = appName !== 'desktop'
+const isDesktop = appName === 'desktop'
+
+// not eager because we don't actually want to import all those components, we only need their names
+const icons = isDesktop
+  ? import.meta.glob('../../../apps/desktop/initializer/assets/*.svg')
+  : import.meta.glob('../../../apps/mobile/initializer/assets/*.svg')
+
+provideIcons(
+  Object.keys(icons).map((icon) => [icon, { default: '' }]),
+  isDesktop ? desktopIconsAliases : mobileIconsAliases,
+)
+
+// internal Vitest variable, ideally should check expect.getState().testPath, but it's not populated in 0.34.6 (a bug)
+const { filepath } = (globalThis as any).__vitest_worker__ as any
+
+let formFields: ImportGlobEagerOutput<FormFieldTypeImportModules>
+let ConformationComponent: unknown
+let initDefaultVisuals: () => void
+
+// TODO: have a separate check for shared components
+if (isMobile) {
+  const [
+    { default: CommonConfirmation },
+    { initializeMobileVisuals },
+    { mobileFormFieldModules },
+  ] = await Promise.all([
+    import('#mobile/components/CommonConfirmation/CommonConfirmation.vue'),
+    import('#mobile/initializer/mobileVisuals.ts'),
+    import('#mobile/form/index.ts'),
+  ])
+  initDefaultVisuals = initializeMobileVisuals
+  ConformationComponent = CommonConfirmation
+  formFields = mobileFormFieldModules
+} else if (isDesktop) {
+  const [{ initializeDesktopVisuals }, { desktopFormFieldModules }] =
+    await Promise.all([
+      import('#desktop/initializer/desktopVisuals.ts'),
+      import('#desktop/form/index.ts'),
+    ])
+  initDefaultVisuals = initializeDesktopVisuals
+  formFields = desktopFormFieldModules
+} else {
+  throw new Error(`Was not able to detect the app type from ${filepath} test.`)
+}
 
 // TODO: some things can be handled differently: https://test-utils.vuejs.org/api/#config-global
 
@@ -39,20 +117,21 @@ export interface ExtendedMountingOptions<Props>
   extends ComponentMountingOptions<Props> {
   router?: boolean
   routerRoutes?: RouteRecordRaw[]
+  routerBeforeGuards?: NavigationGuard[]
   store?: boolean
   confirmation?: boolean
   form?: boolean
+  provide?: DependencyProvideApi
   formField?: boolean
   unmount?: boolean
   dialog?: boolean
-  /**
-   * @default 'mobile'
-   */
+  flyout?: boolean
   app?: AppName
   vModel?: {
     [prop: string]: unknown
   }
   visuals?: SharedVisualConfig
+  plugins?: Plugin[]
 }
 
 type UserEvent = ReturnType<(typeof userEvent)['setup']>
@@ -63,6 +142,7 @@ interface PageEvents extends UserEvent {
 
 export interface ExtendedRenderResult extends RenderResult {
   events: PageEvents
+  router: Router
   queryAllByIconName(matcher: Matcher): SVGElement[]
   queryByIconName(matcher: Matcher): SVGElement | null
   getAllByIconName(matcher: Matcher): SVGElement[]
@@ -77,17 +157,22 @@ const plugins: (Plugin | [Plugin, ...unknown[]])[] = [
     app.config.globalProperties.i18n = i18n
     app.config.globalProperties.$t = i18n.t.bind(i18n)
     app.config.globalProperties.__ = (source: string) => source
+    setCurrentApp(app)
   },
 ]
 
 const defaultWrapperOptions: ExtendedMountingOptions<unknown> = {
   global: {
     components: {
+      CommonAlert,
       CommonIcon,
       CommonLink,
       CommonDateTime,
+      CommonLabel,
+      CommonBadge,
     },
     stubs: {},
+    directives: { [tooltip.name]: tooltip.directive },
     plugins,
   },
 }
@@ -99,9 +184,11 @@ interface MockedRouter extends Router {
 
 let routerInitialized = false
 let router: MockedRouter
+const history = createWebHistory(isDesktop ? '/desktop' : '/mobile')
 
 export const getTestPlugins = () => [...plugins]
 export const getTestRouter = () => router
+export const getHistory = () => history
 
 // cannot use "as const" here, because ESLint fails with obscure error :shrug:
 const routerMethods = [
@@ -118,7 +205,10 @@ const ensureRouterSpy = () => {
   routerMethods.forEach((name) => vi.spyOn(router, name))
 }
 
-const initializeRouter = (routes?: RouteRecordRaw[]) => {
+const initializeRouter = (
+  routes?: RouteRecordRaw[],
+  routerBeforeGuards?: NavigationGuard[],
+) => {
   if (routerInitialized) {
     ensureRouterSpy()
     return
@@ -154,10 +244,11 @@ const initializeRouter = (routes?: RouteRecordRaw[]) => {
   }
 
   router = createRouter({
-    // TODO should use the app.
-    history: createWebHistory('/mobile'),
+    history,
     routes: localRoutes,
   }) as MockedRouter
+
+  routerBeforeGuards?.forEach((guard) => router.beforeEach(guard))
 
   Object.defineProperty(globalThis, 'Router', {
     value: router,
@@ -206,16 +297,10 @@ export const initializePiniaStore = () => {
 
 let formInitialized = false
 
-const initializeForm = (appName: AppName) => {
+const initializeForm = () => {
   if (formInitialized) return
 
-  plugins.push([
-    formPlugin,
-    buildFormKitPluginConfig(
-      undefined,
-      appName === 'mobile' ? mobileFormFieldModules : undefined,
-    ),
-  ])
+  plugins.push([formPlugin, buildFormKitPluginConfig(undefined, formFields)])
   defaultWrapperOptions.shallow = false
 
   formInitialized = true
@@ -229,6 +314,10 @@ const initializeApplicationConfig = () => {
   initializePiniaStore()
 
   plugins.push(applicationConfigPlugin)
+
+  if (isDesktop) {
+    initializeTwoFactorPlugins(twoFactorConfigurationPluginLookup)
+  }
 
   applicationConfigInitialized = true
 }
@@ -262,8 +351,38 @@ const mountDialog = () => {
 
   const { element } = mount(Dialog, defaultWrapperOptions)
   document.body.appendChild(element)
+  document.body.id = 'app'
+
+  if (!document.getElementById('main-content')) {
+    const mainElement = document.createElement('div')
+    mainElement.id = 'main-content'
+    document.body.insertAdjacentElement('afterbegin', mainElement)
+  }
 
   dialogMounted = true
+}
+
+let flyoutMounted = false
+
+const mountFlyout = () => {
+  if (flyoutMounted) return
+
+  const Flyout = {
+    components: { DynamicInitializer },
+    template: '<DynamicInitializer name="flyout" />',
+  } as any
+
+  const { element } = mount(Flyout, defaultWrapperOptions)
+  document.body.appendChild(element)
+  document.body.id = 'app'
+
+  if (!document.getElementById('main-content')) {
+    const mainElement = document.createElement('div')
+    mainElement.id = 'main-content'
+    document.body.insertAdjacentElement('afterbegin', mainElement)
+  }
+
+  flyoutMounted = true
 }
 
 setTestState({
@@ -282,11 +401,15 @@ afterEach(() => {
 
 let confirmationMounted = false
 
-const mountconfirmation = () => {
+const mountConfirmation = () => {
   if (confirmationMounted) return
 
+  if (!ConformationComponent) {
+    throw new Error('ConformationComponent is not defined.')
+  }
+
   const Confirmation = {
-    components: { CommonConfirmation },
+    components: { CommonConfirmation: ConformationComponent },
     template: '<CommonConfirmation />',
   } as any
 
@@ -334,25 +457,45 @@ const setupVModel = <Props>(wrapperOptions: ExtendedMountingOptions<Props>) => {
   }
 }
 
+const mockProvide = (app: App, provideApi: DependencyProvideApi) => {
+  provideApi.forEach((dependency) => {
+    const [key, data] = dependency
+    // App globals get reused in each test run we have to clear the provides in each test
+    if (app._context.provides[key]) {
+      app._context.provides[key] = data
+    } else {
+      app.provide(key, data)
+    }
+  })
+}
+
 const renderComponent = <Props>(
   component: any,
   wrapperOptions: ExtendedMountingOptions<Props> = {},
 ): ExtendedRenderResult => {
+  initializeAppName(appName)
+
   // Store and Router needs only to be initalized once for a test suit.
-  if (wrapperOptions?.router) {
-    initializeRouter(wrapperOptions?.routerRoutes)
+  if (wrapperOptions.router) {
+    initializeRouter(
+      wrapperOptions.routerRoutes,
+      wrapperOptions.routerBeforeGuards,
+    )
   }
-  if (wrapperOptions?.store) {
+  if (wrapperOptions.store) {
     initializePiniaStore()
   }
-  if (wrapperOptions?.form) {
-    initializeForm(wrapperOptions?.app || 'mobile')
+  if (wrapperOptions.form) {
+    initializeForm()
   }
-  if (wrapperOptions?.dialog) {
+  if (wrapperOptions.dialog) {
     mountDialog()
   }
-  if (wrapperOptions?.confirmation) {
-    mountconfirmation()
+  if (wrapperOptions.flyout) {
+    mountFlyout()
+  }
+  if (wrapperOptions.confirmation) {
+    mountConfirmation()
   }
 
   initializeApplicationConfig()
@@ -360,14 +503,24 @@ const renderComponent = <Props>(
   if (wrapperOptions.visuals) {
     setupCommonVisualConfig(wrapperOptions.visuals)
   } else {
-    initializeMobileVisuals()
+    initDefaultVisuals()
   }
 
-  if (wrapperOptions?.form && wrapperOptions?.formField) {
+  if (wrapperOptions.form && wrapperOptions.formField) {
     defaultWrapperOptions.props ||= {}
 
     // Reset the default of 20ms for testing.
     defaultWrapperOptions.props.delay = 0
+  }
+
+  if (wrapperOptions.plugins) {
+    plugins.push(...wrapperOptions.plugins)
+
+    delete wrapperOptions.plugins
+  }
+
+  if (wrapperOptions.provide) {
+    plugins.push((app: App) => mockProvide(app, wrapperOptions.provide!))
   }
 
   const { startWatchingModel } = setupVModel(wrapperOptions)
@@ -417,6 +570,14 @@ const renderComponent = <Props>(
   wrappers.add([localWrapperOptions, view])
 
   startWatchingModel(view)
+
+  Object.defineProperty(view, 'router', {
+    get() {
+      return router
+    },
+    enumerable: true,
+    configurable: true,
+  })
 
   return view
 }

@@ -1,16 +1,19 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import Mention from '@tiptap/extension-mention'
 
-import type { Ref } from 'vue'
 import type { FormFieldContext } from '#shared/components/Form/types/field.ts'
-import { QueryHandler } from '#shared/server/apollo/handler/index.ts'
-import { ensureGraphqlId } from '#shared/graphql/utils.ts'
-import { debouncedQuery, htmlCleanup } from '#shared/utils/helpers.ts'
 import { getNodeByName } from '#shared/components/Form/utils.ts'
-import type { FieldEditorProps, MentionTextItem } from '../types.ts'
-import buildMentionSuggestion from './suggestions.ts'
+import { ensureGraphqlId } from '#shared/graphql/utils.ts'
+import { QueryHandler } from '#shared/server/apollo/handler/index.ts'
+import { debouncedQuery, htmlCleanup } from '#shared/utils/helpers.ts'
+
 import { useTextModuleSuggestionsLazyQuery } from '../graphql/queries/textModule/textModuleSuggestions.api.ts'
+
+import buildMentionSuggestion from './suggestions.ts'
+
+import type { FieldEditorProps, MentionTextItem } from '../types.ts'
+import type { Ref } from 'vue'
 
 export const PLUGIN_NAME = 'mentionText'
 const ACTIVATOR = '::'
@@ -24,6 +27,7 @@ export default (context: Ref<FormFieldContext<FieldEditorProps>>) => {
 
   const getTextModules = async (query: string) => {
     const { meta: editorMeta = {}, formId } = context.value
+
     const meta = editorMeta[PLUGIN_NAME] || {}
     let { ticketId, customerId } = context.value
 

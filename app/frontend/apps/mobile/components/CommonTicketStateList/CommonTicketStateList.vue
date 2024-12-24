@@ -1,8 +1,9 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 import { TicketState } from '#shared/entities/ticket/types.ts'
 import { replaceTags } from '#shared/utils/formatter.ts'
+
 import CommonSectionMenu from '../CommonSectionMenu/CommonSectionMenu.vue'
 import CommonSectionMenuLink from '../CommonSectionMenu/CommonSectionMenuLink.vue'
 
@@ -27,10 +28,12 @@ const getTicketsLink = (stateIds: number[]) => {
 
 <template>
   <CommonSectionMenu header-label="Tickets">
-    <slot name="before-fields" />
+    <div class="px-3">
+      <slot name="before-fields" />
+    </div>
     <CommonSectionMenuLink
       :icon="{
-        name: 'mobile-check-circle-no',
+        name: 'check-circle-no',
         size: 'base',
         class: 'text-yellow',
         decorative: true,
@@ -42,7 +45,7 @@ const getTicketsLink = (stateIds: number[]) => {
     </CommonSectionMenuLink>
     <CommonSectionMenuLink
       :icon="{
-        name: 'mobile-check-circle-no',
+        name: 'check-circle-no',
         size: 'base',
         class: 'text-green',
         decorative: true,
@@ -54,10 +57,10 @@ const getTicketsLink = (stateIds: number[]) => {
     </CommonSectionMenuLink>
     <CommonLink
       v-if="createLink && createLabel"
-      class="flex min-h-[54px] items-center justify-center gap-2 text-blue"
+      class="text-blue flex min-h-[54px] items-center justify-center gap-2"
       :link="createLink"
     >
-      <CommonIcon name="mobile-add" size="tiny" decorative />
+      <CommonIcon name="add" size="tiny" decorative />
       {{ $t(createLabel) }}
     </CommonLink>
   </CommonSectionMenu>

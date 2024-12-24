@@ -29,6 +29,7 @@ class App.PopoverProvider
     return if !@checkPermissions()
     @clear(@popovers)
     @bind() if !buildParams.doNotBind
+    return if buildParams.isTouchDevice is true
     @popovers = @buildPopovers()
 
   checkPermissions: ->
@@ -39,12 +40,16 @@ class App.PopoverProvider
 
   bind: ->
 
+  onHide: (event, elem) ->
+
+  onShow: (event, elem) ->
+
   buildPopovers: (supplementaryData = {}) ->
     context = @
 
     selector = supplementaryData.selector || ".#{@cssClass()}"
 
-    @params.parentController.el.find(selector).popover(
+    @params.parentController.el.find(selector).popover('destroy').popover(
       trigger:    'hover'
       container:  'body'
       html:       true
@@ -57,6 +62,8 @@ class App.PopoverProvider
       content: ->
         context.buildContentFor(@, supplementaryData)
     )
+    @params.parentController.el.find(selector).on('show.bs.popover', (e) -> context.onShow(e, @))
+    @params.parentController.el.find(selector).on('hide.bs.popover', (e) -> context.onHide(e, @))
 
   clear: ->
     return if !@popovers

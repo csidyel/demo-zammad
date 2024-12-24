@@ -1,7 +1,10 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class PublicLink < ApplicationModel
   include HasDefaultModelUserRelations
+  include HasSearchIndexBackend
+  include CanSelector
+  include CanSearch
 
   include CanPriorization
   include ChecksClientNotification

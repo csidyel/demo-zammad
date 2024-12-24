@@ -4,16 +4,11 @@
     "lib": ["DOM", "WebWorker", "dom.iterable"],
     "types": ["vitest/globals", "vite/client", "vite-plugin-pwa/client"]
   },
-  "include": [
-    "app/frontend/**/*",
-    "./vite.config.*",
-    "./vitest.setup.ts",
-    "./histoire.config.*"
-  ],
+  "include": ["app/frontend/**/*", "./vite.config.*", "./vitest.setup.ts"],
   "exclude": [
     "app/frontend/cypress/**/*",
     "**/*.cy.ts",
-    "**/.cypress/**/*",
+    "**/.dev/cypress/**/*",
     "node_modules",
     "public",
     "vendor"

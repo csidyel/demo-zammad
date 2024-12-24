@@ -1,9 +1,33 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { mockApolloClient } from '#cy/utils.ts'
+
+import { FormUploadCacheAddDocument } from '#shared/components/Form/fields/FieldFile/graphql/mutations/uploadCache/add.api.ts'
 
 import { mountEditor } from './utils.ts'
 
 describe('resizing image within editor', () => {
   it('can be resized', { retries: 2 }, () => {
+    const client = mockApolloClient()
+    client.setRequestHandler(FormUploadCacheAddDocument, async () => ({
+      data: {
+        formUploadCacheAdd: {
+          __typename: 'FormUploadCacheAddPayload',
+          uploadedFiles: [
+            {
+              __typename: 'StoredFile',
+              id: 'gid://zammad/Store/2062',
+              name: 'file.png',
+              size: 12393,
+              type: 'image/png',
+            },
+          ],
+        },
+      },
+    }))
+
+    cy.intercept('GET', '/api/v1/attachments/2062', { fixture: 'example.png' })
+
     mountEditor()
     cy.findByRole('textbox').click()
     cy.findByTestId('action-bar')
@@ -12,7 +36,7 @@ describe('resizing image within editor', () => {
       .then(() => {
         cy.findByTestId('editor-image-input').selectFile(
           {
-            contents: '.cypress/fixtures/example.png',
+            contents: '.dev/cypress/fixtures/example.png',
             fileName: 'file.png',
             mimeType: 'image/png',
             lastModified: Date.now(),

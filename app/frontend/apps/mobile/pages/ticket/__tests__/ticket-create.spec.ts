@@ -1,28 +1,31 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
+import { getNode } from '@formkit/core'
+import { waitFor } from '@testing-library/vue'
+import { flushPromises } from '@vue/test-utils'
+
+import type { ExtendedRenderResult } from '#tests/support/components/index.ts'
+import { getTestRouter } from '#tests/support/components/renderComponent.ts'
+import { visitView } from '#tests/support/components/visitView.ts'
+import { mockApplicationConfig } from '#tests/support/mock-applicationConfig.ts'
+import { mockGraphQLApi } from '#tests/support/mock-graphql-api.ts'
+import { mockPermissions } from '#tests/support/mock-permissions.ts'
+import { setupView } from '#tests/support/mock-user.ts'
+import { mockUserCurrent } from '#tests/support/mock-userCurrent.ts'
+import { mockTicketOverviews } from '#tests/support/mocks/ticket-overviews.ts'
+import { nullableMock, waitUntil } from '#tests/support/utils.ts'
+
+import { AutocompleteSearchUserDocument } from '#shared/components/Form/fields/FieldCustomer/graphql/queries/autocompleteSearch/user.api.ts'
+import { FormUpdaterDocument } from '#shared/components/Form/graphql/queries/formUpdater.api.ts'
+import { ObjectManagerFrontendAttributesDocument } from '#shared/entities/object-attributes/graphql/queries/objectManagerFrontendAttributes.api.ts'
+import { TicketCreateDocument } from '#shared/entities/ticket/graphql/mutations/create.api.ts'
+
+import { defaultOrganization } from '#mobile/entities/organization/__tests__/mocks/organization-mocks.ts'
 import {
   ticketObjectAttributes,
   ticketArticleObjectAttributes,
   ticketPayload,
 } from '#mobile/entities/ticket/__tests__/mocks/ticket-mocks.ts'
-import { defaultOrganization } from '#mobile/entities/organization/__tests__/mocks/organization-mocks.ts'
-import { FormUpdaterDocument } from '#shared/components/Form/graphql/queries/formUpdater.api.ts'
-import { ObjectManagerFrontendAttributesDocument } from '#shared/entities/object-attributes/graphql/queries/objectManagerFrontendAttributes.api.ts'
-import { visitView } from '#tests/support/components/visitView.ts'
-import { mockGraphQLApi } from '#tests/support/mock-graphql-api.ts'
-import { mockPermissions } from '#tests/support/mock-permissions.ts'
-import { mockAccount } from '#tests/support/mock-account.ts'
-import type { ExtendedRenderResult } from '#tests/support/components/index.ts'
-import { mockApplicationConfig } from '#tests/support/mock-applicationConfig.ts'
-import { flushPromises } from '@vue/test-utils'
-import { nullableMock, waitUntil } from '#tests/support/utils.ts'
-import { getTestRouter } from '#tests/support/components/renderComponent.ts'
-import { getNode } from '@formkit/core'
-import { setupView } from '#tests/support/mock-user.ts'
-import { waitFor } from '@testing-library/vue'
-import { mockTicketOverviews } from '#tests/support/mocks/ticket-overviews.ts'
-import { AutocompleteSearchUserDocument } from '#shared/components/Form/fields/FieldCustomer/graphql/queries/autocompleteSearch/user.api.ts'
-import { TicketCreateDocument } from '../graphql/mutations/create.api.ts'
 
 const visitTicketCreate = async (path = '/tickets/create') => {
   const mockObjectAttributes = mockGraphQLApi(
@@ -45,49 +48,51 @@ const visitTicketCreate = async (path = '/tickets/create') => {
 
   const mockFormUpdater = mockGraphQLApi(FormUpdaterDocument).willResolve({
     formUpdater: {
-      ticket_duplicate_detection: {
-        show: true,
-        hidden: false,
-        value: { count: 0, items: [] },
-      },
-      group_id: {
-        show: true,
-        options: [
-          {
-            label: 'Users',
-            value: 1,
-          },
-        ],
-        clearable: true,
-      },
-      owner_id: {
-        show: true,
-        options: [{ value: 100, label: 'Max Mustermann' }],
-      },
-      priority_id: {
-        show: true,
-        options: [
-          { value: 1, label: '1 low' },
-          { value: 2, label: '2 normal' },
-          { value: 3, label: '3 high' },
-        ],
-        clearable: true,
-      },
-      pending_time: {
-        show: false,
-        required: false,
-        hidden: false,
-        disabled: false,
-      },
-      state_id: {
-        show: true,
-        options: [
-          { value: 4, label: 'closed' },
-          { value: 2, label: 'open' },
-          { value: 7, label: 'pending close' },
-          { value: 3, label: 'pending reminder' },
-        ],
-        clearable: true,
+      fields: {
+        ticket_duplicate_detection: {
+          show: true,
+          hidden: false,
+          value: { count: 0, items: [] },
+        },
+        group_id: {
+          show: true,
+          options: [
+            {
+              label: 'Users',
+              value: 1,
+            },
+          ],
+          clearable: true,
+        },
+        owner_id: {
+          show: true,
+          options: [{ value: 100, label: 'Max Mustermann' }],
+        },
+        priority_id: {
+          show: true,
+          options: [
+            { value: 1, label: '1 low' },
+            { value: 2, label: '2 normal' },
+            { value: 3, label: '3 high' },
+          ],
+          clearable: true,
+        },
+        pending_time: {
+          show: false,
+          required: false,
+          hidden: false,
+          disabled: false,
+        },
+        state_id: {
+          show: true,
+          options: [
+            { value: 4, label: 'closed' },
+            { value: 2, label: 'open' },
+            { value: 7, label: 'pending close' },
+            { value: 3, label: 'pending reminder' },
+          ],
+          clearable: true,
+        },
       },
     },
   })
@@ -257,7 +262,7 @@ describe('Creating new ticket as agent', () => {
 
       await waitUntil(() => mockTicket.calls.resolve)
 
-      await expect(view.findByRole('alert')).resolves.toHaveTextContent(
+      expect(await view.findByRole('alert')).toHaveTextContent(
         'Ticket has been created successfully.',
       )
 
@@ -277,9 +282,7 @@ describe('Creating new ticket as agent', () => {
 
     expect(view.queryByTestId('popupWindow')).toBeInTheDocument()
 
-    await expect(
-      view.findByRole('alert', { name: 'Confirm dialog' }),
-    ).resolves.toBeInTheDocument()
+    await expect(view.findByText('Confirm dialog')).resolves.toBeInTheDocument()
   })
 
   it('shows the CC field for type "Email"', async () => {
@@ -327,7 +330,7 @@ describe('Creating new ticket as customer', () => {
   })
 
   it('does not show the organization field without secondary organizations', async () => {
-    mockAccount({
+    mockUserCurrent({
       lastname: 'Doe',
       firstname: 'John',
       organization: defaultOrganization(),
@@ -347,7 +350,7 @@ describe('Creating new ticket as customer', () => {
   })
 
   it('does show the organization field with secondary organizations', async () => {
-    mockAccount({
+    mockUserCurrent({
       lastname: 'Doe',
       firstname: 'John',
       organization: defaultOrganization(),

@@ -1,9 +1,8 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class KnowledgeBase::Category::Translation < ApplicationModel
   include HasAgentAllowedParams
   include HasSearchIndexBackend
-  include KnowledgeBase::Search
   include KnowledgeBase::HasUniqueTitle
 
   AGENT_ALLOWED_ATTRIBUTES = %i[title kb_locale_id].freeze
@@ -24,7 +23,7 @@ class KnowledgeBase::Category::Translation < ApplicationModel
   def assets(data)
     return data if assets_added_to?(data)
 
-    data = super(data)
+    data = super
     category.assets(data)
   end
 
@@ -37,19 +36,14 @@ class KnowledgeBase::Category::Translation < ApplicationModel
     attrs
   end
 
-  class << self
-    def search_fallback(query, scope = nil, options: {})
-      fields = %w[title]
+  scope :search_sql_text_fallback, lambda { |query|
+    where_or_cis(%w[title], query)
+  }
 
-      output = where_or_cis(fields, query)
-
-      if scope.present?
-        output = output
-                 .joins(:category)
-                 .where(knowledge_base_categories: { parent_id: scope })
-      end
-
-      output
+  scope :apply_kb_scope, lambda { |scope|
+    if scope.present?
+      joins(:category)
+        .where(knowledge_base_categories: { parent_id: scope })
     end
-  end
+  }
 end

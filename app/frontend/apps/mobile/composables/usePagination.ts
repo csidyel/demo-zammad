@@ -1,13 +1,15 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { computed, reactive, readonly, ref } from 'vue'
-import type { OperationVariables } from '@apollo/client/core'
+
 import type { QueryHandler } from '#shared/server/apollo/handler/index.ts'
 import type {
   BaseConnection,
   OperationQueryResult,
   PaginationVariables,
 } from '#shared/types/server/apollo/handler.ts'
+
+import type { OperationVariables } from '@apollo/client/core'
 
 export default function usePagination<
   TQueryResult extends OperationQueryResult = OperationQueryResult,
@@ -23,13 +25,8 @@ export default function usePagination<
     return (result[resultKey] as BaseConnection)?.pageInfo
   })
 
-  const hasNextPage = computed(() => {
-    return pageInfo.value?.hasNextPage ?? false
-  })
-
-  const hasPreviousPage = computed(() => {
-    return pageInfo.value?.hasPreviousPage ?? false
-  })
+  const hasNextPage = computed(() => !!pageInfo.value?.hasNextPage)
+  const hasPreviousPage = computed(() => !!pageInfo.value?.hasPreviousPage)
 
   const getInitialCurrentPage = (): number => {
     const result: OperationQueryResult = query.result().value || {}

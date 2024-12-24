@@ -350,6 +350,18 @@
         this.log('paste image', clipboardImage)
 
         var imageFile = clipboardImage.getAsFile()
+        var fileSizeInMb = imageFile.size / 1024 / 1024
+
+        // The browser may fail while reading too large files as data URL.
+        //   Here we introduce a safe limit check in order to prevent silent errors.
+        if (fileSizeInMb > 25) {
+          console.error('Image file size too large', fileSizeInMb, 'in mb')
+          new App.ControllerErrorModal({
+            message: __('Image file size is too large, please try inserting a smaller file.'),
+          })
+          return
+        }
+
         var reader = new FileReader()
 
         reader.onload = $.proxy(function (e) {
@@ -381,7 +393,7 @@
           }, this)
 
           // resize if to big
-          App.ImageService.resize(img.src, maxWidth, 'auto', scaleFactor, 'image/jpeg', 'auto', insert)
+          App.ImageService.resize(img.src, maxWidth, 'auto', scaleFactor, imageFile.type, 'auto', insert)
         }, this)
 
         reader.readAsDataURL(imageFile)
@@ -450,7 +462,7 @@
     // look for images
     if (file.type.match('image.*')) {
       var reader = new FileReader()
-      reader.onload = (function(e) {
+      reader.onload = $.proxy(function(e) {
         var result = e.target.result
         var img = document.createElement('img')
         img.src = result
@@ -462,18 +474,22 @@
         //}
 
         //Insert the image at the carat
-        insert = function(dataUrl, width, height, isResized) {
+        insert = $.proxy(function(dataUrl, width, height, isResized) {
 
           //console.log('dataUrl', dataUrl)
           //console.log('scaleFactor', scaleFactor, isResized, maxWidth, width, height)
           this.log('image inserted')
-          result = dataUrl
-          if (this.options.imageWidth == 'absolute') {
-            img = "<img tabindex=\"0\" style=\"width: " + width + "px; max-width: 100%;\" src=\"" + result + "\">"
+
+          img.setAttribute('tabindex', '0')
+          img.setAttribute('src', dataUrl)
+
+          if(this.options.imageWidth == 'absolute') {
+            var imageStyle = 'width:' + width + 'px; max-width: 100%;'
+          } else {
+            var imageStyle = 'width: 100%; max-width:' + width + 'px;'
           }
-          else {
-            img = "<img tabindex=\"0\" style=\"width: 100%; max-width: " + width + "px;\" src=\"" + result + "\">"
-          }
+
+          img.setAttribute('style', imageStyle)
 
           if (document.caretPositionFromPoint) {
             var pos = document.caretPositionFromPoint(x, y)
@@ -489,11 +505,11 @@
           else {
             console.log('could not find carat')
           }
-        }
+        }, this)
 
         // resize if to big
-        App.ImageService.resize(img.src, maxWidth, 'auto', scaleFactor, 'image/jpeg', 'auto', insert)
-      })
+        App.ImageService.resize(img.src, maxWidth, 'auto', scaleFactor, file.type, 'auto', insert)
+      }, this)
       reader.readAsDataURL(file)
     }
   }

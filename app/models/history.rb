@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class History < ApplicationModel
   include CanBeImported
@@ -146,16 +146,15 @@ returns
 
 =end
 
-  def self.list(requested_object, requested_object_id, related_history_object = [], assets = nil)
+  def self.list(requested_object, requested_object_id, related_history_object = [], assets = nil, raw: false)
     histories = History.where(
       history_object_id: object_lookup(requested_object).id,
       o_id:              requested_object_id
     )
 
     if related_history_object.present?
-      object_ids = []
-      Array(related_history_object).each do |object|
-        object_ids << object_lookup(object).id
+      object_ids = Array(related_history_object).map do |object|
+        object_lookup(object).id
       end
 
       histories = histories.or(
@@ -167,6 +166,8 @@ returns
     end
 
     histories = histories.reorder(:created_at, :id)
+
+    return histories if raw
 
     list = histories.map(&:attributes).each do |data|
       data['object'] = History::Object.lookup(id: data.delete('history_object_id'))&.name

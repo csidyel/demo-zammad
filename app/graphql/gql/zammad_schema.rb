@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Gql::ZammadSchema < GraphQL::Schema
   mutation      Gql::EntryPoints::Mutations
@@ -18,33 +18,40 @@ class Gql::ZammadSchema < GraphQL::Schema
   default_page_size 100
   max_complexity 10_000
 
-  # The GraphQL introspection query has a depth of 13, so allow that in the development env.
-  max_depth Rails.env.eql?('development') ? 13 : 10
+  # Depth of 15 is needed for commmon introspection queries like Insomnia.
+  max_depth 15
 
   TYPE_MAP = {
-    ::Store => ::Gql::Types::StoredFileType
+    ::Store   => ::Gql::Types::StoredFileType,
+    ::Taskbar => ::Gql::Types::User::TaskbarItemType,
+  }.freeze
+
+  ABSTRACT_TYPE_MAP = {
+    ::Gql::Types::User::TaskbarItemEntityType => ::Gql::Types::User::TaskbarItemEntity::TicketCreateType,
   }.freeze
 
   # Union and Interface Resolution
-  def self.resolve_type(_abstract_type, obj, _ctx)
+  def self.resolve_type(abstract_type, obj, _ctx)
     TYPE_MAP[obj.class] || "Gql::Types::#{obj.class.name}Type".constantize
+  rescue NameError
+    ABSTRACT_TYPE_MAP[abstract_type]
   rescue
     raise GraphQL::RequiredImplementationMissingError, "Cannot resolve type for '#{obj.class.name}'."
   end
 
   # Relay-style Object Identification:
 
-  # Return a string UUID for the internal ID.
+  # Return a string GUID for the internal ID.
   def self.id_from_internal_id(klass, internal_id)
     GlobalID.new(::URI::GID.build(app: GlobalID.app, model_name: klass.to_s, model_id: internal_id)).to_s
   end
 
-  # Return a string UUID for `object`
+  # Return a string GUID for `object`
   def self.id_from_object(object, _type_definition = nil, _query_ctx = nil)
     object.to_global_id.to_s
   end
 
-  # Given a string UUID, find the object.
+  # Given a string GUID, find the object.
   def self.object_from_id(id, _query_ctx = nil, type: ActiveRecord::Base)
     GlobalID.find(id, only: type)
   end
@@ -65,6 +72,42 @@ class Gql::ZammadSchema < GraphQL::Schema
     end
   end
 
+  # Given a string GUID, extract the internal ID.
+  # This is very helpful if GUIDs have to be converted en-masse and then authorized in bulk using a scope.
+  # Meanwhile using .object_from_id family would load (and, optionally, authorize) objects one by one.
+  # Beware there's no built-in way to authorize given IDs in this method!
+  #
+  # @param id [String] GUID
+  # @param type [Class] optionally filter to specific class only
+  #
+  # @return [Integer, nil]
+  def self.internal_id_from_id(id, type: ActiveRecord::Base)
+    internal_ids_from_ids([id], type:).first
+  end
+
+  # Given an array of string GUIDs, extract the internal IDs
+  # @see .internal_id_from_id
+  #
+  # @param ids [Array<String>] GUIDs
+  # @param type [Class] optionally filter to specific class only
+  #
+  # @return [Array<Integer>]
+  def self.internal_ids_from_ids(...)
+    local_uris_from_ids(...).map { |uri| uri.model_id.to_i }
+  end
+
+  # Given an array of string GUIDs, return GUID instances
+  #
+  # @param ids [Array<String>] GUIDs
+  # @param type [Class] optionally filter to specific class only
+  #
+  # @return [Array<GlobalID>]
+  def self.local_uris_from_ids(ids, type: ActiveRecord::Base)
+    ids
+      .map { |id| GlobalID.parse id }
+      .select { |uri| (klass = uri.model_name.safe_constantize) && klass <= type }
+  end
+
   def self.unauthorized_object(error)
     raise Exceptions::Forbidden, error.message # Add a top-level error to the response instead of returning nil.
   end
@@ -73,17 +116,17 @@ class Gql::ZammadSchema < GraphQL::Schema
     raise Exceptions::Forbidden, error.message # Add a top-level error to the response instead of returning nil.
   end
 
-  RETHROWABLE_ERRORS = [GraphQL::ExecutionError, ArgumentError, IndexError, NameError, RangeError, RegexpError, SystemCallError, ThreadError, TypeError, ZeroDivisionError].freeze
+  RETHROWABLE_ERRORS = [GraphQL::ExecutionError, ArgumentError, IndexError, NameError, NoMethodError, RangeError, RegexpError, SystemCallError, ThreadError, TypeError, ZeroDivisionError].freeze
 
   # Post-process errors and enrich them with meta information for processing on the client side.
   rescue_from(StandardError) do |err, _obj, _args, ctx, field|
     if field&.path&.start_with?('Mutations.')
       user_locale = ctx.current_user?&.locale
-      if err.is_a? ActiveRecord::RecordInvalid
-        user_errors = err.record.errors.map { |e| { field: e.attribute.to_s.camelize(:lower), message: e.localized_full_message(locale: user_locale, no_field_name: true) } }
-        next { errors: user_errors }
-      end
-      if err.is_a? ActiveRecord::RecordNotUnique
+
+      case err
+      when ActiveRecord::RecordInvalid
+        next { errors: build_record_invalid_errors(err.record, user_locale) }
+      when ActiveRecord::RecordNotUnique
         next { errors: [ message: Translation.translate(user_locale, 'This object already exists.') ] }
       end
     end
@@ -96,11 +139,23 @@ class Gql::ZammadSchema < GraphQL::Schema
     extensions = {
       type: err.class.name,
     }
-    if Rails.env.development? || Rails.env.test?
+    if Rails.env.local?
       extensions[:backtrace] = Rails.backtrace_cleaner.clean(err.backtrace)
     end
 
     # We need to throw an ExecutionError, all others would cause the GraphQL processing to die.
     raise GraphQL::ExecutionError.new(err.message, extensions: extensions)
   end
+
+  def self.build_record_invalid_errors(record, user_locale)
+    record.errors.map do |e|
+      field_name = e.attribute.to_s.camelize(:lower)
+
+      {
+        field:   field_name == 'base' ? nil : field_name,
+        message: e.localized_full_message(locale: user_locale, no_field_name: true)
+      }
+    end
+  end
+  private_class_method :build_record_invalid_errors
 end

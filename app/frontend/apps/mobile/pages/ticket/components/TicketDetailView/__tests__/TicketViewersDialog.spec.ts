@@ -1,7 +1,9 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { renderComponent } from '#tests/support/components/index.ts'
 
 import { EnumTaskbarApp } from '#shared/graphql/types.ts'
-import { renderComponent } from '#tests/support/components/index.ts'
+
 import TicketViewersDialog from '../TicketViewersDialog.vue'
 
 describe('displaying ticket viewer dialog', () => {
@@ -45,6 +47,7 @@ describe('displaying ticket viewer dialog', () => {
           },
         ],
       },
+      router: true,
     })
 
     expect(view.getByText('Viewing ticket')).toBeInTheDocument()

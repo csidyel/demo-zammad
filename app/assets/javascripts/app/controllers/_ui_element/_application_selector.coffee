@@ -32,6 +32,7 @@ class App.UiElement.ApplicationSelector
       '^multiselect$': [__('contains all'), __('contains one'), __('contains all not'), __('contains one not')]
       '^tree_select$': [__('is'), __('is not')]
       '^multi_tree_select$': [__('contains all'), __('contains one'), __('contains all not'), __('contains one not')]
+      '^autocompletion_ajax_external_data_source$': [__('is'), __('is not')]
       '^input$': [__('contains'), __('contains not'), __('is any of'), __('is none of'), __('starts with one of'), __('ends with one of')]
       '^richtext$': [__('contains'), __('contains not')]
       '^textarea$': [__('contains'), __('contains not')]
@@ -49,6 +50,7 @@ class App.UiElement.ApplicationSelector
         '^multiselect$': [__('contains all'), __('contains one'), __('contains all not'), __('contains one not')]
         '^tree_select$': [__('is'), __('is not'), __('has changed')]
         '^multi_tree_select$': [__('contains all'), __('contains one'), __('contains all not'), __('contains one not')]
+        '^autocompletion_ajax_external_data_source$': [__('is'), __('is not'), __('has changed')]
         '^input$': [__('contains'), __('contains not'), __('has changed'), __('is any of'), __('is none of'), __('starts with one of'), __('ends with one of')]
         '^richtext$': [__('contains'), __('contains not'), __('has changed')]
         '^textarea$': [__('contains'), __('contains not'), __('has changed')]
@@ -60,11 +62,13 @@ class App.UiElement.ApplicationSelector
     operators_name =
       '_id$': [__('is'), __('is not')]
       '_ids$': [__('is'), __('is not')]
+      'active$': [__('is'), __('is not')]
 
     if attribute.hasChanged
       operators_name =
         '_id$': [__('is'), __('is not'), __('has changed')]
         '_ids$': [__('is'), __('is not'), __('has changed')]
+        'active$': [__('is'), __('is not'), __('has changed')]
 
     # merge config
     elements = {}
@@ -123,12 +127,15 @@ class App.UiElement.ApplicationSelector
         attributesByObject = App.ObjectManagerAttribute.selectorAttributesByObject()
         configureAttributes = attributesByObject[groupMeta.model] || []
         for config in configureAttributes
+          config.objectName    = groupMeta.model
+          config.attributeName = config.name
+
           # ignore passwords and relations
           if config.type isnt 'password' && config.name.substr(config.name.length-4,4) isnt '_ids' && config.searchable isnt false
             config.default  = undefined
             if config.type is 'email' || config.type is 'tel' || config.type is 'url'
               config.type = 'text'
-            if config.tag is 'select'
+            if config.tag is 'select' or config.tag is 'autocompletion_ajax_external_data_source'
               config.multiple = true
             for operatorRegEx, operator of operators_type
               myRegExp = new RegExp(operatorRegEx, 'i')
@@ -238,11 +245,11 @@ class App.UiElement.ApplicationSelector
     )
 
     # remove filter
-    item.off('click.application_selector', '.js-remove').on('click.application_selector', '.js-remove', (e) =>
+    item.off('click.application_selector', '.filter-control.js-remove').on('click.application_selector', '.filter-control.js-remove', (e) =>
       return if $(e.currentTarget).hasClass('is-disabled')
 
       if @hasEmptySelectorAtStart()
-        if item.find('.js-remove').length > 1
+        if item.find('.filter-control.js-remove').length > 1
           $(e.target).closest('.js-filterElement').remove()
         else
           $(e.target).closest('.js-filterElement').find('div.horizontal-filter-body').html(@emptyBody(attribute))
@@ -357,7 +364,7 @@ class App.UiElement.ApplicationSelector
         App.Collection.loadAssets(data.assets)
         item.find('.js-previewCounterContainer').removeClass('hide')
         item.find('.js-previewLoader').addClass('hide')
-        @ticketTable(data.ticket_ids, data.ticket_count, item)
+        @ticketTable(data.object_ids, data.object_count, item)
     )
 
   @ticketTable: (ticket_ids, ticket_count, item) ->
@@ -385,7 +392,7 @@ class App.UiElement.ApplicationSelector
     selection = $('<select class="form-control"></select>')
     for groupKey, groupMeta of groups
       groupKeyClass = groupKey.replace('.', '-')
-      displayName = App.i18n.translateInline(groupMeta.name)
+      displayName = App.i18n.translatePlain(groupMeta.name)
       selection.closest('select').append("<optgroup label=\"#{displayName}\" class=\"js-#{groupKeyClass}\"></optgroup>")
       optgroup = selection.find("optgroup.js-#{groupKeyClass}")
       for elementKey, elementGroup of elements
@@ -393,22 +400,22 @@ class App.UiElement.ApplicationSelector
         if spacer is groupKey
           attributeConfig = elements[elementKey]
           if attributeConfig.operator
-            displayName = App.i18n.translateInline(attributeConfig.display)
+            displayName = App.i18n.translatePlain(attributeConfig.display)
             optgroup.append("<option value=\"#{elementKey}\">#{displayName}</option>")
     selection
 
   # disable - if we only have one attribute
   @disableRemoveForOneAttribute: (elementFull) ->
     if @hasEmptySelectorAtStart()
-      if elementFull.find('div.horizontal-filter-body input.empty:hidden').length > 0 && elementFull.find('.js-remove').length < 2
-        elementFull.find('.js-remove').addClass('is-disabled')
+      if elementFull.find('div.horizontal-filter-body input.empty:hidden').length > 0 && elementFull.find('.filter-control.js-remove').length < 2
+        elementFull.find('.filter-control.js-remove').addClass('is-disabled')
       else
-        elementFull.find('.js-remove').removeClass('is-disabled')
+        elementFull.find('.filter-control.js-remove').removeClass('is-disabled')
     else
       if elementFull.find('.js-attributeSelector select').length > 1
-        elementFull.find('.js-remove').removeClass('is-disabled')
+        elementFull.find('.filter-control.js-remove').removeClass('is-disabled')
       else
-        elementFull.find('.js-remove').addClass('is-disabled')
+        elementFull.find('.filter-control.js-remove').addClass('is-disabled')
 
   @updateAttributeSelectors: (elementFull) ->
     if !@hasDuplicateSelector()
@@ -466,9 +473,9 @@ class App.UiElement.ApplicationSelector
           break
 
       for operator in attributeConfig.operator
-        operatorName = App.i18n.translateInline(@mapOperatorDisplayName(operator))
+        operatorName = App.i18n.translatePlain(@mapOperatorDisplayName(operator))
         selected = ''
-        if !groupAndAttribute.match(/^ticket/) && operator is 'has changed'
+        if !groupAndAttribute.match(/^ticket/) && _.contains(['has changed', 'just changed', 'is modified'], operator)
           # do nothing, only show "has changed" in ticket attributes
         else
           if meta.operator is operator
@@ -529,22 +536,22 @@ class App.UiElement.ApplicationSelector
     options = {}
     if preCondition is 'user'
       if attributeConfig.noCurrentUser isnt true
-        options['current_user.id'] = App.i18n.translateInline('current user')
-      options['specific'] = App.i18n.translateInline('specific user')
+        options['current_user.id'] = App.i18n.translatePlain('current user')
+      options['specific'] = App.i18n.translatePlain('specific user')
       if attributeConfig.noNotSet isnt true
-        options['not_set'] = App.i18n.translateInline('not set (not defined)')
+        options['not_set'] = App.i18n.translatePlain('not set (not defined)')
     else if preCondition is 'org'
       if attributeConfig.noCurrentUser isnt true
-        options['current_user.organization_id'] = App.i18n.translateInline('current user organization')
-      options['specific'] = App.i18n.translateInline('specific organization')
+        options['current_user.organization_id'] = App.i18n.translatePlain('current user organization')
+      options['specific'] = App.i18n.translatePlain('specific organization')
       if attributeConfig.noNotSet isnt true
-        options['not_set'] = App.i18n.translateInline('not set (not defined)')
+        options['not_set'] = App.i18n.translatePlain('not set (not defined)')
 
     for key, value of options
       selected = ''
       if key is meta.pre_condition
         selected = 'selected="selected"'
-      selection.append("<option value=\"#{key}\" #{selected}>#{App.i18n.translateInline(value)}</option>")
+      selection.append("<option value=\"#{key}\" #{selected}>#{App.i18n.translatePlain(value)}</option>")
     elementRow.find('.js-preCondition').closest('.controls').removeClass('hide')
     elementRow.find('.js-preCondition select').replaceWith(selection)
 
@@ -608,7 +615,7 @@ class App.UiElement.ApplicationSelector
     #   - has reached
     #   - has reached warning
     #   - changed to
-    if _.contains(['has reached', 'has reached warning', 'has changed', 'not set', 'is set'], meta.operator)
+    if _.contains(['has reached', 'has reached warning', 'has changed', 'just changed', 'is modified', 'not set', 'is set'], meta.operator)
       elementRow.find('.js-value').addClass('hide')
       elementRow.find('.js-preCondition').closest('.controls').addClass('hide')
     else

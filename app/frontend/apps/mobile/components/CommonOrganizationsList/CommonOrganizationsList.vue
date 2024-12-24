@@ -1,8 +1,9 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import type { AvatarOrganization } from '#shared/components/CommonOrganizationAvatar/index.ts'
 import CommonOrganizationAvatar from '#shared/components/CommonOrganizationAvatar/CommonOrganizationAvatar.vue'
+import type { AvatarOrganization } from '#shared/components/CommonOrganizationAvatar/index.ts'
+
 import CommonSectionMenu from '../CommonSectionMenu/CommonSectionMenu.vue'
 import CommonShowMoreButton from '../CommonShowMoreButton/CommonShowMoreButton.vue'
 
@@ -18,7 +19,7 @@ withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  (e: 'showMore'): void
+  'show-more': []
 }>()
 </script>
 
@@ -42,7 +43,7 @@ const emit = defineEmits<{
       :entities="organizations"
       :disabled="disableShowMore"
       :total-count="totalCount"
-      @click="emit('showMore')"
+      @click="emit('show-more')"
     />
   </CommonSectionMenu>
 </template>

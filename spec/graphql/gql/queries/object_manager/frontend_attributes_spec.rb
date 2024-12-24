@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -61,13 +61,13 @@ RSpec.describe Gql::Queries::ObjectManager::FrontendAttributes, type: :graphql d
           end
 
           it 'does contain the shown attribute' do
-            edit_screen_attributes = gql.result.data['screens'].find { |screen| screen['name'] == 'edit' }['attributes']
+            edit_screen_attributes = gql.result.data[:screens].find { |screen| screen['name'] == 'edit' }['attributes']
 
             expect(edit_screen_attributes).to include(object_attribute.name)
           end
 
           it 'does contain shown attribute which is not internal' do
-            frontend_object_attribute = gql.result.data['attributes'].find { |attribute| attribute['name'] == object_attribute.name }
+            frontend_object_attribute = gql.result.data[:attributes].find { |attribute| attribute['name'] == object_attribute.name }
 
             expect(frontend_object_attribute['isInternal']).to be(false)
           end
@@ -101,13 +101,13 @@ RSpec.describe Gql::Queries::ObjectManager::FrontendAttributes, type: :graphql d
           end
 
           it 'does contain also the hidden attribute because core workflow is active for the screen (edit)' do
-            edit_screen_attributes = gql.result.data['screens'].find { |screen| screen['name'] == 'edit' }['attributes']
+            edit_screen_attributes = gql.result.data[:screens].find { |screen| screen['name'] == 'edit' }['attributes']
 
             expect(edit_screen_attributes).to include(object_attribute.name)
           end
 
           it 'does not contain the hidden attribute because for the screen (view)' do
-            edit_screen_attributes = gql.result.data['screens'].find { |screen| screen['name'] == 'view' }['attributes']
+            edit_screen_attributes = gql.result.data[:screens].find { |screen| screen['name'] == 'view' }['attributes']
 
             expect(edit_screen_attributes).not_to include(object_attribute.name)
           end
@@ -390,7 +390,7 @@ RSpec.describe Gql::Queries::ObjectManager::FrontendAttributes, type: :graphql d
                 'null'       => false,
                 'default'    => 2,
                 'translate'  => true,
-                'filter'     => Ticket::State.by_category(:viewable).pluck(:id),
+                'filter'     => Ticket::State.where(active: true).by_category_ids(:viewable),
                 'maxlength'  => 255,
                 'belongs_to' => 'state',
               },
@@ -451,6 +451,7 @@ RSpec.describe Gql::Queries::ObjectManager::FrontendAttributes, type: :graphql d
               'attributes' => %w[group_id owner_id state_id pending_time priority_id],
               'name'       => 'create_middle'
             },
+            { 'attributes' => %w[group_id owner_id state_id pending_time priority_id], 'name' => 'overview_bulk' },
             {
               'attributes' => ['tags'],
               'name'       => 'create_bottom'
@@ -519,7 +520,7 @@ RSpec.describe Gql::Queries::ObjectManager::FrontendAttributes, type: :graphql d
                 'null'       => false,
                 'default'    => 2,
                 'translate'  => true,
-                'filter'     => Ticket::State.by_category(:viewable).pluck(:id),
+                'filter'     => Ticket::State.where(active: true).by_category_ids(:viewable),
                 'maxlength'  => 255,
                 'belongs_to' => 'state',
               },
@@ -539,6 +540,7 @@ RSpec.describe Gql::Queries::ObjectManager::FrontendAttributes, type: :graphql d
               'attributes' => %w[group_id state_id],
               'name'       => 'create_middle'
             },
+            { 'attributes' => [], 'name' => 'overview_bulk' },
             {
               'attributes' => [],
               'name'       => 'create_bottom'

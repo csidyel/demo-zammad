@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'browser_test_helper'
 
@@ -88,7 +88,7 @@ class AdminDragDropToNewGroupTest < TestCase
   def open_user_modal
     click(css: '.content.active a[href="#manage/users"]')
 
-    user_css = '.user-list .js-tableBody tr td'
+    user_css = '.js-tableBody tr td'
     watch_for(css: user_css)
 
     user_element = @browser.find_elements(css: user_css).find do |el|

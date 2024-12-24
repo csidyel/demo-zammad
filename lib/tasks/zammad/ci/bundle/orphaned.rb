@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require_dependency 'tasks/zammad/command.rb'
 
@@ -104,7 +104,6 @@ module Tasks
             'multi_xml',
             'promise.rb',
             'thread_safe',
-            'unf',
           ].freeze
 
           def self.find_orphaned_gems(age)

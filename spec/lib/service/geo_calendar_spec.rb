@@ -1,8 +1,8 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
-RSpec.describe Service::GeoCalendar, integration: true do
+RSpec.describe Service::GeoCalendar, integration: true, retry: 0, retry_wait: 30.seconds do
   describe '#location' do
     describe 'testing some locations' do
       subject(:lookup_result) { described_class.location(ip_address) }
@@ -126,7 +126,7 @@ RSpec.describe Service::GeoCalendar, integration: true do
       context 'with correct result for Mexican ip address' do
         let(:expected_result) do
           {
-            'name'     => 'Mexico/México',
+            'name'     => 'Mexico/Mexico City',
             'timezone' => 'America/Mexico_City',
             'ical_url' => 'https://www.google.com/calendar/ical/en.mexican%23holiday%40group.v.calendar.google.com/public/basic.ics',
           }

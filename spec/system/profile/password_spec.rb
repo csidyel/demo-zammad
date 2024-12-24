@@ -1,11 +1,11 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 require 'system/examples/security_keys_setup_examples'
 require 'system/examples/authenticator_app_setup_examples'
 
 RSpec.describe 'Profile > Password', authenticated_as: :user, type: :system do
-  let(:user) { create(:agent, :with_valid_password) }
+  let(:user) { create(:customer, :with_valid_password) }
 
   describe 'visibility' do
     it 'not available if both two factor and password changing disabled' do
@@ -35,8 +35,42 @@ RSpec.describe 'Profile > Password', authenticated_as: :user, type: :system do
         .and have_text('Two-factor Authentication')
     end
 
-    def password_and_authenticate(password:, two_factor:)
+    it 'shows two factor if another two factor method enabled' do
+      password_and_authenticate(password: false, two_factor: false, alternative_two_factor: true)
+
+      visit 'profile/password'
+
+      expect(page)
+        .to have_no_text('Change Your Password')
+        .and have_text('Two-factor Authentication')
+    end
+
+    context 'when user has no two factor permission' do
+      before do
+        user.roles.each { |role| role.permission_revoke('user_preferences.two_factor_authentication') }
+      end
+
+      it 'not available if only two factor is enabled' do
+        password_and_authenticate(password: false, two_factor: true)
+
+        visit 'profile/'
+        expect(page).to have_no_text('Password & Authentication')
+      end
+
+      it 'shows only password changing form even if two factor enabled' do
+        password_and_authenticate(password: true, two_factor: true)
+
+        visit 'profile/password'
+
+        expect(page)
+          .to have_text('Change Your Password')
+          .and have_no_text('Two-factor Authentication')
+      end
+    end
+
+    def password_and_authenticate(password:, two_factor:, alternative_two_factor: false)
       Setting.set('two_factor_authentication_method_authenticator_app', two_factor)
+      Setting.set('two_factor_authentication_method_security_keys', alternative_two_factor)
       Setting.set('two_factor_authentication_enforce_role_ids', [])
       Setting.set('user_show_password_login', password)
     end
@@ -54,7 +88,7 @@ RSpec.describe 'Profile > Password', authenticated_as: :user, type: :system do
 
       click '.btn--primary'
 
-      expect(page).to have_text 'Current password is wrong'
+      expect(page).to have_text 'The current password you provided is incorrect.'
     end
 
     it 'when new passwords do not match, show error' do
@@ -171,7 +205,7 @@ RSpec.describe 'Profile > Password', authenticated_as: :user, type: :system do
 
           fill_in 'Password', with: user.password_plain
 
-          click_button 'Next'
+          click_on 'Next'
         end
 
         in_modal do

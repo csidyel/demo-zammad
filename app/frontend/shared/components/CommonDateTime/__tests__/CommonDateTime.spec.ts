@@ -1,8 +1,11 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { nextTick } from 'vue'
+
 import { renderComponent } from '#tests/support/components/index.ts'
+
 import { useApplicationStore } from '#shared/stores/application.ts'
+
 import CommonDateTime, { type Props } from '../CommonDateTime.vue'
 
 vi.hoisted(() => {
@@ -10,11 +13,12 @@ vi.hoisted(() => {
 })
 
 const dateTime = '2020-10-10T10:10:10Z'
-const renderDateTime = (props: Props) => {
+const renderDateTime = (props: Props, slots = {}) => {
   return renderComponent(CommonDateTime, {
     props: {
       ...props,
     },
+    slots,
     store: true,
   })
 }
@@ -23,6 +27,14 @@ describe('CommonDateTime.vue', () => {
   it('renders with type relative', async () => {
     const view = renderDateTime({ dateTime, type: 'relative' })
     expect(view.container).toHaveTextContent('1 day ago')
+  })
+
+  it('renders with prefix', async () => {
+    const view = renderDateTime(
+      { dateTime, type: 'relative' },
+      { prefix: 'prefix-slot' },
+    )
+    expect(view.container).toHaveTextContent('prefix-slot 1 day ago')
   })
 
   it('renders with type absolute + absolute format "datetime" (default)', async () => {

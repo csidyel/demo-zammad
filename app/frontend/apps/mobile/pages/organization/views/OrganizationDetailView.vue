@@ -1,18 +1,21 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, toRef } from 'vue'
+
 import CommonOrganizationAvatar from '#shared/components/CommonOrganizationAvatar/CommonOrganizationAvatar.vue'
-import { useOnlineNotificationSeen } from '#shared/composables/useOnlineNotificationSeen.ts'
-import { useHeader } from '#mobile/composables/useHeader.ts'
-import CommonLoader from '#mobile/components/CommonLoader/CommonLoader.vue'
-import CommonTicketStateList from '#mobile/components/CommonTicketStateList/CommonTicketStateList.vue'
-import { useOrganizationEdit } from '#mobile/entities/organization/composables/useOrganizationEdit.ts'
-import OrganizationMembersList from '#mobile/components/Organization/OrganizationMembersList.vue'
 import type { AvatarOrganization } from '#shared/components/CommonOrganizationAvatar/index.ts'
 import ObjectAttributes from '#shared/components/ObjectAttributes/ObjectAttributes.vue'
+import { useOnlineNotificationSeen } from '#shared/composables/useOnlineNotificationSeen.ts'
+import { useOrganizationDetail } from '#shared/entities/organization/composables/useOrganizationDetail.ts'
+import { useErrorHandler } from '#shared/errors/useErrorHandler.ts'
+
+import CommonLoader from '#mobile/components/CommonLoader/CommonLoader.vue'
+import CommonTicketStateList from '#mobile/components/CommonTicketStateList/CommonTicketStateList.vue'
+import OrganizationMembersList from '#mobile/components/Organization/OrganizationMembersList.vue'
+import { useHeader } from '#mobile/composables/useHeader.ts'
+import { useOrganizationEdit } from '#mobile/entities/organization/composables/useOrganizationEdit.ts'
 import { useOrganizationTicketsCount } from '#mobile/entities/organization/composables/useOrganizationTicketsCount.ts'
-import { useOrganizationDetail } from '#mobile/entities/organization/composables/useOrganizationDetail.ts'
 
 interface Props {
   internalId: number
@@ -20,16 +23,25 @@ interface Props {
 
 const props = defineProps<Props>()
 
+const { createQueryErrorHandler } = useErrorHandler()
+
+const errorCallback = createQueryErrorHandler({
+  notFound: __(
+    'Organization with specified ID was not found. Try checking the URL for errors.',
+  ),
+  forbidden: __('You have insufficient rights to view this organization.'),
+})
+
 const {
   organization,
   loading,
   objectAttributes,
   organizationQuery,
   loadAllMembers,
-  loadOrganization,
-} = useOrganizationDetail()
+  // loadOrganization,
+} = useOrganizationDetail(toRef(props, 'internalId'), errorCallback)
 
-loadOrganization(props.internalId)
+// loadOrganization(props.internalId)
 
 useOnlineNotificationSeen(organization)
 
@@ -62,7 +74,6 @@ const ticketData = computed(() => getTicketData(organization.value))
         <CommonOrganizationAvatar
           :entity="organization as AvatarOrganization"
           size="xl"
-          personal
         />
       </div>
       <div class="mt-2 text-xl font-bold">

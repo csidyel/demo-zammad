@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 FactoryBot.define do
   factory :object_manager_attribute, class: 'ObjectManager::Attribute' do
@@ -83,6 +83,25 @@ FactoryBot.define do
                                  required:   true,
                                  item_class: 'column'
                                },
+                             }
+        }
+      end
+    end
+
+    trait :shown_screen do
+      screens do
+        {
+          'create_middle' =>
+                             {
+                               '-all-' => {
+                                 shown: true
+                               }
+                             },
+          'edit'          =>
+                             {
+                               '-all-' => {
+                                 shown: true
+                               }
                              }
         }
       end
@@ -463,6 +482,76 @@ FactoryBot.define do
         'nulloption' => true,
         'multiple'   => true,
       }
+    end
+  end
+
+  factory :object_manager_attribute_user_autocompletion, parent: :object_manager_attribute do
+    default { '' }
+
+    data_type { 'user_autocompletion' }
+    data_option do
+      {
+        'relation'       => 'User',
+        'autocapitalize' => false,
+        'multiple'       => false,
+        'guess'          => true,
+        'null'           => false,
+        'limit'          => 200,
+        'placeholder'    => 'Enter Person or Organization/Company',
+        'minLengt'       => 2,
+        'translate'      => false,
+        'permission'     => ['ticket.agent']
+      }
+    end
+  end
+
+  factory :object_manager_attribute_organization_autocompletion, parent: :object_manager_attribute do
+    default { '' }
+
+    data_type { 'autocompletion_ajax_customer_organization' }
+    data_option do
+      {
+        'relation'       => 'Organization',
+        'autocapitalize' => false,
+        'multiple'       => false,
+        'null'           => true,
+        'translate'      => false,
+        'permission'     => ['ticket.agent', 'ticket.customer']
+      }
+    end
+  end
+
+  factory :object_manager_attribute_autocompletion_ajax_external_data_source, parent: :object_manager_attribute do
+    transient do
+      search_url   { 'http://example.search?q=#{search.term}' } # rubocop:disable Lint/InterpolationCheck
+      list_key     { 'list' }
+      value_key    { 'id' }
+      label_key    { 'name' }
+      linktemplate { '' }
+    end
+
+    default { [] }
+
+    data_type { 'autocompletion_ajax_external_data_source' }
+    data_option do
+      {
+        'null'                    => true,
+        'search_url'              => search_url,
+        'search_result_list_key'  => list_key,
+        'search_result_value_key' => value_key,
+        'search_result_label_key' => label_key,
+        'linktemplate'            => linktemplate,
+      }
+    end
+
+    trait :elastic_search do
+      transient do
+        search_url   { "#{Setting.get('es_url')}/#{Setting.get('es_index')}_test_user/_search?q=\#{search.term}&sort=id" }
+        list_key     { 'hits.hits' }
+        value_key    { '_id' }
+        label_key    { '_source.email' }
+        linktemplate { "#{Setting.get('http_type')}://#{Setting.get('fqdn')}/#user/profile/\#{#{object_name.downcase}.#{name}}" }
+      end
     end
   end
 end

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class User < ApplicationModel
   include CanBeImported
@@ -6,6 +6,7 @@ class User < ApplicationModel
   include ChecksClientNotification
   include HasHistory
   include HasSearchIndexBackend
+  include CanSelector
   include CanCsvImport
   include ChecksHtmlSanitized
   include HasGroups
@@ -13,6 +14,8 @@ class User < ApplicationModel
   include HasObjectManagerAttributes
   include HasTaskbars
   include HasTwoFactor
+  include CanSelector
+  include CanPerformChanges
   include User::Assets
   include User::Avatar
   include User::Search
@@ -21,6 +24,8 @@ class User < ApplicationModel
   include User::TriggersSubscriptions
   include User::PerformsGeoLookup
   include User::UpdatesTicketOrganization
+  include User::OutOfOffice
+  include User::Permissions
 
   has_and_belongs_to_many :organizations,          after_add: %i[cache_update create_organization_add_history], after_remove: %i[cache_update create_organization_remove_history], class_name: 'Organization'
   has_and_belongs_to_many :overviews,              dependent: :nullify
@@ -38,20 +43,21 @@ class User < ApplicationModel
   has_many                :owner_tickets,          class_name: 'Ticket', foreign_key: :owner_id, inverse_of: :owner
   has_many                :overview_sortings,      dependent: :destroy
   has_many                :created_recent_views,   class_name: 'RecentView', foreign_key: :created_by_id, dependent: :destroy, inverse_of: :created_by
-  has_many                :permissions,            -> { where(roles: { active: true }, active: true) }, through: :roles
   has_many                :data_privacy_tasks,     as: :deletable
   belongs_to              :organization,           inverse_of: :members, optional: true
 
   before_validation :check_name, :check_email, :check_login, :ensure_password, :ensure_roles, :ensure_organizations, :ensure_organizations_limit
   before_validation :check_mail_delivery_failed, on: :update
   before_save       :ensure_notification_preferences, if: :reset_notification_config_before_save
-  before_create     :validate_preferences, :validate_ooo, :domain_based_assignment, :set_locale
-  before_update     :validate_preferences, :validate_ooo, :reset_login_failed_after_password_change, :validate_agent_limit_by_attributes, :last_admin_check_by_attribute
+  before_create     :validate_preferences, :domain_based_assignment, :set_locale
+  before_update     :validate_preferences, :reset_login_failed_after_password_change, :validate_agent_limit_by_attributes, :last_admin_check_by_attribute
   before_destroy    :destroy_longer_required_objects, :destroy_move_dependency_ownership
   after_commit      :update_caller_id
 
   validate :ensure_identifier, :ensure_email
   validate :ensure_uniq_email, unless: :skip_ensure_uniq_email
+
+  available_perform_change_actions :data_privacy_deletion_task, :attribute_updates
 
   # workflow checks should run after before_create and before_update callbacks
   # the transaction dispatcher must be run after the workflow checks!
@@ -60,6 +66,8 @@ class User < ApplicationModel
 
   core_workflow_screens 'create', 'edit', 'invite_agent'
   core_workflow_admin_screens 'create', 'edit'
+
+  taskbar_entities 'UserProfile'
 
   store :preferences
 
@@ -76,8 +84,7 @@ class User < ApplicationModel
                                  :chat_agents,
                                  :data_privacy_tasks,
                                  :overviews,
-                                 :mentions,
-                                 :permissions
+                                 :mentions
 
   activity_stream_permission 'admin.user'
 
@@ -133,20 +140,27 @@ returns
 
 =end
 
-  def fullname
-    name = ''
-    if firstname.present?
-      name = firstname
-    end
-    if lastname.present?
-      if name != ''
-        name += ' '
+  def fullname(email_fallback: true, recipient_line: false)
+    name = "#{firstname} #{lastname}".strip
+
+    if name.blank? && email.present? && email_fallback
+      return email
+    elsif recipient_line
+      begin
+        return Channel::EmailBuild.recipient_line(name, email)
+      rescue
+        return email
       end
-      name += lastname
     end
-    if name.blank? && email.present?
-      name = email
+
+    return name if name.present?
+
+    %w[phone mobile].each do |item|
+      next if self[item].blank?
+
+      return self[item]
     end
+
     name
   end
 
@@ -195,105 +209,6 @@ returns
 
   def role?(role_name)
     roles.where(name: role_name).any?
-  end
-
-=begin
-
-check if user is in role
-
-  user = User.find(123)
-  result = user.out_of_office?
-
-returns
-
-  result = true|false
-
-=end
-
-  def out_of_office?
-    return false if out_of_office != true
-    return false if out_of_office_start_at.blank?
-    return false if out_of_office_end_at.blank?
-
-    Time.use_zone(Setting.get('timezone_default_sanitized')) do
-      start  = out_of_office_start_at.beginning_of_day
-      finish = out_of_office_end_at.end_of_day
-
-      Time.zone.now.between? start, finish
-    end
-  end
-
-=begin
-
-check if user is in role
-
-  user = User.find(123)
-  result = user.out_of_office_agent
-
-returns
-
-  result = user_model
-
-=end
-
-  def out_of_office_agent(loop_user_ids: [], stack_depth: 10)
-    return if !out_of_office?
-    return if out_of_office_replacement_id.blank?
-
-    if stack_depth.zero?
-      Rails.logger.warn("Found more than 10 replacement levels for agent #{self}.")
-      return self
-    end
-
-    user = User.find_by(id: out_of_office_replacement_id)
-
-    # stop if users are occuring multiple times to prevent endless loops
-    return user if loop_user_ids.include?(out_of_office_replacement_id)
-
-    loop_user_ids |= [out_of_office_replacement_id]
-
-    ooo_agent = user.out_of_office_agent(loop_user_ids: loop_user_ids, stack_depth: stack_depth - 1)
-    return ooo_agent if ooo_agent.present?
-
-    user
-  end
-
-=begin
-
-gets users where user is replacement
-
-  user = User.find(123)
-  result = user.out_of_office_agent_of
-
-returns
-
-  result = [user_model1, user_model2]
-
-=end
-
-  def out_of_office_agent_of
-    User.where(id: out_of_office_agent_of_recursive(user_id: id))
-  end
-
-  scope :out_of_office, lambda { |user, interval_start = Time.zone.today, interval_end = Time.zone.today|
-    where(active: true, out_of_office: true, out_of_office_replacement_id: user)
-      .where('out_of_office_start_at <= ? AND out_of_office_end_at >= ?', interval_start, interval_end)
-  }
-
-  def someones_out_of_office_replacement?
-    self.class.out_of_office(self).exists?
-  end
-
-  def out_of_office_agent_of_recursive(user_id:, result: [])
-    self.class.out_of_office(user_id).each do |user|
-
-      # stop if users are occuring multiple times to prevent endless loops
-      break if result.include?(user.id)
-
-      result |= [user.id]
-      result |= out_of_office_agent_of_recursive(user_id: user.id, result: result)
-    end
-    result
   end
 
 =begin
@@ -415,100 +330,13 @@ returns
     end
   end
 
-=begin
+  # Find a user by mobile number, either directly or by number variants stored in the Cti::CallerIds.
+  def self.by_mobile(number:)
+    direct_lookup = User.where(mobile: number).reorder(:updated_at).first
+    return direct_lookup if direct_lookup
 
-returns all accessable permission ids of user
-
-  user = User.find(123)
-  user.permissions_with_child_ids
-
-returns
-
-  [permission1_id, permission2_id, permission3_id]
-
-=end
-
-  def permissions_with_child_ids
-    permissions_with_child_elements.pluck(:id)
-  end
-
-=begin
-
-returns all accessable permission names of user
-
-  user = User.find(123)
-  user.permissions_with_child_names
-
-returns
-
-  [permission1_name, permission2_name, permission3_name]
-
-=end
-
-  def permissions_with_child_names
-    permissions_with_child_elements.pluck(:name)
-  end
-
-  def permissions?(permissions)
-    permissions!(permissions)
-    true
-  rescue Exceptions::Forbidden
-    false
-  end
-
-  def permissions!(auth_query)
-    return true if Auth::RequestCache.permissions?(self, auth_query)
-
-    raise Exceptions::Forbidden, __('Not authorized (user)!')
-  end
-
-=begin
-
-get all users with permission
-
-  users = User.with_permissions('ticket.agent')
-
-get all users with permission "admin.session" or "ticket.agent"
-
-  users = User.with_permissions(['admin.session', 'ticket.agent'])
-
-returns
-
-  [user1, user2, ...]
-
-=end
-
-  def self.with_permissions(keys)
-    if keys.class != Array
-      keys = [keys]
-    end
-    total_role_ids = []
-    permission_ids = []
-    keys.each do |key|
-      role_ids = []
-      ::Permission.with_parents(key).each do |local_key|
-        permission = ::Permission.lookup(name: local_key)
-        next if !permission
-
-        permission_ids.push permission.id
-      end
-      next if permission_ids.blank?
-
-      Role.joins(:permissions_roles).joins(:permissions).where('permissions_roles.permission_id IN (?) AND roles.active = ? AND permissions.active = ?', permission_ids, true, true).distinct.pluck(:id).each do |role_id|
-        role_ids.push role_id
-      end
-      total_role_ids.push role_ids
-    end
-    return [] if total_role_ids.blank?
-
-    condition = ''
-    total_role_ids.each do |_role_ids|
-      if condition != ''
-        condition += ' OR '
-      end
-      condition += 'roles_users.role_id IN (?)'
-    end
-    User.joins(:roles_users).where("(#{condition}) AND users.active = ?", *total_role_ids, true).distinct.reorder(:id)
+    cti_lookup = Cti::CallerId.lookup(number.delete('+')).find { |id| id.level == 'known' && id.object == 'User' }
+    User.find_by(id: cti_lookup.o_id) if cti_lookup
   end
 
 =begin
@@ -662,6 +490,9 @@ returns
     return if !user
     return if !user.email
 
+    # Discard any possible previous tokens for safety reasons.
+    Token.where(action: 'Signup', user_id: user.id).destroy_all
+
     # generate token
     token = Token.create(action: 'Signup', user_id: user.id)
 
@@ -723,6 +554,16 @@ returns
     # so the User.find call has been kept
     # to prevent any unexpected regressions.)
     User.find(user_id_of_duplicate_user)
+
+    # mentions can not merged easily because the new user could have mentioned
+    # the same ticket so we delete duplicates beforehand
+    Mention.where(user_id: user_id_of_duplicate_user).find_each do |mention|
+      if Mention.exists?(mentionable: mention.mentionable, user_id: id)
+        mention.destroy
+      else
+        mention.update(user_id: id)
+      end
+    end
 
     # merge missing attributes
     Models.merge('User', id, user_id_of_duplicate_user)
@@ -865,6 +706,25 @@ try to find correct name
     preferences[:notification_config][:matrix] = Setting.get('ticket_agent_default_notifications')
   end
 
+  def mail_delivery_failed_blocked_days
+    return 0 if !preferences[:mail_delivery_failed]
+    return 0 if preferences[:mail_delivery_failed_data].blank?
+
+    # Blocked for 60 full days; see #4459.
+    remaining_days = (preferences[:mail_delivery_failed_data].to_date - Time.zone.now.to_date).to_i + 61
+    return remaining_days if remaining_days.positive?
+
+    reset_mail_delivery_failed
+
+    0
+  end
+
+  def reset_mail_delivery_failed
+    preferences[:mail_delivery_failed]      = false
+    preferences[:mail_delivery_failed_data] = nil
+    save!
+  end
+
   private
 
   def organization_history_log(org, type)
@@ -880,8 +740,8 @@ try to find correct name
   end
 
   def check_name
-    firstname&.strip!
-    lastname&.strip!
+    self.firstname = sanitize_name(firstname)
+    self.lastname  = sanitize_name(lastname)
 
     return if firstname.present? && lastname.present?
 
@@ -894,6 +754,25 @@ try to find correct name
 
     check_name_apply(:firstname, local_firstname)
     check_name_apply(:lastname, local_lastname)
+  end
+
+  def sanitize_name(value)
+    result = value&.strip
+
+    return result if result.blank?
+
+    result.split(%r{\s}).map { |v| strip_uri(v) }.join("\s")
+  end
+
+  def strip_uri(value)
+    uri = URI.parse(value)
+
+    return value if !uri || uri.scheme.blank? || uri.hostname.blank?
+
+    # Strip the scheme from the URI.
+    uri.hostname + uri.path
+  rescue
+    value
   end
 
   def check_name_apply(identifier, input)
@@ -966,9 +845,9 @@ try to find correct name
 
   def ensure_identifier
     return if login.present? && !login.start_with?('auto-')
-    return if [email, firstname, lastname, phone].any?(&:present?)
+    return if [email, firstname, lastname, phone, mobile].any?(&:present?)
 
-    errors.add :base, __('At least one identifier (firstname, lastname, phone or email) for user is required.')
+    errors.add :base, __('At least one identifier (firstname, lastname, phone, mobile or email) for user is required.')
   end
 
   def ensure_uniq_email
@@ -994,20 +873,6 @@ try to find correct name
     errors.add :base, __('More than 250 secondary organizations are not allowed.')
   end
 
-  def permissions_with_child_elements
-    where = ''
-    where_bind = [true]
-    permissions.pluck(:name).each do |permission_name|
-      where += ' OR ' if where != ''
-      where += 'permissions.name = ? OR permissions.name LIKE ?'
-      where_bind.push permission_name
-      where_bind.push "#{SqlHelper.quote_like(permission_name)}.%"
-    end
-    return [] if where == ''
-
-    ::Permission.where("permissions.active = ? AND (#{where})", *where_bind)
-  end
-
   def validate_roles(role)
     return true if !role_ids # we need role_ids for checking in role_ids below, in this method
     return true if role.preferences[:not].blank?
@@ -1019,17 +884,6 @@ try to find correct name
 
       raise "Role #{role.name} conflicts with #{local_role.name}"
     end
-    true
-  end
-
-  def validate_ooo
-    return true if out_of_office != true
-    raise Exceptions::UnprocessableEntity, 'out of office start is required' if out_of_office_start_at.blank?
-    raise Exceptions::UnprocessableEntity, 'out of office end is required' if out_of_office_end_at.blank?
-    raise Exceptions::UnprocessableEntity, 'out of office end is before start' if out_of_office_start_at > out_of_office_end_at
-    raise Exceptions::UnprocessableEntity, 'out of office replacement user is required' if out_of_office_replacement_id.blank?
-    raise Exceptions::UnprocessableEntity, 'out of office no such replacement user' if !User.exists?(id: out_of_office_replacement_id)
-
     true
   end
 
@@ -1158,7 +1012,7 @@ raise 'At least one user need to have admin permissions'
     # set the user's locale to the one of the "executing" user
     return true if !UserInfo.current_user_id
 
-    user = User.find_by(id: UserInfo.current_user_id)
+    user = UserInfo.current_user
     return true if !user
     return true if !user.preferences[:locale]
 
@@ -1245,14 +1099,14 @@ raise 'At least one user need to have admin permissions'
     true
   end
 
-  # When adding/removing a phone number from the User table,
+  # When adding/removing a phone/mobile number from the User table,
   # update caller ID table
   # to adopt/orphan matching Cti::Logs accordingly
   # (see https://github.com/zammad/zammad/issues/2057)
   def update_caller_id
-    # skip if "phone" does not change, or changes like [nil, ""]
-    return if persisted? && !previous_changes[:phone]&.any?(&:present?)
-    return if destroyed? && phone.blank?
+    # skip if "phone/mobile" does not change, or changes like [nil, ""]
+    return if persisted? && previous_changes.slice(:phone, :mobile).values.flatten.none?(&:present?)
+    return if destroyed? && phone.blank? && mobile.blank?
 
     Cti::CallerId.build(self)
   end

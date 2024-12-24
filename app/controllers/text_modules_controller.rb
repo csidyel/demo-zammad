@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class TextModulesController < ApplicationController
   prepend_before_action :authenticate_and_authorize!
@@ -131,6 +131,10 @@ curl http://localhost/api/v1/text_modules.json -v -u #{login}:#{password} -H "Co
     model_update_render(TextModule, params)
   end
 
+  def search
+    model_search_render(TextModule, params)
+  end
+
 =begin
 
 Resource:
@@ -152,7 +156,7 @@ curl http://localhost/api/v1/text_modules.json -v -u #{login}:#{password} -H "Co
   #
   # @summary          Download of example CSV file.
   # @notes            The requester have 'admin.text_module' permissions to be able to download it.
-  # @example          curl -u 'me@example.com:test' http://localhost:3000/api/v1/text_modules/import_example
+  # @example          curl -u #{login}:#{password} http://localhost:3000/api/v1/text_modules/import_example
   #
   # @response_message 200 File download.
   # @response_message 403 Forbidden / Invalid session.
@@ -173,8 +177,8 @@ curl http://localhost/api/v1/text_modules.json -v -u #{login}:#{password} -H "Co
   #
   # @summary          Starts import.
   # @notes            The requester have 'admin.text_module' permissions to be create a new import.
-  # @example          curl -u 'me@example.com:test' -F 'file=@/path/to/file/Textbausteine_final2.csv' 'https://your.zammad/api/v1/text_modules/import?try=true'
-  # @example          curl -u 'me@example.com:test' -F 'file=@/path/to/file/Textbausteine_final2.csv' 'https://your.zammad/api/v1/text_modules/import'
+  # @example          curl -u #{login}:#{password} -F 'file=@/path/to/file/Textbausteine_final2.csv' 'https://your.zammad/api/v1/text_modules/import?try=true'
+  # @example          curl -u #{login}:#{password} -F 'file=@/path/to/file/Textbausteine_final2.csv' 'https://your.zammad/api/v1/text_modules/import'
   #
   # @response_message 201 Import started.
   # @response_message 403 Forbidden / Invalid session.

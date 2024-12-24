@@ -1,10 +1,12 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 import { computed, toRef } from 'vue'
-import CommonTicketStateIndicator from '#shared/components/CommonTicketStateIndicator/CommonTicketStateIndicator.vue'
-import CommonTicketPriorityIndicator from '#shared/components/CommonTicketPriorityIndicator/CommonTicketPriorityIndicator.vue'
+
+import CommonTicketPriorityIndicator from '#mobile/components/CommonTicketPriorityIndicator/CommonTicketPriorityIndicator.vue'
+import CommonTicketStateIndicator from '#mobile/components/CommonTicketStateIndicator/CommonTicketStateIndicator.vue'
 import { useEditedBy } from '#mobile/composables/useEditedBy.ts'
+
 import { type TicketItemData } from './types.ts'
 
 export interface Props {
@@ -53,7 +55,7 @@ const customer = computed(() => {
         <div
           v-if="stringUpdated"
           data-test-id="stringUpdated"
-          class="truncate text-gray"
+          class="text-gray truncate"
         >
           {{ stringUpdated }}
         </div>

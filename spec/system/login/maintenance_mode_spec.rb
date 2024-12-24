@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -9,7 +9,7 @@ RSpec.describe 'Login Maintenance Mode', authenticated_as: false, type: :system 
         fill_in 'username', with: username
         fill_in 'password', with: password
 
-        click_button
+        click_on 'Sign in'
       end
     end
 

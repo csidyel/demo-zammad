@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -65,7 +65,7 @@ RSpec.describe 'Search', authenticated_as: :authenticate, searchindex: true, typ
           find("tr[data-id='#{ticket_1.id}']").check('bulk', allow_label_click: true)
         end
 
-        expect(page).to have_selector('.bulkAction.no-sidebar')
+        expect(page).to have_css('.bulkAction.no-sidebar')
         expect(page).to have_no_selector('.bulkAction.no-sidebar.hide', visible: :all)
       end
 
@@ -74,7 +74,7 @@ RSpec.describe 'Search', authenticated_as: :authenticate, searchindex: true, typ
           find('th.table-checkbox').check('bulk_all', allow_label_click: true)
         end
 
-        expect(page).to have_selector('.bulkAction.no-sidebar')
+        expect(page).to have_css('.bulkAction.no-sidebar')
         expect(page).to have_no_selector('.bulkAction.no-sidebar.hide', visible: :all)
       end
 
@@ -85,7 +85,7 @@ RSpec.describe 'Search', authenticated_as: :authenticate, searchindex: true, typ
           all('.js-tableBody tr.item').each { |row| row.uncheck('bulk', allow_label_click: true) }
         end
 
-        expect(page).to have_selector('.bulkAction.no-sidebar.hide', visible: :hide)
+        expect(page).to have_css('.bulkAction.no-sidebar.hide', visible: :hide)
       end
     end
 
@@ -147,8 +147,8 @@ RSpec.describe 'Search', authenticated_as: :authenticate, searchindex: true, typ
             move_mouse_by(0, 7)
           end
 
-          expect(page).to have_selector('.batch-overlay-circle--top.js-batch-macro-circle')
-            .and(have_selector('.batch-overlay-circle--bottom.js-batch-assign-circle'))
+          expect(page).to have_css('.batch-overlay-circle--top.js-batch-macro-circle')
+            .and(have_css('.batch-overlay-circle--bottom.js-batch-assign-circle'))
         end
       end
     end
@@ -271,7 +271,7 @@ RSpec.describe 'Search', authenticated_as: :authenticate, searchindex: true, typ
           display_macro_batches ticket_1
           within(:active_content) do
 
-            expect(page).to have_selector('.batch-overlay-macro-entry.small')
+            expect(page).to have_css('.batch-overlay-macro-entry.small')
           end
         end
       end
@@ -291,7 +291,7 @@ RSpec.describe 'Search', authenticated_as: :authenticate, searchindex: true, typ
           display_macro_batches ticket_1
           within(:active_content) do
 
-            expect(page).to have_selector('.batch-overlay-macro-entry', count: all)
+            expect(page).to have_css('.batch-overlay-macro-entry', count: all)
           end
         end
       end
@@ -301,7 +301,7 @@ RSpec.describe 'Search', authenticated_as: :authenticate, searchindex: true, typ
           display_macro_batches ticket_1
           within(:active_content) do
 
-            expect(page).to have_selector('.batch-overlay-macro-entry', count: count)
+            expect(page).to have_css('.batch-overlay-macro-entry', count: count)
           end
         end
       end
@@ -400,7 +400,7 @@ RSpec.describe 'Search', authenticated_as: :authenticate, searchindex: true, typ
       end
 
       it 'does switch search results properly' do
-        page.find('.js-search').fill_in(with: '"Testing Ticket 1"', fill_options: { clear: :backspace })
+        page.find('.js-search').fill_in(with: '"Testing Ticket 1"')
         expect(page.find('.js-tableBody')).to have_text('Testing Ticket 1')
         expect(page.find('.js-tableBody')).to have_no_text('Testing Ticket 2')
         expect(current_url).to include('Testing%20Ticket%201')
@@ -501,12 +501,6 @@ RSpec.describe 'Search', authenticated_as: :authenticate, searchindex: true, typ
     let(:before_authenticate) { agent_1 && agent_2 && agent_all }
     let(:authenticate_user) { agent_all }
 
-    def check_owner_empty
-      expect(page).to have_select('owner_id', text: '-', visible: :all)
-      expect(page).to have_no_select('owner_id', text: agent_1.fullname, visible: :all)
-      expect(page).to have_no_select('owner_id', text: agent_2.fullname, visible: :all)
-    end
-
     def click_ticket(ticket)
       page.find(".js-tableBody tr.item[data-id='#{ticket.id}'] td.js-checkbox-field").click
     end
@@ -522,7 +516,6 @@ RSpec.describe 'Search', authenticated_as: :authenticate, searchindex: true, typ
     end
 
     def check_owner_field
-      check_owner_empty
       click_ticket(ticket_1)
       check_owner_agent1_shown
       click_ticket(ticket_1)
@@ -535,6 +528,12 @@ RSpec.describe 'Search', authenticated_as: :authenticate, searchindex: true, typ
         visit '#search/4054'
       end
 
+      it 'does not show the bulk action when opening view' do
+        expect(page).to have_text(ticket_1.title)
+        expect(page).to have_text(ticket_2.title)
+        expect(page).to have_no_css('.bulkAction select[name=owner_id]')
+      end
+
       it 'does show the correct owner selection for each bulk action' do
         check_owner_field
       end
@@ -543,6 +542,12 @@ RSpec.describe 'Search', authenticated_as: :authenticate, searchindex: true, typ
     context 'when ticket overview is used' do
       before do
         visit '#ticket/view/all_unassigned'
+      end
+
+      it 'does not show the bulk action when opening view' do
+        expect(page).to have_text(ticket_1.title)
+        expect(page).to have_text(ticket_2.title)
+        expect(page).to have_no_css('.bulkAction select[name=owner_id]')
       end
 
       it 'does show the correct owner selection for each bulk action' do
@@ -713,6 +718,48 @@ RSpec.describe 'Search', authenticated_as: :authenticate, searchindex: true, typ
       expect(page).to have_css('.popover')
       send_keys(:enter) # open
       expect(page).to have_no_css('.popover')
+    end
+  end
+
+  describe 'search with many results', searchindex: false do
+    let(:new_customers) { create_list(:customer, 55) }
+    let(:all_zammad_customers)        { User.where('email LIKE ?', '%zammad%') }
+    let(:all_zammad_customers_sorted) { all_zammad_customers.reorder(:login) }
+
+    before do
+      new_customers
+      visit '#search/zammad'
+    end
+
+    it 'shows 50 on first page and remaining on second page' do
+      expect(page).to have_css('.tab[data-tab-content=User] .tab-badge', text: all_zammad_customers.count)
+
+      click '.tab[data-tab-content=User]'
+
+      expect(page).to have_css('.js-tableBody tr', count: 50)
+
+      page.first('.js-page', text: '2').click
+
+      expect(page).to have_css('.js-tableBody tr', count: all_zammad_customers.count % 50)
+    end
+
+    it 'sorts correctly across pages' do
+      click '.tab[data-tab-content=User]'
+
+      first('.js-sort').click
+
+      expect(page).to have_css('.js-tableBody tr:first-child',
+                               text: all_zammad_customers_sorted.first.login)
+
+      first('.js-sort').click
+
+      expect(page).to have_css('.js-tableBody tr:first-child',
+                               text: all_zammad_customers_sorted.last.login)
+
+      first('.js-page', text: '2').click
+
+      expect(page).to have_css('.js-tableBody tr:last-child',
+                               text: all_zammad_customers_sorted.first.login)
     end
   end
 end

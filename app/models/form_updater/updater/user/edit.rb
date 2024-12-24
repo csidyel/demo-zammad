@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class FormUpdater::Updater::User::Edit < FormUpdater::Updater
   include FormUpdater::Concerns::ChecksCoreWorkflow
@@ -24,7 +24,6 @@ class FormUpdater::Updater::User::Edit < FormUpdater::Updater
       initialValue: object.organization_ids,
       options:      ::Organization.where(id: object.organization_ids).each_with_object([]) do |organization, options|
                       options << {
-                        # TODO: needs to be aligned during the autocomplete query implementation
                         value:        organization.id,
                         label:        organization.name,
                         organization: {

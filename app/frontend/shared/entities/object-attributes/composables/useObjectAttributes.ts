@@ -1,15 +1,19 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { computed, toRefs } from 'vue'
-import { QueryHandler } from '#shared/server/apollo/handler/index.ts'
-import type {
-  ObjectManagerFrontendAttribute,
-  EnumObjectManagerObjects,
-} from '#shared/graphql/types.ts'
+
 import type { FormSchemaField } from '#shared/components/Form/types.ts'
-import { useObjectAttributesStore } from '../stores/objectAttributes.ts'
-import { useObjectManagerFrontendAttributesQuery } from '../graphql/queries/objectManagerFrontendAttributes.api.ts'
+import { EnumObjectManagerObjects } from '#shared/graphql/types.ts'
+import { QueryHandler } from '#shared/server/apollo/handler/index.ts'
+
 import getFieldFromAttribute from '../form/getFieldFromAttribute.ts'
+import { useObjectManagerFrontendAttributesQuery } from '../graphql/queries/objectManagerFrontendAttributes.api.ts'
+import {
+  staticObjectAttributesByEntity,
+  useObjectAttributesStore,
+} from '../stores/objectAttributes.ts'
+
+import type { ObjectAttribute } from '../types/store.ts'
 
 export const useObjectAttributes = (object: EnumObjectManagerObjects) => {
   const objectAttributes = useObjectAttributesStore()
@@ -25,10 +29,12 @@ export const useObjectAttributes = (object: EnumObjectManagerObjects) => {
     const attributesRaw = handler.result()
     const attributesLoading = handler.loading()
 
-    const attributes = computed(() => {
-      return (
-        attributesRaw.value?.objectManagerFrontendAttributes?.attributes || []
-      )
+    const attributes = computed<ObjectAttribute[]>(() => {
+      return [
+        ...(staticObjectAttributesByEntity[object] || []),
+        ...(attributesRaw.value?.objectManagerFrontendAttributes?.attributes ||
+          []),
+      ]
     })
 
     const screens = computed(() => {
@@ -44,7 +50,7 @@ export const useObjectAttributes = (object: EnumObjectManagerObjects) => {
     })
 
     const attributesLookup = computed(() => {
-      const lookup: Map<string, ObjectManagerFrontendAttribute> = new Map()
+      const lookup: Map<string, ObjectAttribute> = new Map()
 
       attributes.value?.forEach((attribute) =>
         lookup.set(attribute.name, attribute),
@@ -56,23 +62,30 @@ export const useObjectAttributes = (object: EnumObjectManagerObjects) => {
     const formFieldAttributesLookup = computed(() => {
       const lookup: Map<string, FormSchemaField> = new Map()
 
-      attributes.value?.forEach((attribute) =>
-        lookup.set(attribute.name, getFieldFromAttribute(attribute)),
-      )
+      attributes.value?.forEach((attribute) => {
+        if (!attribute.isStatic) {
+          lookup.set(attribute.name, getFieldFromAttribute(object, attribute))
+        }
+      })
 
       return lookup
     })
 
-    objectAttributes.objectAttributesObjectLookup[object] = {
+    objectAttributes.setObjectAttributesForObject(object, {
       attributes,
       screens,
       attributesLookup,
       formFieldAttributesLookup,
       loading: attributesLoading,
-    }
+    })
   }
 
   return {
     ...toRefs(objectAttributes.objectAttributesObjectLookup[object]),
   }
+}
+
+export const initializeDefaultObjectAttributes = () => {
+  useObjectAttributes(EnumObjectManagerObjects.Ticket)
+  useObjectAttributes(EnumObjectManagerObjects.TicketArticle)
 }

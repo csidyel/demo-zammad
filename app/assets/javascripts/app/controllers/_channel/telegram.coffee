@@ -122,7 +122,6 @@ class BotAdd extends App.ControllerModal
         relation:   'Group'
         nulloption: true
         value:      selected_id
-        class:      'form-control--small'
       )
 
     content.find('.js-select').on('click', (e) =>
@@ -137,6 +136,12 @@ class BotAdd extends App.ControllerModal
     @load()
 
   onSubmit: (e) =>
+
+    # validate form using HTML5 validity check
+    element = $(e.target).closest('form').get(0)
+    if element && element.reportValidity && !element.reportValidity()
+      return false
+
     @formDisable(e)
     @ajax(
       id:   'telegram_app_verify'
@@ -171,7 +176,6 @@ class BotEdit extends App.ControllerModal
         relation:   'Group'
         nulloption: true
         value:      selected_id
-        class:      'form-control--small'
       )
 
     content.find('.js-messagesGroup').replaceWith createGroupSelection(@channel.group_id)
@@ -183,6 +187,12 @@ class BotEdit extends App.ControllerModal
     @load()
 
   onSubmit: (e) =>
+
+    # validate form using HTML5 validity check
+    element = $(e.target).closest('form').get(0)
+    if element && element.reportValidity && !element.reportValidity()
+      return false
+
     @formDisable(e)
     params = @formParams()
     @channel.options = params

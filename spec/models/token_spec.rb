@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -131,135 +131,6 @@ RSpec.describe Token, type: :model do
     end
   end
 
-  describe '#permissions?' do
-    subject(:token) do
-      create(:token, user: user, preferences: { permission: [permission_name] })
-    end
-
-    let(:user) { create(:user, roles: [role]) }
-    let(:role)       { create(:role, permissions: [permission]) }
-    let(:permission) { create(:permission, name: permission_name) }
-
-    context 'with privileges for a root permission (e.g., "foo", not "foo.bar")' do
-      let(:permission_name) { 'foo' }
-
-      context 'when given that exact permission' do
-        it 'returns true' do
-          expect(token.permissions?('foo')).to be(true)
-        end
-      end
-
-      context 'when given a sub-permission (i.e., child permission)' do
-        let(:subpermission) { create(:permission, name: 'foo.bar') }
-
-        context 'that exists' do
-          before { subpermission }
-
-          it 'returns true' do
-            expect(token.permissions?('foo.bar')).to be(true)
-          end
-        end
-
-        context 'that is inactive' do
-          before { subpermission.update(active: false) }
-
-          it 'returns false' do
-            expect(token.permissions?('foo.bar')).to be(false)
-          end
-        end
-
-        context 'that does not exist' do
-          it 'returns true' do
-            expect(token.permissions?('foo.bar')).to be(true)
-          end
-        end
-      end
-
-      context 'when given a glob' do
-        context 'matching that permission' do
-          it 'returns true' do
-            expect(token.permissions?('foo.*')).to be(true)
-          end
-        end
-
-        context 'NOT matching that permission' do
-          it 'returns false' do
-            expect(token.permissions?('bar.*')).to be(false)
-          end
-        end
-      end
-    end
-
-    context 'with privileges for a sub-permission (e.g., "foo.bar", not "foo")' do
-      let(:permission_name) { 'foo.bar' }
-
-      context 'when given that exact sub-permission' do
-        it 'returns true' do
-          expect(token.permissions?('foo.bar')).to be(true)
-        end
-
-        context 'but the permission is inactive' do
-          before { permission.update(active: false) }
-
-          it 'returns false' do
-            expect(token.permissions?('foo.bar')).to be(false)
-          end
-        end
-      end
-
-      context 'when given a sibling sub-permission' do
-        let(:sibling_permission) { create(:permission, name: 'foo.baz') }
-
-        context 'that exists' do
-          before { sibling_permission }
-
-          it 'returns false' do
-            expect(token.permissions?('foo.baz')).to be(false)
-          end
-        end
-
-        context 'that does not exist' do
-          it 'returns false' do
-            expect(token.permissions?('foo.baz')).to be(false)
-          end
-        end
-      end
-
-      context 'when given the parent permission' do
-        it 'returns false' do
-          expect(token.permissions?('foo')).to be(false)
-        end
-      end
-
-      context 'when given a glob' do
-        context 'matching that sub-permission' do
-          it 'returns true' do
-            expect(token.permissions?('foo.*')).to be(true)
-          end
-
-          context 'but the permission is inactive' do
-            before { permission.update(active: false) }
-
-            context 'and user.permissions?(...) doesn’t fail' do
-              let(:role) { create(:role, permissions: [parent_permission]) }
-              let(:parent_permission) { create(:permission, name: permission_name.split('.').first) }
-
-              it 'returns false' do
-                expect(token.permissions?('foo.*')).to be(false)
-              end
-            end
-          end
-        end
-
-        context 'NOT matching that sub-permission' do
-          it 'returns false' do
-            expect(token.permissions?('bar.*')).to be(false)
-          end
-        end
-      end
-    end
-  end
-
   describe '#fetch' do
     it 'returns nil when not present' do
       expect(described_class.fetch('token', user)).to be_nil
@@ -324,6 +195,96 @@ RSpec.describe Token, type: :model do
         described_class.renew_token!('token', user.id, persistent: true)
 
         expect(described_class.find_by(action: 'token')).to be_persistent
+      end
+    end
+  end
+
+  describe '#visible_in_frontend?' do
+    it 'persistent api token is visible in frontend' do
+      token = create(:token)
+
+      expect(token).to be_visible_in_frontend
+    end
+
+    it 'persistent non-api token is not visible in frontend' do
+      token = create(:token, action: :nonapi)
+
+      expect(token).not_to be_visible_in_frontend
+    end
+
+    it 'non-persistent api token is not visible in frontend' do
+      token = create(:token, persistent: false)
+
+      expect(token).not_to be_visible_in_frontend
+    end
+  end
+
+  describe '#trigger_user_subscription' do
+    it 'triggers subscription when token is created' do
+      allow(Gql::Subscriptions::User::Current::AccessTokenUpdates).to receive(:trigger)
+
+      create(:token)
+
+      expect(Gql::Subscriptions::User::Current::AccessTokenUpdates).to have_received(:trigger)
+    end
+
+    it 'triggers subscription when token is destroyed' do
+      token = create(:token)
+
+      allow(Gql::Subscriptions::User::Current::AccessTokenUpdates).to receive(:trigger)
+
+      token.destroy
+
+      expect(Gql::Subscriptions::User::Current::AccessTokenUpdates).to have_received(:trigger)
+    end
+
+    it 'does not trigger subscription when token is updated' do
+      token = create(:token)
+
+      allow(Gql::Subscriptions::User::Current::AccessTokenUpdates).to receive(:trigger)
+
+      token.touch
+
+      expect(Gql::Subscriptions::User::Current::AccessTokenUpdates).not_to have_received(:trigger)
+    end
+
+    it 'does not trigger subscription when non-api token is created' do
+      allow(Gql::Subscriptions::User::Current::AccessTokenUpdates).to receive(:trigger)
+
+      create(:token, action: :nonapi)
+
+      expect(Gql::Subscriptions::User::Current::AccessTokenUpdates).not_to have_received(:trigger)
+    end
+  end
+
+  describe '.cleanup' do
+    context 'when token is non persistent and old' do
+      let(:token) { create(:token, persistent: false, created_at: 1.year.ago) }
+
+      it 'is removed' do
+        expect { described_class.cleanup }
+          .to change { described_class.exists? token.id }
+          .to false
+      end
+    end
+
+    context 'when token is non persistent and fresh' do
+      let(:token) { create(:token, persistent: false, created_at: 1.day.ago) }
+
+      it 'is not removed' do
+        expect { described_class.cleanup }
+          .not_to change { described_class.exists? token.id }
+          .from true
+      end
+    end
+
+    context 'when token is persistent and old' do
+      let(:token) { create(:token, persistent: true, created_at: 1.day.ago) }
+
+      it 'is not removed' do
+        expect { described_class.cleanup }
+          .not_to change { described_class.exists? token.id }
+          .from true
       end
     end
   end

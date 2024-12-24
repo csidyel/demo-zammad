@@ -1,12 +1,12 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module HasGroupRelationDefinition
   extend ActiveSupport::Concern
 
   included do
 
-    self.table_name   = "groups_#{group_relation_model_identifier}s"
-    self.primary_keys = ref_key, :group_id, :access
+    self.table_name  = "groups_#{group_relation_model_identifier}s"
+    self.primary_key = ref_key, :group_id, :access
 
     belongs_to group_relation_model_identifier, optional: true
     belongs_to :group, optional: true

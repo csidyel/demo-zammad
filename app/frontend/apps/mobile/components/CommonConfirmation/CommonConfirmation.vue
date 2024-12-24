@@ -1,40 +1,61 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import CommonSectionPopup from '#mobile/components/CommonSectionPopup/CommonSectionPopup.vue'
-import { confirmationOptions } from '#shared/utils/confirmation.ts'
+
+import { useConfirmation } from '#shared/composables/useConfirmation.ts'
+import { i18n } from '#shared/i18n.ts'
+
+import CommonSectionPopup from '../CommonSectionPopup/CommonSectionPopup.vue'
+
+import type { PopupItemDescriptor } from '../CommonSectionPopup/types.ts'
+
+const { confirmationOptions } = useConfirmation()
+
+const currentConfirmationOptions = computed(() => {
+  return confirmationOptions.value?.get('confirmation')
+})
 
 const localState = computed({
-  get: () => !!confirmationOptions.value,
+  get: () => !!confirmationOptions.value.get('confirmation'),
   set: (value) => {
-    if (!value) confirmationOptions.value = undefined
+    if (!value) confirmationOptions.value.delete('confirmation')
   },
 })
 
 const item = computed(() => {
   return {
     type: 'button' as const,
-    label: confirmationOptions.value?.buttonTitle || __('OK'),
-    buttonVariant: confirmationOptions.value?.buttonVariant,
-    onAction: confirmationOptions.value?.confirmCallback,
+    label: currentConfirmationOptions.value?.buttonLabel || __('OK'),
+    buttonVariant: currentConfirmationOptions.value
+      ?.buttonVariant as PopupItemDescriptor['buttonVariant'],
+    onAction: currentConfirmationOptions.value?.confirmCallback,
   }
 })
 
 const callCancelCallback = (isCancel: boolean) => {
   if (!isCancel) return
 
-  if (confirmationOptions.value?.cancelCallback) {
-    confirmationOptions.value.cancelCallback()
+  if (currentConfirmationOptions.value?.cancelCallback) {
+    currentConfirmationOptions.value.cancelCallback()
   }
 }
+
+const heading = computed(() => {
+  return i18n.t(
+    currentConfirmationOptions.value?.headerTitle || __('Confirm dialog'),
+    ...(currentConfirmationOptions.value?.headerTitlePlaceholder || []),
+  )
+})
 </script>
 
 <template>
   <CommonSectionPopup
     v-model:state="localState"
     :messages="[item]"
-    :heading="__('Confirm dialog')"
+    :heading="heading"
+    :cancel-label="currentConfirmationOptions?.cancelLabel"
+    :fullscreen="currentConfirmationOptions?.fullscreen"
     @close="callCancelCallback"
   >
     <template #header>
@@ -43,8 +64,8 @@ const callCancelCallback = (isCancel: boolean) => {
       >
         {{
           $t(
-            confirmationOptions?.heading,
-            ...(confirmationOptions?.headingPlaceholder || []),
+            currentConfirmationOptions?.text,
+            ...(currentConfirmationOptions?.textPlaceholder || []),
           )
         }}
       </div>

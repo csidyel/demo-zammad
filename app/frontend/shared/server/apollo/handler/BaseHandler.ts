@@ -1,7 +1,11 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { Ref } from 'vue'
-import type { ApolloError, OperationVariables } from '@apollo/client/core'
+import {
+  useNotifications,
+  NotificationTypes,
+} from '#shared/components/CommonNotifications/index.ts'
+import type { GraphQLHandlerError } from '#shared/types/error.ts'
+import { GraphQLErrorTypes } from '#shared/types/error.ts'
 import type {
   BaseHandlerOptions,
   CommonHandlerOptions,
@@ -9,15 +13,11 @@ import type {
   OperationResult,
   OperationReturn,
 } from '#shared/types/server/apollo/handler.ts'
-import type {
-  GraphQLErrorReport,
-  GraphQLHandlerError,
-} from '#shared/types/error.ts'
-import { GraphQLErrorTypes } from '#shared/types/error.ts'
-import {
-  useNotifications,
-  NotificationTypes,
-} from '#shared/components/CommonNotifications/index.ts'
+import getUuid from '#shared/utils/getUuid.ts'
+
+import type { ApolloError, OperationVariables } from '@apollo/client/core'
+import type { GraphQLFormattedError } from 'graphql'
+import type { Ref } from 'vue'
 
 export default abstract class BaseHandler<
   TResult = OperationResult,
@@ -32,11 +32,13 @@ export default abstract class BaseHandler<
 
   protected baseHandlerOptions: BaseHandlerOptions = {
     errorShowNotification: true,
-    errorNotificationMessage: __('An error occured during the operation.'),
+    errorNotificationMessage: '',
     errorNotificationType: NotificationTypes.Error,
   }
 
   public handlerOptions!: CommonHandlerOptions<THandlerOptions>
+
+  protected handlerId: string
 
   constructor(
     operationResult: TOperationReturn,
@@ -45,6 +47,8 @@ export default abstract class BaseHandler<
     this.operationResult = operationResult
 
     this.handlerOptions = this.mergedHandlerOptions(handlerOptions)
+
+    this.handlerId = getUuid()
 
     this.initialize()
   }
@@ -76,10 +80,15 @@ export default abstract class BaseHandler<
     let errorHandler: GraphQLHandlerError
 
     if (graphQLErrors.length > 0) {
-      const { message, extensions }: GraphQLErrorReport = graphQLErrors[0]
-      const type =
+      const { message, extensions }: GraphQLFormattedError = graphQLErrors[0]
+      let type =
         (extensions?.type as GraphQLErrorTypes) ||
-        GraphQLErrorTypes.NetworkError
+        GraphQLErrorTypes.UnknownError
+
+      // When it's not a known type, use the unknown error type.
+      if (!Object.values(GraphQLErrorTypes).includes(type)) {
+        type = GraphQLErrorTypes.UnknownError
+      }
 
       errorHandler = {
         type,
@@ -113,7 +122,11 @@ export default abstract class BaseHandler<
       //   console.error(error)
       // }
       useNotifications().notify({
-        message: options.errorNotificationMessage,
+        id: this.handlerId,
+        message: this.errorNotificationMessage(
+          errorHandler.type,
+          errorHandler.message,
+        ),
         type: options.errorNotificationType,
       })
     }
@@ -127,5 +140,21 @@ export default abstract class BaseHandler<
       this.baseHandlerOptions,
       handlerOptions,
     ) as CommonHandlerOptions<THandlerOptions>
+  }
+
+  private errorNotificationMessage(
+    errorType: GraphQLErrorTypes,
+    errorMessage?: string,
+  ): string {
+    const defaultErrorNotificationMessage = __(
+      'An error occured during the operation.',
+    )
+
+    const fallbackErrorMessage =
+      errorType === GraphQLErrorTypes.UnknownError || !errorMessage
+        ? defaultErrorNotificationMessage
+        : errorMessage
+
+    return this.handlerOptions.errorNotificationMessage || fallbackErrorMessage
   }
 }

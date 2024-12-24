@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class TransactionDispatcher
 
@@ -194,14 +194,14 @@ class TransactionDispatcher
   end
 
   # Used as ActiveRecord lifecycle callback on the class.
-  def self.before_update(record)
+  def self.after_update(record)
 
     # return if we run import mode
     return true if Setting.get('import_mode')
 
     # ignore certain attributes
     real_changes = {}
-    record.changes_to_save.each do |key, value|
+    record.saved_changes.each do |key, value|
       next if key == 'updated_at'
       next if key == 'article_count'
       next if key == 'create_article_type_id'

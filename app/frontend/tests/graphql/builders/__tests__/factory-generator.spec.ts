@@ -1,10 +1,12 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { OrganizationDocument } from '#mobile/entities/organization/graphql/queries/organization.api.ts'
-import { UserDocument } from '#mobile/entities/user/graphql/queries/user.api.ts'
-import { convertToGraphQLId } from '#shared/graphql/utils.ts'
 import { faker } from '@faker-js/faker'
+
+import { OrganizationDocument } from '#shared/entities/organization/graphql/queries/organization.api.ts'
+import { UserDocument } from '#shared/entities/user/graphql/queries/user.api.ts'
 import type { Ticket } from '#shared/graphql/types.ts'
+import { convertToGraphQLId } from '#shared/graphql/utils.ts'
+
 import { generateObjectData, mockOperation } from '../index.ts'
 
 describe('correctly mocks operations', () => {
@@ -21,7 +23,7 @@ describe('correctly mocks operations', () => {
         convertToGraphQLId('Organization', 1),
       )
       // we don't have members by default because it might go into a loop
-      expect(mock.organization.members).toEqual({
+      expect(mock.organization.allMembers).toEqual({
         edges: [],
         totalCount: 0,
         __typename: 'UserConnection',
@@ -52,19 +54,19 @@ describe('correctly mocks operations', () => {
       const { organization } = mockOperation(OrganizationDocument, {})
 
       expect(user.organization).toBe(organization)
-      expect(organization.members.totalCount).toBe(1)
-      expect(organization.members.edges[0].node).toBe(user)
-      expect(organization.members.edges[0].node.organization.members).toBe(
-        organization.members,
-      )
+      expect(organization.allMembers.totalCount).toBe(2)
+      expect(organization.allMembers.edges[0].node).toBe(user)
+      expect(
+        organization.allMembers.edges[0].node.organization.allMembers,
+      ).toBe(organization.allMembers)
 
       const { user: user2 } = mockOperation(UserDocument, {})
       expect(user2.organization).toBe(organization)
-      expect(organization.members.totalCount).toBe(2)
-      expect(organization.members.edges[1].node).toBe(user2)
-      expect(organization.members.edges[1].node.organization.members).toBe(
-        organization.members,
-      )
+      expect(organization.allMembers.totalCount).toBe(3)
+      expect(organization.allMembers.edges[1].node).toBe(user2)
+      expect(
+        organization.allMembers.edges[1].node.organization.allMembers,
+      ).toBe(organization.allMembers)
     })
   })
 
@@ -113,5 +115,18 @@ describe('correctly mocks operations', () => {
       update: true,
       agentReadAccess: false,
     })
+  })
+
+  it('fixes ID if its not in graphql format', () => {
+    const { id } = generateObjectData<Ticket>('Ticket', { id: '1' })
+    expect(id).toBe(convertToGraphQLId('Ticket', 1))
+  })
+
+  it('throws an error if ID is in invalid format', () => {
+    expect(() => {
+      generateObjectData<Ticket>('Ticket', { id: 'dsfsdffds' })
+    }).toThrowErrorMatchingInlineSnapshot(
+      `[Error: expected numerical or graphql id for Ticket, got dsfsdffds]`,
+    )
   })
 })

@@ -1,10 +1,18 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-const path = require('path')
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const fs = require('fs')
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const path = require('path')
 
-const pagesDir = path.resolve(__dirname, 'app/frontend/apps/mobile/pages')
-const pagesFolder = fs.readdirSync(pagesDir)
+const mobilePagesDir = path.resolve(__dirname, 'app/frontend/apps/mobile/pages')
+const mobilePagesFolder = fs.readdirSync(mobilePagesDir)
+
+const desktopPagesDir = path.resolve(
+  __dirname,
+  'app/frontend/apps/desktop/pages',
+)
+const desktopPagesFolder = fs.readdirSync(desktopPagesDir)
 
 module.exports = {
   root: true,
@@ -15,14 +23,17 @@ module.exports = {
   plugins: [
     '@typescript-eslint',
     'vue',
+    'vuejs-accessibility',
     'prettier',
     'sonarjs',
     'security',
     'zammad',
+    'import',
   ],
   extends: [
     'airbnb-base',
     'plugin:vue/vue3-recommended',
+    'plugin:vuejs-accessibility/recommended',
     'plugin:@typescript-eslint/eslint-recommended',
     'plugin:@typescript-eslint/recommended',
     'plugin:prettier/recommended',
@@ -30,16 +41,19 @@ module.exports = {
     '@vue/typescript/recommended',
     'prettier',
     'plugin:sonarjs/recommended',
-    'plugin:security/recommended',
+    'plugin:security/recommended-legacy',
   ],
   rules: {
     'zammad/zammad-copyright': 'error',
     'zammad/zammad-detect-translatable-string': 'error',
     'zammad/zammad-tailwind-ltr': 'error',
+    'zammad/zammad-symbol-description': 'error',
 
     'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'off',
     'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',
     'consistent-return': 'off', // allow implicit return
+
+    'class-methods-use-this': 'off',
 
     'prefer-destructuring': [
       'error',
@@ -88,18 +102,30 @@ module.exports = {
             target: './app/frontend/shared',
             from: './app/frontend/apps',
           },
+          {
+            target: './app/frontend/apps/desktop',
+            from: './app/frontend/apps/mobile',
+          },
+          {
+            target: './app/frontend/apps/mobile',
+            from: './app/frontend/apps/desktop',
+          },
           // restrict imports between different pages folder
-          ...pagesFolder.map((page) => {
+          ...mobilePagesFolder.map((page) => {
             return {
               target: `./app/frontend/apps/mobile/pages/!(${page})/**/*`,
               from: `./app/frontend/apps/mobile/pages/${page}/**/*`,
             }
           }),
+          ...desktopPagesFolder.map((page) => {
+            return {
+              target: `./app/frontend/apps/desktop/pages/!(${page})/**/*`,
+              from: `./app/frontend/apps/desktop/pages/${page}/**/*`,
+            }
+          }),
         ],
       },
     ],
-
-    // TODO: Add import rule to not allow that "app/**/modules/**" can import from each other and also add a rule that apps/** can not import from other apps.
 
     /* We strongly recommend that you do not use the no-undef lint rule on TypeScript projects. The checks it provides are already provided by TypeScript without the need for configuration - TypeScript just does this significantly better (Source: https://github.com/typescript-eslint/typescript-eslint/blob/master/docs/getting-started/linting/FAQ.md#i-get-errors-from-the-no-undef-rule-about-global-variables-not-being-defined-even-though-there-are-no-typescript-errors). */
     'no-undef': 'off',
@@ -130,6 +156,55 @@ module.exports = {
       },
     ],
 
+    'vue/custom-event-name-casing': ['error', 'kebab-case'],
+
+    // Enforce ordering for imports
+    'import/order': [
+      'error',
+      {
+        groups: [
+          'builtin',
+          'external',
+          'internal',
+          'parent',
+          'sibling',
+          'index',
+          'object',
+          'type',
+        ],
+        pathGroups: [
+          {
+            pattern: '#tests/**',
+            group: 'internal',
+            position: 'before',
+          },
+          {
+            pattern: '#shared/**',
+            group: 'internal',
+            position: 'before',
+          },
+          {
+            pattern: '#desktop/**',
+            group: 'internal',
+          },
+          {
+            pattern: '#mobile/**',
+            group: 'internal',
+          },
+          {
+            pattern: '**/types.ts',
+            group: 'type',
+            position: 'after',
+          },
+        ],
+        'newlines-between': 'always',
+        alphabetize: { order: 'asc', caseInsensitive: true },
+      },
+    ],
+
+    // Enforce Vue v3.3+ tuple syntax for defineEmits.
+    'vue/define-emits-declaration': ['error', 'type-literal'],
+
     'vue/script-setup-uses-vars': 'error',
 
     // Don't require a default value for the props.
@@ -156,6 +231,9 @@ module.exports = {
     'sonarjs/prefer-immediate-return': 'off',
 
     'sonarjs/prefer-single-boolean-return': 'off',
+
+    // Consider prettier offenses as errors.
+    'prettier/prettier': ['error'],
   },
   overrides: [
     {
@@ -172,10 +250,7 @@ module.exports = {
         'app/frontend/tests/**',
         'app/frontend/**/__tests__/**',
         'app/frontend/**/*.spec.*',
-        'app/frontend/stories/**',
         'app/frontend/cypress/**',
-        'app/frontend/**/*.stories.ts',
-        'app/frontend/**/*.story.vue',
         '.eslint-plugin-zammad/**',
         '.eslintrc.js',
       ],

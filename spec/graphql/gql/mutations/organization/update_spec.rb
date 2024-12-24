@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -31,7 +31,14 @@ RSpec.describe Gql::Mutations::Organization::Update, type: :graphql do
       QUERY
     end
 
-    let(:custom_translations) { { "can't be blank" => 'darf nicht leer sein', 'This field %s' => 'Dieses Feld %{message}', 'This object already exists.' => 'Dieses Objekt existiert bereits.' } }
+    let(:custom_translations) do
+      {
+        "can't be blank"              => 'darf nicht leer sein',
+        'has already been taken'      => 'wird bereits verwendet.',
+        'This field %s'               => 'Dieses Feld %{message}',
+        'This object already exists.' => 'Dieses Objekt existiert bereits.'
+      }
+    end
 
     before do
       allow(Translation).to receive(:translate) { |_locale, string| custom_translations[string] || string }
@@ -42,7 +49,7 @@ RSpec.describe Gql::Mutations::Organization::Update, type: :graphql do
       let(:input_payload) { { name: 'NewName', objectAttributeValues: [] } }
 
       it 'returns updated organization name' do
-        expect(gql.result.data['organization']).to include('name' => 'NewName')
+        expect(gql.result.data[:organization]).to include('name' => 'NewName')
       end
     end
 
@@ -50,7 +57,7 @@ RSpec.describe Gql::Mutations::Organization::Update, type: :graphql do
       let(:input_payload) { { name: '' } }
 
       it 'returns a user error' do
-        expect(gql.result.data['errors'].first).to include('field' => 'name', 'message' => 'Dieses Feld darf nicht leer sein')
+        expect(gql.result.data[:errors].first).to include('field' => 'name', 'message' => 'Dieses Feld darf nicht leer sein')
       end
     end
 
@@ -59,7 +66,7 @@ RSpec.describe Gql::Mutations::Organization::Update, type: :graphql do
       let(:other_org)     { create(:organization) }
 
       it 'returns a user error' do
-        expect(gql.result.data['errors'].first).to include('message' => 'Dieses Objekt existiert bereits.')
+        expect(gql.result.data[:errors].first).to include('field' => 'name', 'message' => 'Dieses Feld wird bereits verwendet.')
       end
     end
 
@@ -67,7 +74,7 @@ RSpec.describe Gql::Mutations::Organization::Update, type: :graphql do
       let(:input_payload) { { name: 'NewName' } }
 
       it 'returns updated organization name' do
-        expect(gql.result.data['organization']).to include('name' => 'NewName')
+        expect(gql.result.data[:organization]).to include('name' => 'NewName')
       end
     end
 
@@ -117,7 +124,7 @@ RSpec.describe Gql::Mutations::Organization::Update, type: :graphql do
       end
 
       it 'returns updated organization object attributes' do
-        oas = gql.result.data['organization']['objectAttributeValues']
+        oas = gql.result.data[:organization][:objectAttributeValues]
 
         expect(oas.map { |oa| { oa['attribute']['name'] => oa['value'] } }).to eq(
           [

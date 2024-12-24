@@ -1,17 +1,12 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { computed, ref } from 'vue'
-import { defineStore } from 'pinia'
 import { cloneDeep } from 'lodash-es'
-import { useSessionLazyQuery } from '#shared/graphql/queries/session.api.ts'
+import { defineStore } from 'pinia'
+import { computed, effectScope, ref } from 'vue'
+
+import useFingerprint from '#shared/composables/useFingerprint.ts'
 import { useCurrentUserLazyQuery } from '#shared/graphql/queries/currentUser.api.ts'
-import {
-  QueryHandler,
-  SubscriptionHandler,
-} from '#shared/server/apollo/handler/index.ts'
-import type { UserData } from '#shared/types/store.ts'
-import hasPermission from '#shared/utils/hasPermission.ts'
-import type { RequiredPermission } from '#shared/types/permission.ts'
+import { useSessionLazyQuery } from '#shared/graphql/queries/session.api.ts'
 import { useCurrentUserUpdatesSubscription } from '#shared/graphql/subscriptions/currentUserUpdates.api.ts'
 import type {
   CurrentUserQuery,
@@ -22,10 +17,19 @@ import type {
   SessionQuery,
   SessionQueryVariables,
 } from '#shared/graphql/types.ts'
-import useFingerprint from '#shared/composables/useFingerprint.ts'
-import testFlags from '#shared/utils/testFlags.ts'
+import {
+  QueryHandler,
+  SubscriptionHandler,
+} from '#shared/server/apollo/handler/index.ts'
+import type { RequiredPermission } from '#shared/types/permission.ts'
+import type { UserData } from '#shared/types/store.ts'
+import hasPermission from '#shared/utils/hasPermission.ts'
 import log from '#shared/utils/log.ts'
+import testFlags from '#shared/utils/testFlags.ts'
+
 import { useLocaleStore } from './locale.ts'
+
+import type { JsonValue } from 'type-fest'
 
 let sessionQuery: QueryHandler<SessionQuery, SessionQueryVariables>
 
@@ -34,22 +38,25 @@ const getSessionQuery = () => {
 
   const { fingerprint } = useFingerprint()
 
-  sessionQuery = new QueryHandler(
-    useSessionLazyQuery({
-      fetchPolicy: 'network-only',
-      context: {
-        error: {
-          logLevel: 'silent',
+  const scope = effectScope()
+  scope.run(() => {
+    sessionQuery = new QueryHandler(
+      useSessionLazyQuery({
+        fetchPolicy: 'network-only',
+        context: {
+          error: {
+            logLevel: 'silent',
+          },
+          headers: {
+            'X-Browser-Fingerprint': fingerprint.value,
+          },
         },
-        headers: {
-          'X-Browser-Fingerprint': fingerprint.value,
-        },
+      }),
+      {
+        errorShowNotification: false,
       },
-    }),
-    {
-      errorShowNotification: false,
-    },
-  )
+    )
+  })
 
   return sessionQuery
 }
@@ -59,9 +66,12 @@ let currentUserQuery: QueryHandler<CurrentUserQuery, CurrentUserQueryVariables>
 const getCurrentUserQuery = () => {
   if (currentUserQuery) return currentUserQuery
 
-  currentUserQuery = new QueryHandler(
-    useCurrentUserLazyQuery({ fetchPolicy: 'network-only' }),
-  )
+  const scope = effectScope()
+  scope.run(() => {
+    currentUserQuery = new QueryHandler(
+      useCurrentUserLazyQuery({ fetchPolicy: 'network-only' }),
+    )
+  })
 
   return currentUserQuery
 }
@@ -72,6 +82,7 @@ export const useSessionStore = defineStore(
     const id = ref<Maybe<string>>(null)
     const afterAuth = ref<Maybe<SessionAfterAuth>>(null)
     const initialized = ref(false)
+    const locale = useLocaleStore()
 
     const checkSession = async (): Promise<string | null> => {
       const sessionQuery = getSessionQuery()
@@ -85,6 +96,10 @@ export const useSessionStore = defineStore(
     }
 
     const user = ref<Maybe<UserData>>(null)
+
+    // In case of unauthenticated users, current user ID may be an empty string.
+    //   Use with care.
+    const userId = computed(() => user.value?.id || '')
 
     let currentUserUpdateSubscription: SubscriptionHandler<
       CurrentUserUpdatesSubscription,
@@ -104,7 +119,6 @@ export const useSessionStore = defineStore(
       log.debug('currentUserUpdate', user.value)
 
       // Check if the locale is different, then a update is needed.
-      const locale = useLocaleStore()
       const userLocale = user.value?.preferences?.locale as string | undefined
 
       if (
@@ -116,19 +130,22 @@ export const useSessionStore = defineStore(
 
       if (user.value) {
         if (!currentUserUpdateSubscription) {
-          currentUserUpdateSubscription = new SubscriptionHandler(
-            useCurrentUserUpdatesSubscription(() => ({
-              userId: (user.value as UserData)?.id,
-            })),
-          )
+          const scope = effectScope()
+          scope.run(() => {
+            currentUserUpdateSubscription = new SubscriptionHandler(
+              useCurrentUserUpdatesSubscription(() => ({
+                userId: userId.value,
+              })),
+            )
 
-          currentUserUpdateSubscription.onResult((result) => {
-            const updatedUser = result.data?.userUpdates.user
-            if (!updatedUser) {
-              testFlags.set('useCurrentUserUpdatesSubscription.subscribed')
-            } else {
-              user.value = updatedUser
-            }
+            currentUserUpdateSubscription.onResult((result) => {
+              const updatedUser = result.data?.userUpdates.user
+              if (!updatedUser) {
+                testFlags.set('useCurrentUserUpdatesSubscription.subscribed')
+              } else {
+                user.value = updatedUser
+              }
+            })
           })
         } else {
           currentUserUpdateSubscription.start()
@@ -157,9 +174,13 @@ export const useSessionStore = defineStore(
       )
     }
 
-    // In case of unauthenticated users, current user ID may be an empty string.
-    //   Use with care.
-    const userId = computed(() => user.value?.id || '')
+    const setUserPreference = (key: string, value: JsonValue) => {
+      if (!user.value) return
+
+      user.value.preferences[key] = value
+
+      return user.value
+    }
 
     return {
       id,
@@ -171,6 +192,7 @@ export const useSessionStore = defineStore(
       getCurrentUser,
       resetCurrentSession,
       hasPermission: userHasPermission,
+      setUserPreference,
     }
   },
   {

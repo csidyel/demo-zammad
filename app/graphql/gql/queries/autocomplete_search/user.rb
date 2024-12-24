@@ -1,11 +1,11 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Gql::Queries
   class AutocompleteSearch::User < BaseQuery
 
     description 'Search for users'
 
-    argument :input, Gql::Types::Input::AutocompleteSearch::InputType, required: true, description: 'The input object for the autocomplete search'
+    argument :input, Gql::Types::Input::AutocompleteSearch::UserInputType, required: true, description: 'The input object for the autocomplete search'
 
     type [Gql::Types::AutocompleteSearch::UserEntryType], null: false
 
@@ -16,13 +16,23 @@ module Gql::Queries
 
       return [] if query.strip.empty?
 
-      results = Service::Search.new(current_user: context.current_user).execute(
-        term:    query,
-        objects: [::User],
-        options: { limit: limit },
-      )
+      users = find_users(query:, limit:)
+      users = reject_user(users, input:)
+      post_process(users, input:)
+    end
 
-      post_process(results, input: input)
+    def find_users(query:, limit:)
+      ::User.search(
+        query:,
+        limit:,
+        current_user: context.current_user,
+      )
+    end
+
+    def reject_user(results, input:)
+      return results if input[:except_internal_id].blank?
+
+      results.reject { |user| user.id == input[:except_internal_id] }
     end
 
     def post_process(results, input:)

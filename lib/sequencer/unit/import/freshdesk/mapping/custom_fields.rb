@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Sequencer::Unit::Import::Freshdesk::Mapping::CustomFields < Sequencer::Unit::Base
   include ::Sequencer::Unit::Import::Common::Mapping::Mixin::ProvideMapped
@@ -6,6 +6,8 @@ class Sequencer::Unit::Import::Freshdesk::Mapping::CustomFields < Sequencer::Uni
   uses :resource, :field_map, :model_class
 
   def process
+    return if !resource['custom_fields']
+
     provide_mapped do
       custom_fields
     end

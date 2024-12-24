@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Gql::Types::Ticket
   class ArticleType < Gql::Types::BaseObject
@@ -24,13 +24,13 @@ module Gql::Types::Ticket
     field :message_id_md5, String
     field :in_reply_to, String
     field :content_type, String, null: false
-    field :references, String
     field :body, String, null: false, description: 'Raw body as saved in the database.'
     field :body_with_urls, String, null: false, description: 'Body with cid: URLs replaced for inline images in HTML articles.'
     field :internal, Boolean, null: false
 
     field :preferences, ::GraphQL::Types::JSON
     field :security_state, Gql::Types::Ticket::Article::SecurityStateType
+    field :media_error_state, Gql::Types::Ticket::Article::MediaErrorStateType
 
     field :attachments, [Gql::Types::StoredFileType, { null: false }], null: false, description: 'All attached files as stored in the database.'
     field :attachments_without_inline, [Gql::Types::StoredFileType, { null: false }], null: false, description: 'Attachments for display, with inline images filtered out.'
@@ -54,6 +54,10 @@ module Gql::Types::Ticket
 
     def security_state
       @object.preferences['security']
+    end
+
+    def media_error_state
+      @object.preferences&.dig('whatsapp')
     end
 
     private

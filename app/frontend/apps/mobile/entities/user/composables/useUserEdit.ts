@@ -1,9 +1,7 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { useDialogObjectForm } from '#mobile/components/CommonDialogObjectForm/useDialogObjectForm.ts'
-import { defineFormSchema } from '#mobile/form/defineFormSchema.ts'
-import { useUserUpdateMutation } from '#mobile/pages/user/graphql/mutations/update.api.ts'
 import type { FormSchemaField } from '#shared/components/Form/types.ts'
+import { defineFormSchema } from '#shared/form/defineFormSchema.ts'
 import type { UserQuery } from '#shared/graphql/types.ts'
 import {
   EnumFormUpdaterId,
@@ -11,6 +9,9 @@ import {
 } from '#shared/graphql/types.ts'
 import { useApplicationStore } from '#shared/stores/application.ts'
 import type { ConfidentTake } from '#shared/types/utils.ts'
+
+import { useDialogObjectForm } from '#mobile/components/CommonDialogObjectForm/useDialogObjectForm.ts'
+import { useUserUpdateMutation } from '#mobile/pages/user/graphql/mutations/update.api.ts'
 
 export const useUserEdit = () => {
   const dialog = useDialogObjectForm('user-edit', EnumObjectManagerObjects.User)
@@ -50,6 +51,9 @@ export const useUserEdit = () => {
           },
         },
       },
+      organization_id: {
+        helpClass: '',
+      },
     }
 
     dialog.openDialog({
@@ -75,9 +79,6 @@ export const useUserEdit = () => {
           }
 
           formChangeFields.organization_id.help = msg
-
-          // TODO: helpClass is not reactive right now, should be fine with a future FormKit version
-          // We need to implement the mention workaround: https://github.com/formkit/formkit/issues/828
           formChangeFields.organization_id.helpClass = helpClass
         }
       },

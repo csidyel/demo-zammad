@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Ticket::SearchIndex
   extend ActiveSupport::Concern
@@ -14,6 +14,11 @@ module Ticket::SearchIndex
     # mentions
     attributes['mention_user_ids'] = mentions.pluck(:user_id)
 
+    # checklists
+    if checklist
+      attributes['checklist'] = checklist.search_index_attribute_lookup(include_references: false)
+    end
+
     # current payload size
     total_size_current = 0
 
@@ -22,20 +27,9 @@ module Ticket::SearchIndex
     Ticket::Article.where(ticket_id: id).limit(1000).find_each(batch_size: 50).each do |article|
 
       # lookup attributes of ref. objects (normally name and note)
-      article_attributes = article.search_index_attribute_lookup(include_references: false)
+      article_attributes = search_index_article_attributes(article)
 
-      # remove note needed attributes
-      ignore = %w[message_id_md5 ticket]
-      ignore.each do |attribute|
-        article_attributes.delete(attribute)
-      end
-
-      # index raw text body
-      if article_attributes['content_type'] && article_attributes['content_type'] == 'text/html' && article_attributes['body']
-        article_attributes['body'] = article_attributes['body'].html2text
-      end
-
-      article_attributes_payload_size = article_attributes.to_json.bytes.size
+      article_attributes_payload_size = article_attributes.to_json.bytesize
 
       next if search_index_attribute_lookup_oversized?(total_size_current + article_attributes_payload_size)
 
@@ -51,18 +45,12 @@ module Ticket::SearchIndex
 
         next if search_index_attribute_lookup_file_oversized?(attachment, total_size_current)
 
-        next if search_index_attribute_lookup_oversized?(total_size_current + attachment.content.bytes.size)
+        next if search_index_attribute_lookup_oversized?(total_size_current + attachment.content.bytesize)
 
         # add attachment size to totel payload size
-        total_size_current += attachment.content.bytes.size
+        total_size_current += attachment.content.bytesize
 
-        data = {
-          'size'     => attachment.size,
-          '_name'    => attachment.filename,
-          '_content' => Base64.encode64(attachment.content).delete("\n"),
-        }
-
-        article_attributes['attachment'].push data
+        article_attributes['attachment'].push search_index_article_attachment_attributes(attachment)
       end
 
       attributes['article'].push article_attributes
@@ -87,10 +75,10 @@ module Ticket::SearchIndex
 
     # if attachment size is bigger as configured
     attachment_max_size = (Setting.get('es_attachment_max_size_in_mb') || 10).megabyte
-    return true if attachment.content.bytes.size > attachment_max_size
+    return true if attachment.content.bytesize > attachment_max_size
 
     # if complete size is bigger as configured
-    return true if search_index_attribute_lookup_oversized?(total_size_current + attachment.content.bytes.size)
+    return true if search_index_attribute_lookup_oversized?(total_size_current + attachment.content.bytesize)
 
     false
   end
@@ -107,6 +95,33 @@ module Ticket::SearchIndex
     return true if attachments_ignore.include?(filename_extention.downcase)
 
     false
+  end
+
+  def search_index_article_attributes(article)
+
+    # lookup attributes of ref. objects (normally name and note)
+    article_attributes = article.search_index_attribute_lookup(include_references: false)
+
+    # remove note needed attributes
+    ignore = %w[message_id_md5 ticket]
+    ignore.each do |attribute|
+      article_attributes.delete(attribute)
+    end
+
+    # index raw text body
+    if article_attributes['content_type'] && article_attributes['content_type'] == 'text/html' && article_attributes['body']
+      article_attributes['body'] = article_attributes['body'].html2text
+    end
+
+    article_attributes
+  end
+
+  def search_index_article_attachment_attributes(attachment)
+    {
+      'size'     => attachment.size,
+      '_name'    => attachment.filename,
+      '_content' => Base64.encode64(attachment.content).delete("\n"),
+    }
   end
 
 end

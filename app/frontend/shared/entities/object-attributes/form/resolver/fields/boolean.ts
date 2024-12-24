@@ -1,6 +1,7 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import type { FieldResolverModule } from '#shared/entities/object-attributes/types/resolver.ts'
+
 import FieldResolver from '../FieldResolver.ts'
 
 export class FieldResolverBoolean extends FieldResolver {
@@ -14,6 +15,9 @@ export class FieldResolverBoolean extends FieldResolver {
       props: {
         variants,
       },
+      // Add top margin only in multi-column mode, so the field aligns nicely with other which have visible labels.
+      //   More info in `app/frontend/apps/desktop/styles/main.css:77`.
+      wrapperClass: '@lg/form-group:mt-6',
     }
   }
 }

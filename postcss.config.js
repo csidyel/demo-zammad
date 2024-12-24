@@ -1,12 +1,16 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-const path = require('path')
+const tailwindcssNesting = require('tailwindcss/nesting')
+const autoprefixer = require('autoprefixer')
+const multipleTailwindConfigPlugin = require('./app/frontend/build/multipleTailwindConfigPlugin.js')
 
+/** @type {import('postcss-load-config').Config} */
 module.exports = {
-  plugins: {
-    tailwindcss: {
-      config: path.resolve(__dirname, 'tailwind.config.js'),
-    },
-    autoprefixer: {},
-  },
+  plugins: [
+    // Vite is pre-configured to support CSS @import inlining via postcss-import.
+    //   https://vitejs.dev/guide/features.html#import-inlining-and-rebasing
+    tailwindcssNesting,
+    multipleTailwindConfigPlugin,
+    autoprefixer,
+  ],
 }

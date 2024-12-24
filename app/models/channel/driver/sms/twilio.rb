@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Channel::Driver::Sms::Twilio < Channel::Driver::Sms::Base
   NAME = 'sms/twilio'.freeze
@@ -7,7 +7,7 @@ class Channel::Driver::Sms::Twilio < Channel::Driver::Sms::Base
     false
   end
 
-  def send(options, attr, _notification = false)
+  def deliver(options, attr, _notification = false)
     Rails.logger.info "Sending SMS to recipient #{attr[:recipient]}"
 
     return true if Setting.get('import_mode')
@@ -90,7 +90,8 @@ class Channel::Driver::Sms::Twilio < Channel::Driver::Sms::Base
           AccountSid: attr['AccountSid'],
           From:       attr['From'],
           To:         attr['To'],
-        }
+          NumMedia:   attr['NumMedia'],
+        },
       }
     )
   end

@@ -1,9 +1,14 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
 RSpec.describe 'KnowledgeBase public answers', type: :request do
   include_context 'basic Knowledge Base'
+
+  before do
+    # Skip asset generation.
+    allow_any_instance_of(ActionView::Base).to receive(:compute_asset_path).and_return('')
+  end
 
   describe '#show' do
     context 'when visitor is a guest' do
@@ -32,6 +37,18 @@ RSpec.describe 'KnowledgeBase public answers', type: :request do
       it 'returns OK for draft answer' do
         get help_answer_path(locale_name, category, draft_answer)
         expect(response).to have_http_status :ok
+      end
+    end
+
+    context 'when knowledge base is inactive' do
+      before do
+        knowledge_base.update! active: false
+      end
+
+      # https://github.com/zammad/zammad/issues/3888
+      it 'returns route not found error' do
+        get help_answer_path(locale_name, category, published_answer)
+        expect(response.body).to include(CGI.escapeHTML("This page doesn't exist."))
       end
     end
   end

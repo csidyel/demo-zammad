@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class TriggersController < ApplicationController
   prepend_before_action :authenticate_and_authorize!
@@ -17,6 +17,10 @@ class TriggersController < ApplicationController
 
   def update
     model_update_render(Trigger, params)
+  end
+
+  def search
+    model_search_render(Trigger, params)
   end
 
   def destroy

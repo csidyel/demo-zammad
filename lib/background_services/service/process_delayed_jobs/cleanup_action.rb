@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class BackgroundServices
   class Service
@@ -20,7 +20,7 @@ class BackgroundServices
         end
 
         private_class_method def self.scope(after)
-          ::Delayed::Job.where('updated_at < ?', after).where.not(locked_at: nil)
+          ::Delayed::Job.where(updated_at: ...after).where.not(locked_at: nil)
         end
 
         def initialize(job)

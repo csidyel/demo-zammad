@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class SettingsController < ApplicationController
   prepend_before_action :authenticate_and_authorize!
@@ -26,37 +26,34 @@ class SettingsController < ApplicationController
 
   # PUT /settings/1
   def update
-    clean_params = keep_certain_attributes
-
-    name = Setting.find(params[:id]).name
-    Zammad::Restart.perform if %w[http_type fqdn].include?(name)
-
-    model_update_render(Setting, clean_params)
+    model_update_render(Setting, keep_certain_attributes)
   end
 
   # PUT /settings/image/:id
   def update_image
-    clean_params = keep_certain_attributes
+    logo_content = %i[logo logo_resize].each_with_object({}) do |key, memo|
+      data = params[key]
 
-    if !clean_params[:logo]
+      next if !data&.match? %r{^data:image}i
+
+      file = ImageHelper.data_url_attributes(data)
+
+      memo[key] = file[:content] if file
+    end
+
+    logo_timestamp = Service::SystemAssets::ProductLogo.store(logo_content[:logo], logo_content[:logo_resize])
+
+    if !logo_timestamp
       render json: {
         result:  'invalid',
-        message: __('Need logo param'),
+        message: __('The uploaded image could not be processed. Need data:image in logo or logo_resize param.'),
       }
       return
     end
 
     setting = Setting.lookup(name: 'product_logo')
-
-    if (logo_timestamp = Service::SystemAssets::ProductLogo.store(params[:logo], params[:logo_resize]))
-      setting.state = logo_timestamp
-      setting.save!
-    else
-      render json: {
-        result:  'invalid',
-        message: __('The uploaded image could not be processed. Need data:image in logo or logo_resize param.'),
-      }
-    end
+    setting.state = logo_timestamp
+    setting.save!
 
     render json: {
       result:   'ok',

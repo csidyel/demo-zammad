@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Ticket::Priority < ApplicationModel
   include HasDefaultModelUserRelations
@@ -9,7 +9,7 @@ class Ticket::Priority < ApplicationModel
   include HasSearchIndexBackend
 
   self.table_name = 'ticket_priorities'
-  validates :name, presence: true
+  validates :name, presence: true, uniqueness: { case_sensitive: false }
 
   after_create  :ensure_defaults
   after_update  :ensure_defaults

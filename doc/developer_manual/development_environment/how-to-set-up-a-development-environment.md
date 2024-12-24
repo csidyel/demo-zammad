@@ -55,11 +55,11 @@ For Linux and macOS:
 
 ```screen
 curl -sSL https://get.rvm.io | bash -s stable --rails
-rvm install ruby-3.1.3
-rvm --default use 3.1.3
+rvm install ruby-3.2.4
+rvm --default use 3.2.4
 ```
 
-## NVM, Node.js and Yarn
+## NVM, Node.js and pnpm
 
 We're using [NVM](https://github.com/nvm-sh/nvm) to manage all Node.js versions which are in use with Zammad.
 
@@ -68,13 +68,13 @@ Before executing the following snippet, please, make sure to look up the most re
 For Linux and macOS:
 
 ```screen
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
 nvm install node
-npm install -g yarn
+npm install -g pnpm
 
 # Then, in the zammad directory, install required modules:
 cd </path/to/zammad-develop>
-yarn install
+pnpm install
 ```
 
 ## Linting tools
@@ -154,12 +154,12 @@ $ bundle install
 
 ## Using HTTPS
 
-Zammad uses the gem `localhost` to automatically generate self-signed certificates. This will place `~./localhost/localhost.crt` and `~/.localhost/localhost.key` files if needed. Then you can use one of the following commands to start the development server:
+Zammad uses the gem `localhost` to automatically generate self-signed certificates. This will place `~/.local/state/localhost.rb/localhost.crt` and `~/.local/state/localhost.rb/localhost.key` files if needed. Then you can use one of the following commands to start the development server:
 
 ```sh
-$ VITE_RUBY_HOST=0.0.0.0 VITE_RUBY_HTTPS=true RAILS_ENV=development forego start -f Procfile.dev-https
+$ VITE_RUBY_HOST=0.0.0.0 VITE_RUBY_HTTPS=true RAILS_ENV=development forego start -r -f Procfile.dev-https
 # or
-$ yarn dev:https
+$ pnpm dev:https
 ```
 
 The application will be listening on [https://localhost:3000](https://localhost:3000).
@@ -184,9 +184,9 @@ $ docker run --rm -it -v /path/to/certs:/etc/letsencrypt certbot/dns-cloudflare 
 
 Where:
 
-* `/path/to/certs` is a local directory where your certificate files will be stored
-* `you@example.com` is your email address
-* `localhost.example.com` is the FQDN of your subdomain
+- `/path/to/certs` is a local directory where your certificate files will be stored
+- `you@example.com` is your email address
+- `localhost.example.com` is the FQDN of your subdomain
 
 When asked to deploy a DNS TXT record by certbot, open the DNS table of your domain. Add a TXT record with suggested name in form of `_acme-challenge.localhost.example.com.` and suggested random value. Save the record and wait some seconds for changes to propagate (this may depend on your DNS host).
 
@@ -195,11 +195,11 @@ Then, press Enter to continue the challenge process. If the certbot identifies y
 Next, backup your current self-signed certificate files (if they exist) and create symbolic links to the new ones:
 
 ```sh
-$ cd ~/.localhost
+$ cd ~/.local/state/localhost.rb
 $ mv localhost.crt localhost.crt.self-signed
 $ mv localhost.key localhost.key.self-signed
-$ ln -s /path/to/certs/live/localhost.example.com/cert.pem ~/.localhost/localhost.crt
-$ ln -s /path/to/certs/live/localhost.example.com/privkey.pem ~/.localhost/localhost.key
+$ ln -s /path/to/certs/live/localhost.example.com/cert.pem ~/.local/state/localhost.rb/localhost.crt
+$ ln -s /path/to/certs/live/localhost.example.com/privkey.pem ~/.local/state/localhost.rb/localhost.key
 ```
 
 You may need to adjust the paths depending on your subdomain name.
@@ -208,4 +208,4 @@ Next, add an A DNS record for your subdomain that points to your local IP. You c
 
 For example, if your local IP is `192.168.0.39` and your subdomain is `localhost.example.com`, add an A DNS record with the name of `localhost` and point it to `192.168.0.39`. This will allow you to access the app from within your local network only by using the proper FQDN: perfect for testing the app on mobile devices.
 
-Finally, start the development server with `yarn dev:https` command. You can now access the app via [https://localhost.example.com:3000](https://localhost.example.com:3000) and it should show up as a trusted site.
+Finally, start the development server with `pnpm dev:https` command. You can now access the app via [https://localhost.example.com:3000](https://localhost.example.com:3000) and it should show up as a trusted site.

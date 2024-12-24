@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Integration::LdapController < ApplicationController
   include Integration::ImportJobBase
@@ -7,6 +7,7 @@ class Integration::LdapController < ApplicationController
 
   EXCEPTIONS_SPECIAL_TREATMENT = {
     '48, Inappropriate Authentication' => {}, # workaround for issue #1114
+    '50, Insufficient Access Rights'   => { error: 'disallow-bind-anon' },
     '53, Unwilling to perform'         => { error: 'disallow-bind-anon' },
   }.freeze
 

@@ -1,15 +1,17 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { useNotifications } from '#shared/components/CommonNotifications/index.ts'
-import { ApplicationBuildChecksumDocument } from '#shared/graphql/queries/applicationBuildChecksum.api.ts'
-import { AppMaintenanceDocument } from '#shared/graphql/subscriptions/appMaintenance.api.ts'
-import { EnumAppMaintenanceType } from '#shared/graphql/types.ts'
 import { renderComponent } from '#tests/support/components/index.ts'
 import {
   type ExtendedIMockSubscription,
   mockGraphQLApi,
   mockGraphQLSubscription,
 } from '#tests/support/mock-graphql-api.ts'
+
+import { useNotifications } from '#shared/components/CommonNotifications/index.ts'
+import { ApplicationBuildChecksumDocument } from '#shared/graphql/queries/applicationBuildChecksum.api.ts'
+import { AppMaintenanceDocument } from '#shared/graphql/subscriptions/appMaintenance.api.ts'
+import { EnumAppMaintenanceType } from '#shared/graphql/types.ts'
+
 import useAppMaintenanceCheck from '../useAppMaintenanceCheck.ts'
 
 let subscriptionAppMaintenance: ExtendedIMockSubscription
@@ -103,6 +105,26 @@ describe('useAppMaintenanceCheck', () => {
 
     expect(notifications.value[0].message).toBe(
       'A newer version of the app is available. Please reload at your earliest.',
+    )
+  })
+
+  it('does not raise unhandled exceptions if the payload structure is wrong', async (context) => {
+    context.skipConsole = true
+
+    vi.spyOn(console, 'log').mockClear()
+
+    await subscriptionAppMaintenance.next({
+      data: {
+        pushMessages: {
+          title: null,
+          text: null,
+        },
+      },
+    })
+
+    expect(console.log).not.toHaveBeenCalledWith(
+      'Uncaught Exception',
+      new TypeError("Cannot read properties of undefined (reading 'type')"),
     )
   })
 })

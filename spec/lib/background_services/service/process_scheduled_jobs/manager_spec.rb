@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -48,6 +48,16 @@ RSpec.describe BackgroundServices::Service::ProcessScheduledJobs::Manager do
 
     it 'does not skip' do
       expect(instance.send(:skip?)).to be_falsey
+    end
+
+    context 'when shutdown is requested' do
+      before do
+        allow(BackgroundServices).to receive(:shutdown_requested).and_return(true)
+      end
+
+      it 'skips' do
+        expect(instance.send(:skip?)).to be_truthy
+      end
     end
 
     context 'when already running' do

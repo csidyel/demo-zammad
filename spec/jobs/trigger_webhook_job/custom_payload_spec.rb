@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -6,7 +6,7 @@ RSpec.describe TriggerWebhookJob::CustomPayload do
 
   # rubocop:disable Lint/InterpolationCheck
   describe '.generate' do
-    subject(:generate) { described_class.generate(record, { ticket:, article:, notification: }) }
+    subject(:generate) { described_class.generate(record, { ticket:, article:, notification:, config: }) }
 
     let(:ticket)  { create(:ticket) }
     let(:article) { create(:ticket_article, body: "Text with\nnew line.") }
@@ -19,6 +19,7 @@ RSpec.describe TriggerWebhookJob::CustomPayload do
       }
     end
     let(:notification) { TriggerWebhookJob::CustomPayload::Track::Notification.generate({ ticket:, article: }, { event: }) }
+    let(:config)       { TriggerWebhookJob::CustomPayload::Track::Config.generate({ ticket:, article: }, {}) }
 
     context 'when the payload is empty' do
       let(:record)    { {}.to_json }
@@ -111,9 +112,18 @@ RSpec.describe TriggerWebhookJob::CustomPayload do
       end
     end
 
+    context 'when the placeholder contains valid object and invalid method' do
+      let(:record) { { 'ticket' => '#{ticket.1_article}' }.to_json }
+      let(:json_data) { { 'ticket' => '#{ticket.1_article / no such method}' } }
+
+      it 'returns the placeholder reporting "no such method"' do
+        expect(generate).to eq(json_data)
+      end
+    end
+
     context 'when the placeholder contains valid object and method' do
       let(:record) { { 'ticket.id' => '#{ticket.id}' }.to_json }
-      let(:json_data) { { 'ticket.id' => ticket.id.to_s } }
+      let(:json_data) { { 'ticket.id' => ticket.id } }
 
       it 'returns the determined value' do
         expect(generate).to eq(json_data)
@@ -159,10 +169,20 @@ RSpec.describe TriggerWebhookJob::CustomPayload do
     end
 
     context 'when the placeholder contains multiple attributes' do
-      let(:record) { { 'my_field' => '#{ticket.id} // #{ticket.group.name}' }.to_json }
+      let(:record) do
+        {
+          'my_field'  => 'Test #{ticket.id} // #{ticket.group.name} Test',
+          'my_field2' => '#{ticket.id} // #{ticket.group.name} Test',
+          'my_field3' => '#{ticket.id}',
+          'my_field4' => '#{ticket.group.name}',
+        }.to_json
+      end
       let(:json_data) do
         {
-          'my_field' => "#{ticket.id} // #{ticket.group.name}",
+          'my_field'  => "Test #{ticket.id} // #{ticket.group.name} Test",
+          'my_field2' => "#{ticket.id} // #{ticket.group.name} Test",
+          'my_field3' => ticket.id,
+          'my_field4' => ticket.group.name.to_s,
         }
       end
 
@@ -175,6 +195,7 @@ RSpec.describe TriggerWebhookJob::CustomPayload do
       let(:record) do
         {
           'current_user' => '#{current_user.fullname}',
+          'fqdn'         => '#{config.fqdn}',
           'ticket'       => {
             'id'      => '#{ticket.id}',
             'owner'   => '#{ticket.owner.fullname}',
@@ -184,7 +205,8 @@ RSpec.describe TriggerWebhookJob::CustomPayload do
               'created_at'  => '#{article.created_at}',
               'subject'     => '#{article.subject}',
               'body'        => '#{article.body}',
-              'attachments' => '#{article.attachments}'
+              'attachments' => '#{article.attachments}',
+              'internal'    => '#{article.internal}',
             }
           }
         }.to_json
@@ -192,16 +214,18 @@ RSpec.describe TriggerWebhookJob::CustomPayload do
       let(:json_data) do
         {
           'current_user' => '#{current_user / no such object}',
+          'fqdn'         => Setting.get('fqdn'),
           'ticket'       => {
-            'id'      => ticket.id.to_s,
+            'id'      => ticket.id,
             'owner'   => ticket.owner.fullname.to_s,
             'group'   => ticket.group.name.to_s,
             'article' => {
-              'id'          => article.id.to_s,
+              'id'          => article.id,
               'created_at'  => article.created_at.to_s,
               'subject'     => article.subject.to_s,
               'body'        => article.body.to_s,
               'attachments' => '#{article.attachments / no such method}',
+              'internal'    => article.internal
             }
           }
         }
@@ -219,6 +243,76 @@ RSpec.describe TriggerWebhookJob::CustomPayload do
 
       it 'returns the determined value' do
         expect(generate).to eq(json_data)
+      end
+    end
+
+    context 'when object attributes are used in the placeholder', db_strategy: :reset do
+      let(:ticket) { create(:ticket, object_manager_attribute_name => object_manager_attribute_value) }
+
+      before do
+        create_object_manager_attribute
+        ObjectManager::Attribute.migration_execute
+      end
+
+      shared_examples 'check different usage' do
+        context 'when used in string context' do
+          let(:record) do
+            {
+              "ticket.#{object_manager_attribute_name}" => "Test \#{ticket.#{object_manager_attribute_name}}"
+            }.to_json
+          end
+          let(:json_data) do
+            {
+              "ticket.#{object_manager_attribute_name}" => "Test #{object_manager_attribute_value}"
+            }
+          end
+
+          it 'returns the determined value' do
+            expect(generate).to eq(json_data)
+          end
+        end
+
+        context 'when used in direct context' do
+          let(:record) do
+            {
+              "ticket.#{object_manager_attribute_name}" => "\#{ticket.#{object_manager_attribute_name}}"
+            }.to_json
+          end
+          let(:json_data) do
+            {
+              "ticket.#{object_manager_attribute_name}" => object_manager_attribute_value
+            }
+          end
+
+          it 'returns the determined value' do
+            expect(generate).to eq(json_data)
+          end
+        end
+      end
+
+      context 'when multiselect is used inside the ticket' do
+        let(:object_manager_attribute_name)  { 'multiselect_keys_001' }
+        let(:object_manager_attribute_value) { %w[key_1 key_3] }
+        let(:create_object_manager_attribute) do
+          create(:object_manager_attribute_multiselect, name: object_manager_attribute_name)
+        end
+
+        include_examples 'check different usage'
+      end
+
+      context 'when external data source is used inside the ticket', db_adapter: :postgresql do
+        let(:object_manager_attribute_name)  { 'autocompletion_ajax_external_data_source' }
+        let(:object_manager_attribute_value) do
+          {
+            'value' => 123,
+            'label' => 'Example',
+          }
+        end
+        let(:create_object_manager_attribute) do
+          create(:object_manager_attribute_autocompletion_ajax_external_data_source, name: object_manager_attribute_name)
+        end
+
+        include_examples 'check different usage'
       end
     end
 

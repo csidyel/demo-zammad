@@ -1,4 +1,6 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { EnumTicketArticleSenderName } from '#shared/graphql/types.ts'
 
 import type {
   TicketArticleAction,
@@ -13,23 +15,27 @@ const actionPlugin: TicketArticleActionPlugin = {
     const sender = article.sender?.name
     const type = article.type?.name
 
-    if (sender !== 'Customer' || type !== 'telegram personal-message') return []
+    if (
+      sender !== EnumTicketArticleSenderName.Customer ||
+      type !== 'telegram personal-message'
+    )
+      return []
 
     const action: TicketArticleAction = {
-      apps: ['mobile'],
+      apps: ['mobile', 'desktop'],
       label: __('Reply'),
       name: 'telegram personal-message',
-      icon: { mobile: 'mobile-reply' },
+      icon: 'reply',
       view: {
         agent: ['change'],
       },
-      perform(ticket, article, { openReplyDialog }) {
+      perform(ticket, article, { openReplyForm }) {
         const articleData = {
           articleType: type,
           inReplyTo: article.messageId,
         }
 
-        openReplyDialog(articleData)
+        openReplyForm(articleData)
       },
     }
     return [action]
@@ -41,20 +47,22 @@ const actionPlugin: TicketArticleActionPlugin = {
     if (descriptionType !== 'telegram personal-message') return []
 
     const type: TicketArticleType = {
-      apps: ['mobile'],
+      apps: ['mobile', 'desktop'],
       value: 'telegram personal-message',
       label: __('Telegram'),
-      icon: {
-        mobile: 'mobile-telegram',
-      },
+      buttonLabel: __('Add message'),
+      icon: 'telegram',
       view: {
         agent: ['change'],
       },
-      attributes: ['attachments'],
       internal: false,
       contentType: 'text/plain',
-      validation: {
-        body: 'length:1,10000',
+      fields: {
+        body: {
+          required: true,
+          validation: 'length:1,10000',
+        },
+        attachments: {},
       },
       editorMeta: {
         footer: {

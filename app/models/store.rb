@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Store < ApplicationModel
   PREFERENCES_SIZE_MAX = 2400
@@ -59,7 +59,7 @@ returns
   def self.list(data)
     # search
     store_object_id = Store::Object.lookup(name: data[:object])
-    Store.where(store_object_id: store_object_id, o_id: data[:o_id].to_i)
+    Store.where(store_object_id: store_object_id, o_id: data[:o_id])
                   .reorder(created_at: :asc)
 
   end
@@ -162,33 +162,6 @@ returns
     image_resize(file.content, 1800)
   end
 
-=begin
-
-get content of file
-
-  store = Store.find(store_id)
-  location_of_file = store.save_to_file
-
-returns
-
-  location_of_file
-
-=end
-
-  def save_to_file(path = nil)
-    content
-    file = Store::File.find_by(id: store_file_id)
-    if !file
-      raise "No such file #{store_file_id}!"
-    end
-
-    if !path
-      path = Rails.root.join('tmp', filename)
-    end
-    ::File.binwrite(path, file.content)
-    path
-  end
-
   def attributes_for_display
     slice :id, :store_file_id, :filename, :size, :preferences
   end
@@ -197,6 +170,10 @@ returns
 
   def self.resizable_mime?(input)
     input.match? RESIZABLE_MIME_REGEXP
+  end
+
+  def inline?
+    preferences['Content-Disposition'] == 'inline'
   end
 
   private
@@ -248,9 +225,11 @@ returns
       ratio = image.width / width
       return if image.height / ratio <= 6
 
+      original_format = image.format
+
       image.resize!(width, :auto)
       temp_file_resize = ::Tempfile.new.path
-      image.save(temp_file_resize)
+      image.save(temp_file_resize, format: original_format)
       ::File.binread(temp_file_resize)
     end
   end

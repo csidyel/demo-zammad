@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Sessions::Event
   include ApplicationLib
@@ -22,6 +22,8 @@ class Sessions::Event
       Rails.logger.error e.backtrace
       { event: 'error', data: { error: e.message, payload: params[:payload] } }
     end
+  ensure
+    UserInfo.current_user_id = nil
+    ActiveSupport::CurrentAttributes.clear_all
   end
-
 end

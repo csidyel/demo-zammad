@@ -1,10 +1,10 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 require 'system/examples/pagination_examples'
 
 RSpec.describe 'Manage > Report Profiles', type: :system do
-  context 'ajax pagination' do
+  context 'when ajax pagination' do
     include_examples 'pagination', model: :report_profile, klass: Report::Profile, path: 'manage/report_profiles'
   end
 
@@ -21,7 +21,7 @@ RSpec.describe 'Manage > Report Profiles', type: :system do
           select profile_active, from: 'active'
           select 'open', from: 'condition::ticket.state_id::value'
 
-          click_button
+          click_on 'Submit'
         end
       end
     end
@@ -33,7 +33,7 @@ RSpec.describe 'Manage > Report Profiles', type: :system do
       it 'creates an inactive profile report' do
         within :active_content do
           within '.page-content' do
-            expect(page).to have_selector('tr.item.is-inactive')
+            expect(page).to have_css('tr.item.is-inactive')
               .and have_text(name)
           end
         end

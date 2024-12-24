@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -449,6 +449,22 @@ RSpec.describe SecureMailing::PGP, :aggregate_failures do
               expect(mail['x-zammad-article-preferences'][:security][:encryption][:comment]).to eq 'There was an unknown PGP error. This PGP email was encrypted with a potentially unknown encryption algorithm.'
             end
           end
+        end
+
+        context 'when recipient is bcc only' do
+          let(:mail) do
+            create(:pgp_key, :with_private, fixture: 'zammad@localhost')
+
+            # Import a mail which was created with bcc recipient only.
+            pgp_mail = Rails.root.join('spec/fixtures/files/pgp/mail/mail-decrypt-bcc.box').read
+
+            mail = Channel::EmailParser.new.parse(pgp_mail)
+            SecureMailing.incoming(mail)
+
+            mail
+          end
+
+          it_behaves_like 'decrypting message content'
         end
       end
 

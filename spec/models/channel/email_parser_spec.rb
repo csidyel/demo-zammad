@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -23,6 +23,38 @@ RSpec.describe Channel::EmailParser, type: :model do
       end
     end
 
+    describe 'when mail does not contain any sender specification' do
+      subject(:instance) { described_class.new }
+
+      let(:raw_mail) { <<~RAW.chomp }
+        To: baz@qux.net
+        Subject: Foo
+
+        Lorem ipsum dolor
+      RAW
+
+      it 'raises error even if exception is false' do
+        expect { described_class.new.parse(raw_mail) }
+          .to raise_error(Exceptions::MissingAttribute, 'Could not parse any sender attribute from the email. Checked fields: From, Reply-To, Return-Path, Sender')
+      end
+    end
+
+    describe 'when mail does not contain any sender specification with disabled missing attribute exceptions' do
+      subject(:instance) { described_class.new }
+
+      let(:raw_mail) { <<~RAW.chomp }
+        To: baz@qux.net
+        Subject: Foo
+
+        Lorem ipsum dolor
+      RAW
+
+      it 'prevents raising an error' do
+        expect { described_class.new.parse(raw_mail, allow_missing_attribute_exceptions: false) }
+          .not_to raise_error
+      end
+    end
+
     # To write new .yml files for emails you can use the following code:
     #
     # File.write('test/data/mail/mailXXX.yml', Channel::EmailParser.new.parse(File.read('test/data/mail/mailXXX.box')).slice(:from, :from_email, :from_display_name, :to, :cc, :subject, :body, :content_type, :'reply-to', :attachments).to_yaml)
@@ -37,7 +69,7 @@ RSpec.describe Channel::EmailParser, type: :model do
       end
 
       it 'ensures tests were dynamically generated' do
-        expect(tests.count).to eq(108)
+        expect(tests.count).to eq(109)
       end
     end
 
@@ -122,6 +154,27 @@ RSpec.describe Channel::EmailParser, type: :model do
         expect(inline_image_attachment[:preferences]['Content-ID']).to eq cid
       end
     end
+
+    describe 'calendar attachment without a filename' do
+      let(:store) { create(:store, :ics).tap { |store| store.filename = '' } }
+
+      it 'gets fallback filename with correct file extension (#5427)' do
+        mail = Channel::EmailBuild.build(
+          from:         'sender@example.com',
+          to:           'recipient@example.com',
+          body:         'foobar',
+          content_type: 'text/html',
+          attachments:  [store],
+        )
+
+        parser = described_class.new
+        data = parser.parse(mail.to_s)
+
+        calendar_attachment = data[:attachments].last
+
+        expect(calendar_attachment[:filename]).to eq('calendar.ics')
+      end
+    end
   end
 
   describe '#process' do
@@ -154,8 +207,8 @@ RSpec.describe Channel::EmailParser, type: :model do
             From: john.doe@xn--cme-pla.corp
             To: jane.doe@xn--cme-pla.corp
           RAW
-          expect(User).to be_exist(login: 'john.doe@äcme.corp')
-            .and(be_exist(email: 'jane.doe@äcme.corp'))
+          expect(User).to exist(login: 'john.doe@äcme.corp')
+            .and(exist(email: 'jane.doe@äcme.corp'))
         end
       end
 
@@ -204,6 +257,22 @@ RSpec.describe Channel::EmailParser, type: :model do
               .to change { customer.reload.firstname }.from('').to('Max')
               .and change { customer.reload.lastname }.from('').to('Smith')
           end
+        end
+      end
+
+      describe 'handle database failures' do
+        subject(:instance) { described_class.new }
+
+        let(:mail_data)    { attributes_for(:failed_email)[:data] }
+
+        before do
+          allow(instance).to receive(:process_with_timeout).and_raise('error')
+          allow_any_instance_of(FailedEmail).to receive(:valid?).and_return(false)
+        end
+
+        it 'raises error even if exception is false' do
+          expect { instance.process({}, mail_data, false) }
+            .to raise_error(ActiveRecord::ActiveRecordError)
         end
       end
     end
@@ -303,7 +372,7 @@ RSpec.describe Channel::EmailParser, type: :model do
           it 'sets reply-to as from value' do
             described_class.new.process({}, raw_mail)
 
-            expect(Ticket.last.articles.first.from).to eq('jane.doe@example.corp')
+            expect(Ticket.last.articles.reload.first.from).to eq('jane.doe@example.corp')
           end
 
           context 'with broken reply-to value' do
@@ -312,7 +381,7 @@ RSpec.describe Channel::EmailParser, type: :model do
             it 'ignores reply-to and keeps from' do
               described_class.new.process({}, raw_mail)
 
-              expect(Ticket.last.articles.first.from).to eq('foo@bar.com')
+              expect(Ticket.last.articles.reload.first.from).to eq('foo@bar.com')
             end
           end
         end
@@ -323,7 +392,7 @@ RSpec.describe Channel::EmailParser, type: :model do
           it 'sets article.sender to "Customer"' do
             described_class.new.process({}, raw_mail)
 
-            expect(Ticket.last.articles.first.sender.name).to eq('Customer')
+            expect(Ticket.last.articles.reload.first.sender.name).to eq('Customer')
           end
 
           it 'sets ticket.state to "new"' do
@@ -337,7 +406,7 @@ RSpec.describe Channel::EmailParser, type: :model do
           it 'sets article.sender to "Customer"' do
             described_class.new.process({}, raw_mail)
 
-            expect(Ticket.last.articles.first.sender.name).to eq('Customer')
+            expect(Ticket.last.articles.reload.first.sender.name).to eq('Customer')
           end
         end
       end
@@ -584,7 +653,7 @@ RSpec.describe Channel::EmailParser, type: :model do
         shared_examples 'adds message to ticket' do
           it 'adds message to ticket' do
             expect { described_class.new.process({}, raw_mail) }
-              .to change { ticket.articles.length }.by(1)
+              .to change { ticket.articles.reload.length }.by(1)
           end
         end
 
@@ -592,12 +661,11 @@ RSpec.describe Channel::EmailParser, type: :model do
           it 'creates a new ticket' do
             expect { described_class.new.process({}, raw_mail) }
               .to change(Ticket, :count).by(1)
-              .and not_change { ticket.articles.length }
+              .and not_change { ticket.articles.reload.length }
           end
         end
 
-        context 'when not explicitly configured to search anywhere' do
-          before { Setting.set('postmaster_follow_up_search_in', nil) }
+        context 'when configured to search subject_references' do
 
           context 'when subject contains ticket reference' do
             include_context 'ticket reference in subject'
@@ -636,12 +704,6 @@ RSpec.describe Channel::EmailParser, type: :model do
 
               context 'and ticket is merged' do
                 before { ticket.update(state: Ticket::State.find_by(name: 'merged')) }
-
-                include_examples 'creates a new ticket'
-              end
-
-              context 'and ticket is removed' do
-                before { ticket.update(state: Ticket::State.find_by(name: 'removed')) }
 
                 include_examples 'creates a new ticket'
               end
@@ -963,8 +1025,8 @@ RSpec.describe Channel::EmailParser, type: :model do
 
               it 'adds message to more recently created ticket' do
                 expect { described_class.new.process({}, raw_mail) }
-                  .to change { newer_ticket.articles.count }.by(1)
-                  .and not_change { ticket.articles.count }
+                  .to change { newer_ticket.articles.reload.count }.by(1)
+                  .and not_change { ticket.articles.reload.count }
               end
             end
 
@@ -1176,7 +1238,7 @@ RSpec.describe Channel::EmailParser, type: :model do
 
           expect { perform_enqueued_jobs }
             .to not_change { Ticket.last.customer.preferences[:signature_detection] }.from(nil)
-            .and not_change { Ticket.last.articles.first.preferences[:signature_detection] }.from(nil)
+            .and not_change { Ticket.last.articles.reload.first.preferences[:signature_detection] }.from(nil)
         end
       end
 
@@ -1200,7 +1262,7 @@ RSpec.describe Channel::EmailParser, type: :model do
           described_class.new.process({}, raw_mail)
 
           expect { perform_enqueued_jobs }
-            .to change { Ticket.last.articles.first.preferences[:signature_detection] }.to(20)
+            .to change { Ticket.last.articles.reload.first.preferences[:signature_detection] }.to(20)
         end
       end
     end
@@ -1333,7 +1395,7 @@ RSpec.describe Channel::EmailParser, type: :model do
         end
 
         it 'adds Article to existing Ticket' do
-          expect { described_class.new.process({}, raw_mail) }.to change { ticket.reload.articles.count }
+          expect { described_class.new.process({}, raw_mail) }.to change { ticket.reload.articles.reload.count }
         end
 
         context 'key insensitive sender address' do
@@ -1341,7 +1403,7 @@ RSpec.describe Channel::EmailParser, type: :model do
           let(:raw_mail) { super().gsub('example@service-now.com', 'Example@Service-Now.com') }
 
           it 'adds Article to existing Ticket' do
-            expect { described_class.new.process({}, raw_mail) }.to change { ticket.reload.articles.count }
+            expect { described_class.new.process({}, raw_mail) }.to change { ticket.reload.articles.reload.count }
           end
         end
       end
@@ -1377,7 +1439,7 @@ RSpec.describe Channel::EmailParser, type: :model do
         end
 
         it 'adds Article to existing Ticket' do
-          expect { described_class.new.process({}, raw_mail) }.to change { ticket.reload.articles.count }
+          expect { described_class.new.process({}, raw_mail) }.to change { ticket.reload.articles.reload.count }
         end
 
         context 'key insensitive sender address' do
@@ -1385,7 +1447,7 @@ RSpec.describe Channel::EmailParser, type: :model do
           let(:raw_mail) { super().gsub('example@service-now.com', 'Example@Service-Now.com') }
 
           it 'adds Article to existing Ticket' do
-            expect { described_class.new.process({}, raw_mail) }.to change { ticket.reload.articles.count }
+            expect { described_class.new.process({}, raw_mail) }.to change { ticket.reload.articles.reload.count }
           end
         end
       end
@@ -1453,7 +1515,7 @@ RSpec.describe Channel::EmailParser, type: :model do
 
           it 'finds the article referenced in the bounce message headers, then adds the bounce message to its ticket' do
             expect { described_class.new.process({}, raw_mail) }
-              .to change { ticket.articles.count }.by(1)
+              .to change { ticket.articles.reload.count }.by(1)
           end
 
           it 'does not re-open the ticket' do
@@ -1475,7 +1537,7 @@ RSpec.describe Channel::EmailParser, type: :model do
 
           it 'finds the article referenced in the bounce message headers, then adds the bounce message to its ticket' do
             expect { described_class.new.process({}, raw_mail) }
-              .to change { ticket.articles.count }.by(1)
+              .to change { ticket.articles.reload.count }.by(1)
           end
 
           it 'does not alter the ticket state' do
@@ -1495,7 +1557,7 @@ RSpec.describe Channel::EmailParser, type: :model do
 
           it 'finds the article referenced in the bounce message headers, then adds the bounce message to its ticket' do
             expect { described_class.new.process({}, raw_mail) }
-              .to change { ticket.articles.count }.by(1)
+              .to change { ticket.articles.reload.count }.by(1)
           end
 
           it 'does not alter the ticket state' do
@@ -1510,7 +1572,7 @@ RSpec.describe Channel::EmailParser, type: :model do
 
         it 'finds the article referenced in the bounce message headers, then adds the bounce message to its ticket' do
           expect { described_class.new.process({}, raw_mail) }
-            .to change { ticket.articles.count }.by(1)
+            .to change { ticket.articles.reload.count }.by(1)
         end
 
         it 'does not alter the ticket state' do
@@ -1587,6 +1649,25 @@ RSpec.describe Channel::EmailParser, type: :model do
         end
       end
     end
+
+    context 'when an unprocessable mail is received' do
+      let(:parser) { described_class.new }
+      let(:mail)   { attributes_for(:failed_email)[:data] }
+
+      before do
+        allow(parser).to receive(:_process).and_raise(Timeout::Error)
+      end
+
+      it 'saves the unprocessable email' do
+        begin
+          parser.process({}, mail)
+        rescue RuntimeError
+          # expected
+        end
+
+        expect(FailedEmail).to be_exist
+      end
+    end
   end
 
   describe '#compose_postmaster_reply' do
@@ -1604,7 +1685,7 @@ RSpec.describe Channel::EmailParser, type: :model do
 
     context 'for English locale (en)' do
       include_examples 'postmaster reply' do
-        let(:locale) { 'en' }
+        let(:locale)           { 'en' }
         let(:expected_subject) { '[undeliverable] Message too large' }
         let(:expected_body) do
           body = <<~BODY

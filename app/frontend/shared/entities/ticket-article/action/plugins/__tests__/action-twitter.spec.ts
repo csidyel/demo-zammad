@@ -1,15 +1,22 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
+import { nextTick } from 'vue'
+
+import { mockApplicationConfig } from '#tests/support/mock-applicationConfig.ts'
+import { setupView } from '#tests/support/mock-user.ts'
+import { mockUserCurrent } from '#tests/support/mock-userCurrent.ts'
+
+import type { FormSubmitData } from '#shared/components/Form/types.ts'
 import type {
   TicketArticle,
   TicketById,
+  TicketFormData,
 } from '#shared/entities/ticket/types.ts'
+import { EnumTicketArticleSenderName } from '#shared/graphql/types.ts'
 import { convertToGraphQLId } from '#shared/graphql/utils.ts'
-import { mockAccount } from '#tests/support/mock-account.ts'
-import { mockApplicationConfig } from '#tests/support/mock-applicationConfig.ts'
-import { setupView } from '#tests/support/mock-user.ts'
-import { nextTick } from 'vue'
+
 import { createArticleTypes } from '../index.ts'
+
 import {
   createEligibleTicketArticleReplyData,
   createTestArticleActions,
@@ -26,7 +33,7 @@ const getArticleActionData = (
   const action = actions.find((action) => action.name === name)!
   const options = {
     formId: '',
-    openReplyDialog: vi.fn(),
+    openReplyForm: vi.fn(),
     getNewArticleBody: vi.fn(() => ''),
   }
   return {
@@ -70,7 +77,7 @@ describe('twitter article action', () => {
         },
       )
       action.perform!(ticket, article, options)
-      expect(options.openReplyDialog).toHaveBeenCalledWith(
+      expect(options.openReplyForm).toHaveBeenCalledWith(
         expect.objectContaining({
           body: 'from ',
         }),
@@ -85,7 +92,7 @@ describe('twitter article action', () => {
         },
       )
       action.perform!(ticket, article, options)
-      expect(options.openReplyDialog).toHaveBeenCalledWith(
+      expect(options.openReplyForm).toHaveBeenCalledWith(
         expect.objectContaining({
           body: 'from to ',
         }),
@@ -103,7 +110,7 @@ describe('twitter article action', () => {
         },
       )
       action.perform!(ticket, article, options)
-      expect(options.openReplyDialog).toHaveBeenCalledWith(
+      expect(options.openReplyForm).toHaveBeenCalledWith(
         expect.objectContaining({
           body: 'to ',
         }),
@@ -121,7 +128,7 @@ describe('twitter article action', () => {
       )
       options.getNewArticleBody.mockReturnValue('already inserted body')
       action.perform!(ticket, article, options)
-      expect(options.openReplyDialog).toHaveBeenCalledWith(
+      expect(options.openReplyForm).toHaveBeenCalledWith(
         expect.objectContaining({
           body: 'from already inserted body ',
         }),
@@ -136,11 +143,11 @@ describe('twitter article action', () => {
         (ticket, article) => {
           article.from = { raw: 'res-from' }
           article.to = { raw: 'res-to' }
-          article.sender = { name: 'Customer' }
+          article.sender = { name: EnumTicketArticleSenderName.Customer }
         },
       )
       action.perform!(ticket, article, options)
-      expect(options.openReplyDialog).toHaveBeenCalledWith(
+      expect(options.openReplyForm).toHaveBeenCalledWith(
         expect.objectContaining({
           to: ['res-from'],
         }),
@@ -152,11 +159,11 @@ describe('twitter article action', () => {
         (ticket, article) => {
           article.from = { raw: 'res-from' }
           article.to = { raw: 'res-to' }
-          article.sender = { name: 'Agent' }
+          article.sender = { name: EnumTicketArticleSenderName.Agent }
         },
       )
       action.perform!(ticket, article, options)
-      expect(options.openReplyDialog).toHaveBeenCalledWith(
+      expect(options.openReplyForm).toHaveBeenCalledWith(
         expect.objectContaining({
           to: ['res-to'],
         }),
@@ -175,7 +182,7 @@ describe('twitter article action', () => {
         },
       )
       action.perform!(ticket, article, options)
-      expect(options.openReplyDialog).toHaveBeenCalledWith(
+      expect(options.openReplyForm).toHaveBeenCalledWith(
         expect.objectContaining({
           to: ['name'],
         }),
@@ -192,7 +199,7 @@ describe('twitter article action', () => {
         },
       )
       action.perform!(ticket, article, options)
-      expect(options.openReplyDialog).toHaveBeenCalledWith(
+      expect(options.openReplyForm).toHaveBeenCalledWith(
         expect.objectContaining({
           to: ['123'],
         }),
@@ -212,14 +219,14 @@ describe('twitter article action', () => {
         const result = action.updateForm!({
           article: { body: 'text' },
           formId: '1',
-        }) as any
-        expect(result.article.body).toBe('text')
+        } as unknown as FormSubmitData<TicketFormData>) as any
+        expect(result.article?.body).toBe('text')
       })
       it('adds initials, if config is not disabled', async () => {
         mockApplicationConfig({
           ui_ticket_zoom_article_twitter_initials: true,
         })
-        mockAccount({
+        mockUserCurrent({
           firstname: 'John',
           lastname: 'Doe',
         })
@@ -228,14 +235,14 @@ describe('twitter article action', () => {
         const result = action.updateForm!({
           article: { body: 'text' },
           formId: '1',
-        }) as any
+        } as unknown as FormSubmitData<TicketFormData>) as any
         expect(result.article.body).toBe('text\n/JD')
       })
       it('skips body, if article was not added to the ticket', async () => {
         mockApplicationConfig({
           ui_ticket_zoom_article_twitter_initials: true,
         })
-        mockAccount({
+        mockUserCurrent({
           firstname: 'John',
           lastname: 'Doe',
         })
@@ -243,7 +250,7 @@ describe('twitter article action', () => {
         const { action } = getArticleTypeActionData(name)
         const result = action.updateForm!({
           formId: '1',
-        }) as any
+        } as unknown as FormSubmitData<TicketFormData>) as any
         expect(result.article).toBeUndefined()
       })
     },

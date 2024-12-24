@@ -14,20 +14,35 @@ $ overcommit --install
 This will execute several checks on the changed files whenever you commit.
 Feel free to add suggestion for additional interesting commit hooks. 🚀
 
-Linters can also be ran manually:
+Linters can also be run manually:
 
 ```screen
 # Robocop
 $ bundle exec rubocop --parallel
 
-# ESLint
-$ yarn lint
+# Type checks, ESLint & Stylelint
+$ pnpm lint
 
-# Stylelint
-$ yarn lint:css
+# Type checks, ESLint & Stylelint with automatic fixing
+$ pnpm lint:fix
+
+# Just type checking
+$ pnpm lint:ts
+
+# Just ESLint checks
+$ pnpm lint:js
+
+# Just ESLint checks with automatic fixing
+$ pnpm lint:js:fix
+
+# Just Stylelint checks
+$ pnpm lint:css
+
+# Just Stylelint checks with automatic fixing
+$ pnpm lint:css:fix
 
 # Coffeelint
-$ coffeelint --rules ./.coffeelint/rules/* app/
+$ coffeelint --rules ./.dev/coffeelint/rules/* app/
 ```
 
 ### Wording
@@ -100,6 +115,56 @@ lowerCamelCase_ e.g. fileSize
 UpperCamelCase: e.g. CommonDateTime.vue
 
 ##### Typescript-Files / Other
+
+##### Vue Template Refs:
+
+- Use SnakeCase for template ref f.g `ref="resize-line"`
+- Component instance variables should contain `${ComponentName}Instance`
+- Prefer to use `useTemplateRef` over `ref` for template references
+
+###### useTemplateRef
+[docs](https://vuejs.org/api/composition-api-helpers.html#usetemplateref)
+
+```vue 
+<script setup lang="ts">
+import { useTemplateRef } from 'vue'
+  
+const buttonInstance =  useTemplateRef('button')
+const resizeLineInstance = useTemplateRef('resize-line')
+  
+const listElement = useTemplateRef('list')
+</script>
+
+<template>
+  <CommonButton ref="button"/>
+  <ResizeLine ref="resize-line"/>
+  
+  <ul ref="list"/>
+</template>
+```
+
+###### ref
+[docs](https://vuejs.org/api/reactivity-core.html#ref)
+
+```vue
+<script>
+  import { ref } from 'vue'
+
+  export const usePopoverTarget = () => {
+    const popoverTarget = ref()
+    return { popoverTarget }
+  }
+</script>
+
+<script setup lang="ts">
+  const { popoverTarget } = usePopoverTarget()
+
+</script>
+
+<template>
+  <button ref="popoverTarget"/>
+</template>
+```
 
 TBD
 

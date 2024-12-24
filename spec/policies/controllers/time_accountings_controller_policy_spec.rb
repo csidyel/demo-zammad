@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -74,5 +74,15 @@ describe Controllers::TimeAccountingsControllerPolicy do
     let(:user) { create(:admin) }
 
     it { is_expected.to permit_actions(:index, :show, :create, :update, :destroy) }
+  end
+
+  context 'with customer who has access to ticket' do
+    let(:user) { create(:customer) }
+
+    before do
+      ticket.update! customer: user
+    end
+
+    it { is_expected.to forbid_actions(:index, :show, :create, :update, :destroy) }
   end
 end

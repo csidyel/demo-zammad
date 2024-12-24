@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class WebsocketServer
 
@@ -14,6 +14,9 @@ class WebsocketServer
     #   -v | --verbose => debug
 
     Rails.configuration.interface = 'websocket'
+
+    AppVersion.start_maintenance_thread(process_name: 'websocket-server')
+
     EventMachine.run do
       EventMachine::WebSocket.start(host: @options[:b], port: @options[:p], secure: @options[:s], tls_options: @options[:tls_options]) do |ws|
 
@@ -118,8 +121,6 @@ class WebsocketServer
     else
       log 'error', "unknown message '#{data.inspect}'", client_id
     end
-  ensure
-    ActiveSupport::CurrentAttributes.clear_all
   end
 
   def self.websocket_send(client_id, data)

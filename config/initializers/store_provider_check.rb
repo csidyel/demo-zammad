@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 Rails.application.config.after_initialize do
   next if !Rails.const_defined?(:Server)
@@ -11,6 +11,7 @@ Rails.application.config.after_initialize do
     adapter = "Store::Provider::#{storage_provider}".constantize
     adapter.ping!
   rescue Store::Provider::S3::Error => e
+    adapter.reset
     warn e.message
     warn "There was an error trying to use storage provider '#{storage_provider}'."
     warn 'Please check the storage provider configuration.'

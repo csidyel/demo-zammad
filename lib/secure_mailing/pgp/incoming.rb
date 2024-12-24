@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class SecureMailing::PGP::Incoming < SecureMailing::Backend::HandlerIncoming
   attr_accessor :mime_type, :content_type_parameters
@@ -8,7 +8,7 @@ class SecureMailing::PGP::Incoming < SecureMailing::Backend::HandlerIncoming
   SIGNATURE_CONTENT_TYPE      = 'application/pgp-signature'.freeze
 
   def initialize(mail)
-    super(mail)
+    super
 
     @mime_type = mail[:mail_instance].mime_type
     @content_type_parameters = mail[:mail_instance].content_type_parameters
@@ -178,8 +178,8 @@ class SecureMailing::PGP::Incoming < SecureMailing::Backend::HandlerIncoming
 
     decrypted_body = result[:stdout]
 
-    # If we're not getting a content type header, we need to add a newline, otherwise it's fucked up.
-    if !decrypted_body.starts_with?('Content-Type:')
+    # If we're not getting a content header, we need to add a newline, otherwise it's fucked up.
+    if !decrypted_body.starts_with?(%r{Content-\w+:})
       decrypted_body = "\n#{decrypted_body}"
     end
 
@@ -287,14 +287,11 @@ class SecureMailing::PGP::Incoming < SecureMailing::Backend::HandlerIncoming
 
   def decrypt_keys
     @decrypt_keys ||= begin
-      keys = []
-      mail[:mail_instance].to.each { |to| keys += pgp_keys(to, :encryption, true) }
+      %i[to cc bcc].filter_map do |recipient|
+        next if mail[:mail_instance].send(recipient).blank?
 
-      if mail[:mail_instance].cc.present?
-        mail[:mail_instance].cc.each { |cc| keys += pgp_keys(cc, :encryption, true) }
-      end
-
-      keys
+        mail[:mail_instance].send(recipient).map { |address| pgp_keys(address, :encryption, true) }
+      end.flatten
     end
   end
 

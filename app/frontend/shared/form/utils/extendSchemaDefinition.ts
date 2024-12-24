@@ -1,14 +1,16 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
+import { extend } from '@formkit/utils'
 import { cloneDeep } from 'lodash-es'
+
+import { FormSchemaExtendType } from '#shared/types/form.ts'
+
 import type {
   FormKitExtendableSchemaRoot,
   FormKitNode,
   FormKitSchemaCondition,
   FormKitSchemaNode,
 } from '@formkit/core'
-import { FormSchemaExtendType } from '#shared/types/form.ts'
-import { extend } from '@formkit/utils'
 
 // Can later be switched to in built-in feature from FormKit (when it's available).
 const extendSchemaDefinition = (
@@ -34,7 +36,7 @@ const extendSchemaDefinition = (
       | FormKitSchemaCondition
       | Partial<FormKitSchemaNode>
 
-    const currentExtension = extensions[sectionKey]
+    const currentExtension = extensions[sectionKey] || {}
 
     if (extendType === FormSchemaExtendType.Merge) {
       // When current extenstions is a string, replace it.

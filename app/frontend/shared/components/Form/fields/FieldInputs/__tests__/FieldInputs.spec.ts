@@ -1,7 +1,8 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { getNode } from '@formkit/core'
 import { FormKit } from '@formkit/vue'
+
 import { renderComponent } from '#tests/support/components/index.ts'
 import { waitForTimeout } from '#tests/support/utils.ts'
 

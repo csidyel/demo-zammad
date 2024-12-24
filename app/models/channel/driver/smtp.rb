@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Channel::Driver::Smtp
   include Channel::EmailHelper
@@ -27,7 +27,7 @@ class Channel::Driver::Smtp
 
 =end
 
-  def send(options, attr, notification = false)
+  def deliver(options, attr, notification = false)
 
     # return if we run import mode
     return if Setting.get('import_mode')

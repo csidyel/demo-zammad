@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module ChecksCoreWorkflow
   extend ActiveSupport::Concern
@@ -35,7 +35,7 @@ module ChecksCoreWorkflow
                                             'class_name' => self.class.to_s,
                                             'screen'     => screen,
                                             'params'     => attributes
-                                          }, user: User.find(UserInfo.current_user_id), assets: false)
+                                          }, user: UserInfo.current_user, assets: false)
 
     check_restrict_values(perform_result)
     check_mandatory(perform_result)

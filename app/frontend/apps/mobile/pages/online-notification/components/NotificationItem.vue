@@ -1,60 +1,31 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import ActivityMessage from '#shared/components/ActivityMessage/ActivityMessage.vue'
-import type {
-  ActivityMessageMetaObject,
-  Scalars,
-} from '#shared/graphql/types.ts'
-import type { AvatarUser } from '#shared/components/CommonUserAvatar/types.ts'
-import { MutationHandler } from '#shared/server/apollo/handler/index.ts'
-import type { ApolloCache, InMemoryCache } from '@apollo/client'
-import { useOnlineNotificationDeleteMutation } from '#shared/entities/online-notification/graphql/mutations/delete.api.ts'
+import { useOnlineNotificationActions } from '#shared/entities/online-notification/composables/useOnlineNotificationActions.ts'
+import type { OnlineNotification, Scalars } from '#shared/graphql/types.ts'
 
-export interface Props {
-  itemId: Scalars['ID']['output']
-  objectName: string
-  typeName: string
-  seen: boolean
-  metaObject?: Maybe<ActivityMessageMetaObject>
-  createdAt: string
-  createdBy?: Maybe<AvatarUser>
+import ActivityMessage from './ActivityMessage.vue'
+
+interface Props {
+  activity: OnlineNotification
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  (e: 'remove', id: Scalars['ID']['output']): void
-  (e: 'seen', id: Scalars['ID']['output']): void
+  remove: [id: Scalars['ID']['output']]
+  seen: [id: Scalars['ID']['output']]
 }>()
 
-const updateCacheAfterRemoving = (
-  cache: ApolloCache<InMemoryCache>,
-  id: Scalars['ID']['output'],
-) => {
-  const normalizedId = cache.identify({ id, __typename: 'OnlineNotification' })
-  cache.evict({ id: normalizedId })
-  cache.gc()
-}
+const { deleteNotification, deleteNotificationMutation } =
+  useOnlineNotificationActions()
 
-const removeNotificationMutation = new MutationHandler(
-  useOnlineNotificationDeleteMutation(() => ({
-    variables: { onlineNotificationId: props.itemId },
-    update(cache) {
-      updateCacheAfterRemoving(cache, props.itemId)
-    },
-  })),
-  {
-    errorNotificationMessage: __('The notifcation could not be deleted.'),
-  },
-)
-
-const loading = removeNotificationMutation.loading()
+const loading = deleteNotificationMutation.loading()
 
 const removeNotification = () => {
-  emit('remove', props.itemId)
+  emit('remove', props.activity.id)
 
-  return removeNotificationMutation.send()
+  return deleteNotification(props.activity.id)
 }
 </script>
 
@@ -66,23 +37,18 @@ const removeNotification = () => {
       :disabled="loading"
       @click="removeNotification()"
     >
-      <CommonIcon name="mobile-delete" class="text-red" size="tiny" />
+      <CommonIcon name="delete" class="text-red" size="tiny" />
     </button>
     <div class="flex items-center ltr:pr-2 rtl:pl-2">
       <div
         role="status"
         class="h-3 w-3 rounded-full"
-        :class="{ 'bg-blue': !seen }"
-        :aria-label="seen ? $t('Notification read') : $t('Unread notification')"
+        :class="{ 'bg-blue': !activity.seen }"
+        :aria-label="
+          activity.seen ? $t('Notification read') : $t('Unread notification')
+        "
       ></div>
     </div>
-    <ActivityMessage
-      :type-name="typeName"
-      :object-name="objectName"
-      :created-at="createdAt"
-      :created-by="createdBy"
-      :meta-object="metaObject"
-      @seen="$emit('seen', itemId)"
-    />
+    <ActivityMessage :activity="activity" @seen="$emit('seen', activity.id)" />
   </div>
 </template>

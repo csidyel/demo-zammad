@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class KnowledgeBase::SearchController < ApplicationController
   skip_before_action :verify_csrf_token
@@ -31,7 +31,8 @@ class KnowledgeBase::SearchController < ApplicationController
       flavor:            params[:flavor],
       index:             params[:index],
       limit:             params[:limit],
-      highlight_enabled: params[:highlight_enabled]
+      highlight_enabled: params[:highlight_enabled],
+      order_by:          { updated_at: :desc }
     )
 
     include_locale = params[:include_locale] && KnowledgeBase.with_multiple_locales_exists?

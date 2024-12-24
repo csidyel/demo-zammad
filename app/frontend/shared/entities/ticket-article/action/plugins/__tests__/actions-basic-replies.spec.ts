@@ -1,7 +1,12 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { PolicyTicket } from '#shared/graphql/types.ts'
 import { setupView } from '#tests/support/mock-user.ts'
+
+import {
+  EnumTicketArticleSenderName,
+  type PolicyTicket,
+} from '#shared/graphql/types.ts'
+
 import {
   createEligibleTicketArticleReplyData,
   createTestArticleActions,
@@ -33,7 +38,7 @@ describe.each([
       () => {
         setupView('agent')
         const { ticket, article } = createEligibleData()
-        article.sender!.name = 'Agent'
+        article.sender!.name = EnumTicketArticleSenderName.Agent
         const actions = createTestArticleActions(ticket, article)
         expect(actions.find((a) => a.name === name)).toBeUndefined()
       },

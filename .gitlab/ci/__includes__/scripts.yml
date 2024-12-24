@@ -2,21 +2,29 @@
   source_rvm:
     - source /etc/profile.d/rvm.sh # ensure RVM is loaded
   bundle_install:
-    - echo -e "\\e[0Ksection_start:`date +%s`:bundle_install[collapsed=true]\\r\\e[0Kbundle install"
-    - bundle config set --local frozen 'true'
-    - bundle config set --local path 'vendor'
-    - bundle install -j $(nproc)
-    - echo -e "\\e[0Ksection_end:`date +%s`:bundle_install\\r\\e[0K"
-  yarn_install:
-    - echo -e "\\e[0Ksection_start:`date +%s`:yarn_install[collapsed=true]\\r\\e[0Kyarn install"
-    - yarn install
-    - echo -e "\\e[0Ksection_end:`date +%s`:yarn_install\\r\\e[0K"
-  yarn_install_all:
-    # retry on errors
-    - yarn install || yarn install || yarn install
-    - yarn cypress:install || yarn cypress:install || yarn cypress:install
-    - yarn --cwd .eslint-plugin-zammad install || yarn --cwd .eslint-plugin-zammad install || yarn --cwd .eslint-plugin-zammad install
-    - yarn --cwd public/assets/chat install || yarn --cwd public/assets/chat install || yarn --cwd public/assets/chat install
+    - bundle config set --local deployment 'true'
+    - bundle install -j $(nproc) > /dev/null
+  pnpm_init: &pnpm_init
+    - pnpm config set store-dir ${CI_PROJECT_DIR}/tmp/cache/pnpm-store
+  pnpm_install: &pnpm_install
+    - *pnpm_init
+    - pnpm install
+  pnpm_install_chat: &pnpm_install_chat
+    - *pnpm_init
+    - pnpm --dir public/assets/chat install
+  pnpm_install_cypress: &pnpm_install_cypress
+    - *pnpm_install
+    - export CYPRESS_CACHE_FOLDER="${CI_PROJECT_DIR}/tmp/cache/cypress"
+    - pnpm cypress:install
+  pnpm_install_eslint_plugin_zammad: &pnpm_install_eslint_plugin_zammad
+    - *pnpm_init
+    - pnpm --dir .eslint-plugin-zammad install
+  pnpm_install_all:
+    - *pnpm_init
+    - *pnpm_install
+    - *pnpm_install_chat
+    - *pnpm_install_cypress
+    - *pnpm_install_eslint_plugin_zammad
   configure_environment:
     - bundle exec ruby .gitlab/configure_environment.rb
     - source .gitlab/environment.env

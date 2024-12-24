@@ -1,16 +1,5 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import {
-  Kind,
-  type DocumentNode,
-  OperationTypeNode,
-  GraphQLError,
-  type DefinitionNode,
-  type FieldNode,
-  type OperationDefinitionNode,
-  type TypeNode,
-} from 'graphql'
-import { waitForNextTick } from '#tests/support/utils.ts'
 import {
   ApolloClient,
   ApolloLink,
@@ -23,17 +12,34 @@ import {
   mergeDeep,
   removeConnectionDirectiveFromDocument,
 } from '@apollo/client/utilities'
+import { provideApolloClient } from '@vue/apollo-composable'
 import { visit, print } from 'graphql'
+import {
+  Kind,
+  type DocumentNode,
+  OperationTypeNode,
+  GraphQLError,
+  type DefinitionNode,
+  type FieldNode,
+  type OperationDefinitionNode,
+  type TypeNode,
+  type SelectionNode,
+  type FragmentDefinitionNode,
+} from 'graphql'
+import { noop } from 'lodash-es'
+
+import { waitForNextTick } from '#tests/support/utils.ts'
+
 import createCache from '#shared/server/apollo/cache.ts'
 import type { CacheInitializerModules } from '#shared/types/server/apollo/client.ts'
-import { noop } from 'lodash-es'
-import { provideApolloClient } from '@vue/apollo-composable'
-import type { DeepPartial } from '#shared/types/utils.ts'
+import type { DeepPartial, DeepRequired } from '#shared/types/utils.ts'
+
 import {
   getFieldData,
   getObjectDefinition,
   getOperationDefinition,
   mockOperation,
+  validateOperationVariables,
 } from './index.ts'
 
 interface MockCall<T = any> {
@@ -43,9 +49,11 @@ interface MockCall<T = any> {
 }
 
 const mockDefaults = new Map<string, any>()
-const mockResults = new Map<string, any>()
 const mockCalls = new Map<string, MockCall[]>()
 const queryStrings = new WeakMap<DocumentNode, string>()
+
+// mutation:login will return query string for mutation login
+const namesToQueryKeys = new Map<string, string>()
 
 const stripNames = (query: DocumentNode) => {
   return visit(query, {
@@ -66,15 +74,23 @@ const normalize = (query: DocumentNode) => {
 const requestToKey = (query: DocumentNode) => {
   const cached = queryStrings.get(query)
   if (cached) return cached
+  const operationNode = query.definitions.find(
+    (node) => node.kind === Kind.OPERATION_DEFINITION,
+  ) as OperationDefinitionNode
+  const operationNameKey = `${operationNode.operation}:${
+    operationNode.name?.value || ''
+  }`
   const normalized = normalize(query)
   const queryString = query && print(normalized)
   const stringified = JSON.stringify({ query: queryString })
   queryStrings.set(query, stringified)
+  namesToQueryKeys.set(operationNameKey, stringified)
   return stringified
 }
 
 const stripQueryData = (
   definition: DefinitionNode | FieldNode,
+  fragments: FragmentDefinitionNode[],
   resultData: any,
   newData: any = {},
   // eslint-disable-next-line sonarjs/cognitive-complexity
@@ -92,67 +108,115 @@ const stripQueryData = (
   }
 
   const name = definition.name!.value
-  definition.selectionSet?.selections.forEach((node) => {
-    if (node.kind === Kind.INLINE_FRAGMENT) return
+  // eslint-disable-next-line sonarjs/cognitive-complexity
+  const processNode = (node: SelectionNode) => {
+    if (node.kind === Kind.INLINE_FRAGMENT) {
+      const condition = node.typeCondition
+      if (!condition || condition.kind !== Kind.NAMED_TYPE) {
+        throw new Error('Unknown type condition!')
+      }
+      const typename = condition.name.value
+      if (resultData.__typename === typename) {
+        node.selectionSet.selections.forEach(processNode)
+      }
+      return
+    }
+    if (node.kind === Kind.FRAGMENT_SPREAD) {
+      const fragment = fragments.find(
+        (fragment) => fragment.name.value === node.name.value,
+      )
+      if (fragment) {
+        fragment.selectionSet.selections.forEach(processNode)
+      }
+      return
+    }
+
     const fieldName =
       'alias' in node && node.alias ? node.alias?.value : node.name!.value
     if (!fieldName) {
       return
     }
-    const resultValue = resultData[fieldName]
+    const resultValue = resultData?.[fieldName]
     if ('selectionSet' in node && node.selectionSet) {
       if (Array.isArray(resultValue)) {
         newData[fieldName] = resultValue.map((item) =>
-          stripQueryData(node, item, newData[name]),
+          stripQueryData(node, fragments, item, newData[name]),
         )
       } else {
-        newData[fieldName] = stripQueryData(node, resultValue, newData[name])
+        newData[fieldName] = stripQueryData(
+          node,
+          fragments,
+          resultValue,
+          newData[name],
+        )
       }
     } else {
-      newData[fieldName] = resultValue
+      newData[fieldName] = resultValue ?? null
     }
-  })
+  }
+  definition.selectionSet?.selections.forEach(processNode)
 
   return newData
 }
 
-// Returns the full query result, not the object that was returned in the operation
-// So, if you didn't ask for a field, but it's defined in the type schema, this field WILL be in the object
-export const getGraphQLResult = <T>(document: DocumentNode): { data: T } => {
-  return mockResults.get(requestToKey(document))
+type OperationType = 'query' | 'mutation' | 'subscription'
+
+const getCachedKey = (
+  documentOrOperation: DocumentNode | OperationType,
+  operationName?: string,
+) => {
+  const key =
+    typeof documentOrOperation === 'string'
+      ? namesToQueryKeys.get(`${documentOrOperation}:${operationName}`)
+      : requestToKey(documentOrOperation)
+  if (!key) {
+    throw new Error(
+      `Cannot find key for ${documentOrOperation}:${operationName}. This happens if query was not executed yet or if it was not mocked.`,
+    )
+  }
+  return key
 }
 
 export const getGraphQLMockCalls = <T>(
-  document: DocumentNode,
-): MockCall<T>[] => {
-  return mockCalls.get(requestToKey(document)) || []
+  documentOrOperation: DocumentNode | OperationType,
+  operationName?: keyof T & string,
+): MockCall<DeepRequired<T>>[] => {
+  return mockCalls.get(getCachedKey(documentOrOperation, operationName)) || []
 }
 
-export const waitForGraphQLMockCalls = async <T>(
-  document: DocumentNode,
-): Promise<MockCall<T>[]> => {
-  return vi.waitUntil(() => getGraphQLMockCalls<T>(document))
+export const waitForGraphQLMockCalls = <T>(
+  documentOrOperation: DocumentNode | OperationType,
+  operationName?: keyof T & string,
+): Promise<MockCall<DeepRequired<T>>[]> => {
+  return vi.waitUntil(() => {
+    try {
+      const calls = getGraphQLMockCalls<T>(documentOrOperation, operationName)
+      return calls.length && calls
+    } catch {
+      return false
+    }
+  })
 }
 
-export const mockGraphQLResult = <T extends Record<string, any>>(
+export type MockDefaultsValue<T, V = Record<string, never>> =
+  | DeepPartial<T>
+  | ((variables: V) => DeepPartial<T>)
+
+export const mockGraphQLResult = <
+  T extends Record<string, any>,
+  V extends Record<string, any> = Record<string, never>,
+>(
   document: DocumentNode,
-  defaults:
-    | DeepPartial<T>
-    | ((variables?: Record<string, unknown>) => DeepPartial<T>),
+  defaults: MockDefaultsValue<T, V>,
 ) => {
   const key = requestToKey(document)
   mockDefaults.set(key, defaults)
   return {
-    getResult: () => getGraphQLResult<T>(document),
-    updateDefaults: (defaults: DeepPartial<T>) => {
+    updateDefaults: (defaults: MockDefaultsValue<T, V>) => {
       mockDefaults.set(key, defaults)
     },
     waitForCalls: () => waitForGraphQLMockCalls<T>(document),
   }
-}
-
-export const waitForGraphQLResult = async <T>(document: DocumentNode) => {
-  return vi.waitUntil(() => getGraphQLResult<T>(document))
 }
 
 export interface TestSubscriptionHandler<T extends Record<string, any> = any> {
@@ -169,15 +233,18 @@ const mockSubscriptionHanlders = new Map<
   TestSubscriptionHandler<Record<string, any>>
 >()
 export const getGraphQLSubscriptionHandler = <T extends Record<string, any>>(
-  document: DocumentNode,
+  documentOrName: DocumentNode | (keyof T & string),
 ) => {
-  return mockSubscriptionHanlders.get(
-    requestToKey(document),
-  ) as TestSubscriptionHandler<T>
+  const key =
+    typeof documentOrName === 'string'
+      ? getCachedKey('subscription', documentOrName)
+      : getCachedKey(documentOrName)
+
+  return mockSubscriptionHanlders.get(key) as TestSubscriptionHandler<T>
 }
 
 afterEach(() => {
-  mockResults.clear()
+  mockCalls.clear()
   mockSubscriptionHanlders.clear()
   mockDefaults.clear()
   mockCalls.clear()
@@ -197,7 +264,7 @@ const getInputObjectType = (variableNode: TypeNode): string | null => {
 const getQueryDefaults = (
   requestKey: string,
   definition: OperationDefinitionNode,
-  variables: Record<string, any>,
+  variables: Record<string, any> = {},
 ): Record<string, any> => {
   let userDefaults = mockDefaults.get(requestKey)
   if (typeof userDefaults === 'function') {
@@ -247,14 +314,28 @@ class MockLink extends ApolloLink {
     if (definition.kind !== Kind.OPERATION_DEFINITION) {
       return null
     }
+    const fragments = query.definitions.filter(
+      (def) => def.kind === Kind.FRAGMENT_DEFINITION,
+    ) as FragmentDefinitionNode[]
     const queryKey = requestToKey(query)
     return new Observable((observer) => {
       const { operation } = definition
+
+      try {
+        validateOperationVariables(definition, variables)
+      } catch (err) {
+        if (operation === OperationTypeNode.QUERY) {
+          // queries eat the errors, but we want to see them
+          console.error(err)
+        }
+        throw err
+      }
+
       if (operation === OperationTypeNode.SUBSCRIPTION) {
         const handler: TestSubscriptionHandler = {
           async trigger(defaults) {
             const resultValue = mockOperation(query, variables, defaults)
-            const data = stripQueryData(definition, resultValue)
+            const data = stripQueryData(definition, fragments, resultValue)
             observer.next({ data })
             await waitForNextTick(true)
             return resultValue
@@ -270,31 +351,39 @@ class MockLink extends ApolloLink {
         mockSubscriptionHanlders.set(queryKey, handler)
         return noop
       }
-      const defaults = getQueryDefaults(queryKey, definition, variables)
-      const returnResult = mockOperation(query, variables, defaults)
-      let result = { data: returnResult }
-      mockResults.set(queryKey, result)
-      const calls = mockCalls.get(queryKey) || []
-      calls.push({ document: query, result: result.data, variables })
-      mockCalls.set(queryKey, calls)
-      if (operation === OperationTypeNode.MUTATION) {
-        result = { data: stripQueryData(definition, result.data) }
+      try {
+        const defaults = getQueryDefaults(queryKey, definition, variables)
+        const returnResult = mockOperation(query, variables, defaults)
+        const result = { data: returnResult }
+        const calls = mockCalls.get(queryKey) || []
+        calls.push({ document: query, result: result.data, variables })
+        mockCalls.set(queryKey, calls)
+        observer.next(
+          cloneDeep({
+            data: stripQueryData(definition, fragments, result.data),
+          }),
+        )
+        observer.complete()
+      } catch (e) {
+        console.error(e)
+        throw e
       }
-      observer.next(cloneDeep(result))
-      observer.complete()
+
       return noop
     })
   }
 }
 
+// Include both shared and app-specific cache initializer modules.
 const cacheInitializerModules: CacheInitializerModules = import.meta.glob(
-  '../../../../mobile/server/apollo/cache/initializer/*.ts',
+  '../../../**/server/apollo/cache/initializer/*.ts',
   { eager: true },
 )
 
 const createMockClient = () => {
   const link = new MockLink()
   const cache = createCache(cacheInitializerModules)
+
   const client = new ApolloClient({
     cache,
     link,
@@ -303,7 +392,19 @@ const createMockClient = () => {
   return client
 }
 
+// this enabled automocking - if this file is not imported somehow, fetch request will throw an error
 export const mockedApolloClient = createMockClient()
+
+vi.mock('#shared/server/apollo/client.ts', () => {
+  return {
+    clearApolloClientStore: async () => {
+      await mockedApolloClient.clearStore()
+    },
+    getApolloClient: () => {
+      return mockedApolloClient
+    },
+  }
+})
 
 afterEach(() => {
   mockedApolloClient.clearStore()

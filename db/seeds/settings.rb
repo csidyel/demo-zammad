@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 Setting.create_if_not_exists(
   title:       __('Application secret'),
@@ -191,11 +191,12 @@ Setting.create_if_not_exists(
       }
     ],
   },
-  state:       '',
+  state:       'UTC',
   preferences: {
-    prio:       9,
-    controller: 'SettingsAreaItemDefaultTimezone',
-    permission: ['admin.system'],
+    prio:        9,
+    controller:  'SettingsAreaItemDefaultTimezone',
+    permission:  ['admin.system'],
+    validations: ['Setting::Validation::TimeZone'],
   },
   frontend:    true
 )
@@ -337,7 +338,7 @@ Setting.create_if_not_exists(
 )
 
 Setting.create_if_not_exists(
-  title:       __('Storage Mechanism'),
+  title:       __('Storage Method'),
   name:        'storage_provider',
   area:        'System::Storage',
   description: __('"Database" stores all attachments in the database (not recommended for storing large amounts of data). "Filesystem" stores the data in the filesystem. "Simple Storage (S3)" stores the data in a remote S3 compatible object filesystem. You can switch between the modules even on a system that is already in production without any loss of data.'),
@@ -362,6 +363,7 @@ Setting.create_if_not_exists(
     controller:             'SettingsAreaStorageProvider',
     online_service_disable: true,
     permission:             ['admin.system'],
+    validations:            ['Setting::Validation::StorageProvider'],
   },
   frontend:    false
 )
@@ -380,7 +382,7 @@ Setting.create_if_not_exists(
         tag:     'select',
         options: {
           ''                       => '-',
-          'Service::Image::Zammad' => __('Zammad Image Service'),
+          'Service::Image::Zammad' => 'Zammad Image Service', # rubocop:disable Zammad/DetectTranslatableString
         },
       },
     ],
@@ -407,7 +409,7 @@ Setting.create_if_not_exists(
         tag:     'select',
         options: {
           ''                       => '-',
-          'Service::GeoIp::Zammad' => __('Zammad GeoIP Service'),
+          'Service::GeoIp::Zammad' => 'Zammad GeoIP Service', # rubocop:disable Zammad/DetectTranslatableString
         },
       },
     ],
@@ -433,13 +435,13 @@ Setting.create_if_not_exists(
         name:    'geo_location_backend',
         tag:     'select',
         options: {
-          ''                            => '-',
-          'Service::GeoLocation::Gmaps' => __('Google Maps'),
+          ''                          => '-',
+          'Service::GeoLocation::Osm' => 'OpenStreetMap (ODbL 1.0, http://osm.org/copyright)', # rubocop:disable Zammad/DetectTranslatableString
         },
       },
     ],
   },
-  state:       'Service::GeoLocation::Gmaps',
+  state:       'Service::GeoLocation::Osm',
   preferences: {
     prio:       3,
     permission: ['admin.system'],
@@ -461,7 +463,7 @@ Setting.create_if_not_exists(
         tag:     'select',
         options: {
           ''                             => '-',
-          'Service::GeoCalendar::Zammad' => __('Zammad GeoCalendar Service'),
+          'Service::GeoCalendar::Zammad' => 'Zammad GeoCalendar Service', # rubocop:disable Zammad/DetectTranslatableString
         },
       },
     ],
@@ -843,10 +845,10 @@ Setting.create_if_not_exists(
 )
 
 Setting.create_if_not_exists(
-  title:       __('Set notes for ticket create types.'),
+  title:       __('Additional notes for ticket create types.'),
   name:        'ui_ticket_create_notes',
   area:        'UI::TicketCreate',
-  description: __('Set notes for ticket create types by selecting type.'),
+  description: __('Show additional notes for ticket creation depending on the selected type.'),
   options:     {},
   state:       {
     # 'email-out' => __('Attention: When creating a ticket an email is sent.'),
@@ -968,16 +970,16 @@ Setting.create_if_not_exists(
 )
 
 Setting.create_if_not_exists(
-  title:       __('Priority Icons in Overviews'),
-  name:        'ui_ticket_overview_priority_icon',
-  area:        'UI::TicketOverview::PriorityIcons',
-  description: __('Enables priority icons in ticket overviews.'),
+  title:       __('Ticket Priority Icons'),
+  name:        'ui_ticket_priority_icons',
+  area:        'UI::Ticket::Priority',
+  description: __('Enables display of ticket priority icons in UI.'),
   options:     {
     form: [
       {
         display:   '',
         null:      true,
-        name:      'ui_ticket_overview_priority_icon',
+        name:      'ui_ticket_priority_icons',
         tag:       'boolean',
         translate: true,
         options:   {
@@ -1279,6 +1281,32 @@ Setting.create_if_not_exists(
         display: '',
         null:    true,
         name:    'auth_third_party_linking_notification',
+        tag:     'boolean',
+        options: {
+          true  => 'yes',
+          false => 'no',
+        },
+      },
+    ],
+  },
+  preferences: {
+    permission: ['admin.security'],
+    prio:       20,
+  },
+  state:       false,
+  frontend:    false
+)
+Setting.create_if_not_exists(
+  title:       __('No user creation on logon'),
+  name:        'auth_third_party_no_create_user',
+  area:        'Security::ThirdPartyAuthentication',
+  description: __('Disables user creation on logon with a third-party application.'),
+  options:     {
+    form: [
+      {
+        display: '',
+        null:    true,
+        name:    'auth_third_party_no_create_user',
         tag:     'boolean',
         options: {
           true  => 'yes',
@@ -2448,7 +2476,7 @@ Setting.create_if_not_exists(
     authentication: true,
     permission:     ['admin.ticket_auto_assignment'],
   },
-  state:       { condition: { 'ticket.state_id' => { operator: 'is', value: Ticket::State.by_category(:work_on).pluck(:id) } } },
+  state:       { condition: { 'ticket.state_id' => { operator: 'is', value: Ticket::State.by_category_ids(:work_on) } } },
   frontend:    true
 )
 Setting.create_or_update(
@@ -2773,7 +2801,7 @@ Setting.create_if_not_exists(
   frontend:    false
 )
 Setting.create_if_not_exists(
-  title:       __('Recursive Ticket Triggers Loop Max.'),
+  title:       __('Maximum Recursive Ticket Triggers Depth'),
   name:        'ticket_trigger_recursive_max_loop',
   area:        'Ticket::Core',
   description: __('Maximum number of recursively executed triggers.'),
@@ -3197,15 +3225,16 @@ Setting.create_if_not_exists(
         name:      'postmaster_follow_up_search_in',
         tag:       'checkbox',
         options:   {
-          'references' => __('References - Search for follow-up also in In-Reply-To or References headers.'),
-          'body'       => __('Body - Search for follow-up also in mail body.'),
-          'attachment' => __('Attachment - Search for follow-up also in attachments.'),
+          'references'         => __('References - Search for follow-up also in In-Reply-To or References headers.'),
+          'body'               => __('Body - Search for follow-up also in mail body.'),
+          'attachment'         => __('Attachment - Search for follow-up also in attachments.'),
+          'subject_references' => __('Subject & References - Additional search for same article subject and same message ID in references header if no follow-up was recognized using default settings.'),
         },
         translate: true,
       },
     ],
   },
-  state:       [],
+  state:       ['subject_references'],
   preferences: {
     permission: ['admin.channel_email', 'admin.channel_google', 'admin.channel_microsoft365'],
   },
@@ -5711,10 +5740,10 @@ Setting.create_if_not_exists(
 )
 
 Setting.create_if_not_exists(
-  title:       __('Enforce the set up of the two-factor authentication'),
+  title:       __('Enforce the setup of the two-factor authentication'),
   name:        'two_factor_authentication_enforce_role_ids',
   area:        'Security::TwoFactorAuthentication',
-  description: __('Requires the set up of the two-factor authentication for certain user roles.'),
+  description: __('Requires the setup of the two-factor authentication for certain user roles.'),
   options:     {
     form: [
       {
@@ -5761,4 +5790,42 @@ Setting.create_if_not_exists(
     permission: ['admin.ticket'],
   },
   frontend:    true
+)
+
+Setting.create_if_not_exists(
+  title:       __('Checklists'),
+  name:        'checklist',
+  area:        'Web::Base',
+  description: __('Enable checklists.'),
+  options:     {
+    form: [
+      {
+        display: '',
+        null:    true,
+        name:    'checklist',
+        tag:     'boolean',
+        options: {
+          true  => 'yes',
+          false => 'no',
+        },
+      },
+    ],
+  },
+  preferences: {
+    authentication: true,
+    permission:     ['admin.checklist'],
+  },
+  state:       true,
+  frontend:    true
+)
+
+Setting.create_if_not_exists(
+  title:       __('Auto Shutdown'),
+  name:        'auto_shutdown',
+  area:        'Core::WebApp',
+  description: __('Enable or disable self-shutdown of Zammad processes after significant configuration changes. This should only be used if the controlling process manager like systemd or docker supports an automatic restart policy.'),
+  options:     {},
+  state:       !Rails.env.test?,
+  preferences: { online_service_disable: true },
+  frontend:    false
 )

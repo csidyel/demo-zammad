@@ -1,11 +1,15 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { i18n } from '#shared/i18n.ts'
-import type { Ref } from 'vue'
-import type { TicketArticle } from '#shared/entities/ticket/types.ts'
 import { controlledComputed } from '@vueuse/shared'
+
+import type { TicketArticle } from '#shared/entities/ticket/types.ts'
+import { EnumTicketArticleSenderName } from '#shared/graphql/types.ts'
+import { i18n } from '#shared/i18n.ts'
 import { useSessionStore } from '#shared/stores/session.ts'
+
 import { useTicketInformation } from './useTicketInformation.ts'
+
+import type { Ref } from 'vue'
 
 interface ArticleRow {
   type: 'article-bubble'
@@ -35,6 +39,7 @@ interface SystemRaw {
   type: 'system'
   subject?: Maybe<string>
   to?: Maybe<string>
+  reaction?: Maybe<string>
 }
 
 type TicketArticleRow = (
@@ -78,13 +83,14 @@ export const useTicketArticleRows = (
           key: article.id,
         })
       } else if (
-        article.sender?.name === 'System' &&
+        article.sender?.name === EnumTicketArticleSenderName.System &&
         article.type?.name !== 'note'
       ) {
         rows.push({
           type: 'system',
           subject: article.subject,
           to: article.to?.raw || '',
+          reaction: article.preferences?.whatsapp?.reaction?.emoji,
           key: article.id,
         })
       } else {

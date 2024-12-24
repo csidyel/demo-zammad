@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Transaction::Slack
   include ChecksHumanChanges
@@ -90,7 +90,7 @@ class Transaction::Slack
     result = NotificationFactory::Messaging.template(
       template: template,
       locale:   user.locale,
-      timezone: Setting.get('timezone_default_sanitized'),
+      timezone: Setting.get('timezone_default'),
       objects:  {
         ticket:       ticket,
         article:      article,

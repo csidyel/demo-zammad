@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 require 'models/application_model_examples'
@@ -15,6 +15,7 @@ require 'models/concerns/has_object_manager_attributes_examples'
 require 'models/user/can_lookup_search_index_attributes_examples'
 require 'models/user/performs_geo_lookup_examples'
 require 'models/concerns/has_taskbars_examples'
+require 'models/concerns/has_two_factor_examples'
 
 RSpec.describe User, type: :model do
   subject(:user) { create(:user) }
@@ -23,7 +24,9 @@ RSpec.describe User, type: :model do
   let(:agent)    { create(:agent) }
   let(:admin)    { create(:admin) }
 
-  it_behaves_like 'ApplicationModel', can_assets: { associations: :organization }
+  it_behaves_like 'ApplicationModel',
+                  can_assets: { associations: :organization },
+                  can_param:  { sample_data_attribute: :email }
   it_behaves_like 'HasGroups', group_access_factory: :agent
   it_behaves_like 'HasHistory'
   it_behaves_like 'HasRoles', group_access_factory: :agent
@@ -37,6 +40,9 @@ RSpec.describe User, type: :model do
   it_behaves_like 'CanLookupSearchIndexAttributes'
   it_behaves_like 'HasTaskbars'
   it_behaves_like 'UserPerformsGeoLookup'
+  it_behaves_like 'Association clears cache', association: :roles
+  it_behaves_like 'Association clears cache', association: :organizations
+  it_behaves_like 'User::HasTwoFactor'
 
   describe 'Class methods:' do
     describe '.identify' do
@@ -114,373 +120,50 @@ RSpec.describe User, type: :model do
         end
       end
     end
+
+    describe '.by_mobile' do
+      let!(:user)        { create(:customer, mobile: saved_mobile) }
+      let(:saved_mobile) { '+4912341234' }
+
+      context 'with a number saved with prefixed +' do
+        context 'searching for the same mobile number' do
+          it 'finds the user (by direct lookup)' do
+            expect(described_class.by_mobile(number: saved_mobile)).to eq(user)
+          end
+        end
+
+        context 'searching for the E.164 number without prefixed +' do
+          it 'finds the user (through CTI lookup)' do
+            expect(described_class.by_mobile(number: '4912341234')).to eq(user)
+          end
+        end
+      end
+
+      context 'with a number saved without prefixed +' do
+        let(:saved_mobile) { '4912341234' }
+
+        context 'searching for the same mobile number' do
+          it 'finds the user (by direct lookup)' do
+            expect(described_class.by_mobile(number: saved_mobile)).to eq(user)
+          end
+        end
+
+        context 'searching for the number prefixed with +' do
+          it 'finds the user (through CTI lookup)' do
+            expect(described_class.by_mobile(number: '+4912341234')).to eq(user)
+          end
+        end
+      end
+
+      context 'with a non-matching number' do
+        it 'does not find the user' do
+          expect(described_class.by_mobile(number: '99999999999')).to be_nil
+        end
+      end
+    end
   end
 
   describe 'Instance methods:' do
-
-    describe '#out_of_office?' do
-      context 'without any out_of_office_* attributes set' do
-        it 'returns false' do
-          expect(agent.out_of_office?).to be(false)
-        end
-      end
-
-      context 'with valid #out_of_office_* attributes' do
-        before do
-          agent.update(
-            out_of_office_start_at:       Time.current.yesterday,
-            out_of_office_end_at:         Time.current.tomorrow,
-            out_of_office_replacement_id: 1
-          )
-        end
-
-        context 'but #out_of_office: false' do
-          before { agent.update(out_of_office: false) }
-
-          it 'returns false' do
-            expect(agent.out_of_office?).to be(false)
-          end
-        end
-
-        context 'and #out_of_office: true' do
-          before { agent.update(out_of_office: true) }
-
-          it 'returns true' do
-            expect(agent.out_of_office?).to be(true)
-          end
-
-          context 'after the #out_of_office_end_at time has passed' do
-            before { travel 2.days  }
-
-            it 'returns false (even though #out_of_office has not changed)' do
-              expect(agent.out_of_office).to be(true)
-              expect(agent.out_of_office?).to be(false)
-            end
-          end
-        end
-      end
-
-      context 'date range is inclusive' do
-        before do
-          freeze_time
-
-          agent.update(
-            out_of_office:                true,
-            out_of_office_start_at:       1.day.from_now.to_date,
-            out_of_office_end_at:         1.week.from_now.to_date,
-            out_of_office_replacement_id: 1
-          )
-        end
-
-        it 'today in office' do
-          expect(agent).not_to be_out_of_office
-        end
-
-        it 'tomorrow not in office' do
-          travel 1.day
-          expect(agent).to be_out_of_office
-        end
-
-        it 'after 7 days not in office' do
-          travel 7.days
-          expect(agent).to be_out_of_office
-        end
-
-        it 'after 8 days in office' do
-          travel 8.days
-          expect(agent).not_to be_out_of_office
-        end
-      end
-
-      # https://github.com/zammad/zammad/issues/3590
-      context 'when setting the same date' do
-        before do
-          freeze_time
-
-          target_date = 1.day.from_now.to_date
-          agent.update(
-            out_of_office:                true,
-            out_of_office_start_at:       target_date,
-            out_of_office_end_at:         target_date,
-            out_of_office_replacement_id: 1
-          )
-        end
-
-        it 'agent is out of office tomorrow' do
-          travel 1.day
-          expect(agent).to be_out_of_office
-        end
-
-        it 'agent is not out of office the day after tomorrow' do
-          travel 2.days
-          expect(agent).not_to be_out_of_office
-        end
-
-        it 'agent is not out of office today' do
-          expect(agent).not_to be_out_of_office
-        end
-
-        context 'given it respects system time zone' do
-          before do
-            travel_to Time.current.end_of_day
-          end
-
-          it 'agent is in office if in UTC' do
-            expect(agent).not_to be_out_of_office
-          end
-
-          it 'agent is out of office if ahead of UTC' do
-            travel_to Time.current.end_of_day
-            Setting.set('timezone_default', 'Europe/Vilnius')
-
-            expect(agent).to be_out_of_office
-          end
-        end
-      end
-    end
-
-    describe '#someones_out_of_office_replacement?' do
-      it 'returns true when is replacing someone' do
-        create(:agent).update!(
-          out_of_office:                true,
-          out_of_office_start_at:       1.day.ago,
-          out_of_office_end_at:         1.day.from_now,
-          out_of_office_replacement_id: user.id,
-        )
-
-        expect(user).to be_someones_out_of_office_replacement
-      end
-
-      it 'returns false when is not replacing anyone' do
-        expect(user).not_to be_someones_out_of_office_replacement
-      end
-    end
-
-    describe '#out_of_office_agent' do
-      it { is_expected.to respond_to(:out_of_office_agent) }
-
-      context 'when user has no designated substitute' do
-        it 'returns nil' do
-          expect(user.out_of_office_agent).to be_nil
-        end
-      end
-
-      context 'when user has designated substitute' do
-        subject(:user) do
-          create(:user,
-                 out_of_office:                out_of_office,
-                 out_of_office_start_at:       Time.zone.yesterday,
-                 out_of_office_end_at:         Time.zone.tomorrow,
-                 out_of_office_replacement_id: substitute.id,)
-        end
-
-        let(:substitute) { create(:user) }
-
-        context 'but is not out of office' do
-          let(:out_of_office) { false }
-
-          it 'returns nil' do
-            expect(user.out_of_office_agent).to be_nil
-          end
-        end
-
-        context 'and is out of office' do
-          let(:out_of_office) { true }
-
-          it 'returns the designated substitute' do
-            expect(user.out_of_office_agent).to eq(substitute)
-          end
-        end
-
-        context 'with recursive out of office structure' do
-          let(:out_of_office) { true }
-          let(:substitute) do
-            create(:user,
-                   out_of_office:                out_of_office,
-                   out_of_office_start_at:       Time.zone.yesterday,
-                   out_of_office_end_at:         Time.zone.tomorrow,
-                   out_of_office_replacement_id: user_active.id,)
-          end
-          let!(:user_active) { create(:user) }
-
-          it 'returns the designated substitute recursive' do
-            expect(user.out_of_office_agent).to eq(user_active)
-          end
-        end
-
-        context 'with recursive out of office structure with a endless loop' do
-          let(:out_of_office) { true }
-          let(:substitute) do
-            create(:user,
-                   out_of_office:                out_of_office,
-                   out_of_office_start_at:       Time.zone.yesterday,
-                   out_of_office_end_at:         Time.zone.tomorrow,
-                   out_of_office_replacement_id: user_active.id,)
-          end
-          let!(:user_active) do
-            create(:user,
-                   out_of_office:                out_of_office,
-                   out_of_office_start_at:       Time.zone.yesterday,
-                   out_of_office_end_at:         Time.zone.tomorrow,
-                   out_of_office_replacement_id: agent.id,)
-          end
-
-          before do
-            user_active.update(out_of_office_replacement_id: substitute.id)
-          end
-
-          it 'returns the designated substitute recursive with a endless loop' do
-            expect(user.out_of_office_agent).to eq(substitute)
-          end
-        end
-
-        context 'with stack depth exceeding limit' do
-          let(:replacement_chain) do
-            user = create(:agent)
-
-            14
-              .times
-              .each_with_object([user]) do |_, memo|
-                memo << create(:agent, :ooo, ooo_agent: memo.last)
-              end
-              .reverse
-          end
-
-          let(:ids_executed) { [] }
-
-          before do
-            allow_any_instance_of(described_class).to receive(:out_of_office_agent).and_wrap_original do |method, *args|
-              ids_executed << method.receiver.id
-              method.call(*args)
-            end
-
-            allow(Rails.logger).to receive(:warn)
-          end
-
-          it 'returns the last agent at the limit' do
-            expect(replacement_chain.first.out_of_office_agent).to eq replacement_chain[10]
-          end
-
-          it 'does not evaluate element beyond the limit' do
-            user_beyond_limit = replacement_chain[11]
-
-            replacement_chain.first.out_of_office_agent
-
-            expect(ids_executed).not_to include(user_beyond_limit.id)
-          end
-
-          it 'does evaluate element within the limit' do
-            user_within_limit = replacement_chain[5]
-
-            replacement_chain.first.out_of_office_agent
-
-            expect(ids_executed).to include(user_within_limit.id)
-          end
-
-          it 'logs error below the limit' do
-            replacement_chain.first.out_of_office_agent
-
-            expect(Rails.logger).to have_received(:warn).with(%r{#{Regexp.escape('Found more than 10 replacement levels for agent')}})
-          end
-
-          it 'does not logs warn within the limit' do
-            replacement_chain[10].out_of_office_agent
-
-            expect(Rails.logger).not_to have_received(:warn)
-          end
-        end
-      end
-    end
-
-    describe '#out_of_office_agent_of' do
-      context 'when no other agents are out-of-office' do
-        it 'returns an empty ActiveRecord::Relation' do
-          expect(agent.out_of_office_agent_of)
-            .to be_an(ActiveRecord::Relation)
-            .and be_empty
-        end
-      end
-
-      context 'when designated as the substitute' do
-        let!(:agent_on_holiday) do
-          create(
-            :agent,
-            out_of_office_start_at:       Time.current.yesterday,
-            out_of_office_end_at:         Time.current.tomorrow,
-            out_of_office_replacement_id: agent.id,
-            out_of_office:                out_of_office
-          )
-        end
-
-        context 'of an in-office agent' do
-          let(:out_of_office) { false }
-
-          it 'returns an empty ActiveRecord::Relation' do
-            expect(agent.out_of_office_agent_of)
-              .to be_an(ActiveRecord::Relation)
-              .and be_empty
-          end
-        end
-
-        context 'of an out-of-office agent' do
-          let(:out_of_office) { true }
-
-          it 'returns an ActiveRecord::Relation including that agent' do
-            expect(agent.out_of_office_agent_of)
-              .to contain_exactly(agent_on_holiday)
-          end
-        end
-
-        context 'when inherited' do
-          let(:out_of_office) { true }
-          let!(:agent_on_holiday_sub) do
-            create(
-              :agent,
-              out_of_office_start_at:       Time.current.yesterday,
-              out_of_office_end_at:         Time.current.tomorrow,
-              out_of_office_replacement_id: agent_on_holiday.id,
-              out_of_office:                out_of_office
-            )
-          end
-
-          it 'returns an ActiveRecord::Relation including both agents' do
-            expect(agent.out_of_office_agent_of)
-              .to contain_exactly(agent_on_holiday, agent_on_holiday_sub)
-          end
-        end
-
-        context 'when inherited endless loop' do
-          let(:out_of_office) { true }
-          let!(:agent_on_holiday_sub) do
-            create(
-              :agent,
-              out_of_office_start_at:       Time.current.yesterday,
-              out_of_office_end_at:         Time.current.tomorrow,
-              out_of_office_replacement_id: agent_on_holiday.id,
-              out_of_office:                out_of_office
-            )
-          end
-          let!(:agent_on_holiday_sub2) do
-            create(
-              :agent,
-              out_of_office_start_at:       Time.current.yesterday,
-              out_of_office_end_at:         Time.current.tomorrow,
-              out_of_office_replacement_id: agent_on_holiday_sub.id,
-              out_of_office:                out_of_office
-            )
-          end
-
-          before do
-            agent_on_holiday_sub.update(out_of_office_replacement_id: agent_on_holiday_sub2.id)
-          end
-
-          it 'returns an ActiveRecord::Relation including both agents referencing each other' do
-            expect(agent_on_holiday_sub.out_of_office_agent_of)
-              .to contain_exactly(agent_on_holiday_sub, agent_on_holiday_sub2)
-          end
-        end
-      end
-    end
 
     describe '#by_reset_token' do
       subject(:user) { token.user }
@@ -506,7 +189,7 @@ RSpec.describe User, type: :model do
       let!(:token) { create(:token_password_reset) }
 
       it 'changes the password of the token user and destroys the token' do
-        expect { described_class.password_reset_via_token(token.token, Faker::Internet.password) }
+        expect { described_class.password_reset_via_token(token.token, 'VYxesRc6O2') }
           .to change { user.reload.password }
           .and change(Token, :count).by(-1)
       end
@@ -557,197 +240,6 @@ RSpec.describe User, type: :model do
           result = described_class.admin_password_auth_new_token(user.login)
           token = result[:token].token
           expect { described_class.admin_password_auth_via_token(token) }.to change(Token, :count).by(-1)
-        end
-      end
-    end
-
-    describe '#permissions' do
-      let(:user)        { create(:agent).tap { |u| u.roles = [u.roles.first] } }
-      let(:role)        { user.roles.first }
-      let(:permissions) { role.permissions }
-
-      it 'is a simple association getter' do
-        expect(user.permissions).to match_array(permissions)
-      end
-
-      context 'for inactive permissions' do
-        before { permissions.first.update(active: false) }
-
-        it 'omits them from the returned hash' do
-          expect(user.permissions).not_to include(permissions.first)
-        end
-      end
-
-      context 'for permissions on inactive roles' do
-        before { role.update(active: false) }
-
-        it 'omits them from the returned hash' do
-          expect(user.permissions).not_to include(*role.permissions)
-        end
-      end
-    end
-
-    describe '#permissions?' do
-      subject(:user) { create(:user, roles: [role]) }
-
-      let(:role) { create(:role, permissions: [permission]) }
-      let(:permission) { create(:permission, name: permission_name) }
-
-      context 'with privileges for a root permission (e.g., "foo", not "foo.bar")' do
-        let(:permission_name) { 'foo' }
-
-        context 'when given that exact permission' do
-          it 'returns true' do
-            expect(user.permissions?('foo')).to be(true)
-          end
-        end
-
-        context 'when given an active sub-permission' do
-          before { create(:permission, name: 'foo.bar') }
-
-          it 'returns true' do
-            expect(user.permissions?('foo.bar')).to be(true)
-          end
-        end
-
-        describe 'chain-of-ancestry quirk' do
-          context 'when given an inactive sub-permission' do
-            before { create(:permission, name: 'foo.bar.baz', active: false) }
-
-            it 'returns false, even with active ancestors' do
-              expect(user.permissions?('foo.bar.baz')).to be(false)
-            end
-          end
-
-          context 'when given a sub-permission that does not exist' do
-            before { create(:permission, name: 'foo.bar', active: false) }
-
-            it 'can return true, even with inactive ancestors' do
-              expect(user.permissions?('foo.bar.baz')).to be(true)
-            end
-          end
-        end
-
-        context 'when given a glob' do
-          context 'matching that permission' do
-            it 'returns true' do
-              expect(user.permissions?('foo.*')).to be(true)
-            end
-          end
-
-          context 'NOT matching that permission' do
-            it 'returns false' do
-              expect(user.permissions?('bar.*')).to be(false)
-            end
-          end
-        end
-      end
-
-      context 'with privileges for a sub-permission (e.g., "foo.bar", not "foo")' do
-        let(:permission_name) { 'foo.bar' }
-
-        context 'when given that exact sub-permission' do
-          it 'returns true' do
-            expect(user.permissions?('foo.bar')).to be(true)
-          end
-
-          context 'but the permission is inactive' do
-            before { permission.update(active: false) }
-
-            it 'returns false' do
-              expect(user.permissions?('foo.bar')).to be(false)
-            end
-          end
-        end
-
-        context 'when given a sibling sub-permission' do
-          let(:sibling_permission) { create(:permission, name: 'foo.baz') }
-
-          context 'that exists' do
-            before { sibling_permission }
-
-            it 'returns false' do
-              expect(user.permissions?('foo.baz')).to be(false)
-            end
-          end
-
-          context 'that does not exist' do
-            it 'returns false' do
-              expect(user.permissions?('foo.baz')).to be(false)
-            end
-          end
-        end
-
-        context 'when given the parent permission' do
-          it 'returns false' do
-            expect(user.permissions?('foo')).to be(false)
-          end
-        end
-
-        context 'when given a glob' do
-          context 'matching that sub-permission' do
-            it 'returns true' do
-              expect(user.permissions?('foo.*')).to be(true)
-            end
-
-            context 'but the permission is inactive' do
-              before { permission.update(active: false) }
-
-              it 'returns false' do
-                expect(user.permissions?('foo.*')).to be(false)
-              end
-            end
-          end
-
-          context 'NOT matching that sub-permission' do
-            it 'returns false' do
-              expect(user.permissions?('bar.*')).to be(false)
-            end
-          end
-        end
-      end
-    end
-
-    describe '#permissions_with_child_ids' do
-      context 'with privileges for a root permission (e.g., "foo", not "foo.bar")' do
-        subject(:user) { create(:user, roles: [role]) }
-
-        let(:role)                       { create(:role, permissions: [permission]) }
-        let!(:permission)                { create(:permission, name: 'foo') }
-        let!(:child_permission)          { create(:permission, name: 'foo.bar') }
-        let!(:inactive_child_permission) { create(:permission, name: 'foo.baz', active: false) }
-
-        it 'includes the IDs of user’s explicit permissions' do
-          expect(user.permissions_with_child_ids)
-            .to include(permission.id)
-        end
-
-        it 'includes the IDs of user’s active sub-permissions' do
-          expect(user.permissions_with_child_ids)
-            .to include(child_permission.id)
-            .and not_include(inactive_child_permission.id)
-        end
-      end
-    end
-
-    describe '#permissions_with_child_names' do
-      context 'with privileges for a root permission (e.g., "foo", not "foo.bar")' do
-        subject(:user) { create(:user, roles: [role]) }
-
-        let(:role) { create(:role, permissions: [permission]) }
-        let!(:permission)                { create(:permission, name: 'foo') }
-        let!(:child_permission)          { create(:permission, name: 'foo.bar') }
-        let!(:inactive_child_permission) { create(:permission, name: 'foo.baz', active: false) }
-
-        it 'includes the names of user’s explicit permissions' do
-          expect(user.permissions_with_child_names)
-            .to include(permission.name)
-        end
-
-        it 'includes the names of user’s active sub-permissions' do
-          expect(user.permissions_with_child_names)
-            .to include(child_permission.name)
-            .and not_include(inactive_child_permission.name)
         end
       end
     end
@@ -823,89 +315,9 @@ RSpec.describe User, type: :model do
         expect(user).to have_attributes(firstname: 'Perkūnas', lastname: 'Ąžuolas')
       end
     end
-
-    describe '#two_factor_configured?' do
-      let(:user) { create(:user) }
-
-      context 'with no two factor configured' do
-        it 'returns false' do
-          expect(user.two_factor_configured?).to be(false)
-        end
-      end
-
-      context 'with two factor configured' do
-        before do
-          create(:user_two_factor_preference, :authenticator_app, user: user)
-        end
-
-        it 'returns true' do
-          # 'user' variable is cached + was created before the preference was set.
-          expect(user.reload.two_factor_configured?).to be(true)
-        end
-      end
-    end
   end
 
   describe 'Attributes:' do
-    describe '#out_of_office' do
-      context 'with #out_of_office_start_at: nil' do
-        before { agent.update(out_of_office_start_at: nil, out_of_office_end_at: Time.current) }
-
-        it 'cannot be set to true' do
-          expect { agent.update(out_of_office: true) }
-            .to raise_error(Exceptions::UnprocessableEntity)
-        end
-      end
-
-      context 'with #out_of_office_end_at: nil' do
-        before { agent.update(out_of_office_start_at: Time.current, out_of_office_end_at: nil) }
-
-        it 'cannot be set to true' do
-          expect { agent.update(out_of_office: true) }
-            .to raise_error(Exceptions::UnprocessableEntity)
-        end
-      end
-
-      context 'when #out_of_office_start_at is AFTER #out_of_office_end_at' do
-        before { agent.update(out_of_office_start_at: Time.current.tomorrow, out_of_office_end_at: Time.current.next_month) }
-
-        it 'cannot be set to true' do
-          expect { agent.update(out_of_office: true) }
-            .to raise_error(Exceptions::UnprocessableEntity)
-        end
-      end
-
-      context 'when #out_of_office_start_at is AFTER Time.current' do
-        before { agent.update(out_of_office_start_at: Time.current.tomorrow, out_of_office_end_at: Time.current.yesterday) }
-
-        it 'cannot be set to true' do
-          expect { agent.update(out_of_office: true) }
-            .to raise_error(Exceptions::UnprocessableEntity)
-        end
-      end
-
-      context 'when #out_of_office_end_at is BEFORE Time.current' do
-        before { agent.update(out_of_office_start_at: Time.current.last_month, out_of_office_end_at: Time.current.yesterday) }
-
-        it 'cannot be set to true' do
-          expect { agent.update(out_of_office: true) }
-            .to raise_error(Exceptions::UnprocessableEntity)
-        end
-      end
-    end
-
-    describe '#out_of_office_replacement_id' do
-      it 'cannot be set to invalid user ID' do
-        expect { agent.update(out_of_office_replacement_id: described_class.pluck(:id).max.next) }
-          .to raise_error(ActiveRecord::InvalidForeignKey)
-      end
-
-      it 'can be set to a valid user ID' do
-        expect { agent.update(out_of_office_replacement_id: 1) }
-          .not_to raise_error
-      end
-    end
-
     describe '#login_failed' do
       before { user.update(login_failed: 1) }
 
@@ -1192,74 +604,76 @@ RSpec.describe User, type: :model do
     let!(:group_subject) { create(:group) }
 
     it 'does remove references before destroy' do
-      refs_known = { 'Group'                              => { 'created_by_id' => 1, 'updated_by_id' => 0 },
-                     'Token'                              => { 'user_id' => 1 },
-                     'Ticket::Article'                    =>
-                                                             { 'created_by_id' => 1, 'updated_by_id' => 1, 'origin_by_id' => 1 },
-                     'Ticket::StateType'                  => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'Ticket::Article::Sender'            => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'Ticket::Article::Type'              => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'Ticket::Article::Flag'              => { 'created_by_id' => 0 },
-                     'Ticket::Priority'                   => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'Ticket::SharedDraftStart'           => { 'created_by_id' => 1, 'updated_by_id' => 0 },
-                     'Ticket::SharedDraftZoom'            => { 'created_by_id' => 1, 'updated_by_id' => 0 },
-                     'Ticket::TimeAccounting'             => { 'created_by_id' => 0 },
-                     'Ticket::TimeAccounting::Type'       => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'Ticket::State'                      => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'Ticket::Flag'                       => { 'created_by_id' => 0 },
-                     'PostmasterFilter'                   => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'PublicLink'                         => { 'created_by_id' => 1, 'updated_by_id' => 0 },
-                     'User::TwoFactorPreference'          => { 'created_by_id' => 1, 'updated_by_id' => 1, 'user_id' => 1 },
-                     'OnlineNotification'                 => { 'user_id' => 1, 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'Ticket'                             =>
-                                                             { 'created_by_id' => 0, 'updated_by_id' => 0, 'owner_id' => 1, 'customer_id' => 3 },
-                     'Template'                           => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'Avatar'                             => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'Scheduler'                          => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'Chat'                               => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'HttpLog'                            => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'EmailAddress'                       => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'Taskbar'                            => { 'user_id' => 1 },
-                     'Sla'                                => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'UserDevice'                         => { 'user_id' => 1 },
-                     'Chat::Message'                      => { 'created_by_id' => 1 },
-                     'Chat::Agent'                        => { 'created_by_id' => 1, 'updated_by_id' => 1 },
-                     'Chat::Session'                      => { 'user_id' => 1, 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'Tag'                                => { 'created_by_id' => 0 },
-                     'RecentView'                         => { 'created_by_id' => 1 },
-                     'KnowledgeBase::Answer::Translation' =>
-                                                             { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'LdapSource'                         => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'KnowledgeBase::Answer'              =>
-                                                             { 'archived_by_id' => 1, 'published_by_id' => 1, 'internal_by_id' => 1 },
-                     'Report::Profile'                    => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'Package'                            => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'Job'                                => { 'created_by_id' => 0, 'updated_by_id' => 1 },
-                     'Store'                              => { 'created_by_id' => 0 },
-                     'Cti::CallerId'                      => { 'user_id' => 1 },
-                     'DataPrivacyTask'                    => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'Trigger'                            => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'Translation'                        => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'ObjectManager::Attribute'           => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'User'                               => { 'created_by_id' => 2, 'out_of_office_replacement_id' => 1, 'updated_by_id' => 2 },
-                     'User::OverviewSorting'              => { 'created_by_id' => 0, 'updated_by_id' => 0, 'user_id' => 1 },
-                     'Organization'                       => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'Macro'                              => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'CoreWorkflow'                       => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'Mention'                            => { 'created_by_id' => 1, 'updated_by_id' => 0, 'user_id' => 1 },
-                     'Channel'                            => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'Role'                               => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'History'                            => { 'created_by_id' => 6 },
-                     'Webhook'                            => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'Overview'                           => { 'created_by_id' => 1, 'updated_by_id' => 0 },
-                     'PGPKey'                             => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'ActivityStream'                     => { 'created_by_id' => 0 },
-                     'StatsStore'                         => { 'created_by_id' => 0 },
-                     'TextModule'                         => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'Calendar'                           => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'UserGroup'                          => { 'user_id' => 1 },
-                     'Signature'                          => { 'created_by_id' => 0, 'updated_by_id' => 0 },
-                     'Authorization'                      => { 'user_id' => 1 } }
+      refs_known = {
+        'Group'                              => { 'created_by_id' => 1, 'updated_by_id' => 0 },
+        'Token'                              => { 'user_id' => 1 },
+        'Ticket::Article'                    => { 'created_by_id' => 1, 'updated_by_id' => 1, 'origin_by_id' => 1 },
+        'Ticket::StateType'                  => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'Ticket::Article::Sender'            => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'Ticket::Article::Type'              => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'Ticket::Article::Flag'              => { 'created_by_id' => 0 },
+        'Ticket::Priority'                   => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'Ticket::SharedDraftStart'           => { 'created_by_id' => 1, 'updated_by_id' => 0 },
+        'Ticket::SharedDraftZoom'            => { 'created_by_id' => 1, 'updated_by_id' => 0 },
+        'Ticket::TimeAccounting'             => { 'created_by_id' => 0 },
+        'Ticket::TimeAccounting::Type'       => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'Ticket::State'                      => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'PostmasterFilter'                   => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'PublicLink'                         => { 'created_by_id' => 1, 'updated_by_id' => 0 },
+        'User::TwoFactorPreference'          => { 'created_by_id' => 1, 'updated_by_id' => 1, 'user_id' => 1 },
+        'OnlineNotification'                 => { 'user_id' => 1, 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'Ticket'                             => { 'created_by_id' => 0, 'updated_by_id' => 0, 'owner_id' => 1, 'customer_id' => 3 },
+        'Template'                           => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'Avatar'                             => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'Scheduler'                          => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'Chat'                               => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'HttpLog'                            => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'EmailAddress'                       => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'Taskbar'                            => { 'user_id' => 1 },
+        'Sla'                                => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'UserDevice'                         => { 'user_id' => 1 },
+        'Chat::Message'                      => { 'created_by_id' => 1 },
+        'Chat::Agent'                        => { 'created_by_id' => 1, 'updated_by_id' => 1 },
+        'Chat::Session'                      => { 'user_id' => 1, 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'Tag'                                => { 'created_by_id' => 0 },
+        'RecentView'                         => { 'created_by_id' => 1 },
+        'KnowledgeBase::Answer::Translation' => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'LdapSource'                         => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'KnowledgeBase::Answer'              => { 'archived_by_id' => 1, 'published_by_id' => 1, 'internal_by_id' => 1 },
+        'Report::Profile'                    => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'Package'                            => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'Job'                                => { 'created_by_id' => 0, 'updated_by_id' => 1 },
+        'Store'                              => { 'created_by_id' => 0 },
+        'Cti::CallerId'                      => { 'user_id' => 1 },
+        'DataPrivacyTask'                    => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'Trigger'                            => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'Translation'                        => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'ObjectManager::Attribute'           => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'User'                               => { 'created_by_id' => 2, 'out_of_office_replacement_id' => 1, 'updated_by_id' => 2 },
+        'User::OverviewSorting'              => { 'created_by_id' => 0, 'updated_by_id' => 0, 'user_id' => 1 },
+        'Organization'                       => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'Macro'                              => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'CoreWorkflow'                       => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'Mention'                            => { 'created_by_id' => 1, 'updated_by_id' => 0, 'user_id' => 1 },
+        'Channel'                            => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'Role'                               => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'History'                            => { 'created_by_id' => 6 },
+        'Webhook'                            => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'Overview'                           => { 'created_by_id' => 1, 'updated_by_id' => 0 },
+        'PGPKey'                             => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'ActivityStream'                     => { 'created_by_id' => 0 },
+        'StatsStore'                         => { 'created_by_id' => 0 },
+        'TextModule'                         => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'Calendar'                           => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'UserGroup'                          => { 'user_id' => 1 },
+        'Signature'                          => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'Authorization'                      => { 'user_id' => 1 },
+        'SystemReport'                       => { 'created_by_id' => 0 },
+        'Checklist'                          => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'Checklist::Item'                    => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'ChecklistTemplate'                  => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+        'ChecklistTemplate::Item'            => { 'created_by_id' => 0, 'updated_by_id' => 0 },
+      }
 
       # delete objects
       token                      = create(:token, user: user)
@@ -1557,6 +971,24 @@ RSpec.describe User, type: :model do
                 .and not_change(current_agents, :count)
             end
           end
+
+          context 'when limit was exceeded but users where removed' do
+            let(:agent_1) { create(:agent) }
+            let(:agent_2) { create(:agent) }
+
+            before do
+              agent_1 && agent_2
+              Setting.set('system_agent_limit', current_agents.count)
+            end
+
+            it 'allows to create a new agent after destroying agents to be under the limit' do
+              agent_1.destroy!
+              agent_2.destroy!
+
+              expect { create(:agent) }
+                .not_to raise_error
+            end
+          end
         end
       end
 
@@ -1812,6 +1244,96 @@ RSpec.describe User, type: :model do
 
         expect { agent.roles = [Role.lookup(name: 'Customer')] }
           .not_to change { agent.reload.preferences.dig('notification_config', 'matrix') }
+      end
+    end
+  end
+
+  describe 'Sanitizes name attributes for offending URLs' do
+    shared_examples 'sanitizing user name attributes' do |firstname, lastname|
+      it 'sanitizes user name attributes' do
+        expect(user).to have_attributes(firstname: firstname, lastname: lastname)
+      end
+    end
+
+    context 'with firstname attribute only' do
+      let(:user) { create(:customer, firstname: value, lastname: nil, email: Faker::Internet.unique.email) }
+
+      context 'when equaling a URL with a scheme' do
+        let(:value) { 'https://zammad.org/participate' }
+
+        it_behaves_like 'sanitizing user name attributes', 'zammad.org/participate'
+      end
+
+      context 'when equaling a URL without a scheme' do
+        let(:value) { 'zammad.org' }
+
+        it_behaves_like 'sanitizing user name attributes', 'zammad.org'
+      end
+
+      context 'when containing a URL with a scheme' do
+        let(:value) { 'Click here to confirm https://zammad.org/participate then log in' }
+
+        it_behaves_like 'sanitizing user name attributes', 'Click', 'here to confirm zammad.org/participate then log in'
+      end
+
+      context 'when containing a URL with an invalid scheme' do
+        let(:value) { 'A: Testing' }
+
+        it_behaves_like 'sanitizing user name attributes', 'A:', 'Testing'
+      end
+    end
+
+    context 'with lastname attribute only' do
+      let(:user) { create(:customer, firstname: nil, lastname: value, email: Faker::Internet.unique.email) }
+
+      context 'when equaling a URL with a scheme' do
+        let(:value) { 'https://zammad.org/participate' }
+
+        it_behaves_like 'sanitizing user name attributes', nil, 'zammad.org/participate'
+      end
+
+      context 'when equaling a URL without a scheme' do
+        let(:value) { 'zammad.org' }
+
+        it_behaves_like 'sanitizing user name attributes', nil, 'zammad.org'
+      end
+
+      context 'when containing a URL with a scheme' do
+        let(:value) { 'Click here to confirm https://zammad.org/participate then log in' }
+
+        it_behaves_like 'sanitizing user name attributes', 'Click', 'here to confirm zammad.org/participate then log in'
+      end
+    end
+
+    context 'with both firstname and lastname attribute' do
+      let(:user) { create(:customer, firstname: firstname, lastname: lastname, email: Faker::Internet.unique.email) }
+
+      context 'when equaling a URL with a scheme' do
+        let(:firstname) { 'Click here to confirm' }
+        let(:lastname)  { 'https://zammad.org/participate' }
+
+        it_behaves_like 'sanitizing user name attributes', 'Click here to confirm', 'zammad.org/participate'
+      end
+
+      context 'when equaling a URL without a scheme' do
+        let(:firstname) { 'zammad.org' }
+        let(:lastname) { 'Foundation' }
+
+        it_behaves_like 'sanitizing user name attributes', 'zammad.org', 'Foundation'
+      end
+
+      context 'when containing a URL with a scheme' do
+        let(:firstname) { 'Click here to confirm' }
+        let(:lastname)  { 'https://zammad.org/participate then log in' }
+
+        it_behaves_like 'sanitizing user name attributes', 'Click here to confirm', 'zammad.org/participate then log in'
+      end
+
+      context 'when containing a URL with an invalid scheme' do
+        let(:firstname) { 'Dummy R: Berlin' }
+        let(:lastname)  { 'Mail' }
+
+        it_behaves_like 'sanitizing user name attributes', 'Dummy R: Berlin', 'Mail'
       end
     end
   end

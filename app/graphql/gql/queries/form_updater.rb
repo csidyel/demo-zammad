@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Gql::Queries
   class FormUpdater < BaseQuery
@@ -12,10 +12,10 @@ module Gql::Queries
     argument :data, GraphQL::Types::JSON, description: 'Current form data from'
     argument :id, GraphQL::Types::ID, required: false, description: 'Optional ID for related entity (e.g. for update forms)'
 
-    type GraphQL::Types::JSON, null: false
+    type Gql::Types::FormUpdaterResultType, null: false
 
-    def initialize(*args, **kwargs, &)
-      super(*args, **kwargs, &)
+    def initialize(...)
+      super
 
       arguments = context[:current_arguments]
 

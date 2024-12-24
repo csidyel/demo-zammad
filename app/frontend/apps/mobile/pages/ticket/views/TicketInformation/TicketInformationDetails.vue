@@ -1,26 +1,29 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 /* eslint-disable vue/attribute-hyphenation */
 
 import { computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
-import ObjectAttributes from '#shared/components/ObjectAttributes/ObjectAttributes.vue'
-import { useObjectAttributes } from '#shared/entities/object-attributes/composables/useObjectAttributes.ts'
-import { EnumObjectManagerObjects } from '#shared/graphql/types.ts'
-import CommonSectionMenu from '#mobile/components/CommonSectionMenu/CommonSectionMenu.vue'
-import CommonUsersList from '#mobile/components/CommonUsersList/CommonUsersList.vue'
+
 import CommonUserAvatar from '#shared/components/CommonUserAvatar/CommonUserAvatar.vue'
-import { useSessionStore } from '#shared/stores/session.ts'
-import CommonShowMoreButton from '#mobile/components/CommonShowMoreButton/CommonShowMoreButton.vue'
-import CommonSectionMenuItem from '#mobile/components/CommonSectionMenu/CommonSectionMenuItem.vue'
+import ObjectAttributes from '#shared/components/ObjectAttributes/ObjectAttributes.vue'
+import { useConfirmation } from '#shared/composables/useConfirmation.ts'
+import { useObjectAttributes } from '#shared/entities/object-attributes/composables/useObjectAttributes.ts'
+import { useTicketSubscribe } from '#shared/entities/ticket/composables/useTicketSubscribe.ts'
 import { useTicketView } from '#shared/entities/ticket/composables/useTicketView.ts'
+import { EnumObjectManagerObjects } from '#shared/graphql/types.ts'
+import { useSessionStore } from '#shared/stores/session.ts'
+
 import CommonLoader from '#mobile/components/CommonLoader/CommonLoader.vue'
-import { waitForConfirmation } from '#shared/utils/confirmation.ts'
+import CommonSectionMenu from '#mobile/components/CommonSectionMenu/CommonSectionMenu.vue'
+import CommonSectionMenuItem from '#mobile/components/CommonSectionMenu/CommonSectionMenuItem.vue'
+import CommonShowMoreButton from '#mobile/components/CommonShowMoreButton/CommonShowMoreButton.vue'
+import CommonUsersList from '#mobile/components/CommonUsersList/CommonUsersList.vue'
+
+import TicketEscalationTimeMenuItem from '../../components/TicketDetailView/TicketEscalationTimeMenuItem.vue'
 import TicketObjectAttributes from '../../components/TicketDetailView/TicketObjectAttributes.vue'
 import TicketTags from '../../components/TicketDetailView/TicketTags.vue'
 import { useTicketInformation } from '../../composable/useTicketInformation.ts'
-import { useTicketSubscribe } from '../../composable/useTicketSubscribe.ts'
-import TicketEscalationTimeMenuItem from '../../components/TicketDetailView/TicketEscalationTimeMenuItem.vue'
 
 const { attributes: objectAttributes } = useObjectAttributes(
   EnumObjectManagerObjects.Ticket,
@@ -32,12 +35,13 @@ const {
   ticket,
   updateFormLocation,
   ticketQuery,
-  canUpdateTicket,
 } = useTicketInformation()
 
 const ticketFormGroupNode = computed(() => {
   return form.value?.formNode?.at('ticket')
 })
+
+const { waitForConfirmation } = useConfirmation()
 
 const discardTicketEditDialog = async () => {
   if (!ticketFormGroupNode.value) return
@@ -45,7 +49,7 @@ const discardTicketEditDialog = async () => {
   const confirmed = await waitForConfirmation(
     __('Are you sure? You have unsaved changes that will get lost.'),
     {
-      buttonTitle: __('Discard changes'),
+      buttonLabel: __('Discard changes'),
       buttonVariant: 'danger',
     },
   )
@@ -53,10 +57,14 @@ const discardTicketEditDialog = async () => {
   if (!confirmed) return
 
   form.value?.resetForm(
-    initialFormTicketValue,
-    ticket.value,
-    { resetDirty: true },
-    ticketFormGroupNode.value,
+    {
+      values: initialFormTicketValue.value,
+      object: ticket.value,
+    },
+    {
+      resetDirty: true,
+      groupNode: ticketFormGroupNode.value,
+    },
   )
 }
 
@@ -72,6 +80,9 @@ const {
   canManageSubscription,
   isSubscribed,
   isSubscriptionLoading,
+  subscribersWithoutMe,
+  subscribersAccessLookup,
+  totalSubscribersWithoutMe,
   toggleSubscribe,
 } = useTicketSubscribe(ticket)
 
@@ -99,26 +110,6 @@ const handleToggleInput = async () => {
 }
 
 const session = useSessionStore()
-
-const subscribers = computed(() => {
-  if (!ticket.value?.mentions) return []
-  const subscribers = []
-  for (const { node } of ticket.value.mentions.edges) {
-    if (node.user.id !== session.userId) {
-      subscribers.push(node.user)
-    }
-  }
-  return subscribers
-})
-
-const totalSubscribers = computed(() => {
-  if (!ticket.value?.mentions) return 0
-  const hasMe = ticket.value.mentions.edges.some(
-    ({ node }) => node.user.id === session.userId,
-  )
-  // -1 for current user, who is shown as toggler
-  return ticket.value.mentions.totalCount - (hasMe ? 1 : 0)
-})
 
 const loadingTicket = ticketQuery.loading()
 const loadMoreMentions = () => {
@@ -158,7 +149,7 @@ const hasEscalation = computed(() => {
   </FormKit>
 
   <ObjectAttributes
-    v-if="!canUpdateTicket && ticket"
+    v-if="!isTicketEditable && ticket"
     :object="ticket"
     :attributes="objectAttributes"
     :skip-attributes="['title']"
@@ -215,12 +206,14 @@ const hasEscalation = computed(() => {
       :disabled="isSubscriptionLoading"
       :outer-class="{
         '!px-3': true,
-        'border-b border-white/10': subscribers.length,
+        'border-b border-white/10': subscribersWithoutMe.length,
       }"
       wrapper-class="!px-0"
       @input-raw="handleToggleInput"
     >
       <template #label="context">
+        <!-- id is available on the toggle element  -->
+        <!-- eslint-disable vuejs-accessibility/label-has-for -->
         <label :for="context.id" :class="context.classes.label">
           <CommonUserAvatar
             v-if="session.user"
@@ -231,10 +224,13 @@ const hasEscalation = computed(() => {
         </label>
       </template>
     </FormKit>
-    <CommonUsersList :users="subscribers" />
+    <CommonUsersList
+      :users="subscribersWithoutMe"
+      :access-lookup="subscribersAccessLookup"
+    />
     <CommonShowMoreButton
-      :entities="subscribers"
-      :total-count="totalSubscribers"
+      :entities="subscribersWithoutMe"
+      :total-count="totalSubscribersWithoutMe"
       :disabled="loadingTicket"
       @click="loadMoreMentions"
     />

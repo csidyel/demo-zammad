@@ -43,7 +43,7 @@ UI Element options:
 ###
 
 class App.UiElement.ApplicationAction
-  @defaults: (attribute) ->
+  @defaults: (attribute, params = {}) ->
     defaults = ['ticket.state_id']
 
     groups =
@@ -70,7 +70,6 @@ class App.UiElement.ApplicationAction
         else if groupKey is 'article'
           elements["#{groupKey}.note"] = { name: 'note', display: __('Note') }
       else
-
         for row in App[groupMeta.model].configure_attributes
 
           # ignore all article attributes except body and cc
@@ -90,6 +89,9 @@ class App.UiElement.ApplicationAction
             # ignore readonly attributes
             if !row.readonly
               config = _.clone(row)
+
+              config.objectName    = groupMeta.model
+              config.attributeName = config.name
 
               # disable uploads in richtext attributes
               if attribute.no_richtext_uploads
@@ -131,6 +133,48 @@ class App.UiElement.ApplicationAction
           { value: 'email-out', name: __('Email') },
         ]
 
+    if attribute.macro
+      elements['ticket.subscribe'] =
+        name: 'subscribe'
+        display: __('Subscribe')
+        tag: 'select'
+        null: false
+        translate: true
+        options: [
+          { value: 'current_user.id', name: __('current user') },
+        ]
+
+      elements['ticket.unsubscribe'] =
+        name: 'unsubscribe'
+        display: __('Unsubscribe')
+        tag: 'select'
+        null: false
+        translate: true
+        options: [
+          { value: 'current_user.id', name: __('current user') },
+        ]
+
+    if attribute.trigger
+      elements['ticket.subscribe'] =
+        name: 'subscribe'
+        display: __('Subscribe')
+        tag: 'select'
+        null: false
+        translate: true
+        permission: ['ticket.agent']
+        relation: 'User'
+        relation_condition: {roles: 'Agent'}
+
+      elements['ticket.unsubscribe'] =
+        name: 'unsubscribe'
+        display: __('Unsubscribe')
+        tag: 'select'
+        null: true
+        translate: true
+        permission: ['ticket.agent']
+        relation: 'User'
+        relation_condition: {roles: 'Agent'}
+
     [defaults, groups, elements]
 
   @placeholder: (elementFull, attribute, params, groups, elements) ->
@@ -141,7 +185,7 @@ class App.UiElement.ApplicationAction
 
   @render: (attribute, params = {}) ->
 
-    [defaults, groups, elements] = @defaults(attribute)
+    [defaults, groups, elements] = @defaults(attribute, params)
 
     # return item
     item = $( App.view('generic/ticket_perform_action/index')( attribute: attribute ) )
@@ -161,7 +205,9 @@ class App.UiElement.ApplicationAction
     # remove filter
     item.on('click', '.js-rowActions .js-remove', (e) =>
       return if $(e.currentTarget).hasClass('is-disabled')
-      $(e.target).closest('.js-filterElement').remove()
+      elementRow = $(e.target).closest('.js-filterElement')
+      @removeAlerts(item, elementRow)
+      elementRow.remove()
       @updateAttributeSelectors(item)
     )
 
@@ -171,6 +217,7 @@ class App.UiElement.ApplicationAction
       groupAndAttribute = elementRow.find('.js-attributeSelector option:selected').attr('value')
       @rebuildAttributeSelectors(item, elementRow, groupAndAttribute, elements, {}, attribute)
       @updateAttributeSelectors(item)
+      @refreshAlerts(item, elementRow, groupAndAttribute, elements, attribute)
     )
 
     # change operator selector
@@ -178,6 +225,13 @@ class App.UiElement.ApplicationAction
       elementRow = $(e.target).closest('.js-filterElement')
       groupAndAttribute = elementRow.find('.js-attributeSelector option:selected').attr('value')
       @buildOperator(item, elementRow, groupAndAttribute, elements, {}, attribute)
+    )
+
+    # change value selector
+    item.on('change', '.js-value select', (e) =>
+      elementRow = $(e.target).closest('.js-filterElement')
+      groupAndAttribute = elementRow.find('.js-attributeSelector option:selected').attr('value')
+      @refreshAlerts(item, elementRow, groupAndAttribute, elements, attribute)
     )
 
     # build initial params
@@ -189,6 +243,7 @@ class App.UiElement.ApplicationAction
         element = @placeholder(item, attribute, params, groups, elements)
         item.append(element)
         @rebuildAttributeSelectors(item, element, groupAndAttribute, elements, {}, attribute)
+        @refreshAlerts(item, element, groupAndAttribute, elements, attribute)
 
     else
 
@@ -200,6 +255,7 @@ class App.UiElement.ApplicationAction
         element = @placeholder(item, attribute, params, groups, elements)
         @rebuildAttributeSelectors(item, element, groupAndAttribute, elements, meta, attribute)
         item.append(element)
+        @refreshAlerts(item, element, groupAndAttribute, elements, attribute)
 
     @disableRemoveForOneAttribute(item)
     item
@@ -361,7 +417,10 @@ class App.UiElement.ApplicationAction
         'specific': App.i18n.translateInline('specific user')
 
       if attributeSelected.null is true
-        options['not_set'] = App.i18n.translateInline('unassign user')
+        options['not_set'] = if groupAndAttribute == 'ticket.unsubscribe'
+          App.i18n.translateInline('all subscribers')
+        else
+          App.i18n.translateInline('unassign user')
 
     else if preCondition is 'org'
       options =
@@ -660,3 +719,35 @@ class App.UiElement.ApplicationAction
     )
 
     elementRow.find('.js-setArticle').html(articleElement).removeClass('hide')
+
+  @refreshAlerts: (item, elementRow, groupAndAttribute, elements, attribute) =>
+    @removeAlerts(item, elementRow)
+
+    params = App.ControllerForm.params(elementRow)
+    return if not params
+
+    { value } = params[attribute.name]?[groupAndAttribute]
+    return if not value
+
+    { alerts } = elements[groupAndAttribute]
+    return if not alerts?[value]
+
+    message = alerts[value]
+    return if not message
+
+    # We need a reference to the parent row, since its attribute may be changed to something else.
+    #   In this case, we will clean up all alerts tied to this row only.
+    if not elementRow.data('id')
+      elementRowId = 'elementRow-' + new Date().getTime() + '-' + Math.floor(Math.random() * 999999)
+      elementRow.data('id', elementRowId)
+
+    $('<div />')
+      .addClass('alert alert--warning js-alert')
+      .attr('role', 'alert')
+      .attr('data-element-row-id', elementRow.data('id'))
+      .text(App.i18n.translatePlain(message))
+      .prependTo(item)
+
+  @removeAlerts: (item, elementRow) ->
+    item.find(".js-alert[data-element-row-id='#{elementRow.data('id')}']")
+      .remove()

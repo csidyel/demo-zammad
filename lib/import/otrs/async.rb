@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Import
   module OTRS
@@ -43,12 +43,13 @@ module Import
         status_update_thread.join
 
         result = {
+          data:   current_state,
           result: 'import_done',
         }
         Rails.cache.write('import:state', result, expires_in: 10.hours)
 
-        Setting.set('system_init_done', true)
         Setting.set('import_mode', false)
+        Setting.set('system_init_done', true)
       end
 
       def status_bg

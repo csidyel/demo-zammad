@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class ReportsController < ApplicationController
   prepend_before_action :authenticate_and_authorize!
@@ -31,6 +31,7 @@ class ReportsController < ApplicationController
         backend[:condition] = condition
       end
       next if !backend[:adapter]
+      next if params['backends'][backend[:name]].blank?
 
       result[backend[:name]] = backend[:adapter].aggs(
         range_start:     get_params[:start],
@@ -116,7 +117,6 @@ class ReportsController < ApplicationController
   end
 
   def params_all
-    profile = nil
     if !params[:profiles] && !params[:profile_id]
       raise Exceptions::UnprocessableEntity, __("Required parameter 'profile' is missing.")
     end
@@ -166,7 +166,7 @@ class ReportsController < ApplicationController
       stop_at = Time.zone.parse("#{params[:year]}-12-31T23:59:59Z")
       range = 'month'
     end
-    params[:timezone] ||= Setting.get('timezone_default_sanitized')
+    params[:timezone] ||= Setting.get('timezone_default')
     if params[:timeRange] != 'realtime'
       offset = stop_at.in_time_zone(params[:timezone]).utc_offset
       start_at -= offset

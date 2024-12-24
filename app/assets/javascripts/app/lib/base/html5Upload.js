@@ -12,6 +12,7 @@
         var self = this;
         self.dropContainer = options.dropContainer;
         self.inputField = options.inputField;
+        self.canUploadFiles = options.canUploadFiles;
         self.cancelContainer = options.cancelContainer;
         self.uploadsQueue = [];
         self._xhrs = [];
@@ -158,6 +159,10 @@
                 upload,
                 i;
 
+            if(this.canUploadFiles && !this.canUploadFiles(files)) {
+              return false;
+            }
+
             for (i = 0; i < len; i += 1) {
                 file = files[i];
                 if (file.size === 0) {
@@ -244,7 +249,7 @@
                 // call the error callback when the status is not ok
                 if (xhr.status !== 200){
                   console.log('Upload failed: ' + fileName);
-                  upload.events.onError(event.target.statusText);
+                  upload.events.onError(event.target.responseText);
                 } else {
                   console.log('Upload completed: ' + fileName);
                   upload.events.onCompleted(event.target.responseText);

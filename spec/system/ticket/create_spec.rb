@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -13,13 +13,13 @@ RSpec.describe 'Ticket Create', type: :system do
       it 'login screen after certain create was called', authenticated_as: false do
         visit '#ticket/create/id/1234'
 
-        expect(page).to have_selector('#login')
+        expect(page).to have_css('#login')
       end
 
       it 'login screen after generic create was called', authenticated_as: false do
         visit '#ticket/create'
 
-        expect(page).to have_selector('#login')
+        expect(page).to have_css('#login')
       end
     end
   end
@@ -45,14 +45,14 @@ RSpec.describe 'Ticket Create', type: :system do
       it 'does show the edit link for the customer' do
         click '.tabsSidebar-tab[data-tab=customer]'
         click '#userAction'
-        click_link 'Edit Customer'
+        click_on 'Edit Customer'
         modal_ready
       end
 
       it 'does show the edit link for the organization' do
         click '.tabsSidebar-tab[data-tab=organization]'
         click '#userAction'
-        click_link 'Edit Organization'
+        click_on 'Edit Organization'
         modal_ready
       end
     end
@@ -257,7 +257,7 @@ RSpec.describe 'Ticket Create', type: :system do
       browser_travel_to Time.current
 
       visit 'ticket/create'
-      use_template template
+      use_template template, without_taskbar: true
     end
 
     let(:field_date) { find 'input[name="{date}date_test"]', visible: :all }
@@ -501,20 +501,20 @@ RSpec.describe 'Ticket Create', type: :system do
     let(:agent)    { create(:agent, password: 'test') }
     let(:customer) { create(:customer, password: 'test') }
 
-    it 'customer user should not have agent object attributes', authenticated_as: :agent do
-      # Log out again, so that we can execute the next login.
-      logout
+    it 'customer user should not have agent object attributes', authenticated_as: false do
 
-      # Re-create agent session and fetch object attributes.
+      # Create agent session and fetch object attributes.
       login(
         username: agent.login,
         password: 'test'
       )
       visit 'ticket/create'
 
-      # Re-remove local object attributes bound to the session
-      # there was an issue (#1856) where the old attribute values
-      # persisted and were stored as the original attributes.
+      expect(page).to have_field('customer_id', type: 'hidden')
+
+      # Remove local object attributes bound to the session.
+      #   There was an issue (#1856) where the old attribute values
+      #   persisted and were stored as the original attributes.
       logout
 
       # Create customer session and fetch object attributes.
@@ -522,10 +522,9 @@ RSpec.describe 'Ticket Create', type: :system do
         username: customer.login,
         password: 'test'
       )
-
       visit 'customer_ticket_new'
 
-      expect(page).to have_no_css('.newTicket input[name="customer_id"]')
+      expect(page).to have_no_field('customer_id', type: 'hidden')
     end
   end
 
@@ -614,11 +613,11 @@ RSpec.describe 'Ticket Create', type: :system do
         object: 'Ticket',
         name:   'state_id',
       )
-      attribute.data_option[:filter] = Ticket::State.by_category(:viewable).pluck(:id)
-      attribute.screens[:create_middle]['ticket.agent'][:filter] = Ticket::State.by_category(:viewable_agent_new).pluck(:id)
-      attribute.screens[:create_middle]['ticket.customer'][:filter] = Ticket::State.by_category(:viewable_customer_new).pluck(:id)
-      attribute.screens[:edit]['ticket.agent'][:filter] = Ticket::State.by_category(:viewable_agent_edit).pluck(:id)
-      attribute.screens[:edit]['ticket.customer'][:filter] = Ticket::State.by_category(:viewable_customer_edit).pluck(:id)
+      attribute.data_option[:filter] = Ticket::State.where(active: true).by_category_ids(:viewable)
+      attribute.screens[:create_middle]['ticket.agent'][:filter] = Ticket::State.where(active: true).by_category_ids(:viewable_agent_new)
+      attribute.screens[:create_middle]['ticket.customer'][:filter] = Ticket::State.where(active: true).by_category_ids(:viewable_customer_new)
+      attribute.screens[:edit]['ticket.agent'][:filter] = Ticket::State.where(active: true).by_category_ids(:viewable_agent_edit)
+      attribute.screens[:edit]['ticket.customer'][:filter] = Ticket::State.where(active: true).by_category_ids(:viewable_customer_edit)
       attribute.save!
     end
 
@@ -714,9 +713,9 @@ RSpec.describe 'Ticket Create', type: :system do
 
       it 'has no show more option' do
         find('[name=customer_id_completion]').fill_in with: 'zam'
-        expect(page).to have_selector("li.js-organization[data-organization-id='#{organization.id}']")
+        expect(page).to have_css("li.js-organization[data-organization-id='#{organization.id}']")
         page.find("li.js-organization[data-organization-id='#{organization.id}']").click
-        expect(page).to have_selector("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers.hidden", visible: :all)
+        expect(page).to have_css("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers.hidden", visible: :all)
       end
     end
 
@@ -733,22 +732,22 @@ RSpec.describe 'Ticket Create', type: :system do
 
       it 'does paginate through organization' do
         find('[name=customer_id_completion]').fill_in with: 'zam'
-        expect(page).to have_selector("li.js-organization[data-organization-id='#{organization.id}']")
+        expect(page).to have_css("li.js-organization[data-organization-id='#{organization.id}']")
         page.find("li.js-organization[data-organization-id='#{organization.id}']").click
         wait.until { page.all("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li", visible: :all).count == 12 } # 10 users + back + show more button
 
-        expect(page).to have_selector("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers[organization-member-limit='10']")
+        expect(page).to have_css("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers[organization-member-limit='10']")
         scroll_into_view('li.js-showMoreMembers')
         page.find("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers").click
         wait.until { page.all("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li", visible: :all).count == 27 } # 25 users + back + show more button
 
-        expect(page).to have_selector("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers[organization-member-limit='25']")
+        expect(page).to have_css("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers[organization-member-limit='25']")
         scroll_into_view('li.js-showMoreMembers')
         page.find("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers").click
         wait.until { page.all("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li", visible: :all).count == 52 } # 50 users + back + show more button
 
         scroll_into_view('li.js-showMoreMembers')
-        expect(page).to have_selector("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers.hidden", visible: :all)
+        expect(page).to have_css("ul.recipientList-organizationMembers[organization-id='#{organization.id}'] li.js-showMoreMembers.hidden", visible: :all)
       end
     end
   end
@@ -824,8 +823,10 @@ RSpec.describe 'Ticket Create', type: :system do
     end
 
     def add_email(input)
-      fill_in 'CC', with: input
-      send_keys(:enter) # trigger blur
+      field = find_field('CC')
+      field.fill_in with: input
+      field.execute_script "$(this).trigger('blur')" # trigger blur
+
       find '.token', text: input # wait for email to tokenize
     end
   end
@@ -961,6 +962,25 @@ RSpec.describe 'Ticket Create', type: :system do
         click '.js-submit'
         wait.until { Ticket.last.organization_id == user1.organizations[0].id }
       end
+
+      it 'restores saved organization selection correctly (#5347)' do
+        find('[name=customer_id_completion]').fill_in with: user1.firstname
+        wait.until { page.all("li.recipientList-entry.js-object[data-object-id='#{user1.id}']").present? }
+        find("li.recipientList-entry.js-object[data-object-id='#{user1.id}']").click
+
+        find('div[data-attribute-name=organization_id] .js-input').fill_in with: organization2.name, fill_options: { clear: :backspace }
+        wait.until { page.all("div[data-attribute-name=organization_id] .js-option[data-value='#{organization2.id}']").present? }
+
+        taskbar_timestamp = Taskbar.last.updated_at
+
+        page.find("div[data-attribute-name=organization_id] .js-option[data-value='#{organization2.id}'] span").click
+
+        wait.until { Taskbar.last.updated_at != taskbar_timestamp }
+
+        refresh
+
+        expect(find('div[data-attribute-name=organization_id] .js-input').value).to eq(organization2.name)
+      end
     end
 
     context 'when customer' do
@@ -1031,7 +1051,11 @@ RSpec.describe 'Ticket Create', type: :system do
     end
 
     it 'preserves text input from the user' do
+      taskbar_timestamp = Taskbar.last.updated_at
+
       set_editor_field_value('body', 'foobar')
+
+      wait.until { Taskbar.last.updated_at != taskbar_timestamp }
 
       use_template(template1)
       check_input_field_value('title', 'template 1')
@@ -1047,7 +1071,11 @@ RSpec.describe 'Ticket Create', type: :system do
       check_input_field_value('title', 'template 2')
       check_editor_field_value('body', 'body 2')
 
+      taskbar_timestamp = Taskbar.last.updated_at
+
       set_editor_field_value('body', 'foobar')
+
+      wait.until { Taskbar.last.updated_at != taskbar_timestamp }
 
       # This time body value should be left as-is
       use_template(template1)
@@ -1063,7 +1091,7 @@ RSpec.describe 'Ticket Create', type: :system do
       shared_examples 'calculated datetime value' do
 
         it 'applies correct datetime value' do
-          use_template(template)
+          use_template(template, without_taskbar: true)
 
           check_date_field_value(field, date.strftime('%m/%d/%Y'))
           check_time_field_value(field, date.strftime('%H:%M'))
@@ -1086,8 +1114,17 @@ RSpec.describe 'Ticket Create', type: :system do
           # Since front-end uses a JS-specific function to add a month value to the current date,
           #   calculating the value here with Ruby code may lead to unexpected values.
           #   Therefore, we use a reimplementation of the ECMAScript function instead.
-          if range == 'month'
+          case range
+          when 'month'
             frontend_relative_month(Time.current, value)
+          when 'year'
+            frontend_relative_month(Time.current, 0, year: value)
+          when 'minute', 'hour'
+            # Javascript disregards DST switch and simply adds hours.
+            # Rails Time does respect DST switch and this causes off-by-one errors around DST.
+            # Time looses time zone and DST details when converted to DateTime.
+            # Then DateTime#advance matches Javascript DST ignorance.
+            DateTime.current.advance range.pluralize.to_sym => value
           else
             value.send(range).from_now
           end
@@ -1118,7 +1155,7 @@ RSpec.describe 'Ticket Create', type: :system do
       let(:template_value) { date.to_datetime.to_s }
 
       it 'applies correct date value' do
-        use_template(template)
+        use_template(template, without_taskbar: true)
 
         check_date_field_value(field, date.strftime('%m/%d/%Y'))
       end
@@ -1212,7 +1249,7 @@ RSpec.describe 'Ticket Create', type: :system do
     end
 
     it 'filters active templates only' do
-      expect(find('#form-template select[name="id"]')).to have_selector('option', text: active_template.name).and(have_no_selector('option', text: inactive_template.name))
+      expect(find('#form-template select[name="id"]')).to have_css('option', text: active_template.name).and(have_no_selector('option', text: inactive_template.name))
     end
   end
 
@@ -1256,8 +1293,6 @@ RSpec.describe 'Ticket Create', type: :system do
       it 'applies configured cc value' do
         use_template(template)
 
-        await_empty_ajax_queue
-
         expect(page).to have_css('label', text: 'CC')
 
         check_input_field_value('cc', cc_recipients, visible: :all)
@@ -1273,8 +1308,6 @@ RSpec.describe 'Ticket Create', type: :system do
 
       it 'ignores configured cc value' do
         use_template(template)
-
-        await_empty_ajax_queue
 
         expect(page).to have_no_css('label', text: 'CC')
 
@@ -1315,7 +1348,7 @@ RSpec.describe 'Ticket Create', type: :system do
 
           expect(elem)
             .to have_no_selector('.tabsSidebar-tab-count--danger')
-            .and have_selector('.tabsSidebar-tab-count--warning')
+            .and have_css('.tabsSidebar-tab-count--warning')
         end
       end
 
@@ -1324,7 +1357,7 @@ RSpec.describe 'Ticket Create', type: :system do
 
         it 'highlights as danger' do
           expect(elem)
-            .to have_selector('.tabsSidebar-tab-count--danger')
+            .to have_css('.tabsSidebar-tab-count--danger')
             .and have_no_selector('.tabsSidebar-tab-count--warning')
         end
       end
@@ -1388,9 +1421,9 @@ RSpec.describe 'Ticket Create', type: :system do
       multi_tree_select_click('Change request')
       select '1 low', from: 'priority_id'
       select 'pending reminder', from: 'state_id'
-      expect(page).to have_selector('span.token-label', text: 'Incident')
-      expect(page).to have_selector('span.token-label', text: 'Service request')
-      expect(page).to have_selector('span.token-label', text: 'Change request')
+      expect(page).to have_css('span.token-label', text: 'Incident')
+      expect(page).to have_css('span.token-label', text: 'Service request')
+      expect(page).to have_css('span.token-label', text: 'Change request')
     end
   end
 
@@ -1508,6 +1541,57 @@ RSpec.describe 'Ticket Create', type: :system do
 
       page.find('[name=priority_id]').select '1 low'
       expect(page).to have_text(group_2.signature.body)
+    end
+  end
+
+  describe 'CoreWorkflow "fill in empty" fires on non-empty fields during ticket creation when logged in as customer #5004' do
+    let(:body_content) { SecureRandom.uuid }
+    let(:workflow) do
+      create(:core_workflow,
+             object:  'Ticket',
+             perform: { 'article.body' => { 'operator' => 'fill_in_empty', 'fill_in_empty' => body_content } })
+    end
+
+    def setup_workflows
+      workflow
+    end
+
+    context 'when agent', authenticated_as: :authenticate do
+      def authenticate
+        setup_workflows
+        true
+      end
+
+      before do
+        visit '#ticket/create'
+      end
+
+      it 'does fill the body' do
+        check_editor_field_value('body', body_content)
+        set_editor_field_value('body', 'new_content')
+        check_editor_field_value('body', 'new_content')
+        page.find('[name=priority_id]').select '3 high'
+        check_editor_field_value('body', 'new_content')
+      end
+    end
+
+    context 'when customer', authenticated_as: :authenticate do
+      def authenticate
+        setup_workflows
+        create(:customer)
+      end
+
+      before do
+        visit 'customer_ticket_new'
+      end
+
+      it 'does fill the body' do
+        check_editor_field_value('body', body_content)
+        set_editor_field_value('body', 'new_content')
+        check_editor_field_value('body', 'new_content')
+        page.find('[name=state_id]').select 'closed'
+        check_editor_field_value('body', 'new_content')
+      end
     end
   end
 end

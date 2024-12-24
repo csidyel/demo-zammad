@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -121,6 +121,15 @@ RSpec.describe Channel, type: :model do
       it_behaves_like 'common XOAUTH2' do
         let(:channel) { create(:microsoft365_channel) }
       end
+    end
+  end
+
+  describe 'validations' do
+    it 'validates email account uniqueness' do
+      expect_any_instance_of(Validations::ChannelEmailAccountUniquenessValidator)
+        .to receive(:validate).once
+
+      create(:email_channel)
     end
   end
 end

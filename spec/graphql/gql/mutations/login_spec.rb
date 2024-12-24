@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -123,6 +123,11 @@ RSpec.describe Gql::Mutations::Login, :aggregate_failures, type: :request do
 
       context 'with two factor authentication' do
         let!(:two_factor_pref) { create(:user_two_factor_preference, :authenticator_app, user: agent) }
+        let(:enabled)          { true }
+
+        before do
+          Setting.set('two_factor_authentication_method_authenticator_app', enabled)
+        end
 
         context 'without token' do
           it 'returns two factor availability data' do
@@ -153,9 +158,40 @@ RSpec.describe Gql::Mutations::Login, :aggregate_failures, type: :request do
               }]
             )
           end
+
+          context 'when default method is disabled, but another exists' do
+            let(:enabled) { true }
+
+            before do
+              two_factor_pref
+
+              create(:user_two_factor_preference, :security_keys, user: agent)
+
+              agent.reload
+              agent.preferences[:two_factor_authentication][:default] = 'security_keys'
+              agent.save!
+            end
+
+            it 'fails with error message' do
+              expect(graphql_response['data']['login']['errors']).to eq(
+                [{
+                  'message' => 'Login failed. Please double-check your two-factor authentication method.',
+                  'field'   => nil
+                }]
+              )
+            end
+          end
+
+          context 'with disabled authenticator method' do
+            let(:enabled) { false }
+
+            it 'returns session data' do
+              expect(graphql_response['data']['login']['session']['id']).to be_present
+            end
+          end
         end
 
-        context 'with correkt token' do
+        context 'with correct token' do
           let(:two_factor_authentication) do
             {
               twoFactorMethod:  :authenticator_app,
@@ -165,6 +201,14 @@ RSpec.describe Gql::Mutations::Login, :aggregate_failures, type: :request do
 
           it 'returns session data' do
             expect(graphql_response['data']['login']['session']['id']).to be_present
+          end
+
+          context 'with disabled authenticator method' do
+            let(:enabled) { false }
+
+            it 'returns session data' do
+              expect(graphql_response['data']['login']['session']['id']).to be_present
+            end
           end
         end
 

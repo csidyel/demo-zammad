@@ -4,6 +4,7 @@
     "#tests/*": "./tests/*",
     "#shared/*": "./shared/*",
     "#mobile/*": "./apps/mobile/*",
-    "#cy/*": "../../.cypress/*"
+    "#desktop/*": "./apps/desktop/*",
+    "#cy/*": "../../.dev/cypress/*"
   }
 }

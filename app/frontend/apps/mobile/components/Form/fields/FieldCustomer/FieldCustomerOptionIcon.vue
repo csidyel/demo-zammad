@@ -1,11 +1,11 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 import CommonUserAvatar from '#shared/components/CommonUserAvatar/CommonUserAvatar.vue'
-import type { AutoCompleteCustomerOption } from '#shared/components/Form/fields/FieldCustomer/types.ts'
+import type { AutoCompleteCustomerUserOption } from '#shared/components/Form/fields/FieldCustomer/types.ts'
 
 defineProps<{
-  option: AutoCompleteCustomerOption
+  option: AutoCompleteCustomerUserOption
 }>()
 </script>
 

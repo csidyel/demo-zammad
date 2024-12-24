@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Gql::Types
   class GroupType < Gql::Types::BaseObject
@@ -15,10 +15,11 @@ module Gql::Types
     field :active, Boolean, null: false
 
     scoped_fields do
-      field :email_address, Gql::Types::Email::AddressType
+      field :email_address, Gql::Types::EmailAddressParsedType
       field :assignment_timeout, Integer
       field :follow_up_possible, String
       field :follow_up_assignment, Boolean
+      field :shared_drafts, Boolean
     end
 
     def email_address

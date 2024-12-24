@@ -2,6 +2,7 @@ $high-priority-color: hsl(360, 71%, 60%);
 $low-priority-color: hsl(200, 68%, 73%);
 $minWidth: 1024px;
 $sidebarWidth: 280px;
+$desktopSidebarWidth: 360px;
 $navigationWidth: 260px;
 $mobileNavigationWidth: 50px;
 $mobileNavigationWidthOpen: 220px;
@@ -385,6 +386,10 @@ ul {
   pointer-events: none;
 }
 
+.u-low-opacity {
+  opacity: 60%;
+}
+
 .u-clickable {
   @extend %clickable;
 }
@@ -490,6 +495,10 @@ ul {
   z-index: 1100;
 }
 
+.zIndex-12 {
+  z-index: 1200;
+}
+
 .clickCatcher {
   top: 0;
   left: 0;
@@ -531,7 +540,9 @@ ul {
 
 /* close commented backslash hack */
 
-[contenteditable] {
+/* Avoid too broad selectors, since they can affect unintended elements in third-party extensions (#5073). */
+[contenteditable='true'],
+.richtext-content[contenteditable] {
   display: block;
   outline-style: none;
   border-radius: 3px;
@@ -539,27 +550,27 @@ ul {
   /* needed to make empty tags editable, otherwise no focus can be set */
   min-height: 10px;
   min-width: 20px;
-}
 
-[contenteditable]:hover,
-[contenteditable]:focus {
-  background: var(--background-primary);
-}
+  &:hover,
+  &:focus {
+    background: var(--background-primary);
+  }
 
-[contenteditable]:focus {
-  text-overflow: clip !important;
-}
+  &:focus {
+    text-overflow: clip !important;
+  }
 
-[contenteditable].invalid {
-  background: #f92;
-}
+  &.invalid {
+    background: #f92;
+  }
 
-[contenteditable] > .placeholder {
-  color: var(--text-muted);
-}
+  & > .placeholder {
+    color: var(--text-muted);
+  }
 
-[contenteditable] p {
-  margin: 0;
+  p {
+    margin: 0;
+  }
 }
 
 /* fix for placeholder */
@@ -1017,7 +1028,7 @@ pre code {
   }
 }
 
-.btn + .btn,
+.btn + .btn:not(.btn--no-margin),
 .btn + .buttonDropdown,
 .buttonDropdown + .buttonDropdown {
   @include bidi-style(margin-left, 10px, margin-right, 0);
@@ -1198,6 +1209,10 @@ pre code {
         background-color: #429ed7;
       }
     }
+  }
+
+  button[disabled] ~ .dropdown-menu-accessories button {
+    opacity: 0.33;
   }
 }
 
@@ -1450,6 +1465,19 @@ table {
   table-layout: fixed;
 }
 
+.scroll-table-container {
+  overflow: hidden;
+  overflow-y: scroll;
+  max-height: 244px;
+
+  table > thead > tr > th {
+    @extend .zIndex-2;
+
+    top: 0;
+    position: sticky;
+  }
+}
+
 .table {
   display: table;
 
@@ -1564,6 +1592,10 @@ td.align-right {
   }
 }
 
+.table.table--no-borders > tbody > tr:not(:first-child) > td {
+  border-color: transparent;
+}
+
 .table > tbody > tr.u-center > td {
   vertical-align: middle;
 }
@@ -1623,7 +1655,7 @@ td.align-right {
 .table tr.is-grayed-out {
   color: var(--text-muted);
 
-  .icon,
+  .icon:not(.u-highlight),
   .btn span {
     opacity: 0.33;
   }
@@ -1651,6 +1683,10 @@ td .icon-trash {
 
 td .prefix-icon > .icon {
   vertical-align: top;
+}
+
+td .icon-cog {
+  width: 16px;
 }
 
 .table-checkbox,
@@ -1799,6 +1835,29 @@ td .prefix-icon > .icon {
   }
 }
 
+.checkbox-replacement-readonly {
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+
+  > .icon {
+    vertical-align: middle;
+    margin-top: -2px;
+  }
+
+  .icon-checkbox-checked-readonly.icon {
+    fill: var(--text-muted);
+    color: var(--background-primary);
+  }
+
+  .icon-checkbox-readonly.icon {
+    fill: var(--text-muted);
+  }
+}
+
 .radio-replacement {
   input:focus ~ .icon-checked,
   input:focus ~ .icon-unchecked {
@@ -1811,6 +1870,7 @@ td .prefix-icon > .icon {
 }
 
 .table .checkbox-replacement,
+.table .checkbox-replacement-readonly,
 .table .radio-replacement {
   height: 40px;
   width: 40px;
@@ -1960,6 +2020,7 @@ table {
 
 .label-text {
   @include bidi-style(margin-left, 3px, margin-right, 0);
+
   @extend %clickable;
 }
 
@@ -2048,6 +2109,19 @@ fieldset > .form-group {
   &.is-readonly .controls:not(.ignore-readonly) {
     pointer-events: none;
     cursor: not-allowed !important;
+
+    input:read-only.form-control:not(.js-input, .js-objectSelect) {
+      pointer-events: auto;
+      cursor: auto;
+    }
+  }
+
+  &.form-group--nested {
+    @include bidi-style(padding-left, 30px, padding-right, 30px);
+  }
+
+  &.form-group--wide {
+    @include bidi-style(margin-left, -30px, margin-right, -30px);
   }
 }
 
@@ -2500,6 +2574,12 @@ input.time.time--12 {
   }
 }
 
+.richtext.is-readonly [contenteditable='false'] {
+  cursor: default;
+  opacity: 1;
+  padding: 7px 12px;
+}
+
 .richtext.form-control .attachments.attachments--list:not(:empty) {
   border-top: 1px solid var(--background-modifier-border);
   white-space: normal;
@@ -2584,6 +2664,10 @@ select[multiple]:focus {
   padding: 1px;
 
   @include bidi-style(right, 12px, left, auto);
+
+  &--with-arrow-icon {
+    @include bidi-style(right, 35px, left, auto);
+  }
 
   top: 50%;
   margin-top: -7px;
@@ -2911,10 +2995,11 @@ input.has-error {
 }
 
 .modal--clue {
+  @extend .zIndex-6;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 500;
 
   .modal-backdrop {
     bottom: 0;
@@ -2990,6 +3075,11 @@ input.has-error {
 
     .btn.is-disabled {
       color: var(--text-normal);
+    }
+
+    &:only-child {
+      @include ltr(margin-left, auto);
+      @include rtl(margin-right, auto);
     }
   }
 
@@ -3265,6 +3355,10 @@ kbd {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.popover .page-loading {
+  min-height: 100px;
 }
 
 .page-loading-label {
@@ -3831,6 +3925,11 @@ ol.tabs li {
 
 .icon {
   fill: currentColor;
+
+  &--md {
+    width: 2rem;
+    height: 2rem;
+  }
 }
 
 [class*='icon-file-'] {
@@ -3885,6 +3984,10 @@ ol.tabs li {
 
 .icon-danger {
   color: hsl(41, 100%, 49%);
+
+  .alert.alert--warning & {
+    color: inherit;
+  }
 }
 
 .icon-draggable {
@@ -4229,6 +4332,7 @@ footer {
   bottom: 0;
 
   @include bidi-style(left, $sidebarWidth + $navigationWidth, right, 0);
+  @include bidi-style(right, 0, left, $sidebarWidth + $navigationWidth);
 
   min-width: $minWidth - $sidebarWidth - $navigationWidth;
   background: var(--background-secondary);
@@ -4240,12 +4344,21 @@ footer {
 
   @include small-desktop {
     @include bidi-style(left, $navigationWidth, right, 0);
+    @include bidi-style(right, 0, left, $navigationWidth);
+
+    min-width: $minWidth - $sidebarWidth;
+  }
+
+  @include desktop {
+    @include bidi-style(left, $sidebarWidth + $navigationWidth, right, 0);
+    @include bidi-style(right, 0, left, $sidebarWidth + $navigationWidth);
 
     min-width: $minWidth - $sidebarWidth;
   }
 
   &.no-sidebar {
     @include bidi-style(left, $navigationWidth, right, 0);
+    @include bidi-style(right, 0, left, $navigationWidth);
 
     min-width: $minWidth - $navigationWidth;
 
@@ -4256,11 +4369,12 @@ footer {
 
   @include phone {
     @include bidi-style(left, $mobileNavigationWidth, right, 0);
+    @include bidi-style(right, 0, left, $mobileNavigationWidth);
 
     min-width: 0;
 
-    .navigation.is-not-collapsed ~ & {
-      @include bidi-style(left, $mobileNavigationWidthOpen, right, 0);
+    .navigation.is-not-collapsed ~ .content & {
+      @include bidi-style(left, 0, right, 0);
     }
   }
 }
@@ -4450,7 +4564,7 @@ footer {
     left: 0;
     width: $mobileNavigationWidth;
     height: 100%;
-    z-index: 999;
+    z-index: 499;
 
     &:empty {
       display: none !important;
@@ -5876,7 +5990,7 @@ a.list-group-item.active > .badge,
 }
 
 .popover {
-  @extend .zIndex-7;
+  @extend .zIndex-12;
 
   position: absolute;
   font-family: inherit;
@@ -6848,6 +6962,23 @@ a.list-group-item.active > .badge,
   @include bidi-style(padding-left, 20px, padding-right, 0);
 }
 
+.scrollPageAlert {
+  @extend .zIndex-5;
+
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  transform: translateY(0);
+  border-bottom: 1px solid var(--border);
+
+  & > .alert {
+    margin-bottom: 0;
+    border-radius: 0;
+    text-align: center;
+  }
+}
+
 .ticket-article,
 .article-new {
   max-width: 1080px;
@@ -6882,6 +7013,30 @@ a.list-group-item.active > .badge,
     &:focus {
       background: var(--background-modifier-hover);
     }
+  }
+}
+
+.ticket-meta-highlighted {
+  color: var(--header-primary);
+}
+
+.ticket-meta-checklist-details {
+  display: block;
+  margin-top: 8px;
+
+  .ticket-meta-checklist-icon {
+    width: 14px;
+    height: 12.25px;
+    position: relative;
+    top: 2px;
+  }
+
+  .ticket-meta-checklist-entry {
+    display: inline-block;
+  }
+
+  .ticket-meta-checklist-entry + .ticket-meta-checklist-entry {
+    @include bidi-style(padding-left, 14px, padding-right, 0);
   }
 }
 
@@ -6940,6 +7095,30 @@ a.list-group-item.active > .badge,
 
   &.article-actions {
     justify-content: space-around;
+  }
+}
+
+.article-reaction {
+  position: absolute;
+  bottom: -12px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--background-article-customer-meta);
+  border: 1px solid var(--border-alt);
+  border-radius: 5px;
+  cursor: default;
+
+  @include ltr(right, 7px);
+  @include rtl(left, 7px);
+
+  span {
+    width: 14px;
+    height: 14px;
+    font-size: 14px;
+    line-height: 14px;
   }
 }
 
@@ -7132,6 +7311,14 @@ a.list-group-item.active > .badge,
   border-radius: 0 0 4px 4px;
 }
 
+.textBubble-footer:has(+ .attachments .attachment) {
+  margin-bottom: -10px;
+}
+
+.textBubble-footer:not(.is-open .textBubble-footer) {
+  visibility: hidden;
+}
+
 .textBubble-control {
   display: flex;
 }
@@ -7261,6 +7448,32 @@ a.list-group-item.active > .badge,
   border-color: var(--border-article-customer-selected);
 }
 
+.remote-content-message {
+  border-top: 1px solid var(--background-modifier-border);
+  white-space: normal;
+  margin: 10px -20px -10px;
+  padding: 10px 20px 10px 40px;
+  text-indent: -20px;
+  position: relative;
+  font-size: 13px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--background-modifier-hover);
+  }
+
+  .icon-danger {
+    vertical-align: text-bottom;
+    color: var(--text-normal);
+  }
+
+  @include phone {
+    margin-left: -10px;
+    margin-right: -10px;
+    padding: 10px 15px 10px 30px;
+  }
+}
+
 .attachments.attachments--list:not(:empty) {
   border-top: 1px solid var(--background-modifier-border);
   white-space: normal;
@@ -7272,6 +7485,12 @@ a.list-group-item.active > .badge,
     margin-left: -10px;
     margin-right: -10px;
     padding: 20px 15px 7px 30px;
+  }
+
+  &.attachments--wo-body {
+    border-top: none;
+    margin-top: 0;
+    padding-top: 12px;
   }
 }
 
@@ -7685,6 +7904,7 @@ a.list-group-item.active > .badge,
   white-space: nowrap;
 
   @include bidi-style(margin-left, auto, margin-right, 0);
+
   @extend .u-clickable;
 
   @include phone {
@@ -7739,6 +7959,7 @@ a.list-group-item.active > .badge,
   white-space: nowrap;
 
   @include bidi-style(margin-left, auto, margin-right, 0);
+
   @extend %clickable;
 }
 
@@ -7770,6 +7991,11 @@ a.list-group-item.active > .badge,
   pointer-events: auto;
 
   @extend .u-highlight;
+
+  &:has(input[type='file'][disabled]) {
+    color: var(--text-muted-alt);
+    pointer-events: none;
+  }
 }
 
 .attachmentUpload {
@@ -7778,6 +8004,7 @@ a.list-group-item.active > .badge,
 
 .attachmentUpload-cancel {
   @extend .u-clickable;
+
   @include bidi-style(margin-left, auto, margin-right, 0);
 
   text-decoration: underline;
@@ -7841,6 +8068,10 @@ a.list-group-item.active > .badge,
   transition: margin-right 500ms;
 
   @include rtl(transition, margin-left 500ms);
+
+  @include desktop {
+    @include bidi-style(margin-right, $desktopSidebarWidth, margin-left, 0);
+  }
 }
 
 .tabsSidebar-sidebarSpacer.is-closed {
@@ -7862,6 +8093,10 @@ a.list-group-item.active > .badge,
   border-left: 1px solid var(--border);
   padding: 0;
   margin-bottom: 1px;
+
+  @include desktop {
+    width: $desktopSidebarWidth;
+  }
 }
 
 .tabsSidebar .sidebar > hr {
@@ -7958,6 +8193,12 @@ a.list-group-item.active > .badge,
   transform: translateX($sidebarWidth);
 
   @include rtl(transform, translateX(-$sidebarWidth));
+
+  @include desktop {
+    transform: translateX($desktopSidebarWidth);
+
+    @include rtl(transform, translateX(-$desktopSidebarWidth));
+  }
 }
 
 .tabsSidebar-tabs {
@@ -8808,27 +9049,6 @@ li.list-item-none {
   display: block;
 }
 
-.table.user-list {
-  tr:hover .switchView {
-    visibility: visible;
-  }
-
-  td .list {
-    margin-top: -4px;
-  }
-
-  .switchView {
-    visibility: hidden;
-    display: block;
-    text-overflow: ellipsis;
-    overflow: hidden;
-  }
-
-  .btn {
-    margin: 3px 5px 0;
-  }
-}
-
 .switchBackToUser {
   display: flex;
   align-items: center;
@@ -9038,6 +9258,7 @@ li.list-item-none {
   padding: 0 40px;
 
   @extend .zIndex-11;
+
   @include bidi-style(padding-left, 40px, padding-right, 0);
 
   @include phone {
@@ -9127,6 +9348,10 @@ li.list-item-none {
 
 .dropdown-menu.dropdown-menu--light > li > a:hover {
   background: var(--background-secondary-hover);
+}
+
+.user-menu li.add .dropdown-menu.dropdown-menu--light li > a:hover {
+  color: var(--text-normal);
 }
 
 .dropdown-menu.dropdown-menu--light li:hover {
@@ -9224,6 +9449,12 @@ li.list-item-none {
 
 .dropdown-menu > li > a span {
   display: block;
+}
+
+.dropdown-menu > li > a.is-hovered {
+  color: var(--text-inverted);
+  text-decoration: none;
+  background: var(--menu-background-active);
 }
 
 .dropdown-menu .badge--text {
@@ -9498,6 +9729,7 @@ li.dropdown-header {
 
   .userList-name {
     @extend .u-textTruncate;
+
     @include bidi-style(margin-left, 7px, margin-right, 0);
   }
 }
@@ -10631,6 +10863,19 @@ label + .wizard-buttonList {
   &--with-switch {
     margin-bottom: 10px;
   }
+
+  .alert {
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+
+  .alert + .horizontal-filter {
+    border-radius: 4px 4px 0 0;
+  }
+
+  .alert + .horizontal-filter:last-child {
+    border-radius: 4px;
+  }
 }
 
 .horizontal-filter {
@@ -10654,6 +10899,14 @@ label + .wizard-buttonList {
 
   & + .horizontal-filter {
     border-top: none;
+  }
+
+  &-attribute {
+    max-width: 250px;
+
+    .modal--veryLarge & {
+      max-width: 400px;
+    }
   }
 
   select,
@@ -10988,6 +11241,17 @@ output {
     transform: translateX(70%);
 
     @include rtl(transform, none);
+  }
+}
+
+.zammad-switch-inline-label {
+  @extend .inline-label;
+
+  display: flex;
+  align-items: center;
+
+  .zammad-switch {
+    @include bidi-style(margin-left, 8px, margin-right, 0);
   }
 }
 
@@ -11452,6 +11716,12 @@ output {
     position: relative;
     line-height: 19px;
 
+    &--with-clear-button {
+      padding-right: 60px;
+
+      @include bidi-style(padding-right, 60px, padding-left, 12px);
+    }
+
     &.form-control--small ~ .searchableSelect-autocomplete {
       top: 6px;
       left: 9px;
@@ -11460,7 +11730,8 @@ output {
 
   .searchableSelect-shadow {
     position: absolute;
-    left: -9999px;
+
+    @include bidi-style(left, -9999px, right, -9999px);
   }
 
   .dropdown-menu {
@@ -11488,6 +11759,15 @@ output {
   &.dropdown li {
     &.has-inactive {
       cursor: unset;
+    }
+
+    &.is-selected {
+      @include bidi-style(
+        border-left,
+        5px solid var(--highlight),
+        border-right,
+        5px solid var(--highlight)
+      );
     }
 
     &.js-enter:hover,
@@ -11523,15 +11803,7 @@ output {
       padding: 0;
 
       span.searchableSelect-option-text {
-        @include ltr(padding, 11px 45px 11px 15px);
-        @include rtl(padding, 11px 15px 11px 45px);
-      }
-
-      span.searchableSelect-option-checkmark {
-        @include ltr(margin-left, -31px);
-        @include ltr(padding-right, 15px);
-        @include rtl(margin-right, -31px);
-        @include rtl(padding-left, 15px);
+        padding: 11px 15px;
       }
 
       span.searchableSelect-option-arrow {
@@ -11549,20 +11821,10 @@ output {
     }
 
     span.searchableSelect-option-text {
-      @include ltr(padding-right, 45px);
-      @include rtl(padding-left, 45px);
+      letter-spacing: -0.02rem;
 
       &:hover {
         background: var(--highlight);
-      }
-    }
-
-    span.searchableSelect-option-checkmark {
-      @include ltr(margin-left, -16px);
-      @include rtl(margin-right, 16px);
-
-      .icon-checkmark {
-        fill: var(--text-inverted);
       }
     }
   }
@@ -11659,6 +11921,10 @@ output {
     &.action-flow--row {
       flex-basis: 100%;
     }
+
+    &.action-flow--vertically-centered {
+      align-items: center;
+    }
   }
 
   &-separator {
@@ -11730,7 +11996,6 @@ output {
     margin-top: 16px; /* compensate for h3 height */
     margin-left: 20px;
     margin-right: 20px;
-    fill: var(--background-modifier-accent-light);
   }
 
   &-controls {
@@ -12330,6 +12595,16 @@ output {
   }
 }
 
+.manage-chat-jquery-switch-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+
+  .zammad-switch {
+    @include bidi-style(margin-right, 8px, margin-left, 8px);
+  }
+}
+
 .browser {
   margin: 0 0 20px;
   position: relative;
@@ -12698,6 +12973,8 @@ output {
 }
 
 .richtext-content {
+  overflow-x: auto;
+
   &[contenteditable] {
     &,
     &:hover,
@@ -12736,7 +13013,6 @@ output {
 
   table {
     table-layout: auto;
-    display: block;
     width: 100%;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
@@ -14642,5 +14918,224 @@ div.accounted-time-value {
     overflow: hidden;
 
     @include bidi-style(margin-right, 6px, margin-left, 0);
+  }
+}
+
+.checklistShowRowContent {
+  display: flex;
+  align-items: stretch;
+
+  .checklistItemTicketTitle,
+  .checklistItemValue {
+    flex-grow: 1;
+    padding-left: 4px;
+    padding-right: 4px;
+    padding-top: 10px;
+    padding-bottom: 5px; // make sure the value is aligned vertically with the checkbox and the dropdown menu
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+
+    &.edit-widget-active {
+      padding-top: 5px;
+      padding-bottom: 3px;
+
+      @include bidi-style(padding-left, 0, padding-right, 4px);
+    }
+  }
+
+  .checkbox-replacement-readonly,
+  .checkbox-replacement {
+    width: 40px;
+    flex-shrink: 0;
+  }
+
+  .checklistItemTicketStateIndicator {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .checklistShowRowDisplayValue {
+    display: flex;
+    flex-grow: 1;
+  }
+
+  .draggable {
+    width: 40px;
+    height: 28px;
+    text-align: center;
+    cursor: move;
+    flex-shrink: 0;
+    display: flex;
+    align-items: start;
+    justify-content: center;
+    margin-top: 12px;
+  }
+
+  .draggable:not(.hide) + .checklistItemTicketStateIndicator,
+  .draggable:not(.hide) + .checkbox-replacement-readonly {
+    width: 20px;
+  }
+
+  .dropdown-container {
+    flex-shrink: 0;
+
+    .icon-checkmark {
+      fill: white;
+    }
+  }
+}
+
+.checklistShow .table {
+  margin-bottom: 0;
+
+  &:not(.table--no-borders) {
+    border-bottom: 1px solid var(--background-modifier-accent);
+  }
+
+  > thead > tr > th {
+    height: 40px;
+    vertical-align: middle;
+    padding-top: 4px;
+    padding-bottom: 3px;
+  }
+
+  > tbody > tr > td {
+    vertical-align: middle;
+
+    &.checklistShowRowContentCell {
+      height: 40px;
+      padding: 0;
+    }
+
+    &.checklistShowRowContentCellNoItems {
+      height: 40px;
+      font-size: 12px;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .icon {
+      margin-top: 0;
+    }
+  }
+}
+
+.checklistShowButtons {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px;
+
+  .btn {
+    margin: 0;
+  }
+
+  .btn--create {
+    @include ltr(margin-left, auto);
+    @include rtl(margin-right, auto);
+  }
+}
+
+.input-group--small {
+  height: 30px;
+
+  .input-group-btn {
+    .btn--action {
+      padding: 0 9px !important;
+    }
+
+    .btn--icon-only {
+      height: 30px;
+      width: 30px;
+
+      .icon {
+        height: 10px;
+        width: 10px;
+      }
+    }
+  }
+}
+
+.checklistItemEdit,
+.checklistTitleEdit {
+  flex-grow: 1;
+}
+
+.checklistStart {
+  display: flex;
+  flex-direction: column;
+  row-gap: 8px;
+}
+
+.checklist-item-container {
+  .checklist-item {
+    display: flex;
+    flex: 0 1 auto;
+    align-items: center;
+    margin-bottom: 4px;
+    padding-left: 6px;
+    padding-right: 6px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--background-modifier-accent);
+
+    &-draggable {
+      cursor: move;
+      margin-right: 8px;
+      margin-left: 8px;
+      padding-top: 6px;
+    }
+
+    &-text {
+      @include ltr(margin-right, 8px);
+      @include rtl(margin-left, 8px);
+    }
+  }
+}
+
+.checklist-item-add-container {
+  display: flex;
+  flex-direction: row;
+  margin-top: 5px;
+  padding-left: 13px;
+  padding-right: 13px;
+
+  .checklist-item-add-item-text {
+    flex: 1 1 0%;
+
+    @include ltr(margin-right, 8px);
+    @include rtl(margin-left, 8px);
+  }
+}
+
+.checklist_item .controls .help-inline {
+  padding-left: 13px;
+  padding-right: 13px;
+}
+
+.checklist-item-template {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+#form-checklist-template .form-group {
+  margin-bottom: 10px;
+}
+
+#keyboard-shortcut {
+  &-switches {
+    margin-bottom: 20px;
+  }
+
+  &-areas {
+    transition: opacity 0.1s;
+
+    &.is-disabled {
+      opacity: 0.33;
+    }
   }
 }

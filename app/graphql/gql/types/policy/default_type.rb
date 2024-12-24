@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Gql::Types
   class Policy::DefaultType < Gql::Types::BaseObject
@@ -19,9 +19,17 @@ module Gql::Types
     private
 
     def pundit(query)
-      Pundit.authorize(context.current_user, @object, query)
+      Pundit.authorize(user, record, query)
     rescue Pundit::NotAuthorizedError
       false
+    end
+
+    def record
+      @object
+    end
+
+    def user
+      context.current_user
     end
   end
 end

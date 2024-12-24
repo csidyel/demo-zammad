@@ -1,8 +1,10 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { createNode } from '@formkit/core'
+
+import requiredValidation from '../global/requiredValidation.ts'
 
 import type { FormKitFrameworkContext } from '@formkit/core'
-import { createNode } from '@formkit/core'
-import requiredValidation from '../global/requiredValidation.ts'
 
 const createInput = (props: any = {}) => {
   const originalSchema = vi.fn()
@@ -52,6 +54,23 @@ describe('requiredValidation', () => {
     expect(inputNode.props.validation).toBe('number|required')
   })
 
+  it('change initial validation prop value', () => {
+    const inputNode = createInput({
+      required: true,
+      validation: 'number',
+    })
+
+    requiredValidation(inputNode)
+
+    expect(inputNode.props.validation).toBe('number|required')
+
+    // Change prop value
+
+    inputNode.props.validation = 'email'
+
+    expect(inputNode.props.validation).toBe('email|required')
+  })
+
   it('appends validation rule to array', () => {
     const inputNode = createInput({
       required: true,
@@ -71,7 +90,7 @@ describe('requiredValidation', () => {
 
     requiredValidation(inputNode)
 
-    inputNode.emit('prop:required', false)
+    inputNode.props.required = false
 
     expect(inputNode.props.validation).toEqual([['number']])
   })
@@ -84,7 +103,7 @@ describe('requiredValidation', () => {
 
     requiredValidation(inputNode)
 
-    inputNode.emit('prop:required', false)
+    inputNode.props.required = false
 
     expect(inputNode.props.validation).toBe('number')
   })

@@ -10,17 +10,17 @@
   "author": "Martin Gruner",
   "main": "lib/index.js",
   "scripts": {
-    "lint": "eslint .",
+    "lint": "eslint --max-warnings 0 .",
     "test": "mocha tests --recursive"
   },
   "dependencies": {
     "requireindex": "^1.2.0"
   },
   "devDependencies": {
-    "eslint": "^8.52.0",
-    "eslint-plugin-eslint-plugin": "^5.1.1",
-    "eslint-plugin-node": "^11.1.0",
-    "mocha": "^10.2.0"
+    "eslint": "^8.57.1",
+    "eslint-plugin-eslint-plugin": "^5.5.1",
+    "eslint-plugin-n": "^14.0.0",
+    "mocha": "^11.0.1"
   },
   "engines": {
     "node": "12.x || 14.x || >= 16"

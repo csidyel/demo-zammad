@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -56,7 +56,7 @@ RSpec.describe 'Form', authenticated_as: true, type: :system do
 
         click_on 'Submit'
 
-        expect(page).to have_selector('.has-error [name=email]').and have_no_button(type: 'submit', disabled: true)
+        expect(page).to have_css('.has-error [name=email]').and have_no_button(type: 'submit', disabled: true)
       end
     end
   end
@@ -99,6 +99,24 @@ RSpec.describe 'Form', authenticated_as: true, type: :system do
     end
   end
 
+  context 'when settings are changed' do
+    let(:path)  { 'channels/form' }
+    let(:group) { create(:group) }
+
+    before do
+      group
+      visit path
+    end
+
+    it 'stores settings correctly' do
+      set_tree_select_value('group_id', group.name)
+
+      check_input_field_value('group_id', group.id.to_s, visible: :all)
+
+      wait.until { Setting.get('form_ticket_create_group_id') == group.id.to_s }
+    end
+  end
+
   context 'with in-app form' do
     let(:path)                  { 'channels/form' }
     let(:feedback_modal_button) { '.js-formBtn' }
@@ -134,12 +152,12 @@ RSpec.describe 'Form', authenticated_as: true, type: :system do
     it 'shows an inline form' do
       visit path
       uncheck 'Start modal dialog for form.', allow_label_click: true
-      expect(page).to have_selector('.js-formInline').and have_no_selector('.js-formInline.hide')
+      expect(page).to have_css('.js-formInline').and have_no_selector('.js-formInline.hide')
     end
   end
 
   context 'with external form' do
-    let(:path) { '/assets/form/form.html' }
+    let(:path)                  { '/assets/form/form.html' }
     let(:feedback_modal_button) { '#feedback-form-modal' }
     let(:form_inline_selector)  { '#feedback-form-inline form.zammad-form' }
 

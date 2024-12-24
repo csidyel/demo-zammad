@@ -1,15 +1,22 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { generateObjectData } from '#tests/graphql/builders/index.ts'
+import { initializeStore } from '#tests/support/components/initializeStore.ts'
 
 import type {
   TicketArticle,
   TicketById,
 } from '#shared/entities/ticket/types.ts'
-import type { PolicyTicket, Ticket } from '#shared/graphql/types.ts'
+import {
+  EnumTicketArticleSenderName,
+  type PolicyTicket,
+  type Ticket,
+} from '#shared/graphql/types.ts'
 import type { AppName } from '#shared/types/app.ts'
 import type { DeepPartial } from '#shared/types/utils.ts'
-import { generateObjectData } from '#tests/graphql/builders/index.ts'
-import { initializeStore } from '#tests/support/components/initializeStore.ts'
+
 import { createArticleActions, createArticleTypes } from '../index.ts'
+
 import type { TicketActionAddOptions } from '../types.ts'
 
 export const createTicketArticle = (defaults?: DeepPartial<TicketArticle>) => {
@@ -32,7 +39,7 @@ export const createEligibleTicketArticleReplyData = (
   policies: Partial<PolicyTicket> = {},
 ) => {
   const article = createTicketArticle({
-    sender: { name: 'Customer' },
+    sender: { name: EnumTicketArticleSenderName.Customer },
     type: {
       name: type,
       communication: false,
@@ -48,10 +55,10 @@ export const createEligibleTicketArticleReplyData = (
 export const createTestArticleActions = (
   ticket: TicketById,
   article: TicketArticle,
-  options = defaultOptions,
+  app: AppName = 'mobile',
 ) => {
   initializeStore()
-  return createArticleActions(ticket, article, 'mobile', options)
+  return createArticleActions(ticket, article, app, defaultOptions)
 }
 
 export const createTestArticleTypes = (

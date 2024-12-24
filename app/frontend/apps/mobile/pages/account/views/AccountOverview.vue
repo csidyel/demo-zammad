@@ -1,31 +1,29 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 /* eslint-disable vue/no-v-html */
 
+import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { storeToRefs } from 'pinia'
-import {
-  MutationHandler,
-  QueryHandler,
-} from '#shared/server/apollo/handler/index.ts'
-import { useSessionStore } from '#shared/stores/session.ts'
-import { usePWASupport, isStandalone } from '#shared/utils/pwa.ts'
-import { useLocaleStore } from '#shared/stores/locale.ts'
-import { browser, os } from '#shared/utils/browser.ts'
-import FormGroup from '#shared/components/Form/FormGroup.vue'
+
+import { useRawHTMLIcon } from '#shared/components/CommonIcon/useRawHTMLIcon.ts'
 import CommonUserAvatar from '#shared/components/CommonUserAvatar/CommonUserAvatar.vue'
+import FormGroup from '#shared/components/Form/FormGroup.vue'
+import { useForceDesktop } from '#shared/composables/useForceDesktop.ts'
+import { useLocaleUpdate } from '#shared/composables/useLocaleUpdate.ts'
 import { useProductAboutQuery } from '#shared/graphql/queries/about.api.ts'
+import { i18n } from '#shared/i18n.ts'
+import { QueryHandler } from '#shared/server/apollo/handler/index.ts'
+import { useSessionStore } from '#shared/stores/session.ts'
+import { browser, os } from '#shared/utils/browser.ts'
+import { usePWASupport, isStandalone } from '#shared/utils/pwa.ts'
+
 import CommonSectionMenu from '#mobile/components/CommonSectionMenu/CommonSectionMenu.vue'
 import CommonSectionMenuItem from '#mobile/components/CommonSectionMenu/CommonSectionMenuItem.vue'
 import CommonSectionMenuLink from '#mobile/components/CommonSectionMenu/CommonSectionMenuLink.vue'
 import CommonSectionPopup from '#mobile/components/CommonSectionPopup/CommonSectionPopup.vue'
-import { useRawHTMLIcon } from '#shared/components/CommonIcon/useRawHTMLIcon.ts'
-import { useForceDesktop } from '#shared/composables/useForceDesktop.ts'
 import { useHeader } from '#mobile/composables/useHeader.ts'
-import { i18n } from '#shared/i18n.ts'
-import { useAccountLocaleMutation } from '../graphql/mutations/locale.api.ts'
 
 const router = useRouter()
 
@@ -42,40 +40,8 @@ useHeader({
 const session = useSessionStore()
 const { user } = storeToRefs(session)
 
-const localeStore = useLocaleStore()
-const savingLocale = ref(false)
-
-const locales = computed(() => {
-  return (
-    localeStore.locales?.map((locale) => {
-      return { label: locale.name, value: locale.locale }
-    }) || []
-  )
-})
-
-const localeMutation = new MutationHandler(useAccountLocaleMutation({}), {
-  errorNotificationMessage: __('The language could not be updated.'),
-})
-
-const currentLocale = computed({
-  get: () => localeStore.localeData?.locale ?? null,
-  set: (locale) => {
-    // don't update if locale is the same
-    if (
-      !locale ||
-      savingLocale.value ||
-      localeStore.localeData?.locale === locale
-    )
-      return
-    savingLocale.value = true
-    Promise.all([
-      localeStore.setLocale(locale),
-      localeMutation.send({ locale }),
-    ]).finally(() => {
-      savingLocale.value = false
-    })
-  },
-})
+const { modelCurrentLocale, localeOptions, isSavingLocale, translation } =
+  useLocaleUpdate()
 
 const hasVersionPermission = session.hasPermission('admin')
 
@@ -101,14 +67,14 @@ const installPWAMessage = computed(() => {
     class: 'inline-flex text-blue',
     decorative: true,
     size: 'small',
-    name: 'mobile-ios-share',
+    name: 'ios-share',
   })
 
   const iconAdd = useRawHTMLIcon({
     class: 'inline-flex',
     decorative: true,
     size: 'small',
-    name: 'mobile-add-square',
+    name: 'add-square',
   })
 
   return i18n.t(
@@ -155,7 +121,7 @@ const { forceDesktop } = useForceDesktop()
     <CommonSectionMenu>
       <CommonSectionMenuLink
         v-if="session.hasPermission('user_preferences.avatar')"
-        :icon="{ name: 'mobile-person', size: 'base' }"
+        :icon="{ name: 'person', size: 'base' }"
         icon-bg="bg-pink"
         link="/account/avatar"
       >
@@ -163,7 +129,7 @@ const { forceDesktop } = useForceDesktop()
       </CommonSectionMenuLink>
       <CommonSectionMenuLink
         v-if="showInstallButton"
-        :icon="{ name: 'mobile-install', size: 'small' }"
+        :icon="{ name: 'install', size: 'small' }"
         icon-bg="bg-blue"
         @click="installZammadPWA"
       >
@@ -172,7 +138,7 @@ const { forceDesktop } = useForceDesktop()
       <CommonSectionMenuLink
         link="/"
         link-external
-        :icon="{ name: 'mobile-desktop', size: 'base' }"
+        :icon="{ name: 'desktop', size: 'base' }"
         icon-bg="bg-orange"
         @click="forceDesktop"
       >
@@ -186,19 +152,19 @@ const { forceDesktop } = useForceDesktop()
     -->
     <FormGroup v-if="session.hasPermission('user_preferences.language')">
       <FormKit
-        v-model="currentLocale"
+        v-model="modelCurrentLocale"
         type="treeselect"
         :label="__('Language')"
-        :options="locales"
-        :disabled="savingLocale"
+        :options="localeOptions"
+        :disabled="isSavingLocale"
         :no-options-label-translation="true"
         sorting="label"
       />
 
       <template #help>
-        {{ $t('Did you know? You can help translating %s at:', 'Zammad') }}
-        <CommonLink class="text-blue" link="https://translations.zammad.org">
-          translations.zammad.org
+        {{ $t('Did you know?') }}
+        <CommonLink class="text-blue" target="_blank" :link="translation.link">
+          {{ $t('You can help translating Zammad.') }}
         </CommonLink>
       </template>
     </FormGroup>

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -90,7 +90,7 @@ RSpec.describe 'User', performs_jobs: true, type: :request do
       post '/api/v1/users', params: params, as: :json
       expect(response).to have_http_status(:unprocessable_entity)
       expect(json_response['error']).to be_truthy
-      expect(json_response['error']).to eq('Feature not enabled!')
+      expect(json_response['error']).to eq('This feature is not enabled.')
 
       # token based on headers
       headers = { 'X-CSRF-Token' => token }
@@ -98,7 +98,7 @@ RSpec.describe 'User', performs_jobs: true, type: :request do
       post '/api/v1/users', params: params, headers: headers, as: :json
       expect(response).to have_http_status(:unprocessable_entity)
       expect(json_response['error']).to be_truthy
-      expect(json_response['error']).to eq('Feature not enabled!')
+      expect(json_response['error']).to eq('This feature is not enabled.')
 
       Setting.set('user_create_account', true)
 
@@ -106,7 +106,7 @@ RSpec.describe 'User', performs_jobs: true, type: :request do
       params = { email: 'some_new_customer@example.com', signup: true }
       post '/api/v1/users', params: params, headers: headers, as: :json
       expect(response).to have_http_status(:unprocessable_entity)
-      expect(json_response['error']).to be_truthy
+      expect(json_response['message']).to eq('failed')
 
       # already existing user with enabled feature, pretend signup is successful
       params = { email: 'rest-customer1@example.com', password: 'asd1ASDasd!', signup: true }
@@ -119,14 +119,14 @@ RSpec.describe 'User', performs_jobs: true, type: :request do
       post '/api/v1/users', params: params, headers: headers, as: :json
       expect(response).to have_http_status(:unprocessable_entity)
       expect(json_response['error']).to be_truthy
-      expect(json_response['error']).to eq('Attribute \'email\' required!')
+      expect(json_response['error']).to eq("The required attribute 'email' is missing.")
 
       # email missing with enabled feature
       params = { firstname: 'some firstname', signup: true }
       post '/api/v1/users', params: params, headers: headers, as: :json
       expect(response).to have_http_status(:unprocessable_entity)
       expect(json_response['error']).to be_truthy
-      expect(json_response['error']).to eq('Attribute \'email\' required!')
+      expect(json_response['error']).to eq("The required attribute 'email' is missing.")
 
       # create user with enabled feature (take customer role)
       params = { firstname: 'Me First', lastname: 'Me Last', email: 'new_here@example.com', password: '1asdASDasd', signup: true }
@@ -212,7 +212,7 @@ RSpec.describe 'User', performs_jobs: true, type: :request do
         params = { email: 'some_new_customer@example.com', password: 'asdasdasdasd', signup: true }
         post '/api/v1/users', params: params, headers: headers, as: :json
         expect(response).to have_http_status(:unprocessable_entity)
-        expect(json_response['error']).to be_a(Array).and(include(match(%r{Invalid password})))
+        expect(json_response['notice']).to include(include('Invalid password'))
       end
 
       it 'verified with no current user', authenticated_as: :admin do
@@ -345,7 +345,7 @@ RSpec.describe 'User', performs_jobs: true, type: :request do
       post '/api/v1/users', params: params, as: :json
       expect(response).to have_http_status(:unprocessable_entity)
       expect(json_response).to be_truthy
-      expect(json_response['error']).to eq('At least one identifier (firstname, lastname, phone or email) for user is required.')
+      expect(json_response['error']).to eq('At least one identifier (firstname, lastname, phone, mobile or email) for user is required.')
 
       # invalid email
       params = { firstname: 'newfirstname123', email: 'some_what', note: 'some note' }
@@ -363,7 +363,7 @@ RSpec.describe 'User', performs_jobs: true, type: :request do
       expect(user).not_to be_role('Admin')
       expect(user).not_to be_role('Agent')
       expect(user).to be_role('Customer')
-      expect(json_response['login']).to be_start_with('auto-')
+      expect(json_response['login']).to start_with('auto-')
       expect(json_response['email']).to eq('')
       expect(json_response['firstname']).to eq('newfirstname123')
       expect(json_response['lastname']).to eq('')
@@ -884,7 +884,7 @@ RSpec.describe 'User', performs_jobs: true, type: :request do
       authenticated_as(customer)
       get '/api/v1/users/import_example', params: {}, as: :json
       expect(response).to have_http_status(:forbidden)
-      expect(json_response['error']).to eq('Not authorized (user)!')
+      expect(json_response['error']).to eq('User authorization failed.')
     end
 
     it 'does csv example - admin access (05.02)' do
@@ -1105,7 +1105,7 @@ RSpec.describe 'User', performs_jobs: true, type: :request do
 
           expect(response).to have_http_status(:unprocessable_entity)
           expect(json_response['error']).to be_truthy
-          expect(json_response['error']).to eq('Feature not enabled!')
+          expect(json_response['error']).to eq('This feature is not enabled.')
         end
       end
     end
@@ -1144,7 +1144,7 @@ RSpec.describe 'User', performs_jobs: true, type: :request do
 
           expect(response).to have_http_status(:unprocessable_entity)
           expect(json_response['error']).to be_truthy
-          expect(json_response['error']).to eq('Feature not enabled!')
+          expect(json_response['error']).to eq('This feature is not enabled.')
         end
       end
     end
@@ -1293,6 +1293,7 @@ RSpec.describe 'User', performs_jobs: true, type: :request do
   describe 'POST /api/v1/users processed by #create_admin', authenticated_as: false do
     before do
       User.all[2...].each(&:destroy) # destroy previously created users
+      Setting.set('system_init_done', false)
     end
 
     def make_request(params)
@@ -1305,7 +1306,7 @@ RSpec.describe 'User', performs_jobs: true, type: :request do
       { firstname: 'Admin First', lastname: 'Admin Last', email: email, password: 'asd1ASDasd!' }
     end
 
-    it 'succeds' do
+    it 'succeeds' do
       make_request successful_params
       expect(response).to have_http_status(:created)
     end
@@ -1328,6 +1329,11 @@ RSpec.describe 'User', performs_jobs: true, type: :request do
 
     it 'requires valid email' do
       make_request successful_params.merge(email: 'invalid_email')
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it 'checks password policy' do
+      make_request successful_params.merge(password: '1234')
       expect(response).to have_http_status(:unprocessable_entity)
     end
 
@@ -1429,15 +1435,16 @@ RSpec.describe 'User', performs_jobs: true, type: :request do
     end
   end
 
-  describe 'GET /api/v1/users/search group ids' do
+  describe 'POST /api/v1/users/search group ids and generic model_search_render tests' do
     let(:group1) { create(:group) }
-    let(:group2)  { create(:group) }
-    let!(:agent1) { create(:agent, firstname: '9U7Z-agent1', groups: [group1]) }
-    let!(:agent2) { create(:agent, firstname: '9U7Z-agent2', groups: [group2]) }
+    let(:group2)         { create(:group) }
+    let!(:agent1)        { create(:agent, firstname: '9U7Z-agent1', groups: [group1]) }
+    let!(:agent2)        { create(:agent, firstname: '9U7Z-agent2', groups: [group2]) }
+    let!(:random_agents) { create_list(:agent, 20) }
 
     def make_request(params)
       authenticated_as(agent1)
-      get '/api/v1/users/search', params: params, as: :json
+      post '/api/v1/users/search', params: params, as: :json
     end
 
     describe 'without searchindex' do
@@ -1471,6 +1478,45 @@ RSpec.describe 'User', performs_jobs: true, type: :request do
         make_request(query: '')
         not_in_response = json_response.none? { |item| item['id'] == 1 }
         expect(not_in_response).to be(true)
+      end
+
+      it 'does return data' do
+        make_request(offset: 0, limit: 10)
+        expect(json_response).to be_a(Array)
+        expect(json_response.count).to eq(10)
+      end
+
+      it 'does return expand data' do
+        make_request(expand: true, offset: 0, limit: 10)
+        expect(json_response).to be_a(Array)
+        expect(json_response.count).to eq(10)
+        expect(json_response[0]['groups']).to be_present
+      end
+
+      it 'does return full data with total count' do
+        make_request(query: '9U7Z', full: true, offset: 0, limit: 1)
+        expect(json_response['assets']).to be_present
+        expect(json_response['record_ids'].count).to eq(1)
+        expect(json_response['total_count']).to eq(2)
+      end
+
+      it 'does return label data' do
+        make_request(query: '9U7Z', label: true, offset: 0, limit: 1)
+        expect(json_response).to be_a(Array)
+        expect(json_response[0].keys).to include('id', 'label', 'value')
+      end
+
+      it 'does return term data' do
+        make_request(term: '9U7Z', offset: 0, limit: 1)
+        expect(json_response).to be_a(Array)
+        expect(json_response[0].keys).to include('id', 'label', 'value', 'inactive')
+      end
+
+      it 'does return only total count' do
+        make_request(term: '9U7Z', offset: 0, limit: 1, only_total_count: true)
+        expect(json_response).to be_a(Hash)
+        expect(json_response.keys).to eq(['total_count'])
+        expect(json_response['total_count']).to eq(2)
       end
     end
 
@@ -1506,6 +1552,45 @@ RSpec.describe 'User', performs_jobs: true, type: :request do
         not_in_response = json_response.none? { |item| item['id'] == 1 }
         expect(not_in_response).to be(true)
       end
+
+      it 'does return data' do
+        make_request(offset: 0, limit: 10)
+        expect(json_response).to be_a(Array)
+        expect(json_response.count).to eq(10)
+      end
+
+      it 'does return expand data' do
+        make_request(expand: true, offset: 0, limit: 10)
+        expect(json_response).to be_a(Array)
+        expect(json_response.count).to eq(10)
+        expect(json_response[0]['groups']).to be_present
+      end
+
+      it 'does return full data with total count' do
+        make_request(query: '9U7Z', full: true, offset: 0, limit: 1)
+        expect(json_response['assets']).to be_present
+        expect(json_response['record_ids'].count).to eq(1)
+        expect(json_response['total_count']).to eq(2)
+      end
+
+      it 'does return label data' do
+        make_request(query: '9U7Z', label: true, offset: 0, limit: 1)
+        expect(json_response).to be_a(Array)
+        expect(json_response[0].keys).to include('id', 'label', 'value')
+      end
+
+      it 'does return term data' do
+        make_request(term: '9U7Z', offset: 0, limit: 1)
+        expect(json_response).to be_a(Array)
+        expect(json_response[0].keys).to include('id', 'label', 'value', 'inactive')
+      end
+
+      it 'does return only total count' do
+        make_request(term: '9U7Z', offset: 0, limit: 1, only_total_count: true)
+        expect(json_response).to be_a(Hash)
+        expect(json_response.keys).to eq(['total_count'])
+        expect(json_response['total_count']).to eq(2)
+      end
     end
   end
 
@@ -1526,17 +1611,17 @@ RSpec.describe 'User', performs_jobs: true, type: :request do
 
     it 'uses elasticsearch when query is non empty' do
       # Check if ES is used
-      allow(SearchIndexBackend).to receive(:search)
+      allow(SearchIndexBackend).to receive(:search_by_index)
 
       make_request(query: 'Test')
-      expect(SearchIndexBackend).to have_received(:search)
+      expect(SearchIndexBackend).to have_received(:search_by_index)
     end
 
     it 'does not uses elasticsearch when query is empty' do
-      allow(SearchIndexBackend).to receive(:search)
+      allow(SearchIndexBackend).to receive(:search_by_index)
 
       make_request(query: '')
-      expect(SearchIndexBackend).not_to have_received(:search)
+      expect(SearchIndexBackend).not_to have_received(:search_by_index)
     end
   end
 
@@ -1673,6 +1758,30 @@ RSpec.describe 'User', performs_jobs: true, type: :request do
       end
 
       include_examples 'ids requests'
+    end
+  end
+
+  describe 'GET /api/v1/users/search, with invalid attributes', authenticated_as: :agent do
+    let(:agent) { create(:agent) }
+    let(:customer_invalid) do
+      create(
+        :customer,
+        login:     'customer1@example.com',
+        firstname: 'Some',
+        lastname:  'Customer1',
+        email:     'customer1@example.com',
+      )
+    end
+
+    context 'when email address is invalid' do
+      before do
+        customer_invalid.update_attribute(:email, 'eee lala')
+        post '/api/v1/users/search', params: { term: 'Customer1' }, as: :json
+      end
+
+      it 'succeeds' do
+        expect(response).to have_http_status(:success)
+      end
     end
   end
 

@@ -1,7 +1,8 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { onMounted, reactive, watch } from 'vue'
 import { useRouteQuery } from '@vueuse/router'
+import { onMounted, reactive, watch } from 'vue'
+
 import {
   useNotifications,
   NotificationTypes,
@@ -20,7 +21,6 @@ import {
   SubscriptionHandler,
 } from '#shared/server/apollo/handler/index.ts'
 import testFlags from '#shared/utils/testFlags.ts'
-import { registerSW } from '#shared/sw/register.ts'
 
 let checksumQuery: QueryHandler<
   ApplicationBuildChecksumQuery,
@@ -32,14 +32,16 @@ let appMaintenanceSubscription: SubscriptionHandler<
   AppMaintenanceSubscriptionVariables
 >
 
-const useAppMaintenanceCheck = () => {
-  const updateServiceWorker = registerSW({
-    path: '/mobile/sw.js',
-    scope: '/mobile/',
-  })
+interface UseAppMaintenanceCheckOptions {
+  onNeedRefresh?: () => void
+}
 
-  const notify = (message: string, callback: () => void) => {
+const useAppMaintenanceCheck = (
+  maintenanceOptions: UseAppMaintenanceCheckOptions = {},
+) => {
+  const notify = (message: string, callback?: () => void) => {
     useNotifications().notify({
+      id: 'app-maintenance',
       message,
       type: NotificationTypes.Warn,
       persistent: true,
@@ -79,9 +81,7 @@ const useAppMaintenanceCheck = () => {
         testFlags.set('useApplicationBuildChecksumQuery.firstResult')
       }
       if (queryResult?.applicationBuildChecksum !== previousChecksum) {
-        notify(notificationMessage, () => {
-          updateServiceWorker(true)
-        })
+        notify(notificationMessage, maintenanceOptions.onNeedRefresh)
       }
     })
 
@@ -89,7 +89,7 @@ const useAppMaintenanceCheck = () => {
       useAppMaintenanceSubscription(),
     )
     appMaintenanceSubscription.onResult((result) => {
-      const type = result.data?.appMaintenance.type
+      const type = result.data?.appMaintenance?.type
       let message = notificationMessage
 
       if (!type) {

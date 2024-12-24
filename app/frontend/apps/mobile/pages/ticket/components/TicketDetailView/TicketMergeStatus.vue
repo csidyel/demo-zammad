@@ -1,11 +1,12 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import CommonTicketStateIndicator from '#shared/components/CommonTicketStateIndicator/CommonTicketStateIndicator.vue'
-import type { AutocompleteSearchMergeTicketEntry } from '#shared/graphql/types.ts'
+import type { AutocompleteSearchTicketEntry } from '#shared/graphql/types.ts'
+
+import CommonTicketStateIndicator from '#mobile/components/CommonTicketStateIndicator/CommonTicketStateIndicator.vue'
 
 defineProps<{
-  option: AutocompleteSearchMergeTicketEntry
+  option: AutocompleteSearchTicketEntry
 }>()
 </script>
 

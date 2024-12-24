@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class TextModule < ApplicationModel
   include HasDefaultModelUserRelations
@@ -6,6 +6,9 @@ class TextModule < ApplicationModel
   include ChecksClientNotification
   include ChecksHtmlSanitized
   include CanCsvImport
+  include HasSearchIndexBackend
+  include CanSelector
+  include CanSearch
 
   validates :name,    presence: true
   validates :content, presence: true

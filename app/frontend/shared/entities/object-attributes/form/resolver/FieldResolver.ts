@@ -1,14 +1,18 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import type {
   FormFieldValue,
   FormSchemaField,
 } from '#shared/components/Form/types.ts'
-import type { ObjectManagerFrontendAttribute } from '#shared/graphql/types.ts'
+import type { EnumObjectManagerObjects } from '#shared/graphql/types.ts'
+
+import type { ObjectAttribute } from '../../types/store.ts'
 import type { JsonValue } from 'type-fest'
 
 export default abstract class FieldResolver {
   protected name: string
+
+  protected object: EnumObjectManagerObjects
 
   protected label: string
 
@@ -16,16 +20,20 @@ export default abstract class FieldResolver {
 
   protected attributeType: string
 
-  protected attributeConfig: Record<string, JsonValue>
+  protected attributeConfig: Record<string, JsonValue | undefined>
 
   abstract fieldType: string | (() => string)
 
-  constructor(objectAttribute: ObjectManagerFrontendAttribute) {
+  constructor(
+    object: EnumObjectManagerObjects,
+    objectAttribute: ObjectAttribute,
+  ) {
+    this.object = object
     this.name = objectAttribute.name
     this.label = objectAttribute.display
     this.internal = objectAttribute.isInternal
     this.attributeType = objectAttribute.dataType
-    this.attributeConfig = objectAttribute.dataOption
+    this.attributeConfig = objectAttribute.dataOption || {}
   }
 
   private getFieldType(): string {
@@ -48,6 +56,17 @@ export default abstract class FieldResolver {
 
     if (this.attributeConfig.default) {
       resolvedAttributes.value = this.attributeConfig.default as FormFieldValue
+    }
+
+    // TODO: Support half-sized/single column fields based on the information hard-coded in the object attribute
+    //   backend for now. Later we can make this a concern of the frontend only, and ignore the hard-coded values.
+    if (
+      this.attributeConfig.item_class &&
+      (this.attributeConfig.item_class as string).indexOf(
+        'formGroup--halfSize',
+      ) !== -1
+    ) {
+      resolvedAttributes.outerClass = 'form-group-single-column'
     }
 
     return resolvedAttributes

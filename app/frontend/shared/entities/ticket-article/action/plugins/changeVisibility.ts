@@ -1,7 +1,8 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { MutationHandler } from '#shared/server/apollo/handler/index.ts'
 import { useTicketArticleChangeVisibilityMutation } from '#shared/entities/ticket-article/graphql/mutations/changeVisibility.api.ts'
+import { MutationHandler } from '#shared/server/apollo/handler/index.ts'
+
 import type { TicketArticleActionPlugin, TicketArticleAction } from './types.ts'
 
 const changeVisibilityAction = (
@@ -32,13 +33,13 @@ const actionPlugin: TicketArticleActionPlugin = {
       ? __('Set to internal')
       : __('Set to public')
 
-    const iconName = targetInternalState ? 'mobile-lock' : 'mobile-lock-open'
+    const iconName = targetInternalState ? 'lock' : 'lock-open'
 
     const action: TicketArticleAction = {
-      apps: ['mobile'],
+      apps: ['mobile', 'desktop'],
       label,
       name: 'changeVisibility',
-      icon: { mobile: iconName },
+      icon: iconName,
       view: {
         agent: ['change'],
       },

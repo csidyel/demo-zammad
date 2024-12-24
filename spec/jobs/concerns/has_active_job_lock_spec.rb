@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -16,7 +16,7 @@ RSpec.describe HasActiveJobLock, type: :job do
 
       cattr_accessor :perform_counter, default: 0
 
-      def perform
+      def perform(...)
         self.class.perform_counter += 1
       end
     end
@@ -40,7 +40,7 @@ RSpec.describe HasActiveJobLock, type: :job do
 
       before { job_class.perform_later }
 
-      it "won't enqueue perform_later jobs" do
+      it 'does not enqueue perform_later jobs' do
         expect { job_class.perform_later }.not_to have_enqueued_job(job_class)
       end
 

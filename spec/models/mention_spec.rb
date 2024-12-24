@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -8,7 +8,10 @@ RSpec.describe Mention, type: :model do
 
   describe 'validation' do
     it 'does not allow mentions for customers' do
-      expect { create(:mention, mentionable: ticket, user: create(:customer)) }.to raise_error(ActiveRecord::RecordInvalid, 'Validation failed: User has no agent access to this ticket')
+      record = build(:mention, mentionable: ticket, user: create(:customer))
+      record.save
+
+      expect(record.errors.full_messages).to include('A mentioned user has no agent access to this ticket')
     end
   end
 
@@ -49,6 +52,22 @@ RSpec.describe Mention, type: :model do
         .to change { ticket.mentions.where(user: user).count }
         .from(1)
         .to(0)
+    end
+
+    it 'ignores if unsubscribing from a not-subscribed object' do
+      expect(described_class.unsubscribe!(ticket, user))
+        .to be_truthy
+    end
+  end
+
+  describe '.unsubscribe_all!', current_user_id: 1 do
+    it 'unsubscribes all users from a object' do
+      described_class.subscribe! ticket, user
+      described_class.subscribe! ticket, create(:agent_and_customer, groups: [ticket.group])
+
+      expect { described_class.unsubscribe_all! ticket }
+        .to change { ticket.mentions.count }
+        .by(-2)
     end
 
     it 'ignores if unsubscribing from a not-subscribed object' do

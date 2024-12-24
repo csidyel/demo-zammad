@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class ChannelsSmsController < ApplicationController
   prepend_before_action :authenticate_and_authorize!, except: [:webhook]
@@ -45,7 +45,7 @@ class ChannelsSmsController < ApplicationController
     raise __("The required parameter 'options.adapter' is missing.") if params[:options][:adapter].blank?
 
     driver = Channel.driver_class(params[:options][:adapter])
-    resp   = driver.new.send(params[:options], test_options)
+    resp   = driver.new.deliver(params[:options], test_options)
 
     render json: { success: resp }
   rescue => e

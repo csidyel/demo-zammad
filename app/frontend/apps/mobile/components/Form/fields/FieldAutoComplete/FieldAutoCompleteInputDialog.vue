@@ -1,28 +1,33 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import type { ConcreteComponent, Ref } from 'vue'
+import { useLazyQuery } from '@vue/apollo-composable'
+import { refDebounced, watchOnce } from '@vueuse/core'
+import gql from 'graphql-tag'
+import { cloneDeep } from 'lodash-es'
 import { computed, nextTick, onMounted, ref, toRef } from 'vue'
 import { useRouter } from 'vue-router'
-import { cloneDeep } from 'lodash-es'
-import { refDebounced, watchOnce } from '@vueuse/core'
-import { useLazyQuery } from '@vue/apollo-composable'
-import gql from 'graphql-tag'
-import type { NameNode, OperationDefinitionNode, SelectionNode } from 'graphql'
-import CommonButton from '#mobile/components/CommonButton/CommonButton.vue'
-import CommonDialog from '#mobile/components/CommonDialog/CommonDialog.vue'
-import { QueryHandler } from '#shared/server/apollo/handler/index.ts'
-import { useTraverseOptions } from '#shared/composables/useTraverseOptions.ts'
-import { closeDialog } from '#shared/composables/useDialog.ts'
-import type { FormKitNode } from '@formkit/core'
-import type { FormFieldContext } from '#shared/components/Form/types/field.ts'
+
 import useValue from '#shared/components/Form/composables/useValue.ts'
-import useSelectOptions from '#shared/composables/useSelectOptions.ts'
 import type {
   AutoCompleteOption,
   AutoCompleteProps,
+  AutocompleteSelectValue,
 } from '#shared/components/Form/fields/FieldAutocomplete/types.ts'
+import type { FormFieldContext } from '#shared/components/Form/types/field.ts'
+import useSelectOptions from '#shared/composables/useSelectOptions.ts'
+import { useTraverseOptions } from '#shared/composables/useTraverseOptions.ts'
+import { QueryHandler } from '#shared/server/apollo/handler/index.ts'
+
+import CommonButton from '#mobile/components/CommonButton/CommonButton.vue'
+import CommonDialog from '#mobile/components/CommonDialog/CommonDialog.vue'
+import { closeDialog } from '#mobile/composables/useDialog.ts'
+
 import FieldAutoCompleteOptionIcon from './FieldAutoCompleteOptionIcon.vue'
+
+import type { FormKitNode } from '@formkit/core'
+import type { NameNode, OperationDefinitionNode, SelectionNode } from 'graphql'
+import type { ConcreteComponent, Ref } from 'vue'
 
 const props = defineProps<{
   context: FormFieldContext<AutoCompleteProps>
@@ -34,11 +39,11 @@ const props = defineProps<{
 
 const contextReactive = toRef(props, 'context')
 
-const { isCurrentValue } = useValue(contextReactive)
+const { isCurrentValue } = useValue<AutocompleteSelectValue>(contextReactive)
 
 const emit = defineEmits<{
-  (e: 'updateOptions', options: AutoCompleteOption[]): void
-  (e: 'action'): void
+  'update-options': [AutoCompleteOption[]]
+  action: []
 }>()
 
 const { sortedOptions, selectOption, appendedOptions } = useSelectOptions<
@@ -81,7 +86,7 @@ onMounted(() => {
 
 const close = () => {
   if (props.context.multiple) {
-    emit('updateOptions', [...replacementLocalOptions.value])
+    emit('update-options', [...replacementLocalOptions.value])
     replacementLocalOptions.value = []
     areLocalOptionsReplaced = true
   }
@@ -101,6 +106,14 @@ const AutocompleteSearchDocument = gql`
   ${props.context.gqlQuery}
 `
 
+const additionalQueryParams = () => {
+  if (typeof props.context.additionalQueryParams === 'function') {
+    return props.context.additionalQueryParams()
+  }
+
+  return props.context.additionalQueryParams || {}
+}
+
 const autocompleteQueryHandler = new QueryHandler(
   useLazyQuery(
     AutocompleteSearchDocument,
@@ -108,7 +121,7 @@ const autocompleteQueryHandler = new QueryHandler(
       input: {
         query: debouncedFilter.value || props.context.defaultFilter || '',
         limit: props.context.limit,
-        ...(props.context.additionalQueryParams || {}),
+        ...(additionalQueryParams() || {}),
       },
     }),
     () => ({
@@ -206,7 +219,7 @@ const select = (option: AutoCompleteOption) => {
     return
   }
 
-  emit('updateOptions', [option])
+  emit('update-options', [option])
 
   if (!props.noCloseOnSelect) {
     close()
@@ -247,17 +260,19 @@ useTraverseOptions(autocompleteList)
       </CommonButton>
     </template>
     <template #after-label>
-      <CommonIcon
+      <button
         v-if="context.action || context.onActionClick"
-        :name="context.actionIcon ? context.actionIcon : 'mobile-external-link'"
-        :label="context.actionLabel"
-        class="cursor-pointer text-white"
-        size="base"
         tabindex="0"
-        role="button"
+        :aria-label="context.actionLabel"
         @click="executeAction"
         @keypress.space="executeAction"
-      />
+      >
+        <CommonIcon
+          :name="context.actionIcon ? context.actionIcon : 'external-link'"
+          class="cursor-pointer text-white"
+          size="base"
+        />
+      </button>
       <CommonButton
         v-else
         class="grow"
@@ -299,9 +314,9 @@ useTraverseOptions(autocompleteList)
         }"
         aria-setsize="-1"
         :aria-posinset="options.findIndex((o) => o.value === option.value) + 1"
-        :tabindex="option.disabled ? '-1' : '0'"
+        tabindex="0"
         :aria-selected="isCurrentValue(option.value)"
-        class="relative flex h-[58px] cursor-pointer items-center self-stretch px-6 py-5 text-base leading-[19px] text-white focus:bg-blue-highlight focus:outline-none"
+        class="focus:bg-blue-highlight relative flex h-[58px] cursor-pointer items-center self-stretch px-6 py-5 text-base leading-[19px] text-white focus:outline-none"
         role="option"
         @click="select(option as AutoCompleteOption)"
         @keyup.space="select(option as AutoCompleteOption)"
@@ -326,9 +341,7 @@ useTraverseOptions(autocompleteList)
             'opacity-30': option.disabled,
           }"
           :name="
-            isCurrentValue(option.value)
-              ? 'mobile-check-box-yes'
-              : 'mobile-check-box-no'
+            isCurrentValue(option.value) ? 'check-box-yes' : 'check-box-no'
           "
           class="text-white/50 ltr:mr-3 rtl:ml-3"
           size="base"
@@ -372,7 +385,7 @@ useTraverseOptions(autocompleteList)
             'opacity-30': option.disabled,
           }"
           size="tiny"
-          name="mobile-check"
+          name="check"
           decorative
         />
       </div>
@@ -398,7 +411,7 @@ useTraverseOptions(autocompleteList)
   </CommonDialog>
 </template>
 
-<style lang="scss">
+<style>
 .field-autocomplete-dialog {
   .formkit-wrapper {
     @apply px-0;

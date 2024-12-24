@@ -415,7 +415,7 @@ QUnit.test("htmlRemoveTags", assert => {
 // htmlRemoveRichtext
 QUnit.test("htmlRemoveRichtext", assert => {
 
-  source = "<div><form class=\"xxx\">test 123</form><svg><use xlink:href=\"assets/images/icons.svg#icon-status\"></svg></div>"
+  source = "<div><form class=\"xxx\">test 123</form><svg><use xlink:href=\"" + App.Config.get('icons_url')  + "#icon-status\"></svg></div>"
   //should = "<div>test 123</div>"
   should = "test 123"
   result = App.Utils.htmlRemoveRichtext($(source))
@@ -520,13 +520,13 @@ QUnit.test("htmlRemoveRichtext", assert => {
   result = App.Utils.htmlRemoveRichtext($(source))
   assert.equal(result.html(), should, source)
 
-  source = "<div><div><label for=\"Ticket_888344_group_id\">Gruppe <span>*</span></label></div><div><div></div></div><div><div><span></span><span></span></div></div><div><div><label for=\"Ticket_888344_owner_id\">Besitzer <span></span></label></div><div><div></div></div></div><div><div><div><svg><use xlink:href=\"http://localhost:3000/assets/images/icons.svg#icon-arrow-down\"></use></svg></div><span></span><span></span></div></div><div><div>    <label for=\"Ticket_888344_state_id\">Status <span>*</span></label></div></div></div>\n"
+  source = "<div><div><label for=\"Ticket_888344_group_id\">Gruppe <span>*</span></label></div><div><div></div></div><div><div><span></span><span></span></div></div><div><div><label for=\"Ticket_888344_owner_id\">Besitzer <span></span></label></div><div><div></div></div></div><div><div><div><svg><use xlink:href=\"http://localhost:3000/" + App.Config.get('icons_url') + "#icon-arrow-down\"></use></svg></div><span></span><span></span></div></div><div><div>    <label for=\"Ticket_888344_state_id\">Status <span>*</span></label></div></div></div>\n"
   //should = "<div>test 123</div>"
   should = '<div>Gruppe <span>*</span></div><div><div></div></div><div><div><span></span><span></span></div></div><div><div>Besitzer <span></span></div><div><div></div></div></div><div><div><div></div><span></span><span></span></div></div><div><div>    Status <span>*</span></div></div>'
   result = App.Utils.htmlRemoveRichtext(source)
   assert.equal(result.html(), should, source)
 
-  source = "<div><font size=\"3\" color=\"red\">This is some text!</font><svg><use xlink:href=\"assets/images/icons.svg#icon-status\"></svg></div>"
+  source = "<div><font size=\"3\" color=\"red\">This is some text!</font><svg><use xlink:href=\"" + App.Config.get('icons_url') + "#icon-status\"></svg></div>"
   should = "This is some text!"
   result = App.Utils.htmlRemoveRichtext($(source))
   assert.equal(result.html(), should, source)
@@ -647,7 +647,7 @@ QUnit.test("htmlCleanup", assert => {
   result = App.Utils.htmlCleanup($(source))
   assert.equal(result.html(), should, source)
 
-  source = "<div><font size=\"3\" color=\"red\">This is some text!</font><svg><use xlink:href=\"assets/images/icons.svg#icon-status\"></svg></div>"
+  source = "<div><font size=\"3\" color=\"red\">This is some text!</font><svg><use xlink:href=\"" + App.Config.get('icons_url') + "#icon-status\"></svg></div>"
   //should = "<div>This is some text!</div>"
   should = "<font color=\"red\">This is some text!</font>"
   result = App.Utils.htmlCleanup($(source))
@@ -659,7 +659,7 @@ QUnit.test("htmlCleanup", assert => {
   result = App.Utils.htmlCleanup($(source))
   assert.equal(result.html(), should, source)
 
-  source = "<div><div><label for=\"Ticket_888344_group_id\">Gruppe <span>*</span></label></div><div><div></div></div><div><div><span></span><span></span></div></div><div><div><label for=\"Ticket_888344_owner_id\">Besitzer <span></span></label></div><div><div></div></div></div><div><div><div><svg><use xlink:href=\"http://localhost:3000/assets/images/icons.svg#icon-arrow-down\"></use></svg></div><span></span><span></span></div></div><div><div>    <label for=\"Ticket_888344_state_id\">Status <span>*</span></label></div></div></div>\n"
+  source = "<div><div><label for=\"Ticket_888344_group_id\">Gruppe <span>*</span></label></div><div><div></div></div><div><div><span></span><span></span></div></div><div><div><label for=\"Ticket_888344_owner_id\">Besitzer <span></span></label></div><div><div></div></div></div><div><div><div><svg><use xlink:href=\"http://localhost:3000/" + App.Config.get('icons_url') + "#icon-arrow-down\"></use></svg></div><span></span><span></span></div></div><div><div>    <label for=\"Ticket_888344_state_id\">Status <span>*</span></label></div></div></div>\n"
   //should = "<div>test 123</div>"
   should = '<div>Gruppe <span>*</span></div><div><div></div></div><div><div><span></span><span></span></div></div><div><div>Besitzer <span></span></div><div><div></div></div></div><div><div><div></div><span></span><span></span></div></div><div><div>    Status <span>*</span></div></div>'
   result = App.Utils.htmlCleanup(source)
@@ -1349,12 +1349,12 @@ QUnit.test("check check attachment reference", assert => {
   assert.equal(verify, result)
 
   message = 'some attachment for you'
-  result = 'Attachment'
+  result = 'attachment'
   verify = App.Utils.checkAttachmentReference(message)
   assert.equal(verify, result)
 
   message = 'your attachment.'
-  result = 'Attachment'
+  result = 'attachment'
   verify = App.Utils.checkAttachmentReference(message)
   assert.equal(verify, result)
 
@@ -1374,7 +1374,7 @@ QUnit.test("check check attachment reference", assert => {
   assert.equal(verify, result)
 
   message = 'As enclosed you will find.'
-  result = 'Enclosed'
+  result = 'enclosed'
   verify = App.Utils.checkAttachmentReference(message)
   assert.equal(verify, result)
 
@@ -1389,6 +1389,11 @@ QUnit.test("check check attachment reference", assert => {
   assert.equal(verify, result)
 
   message = '<div>Hi Test,</div><div><blockquote class="ecxgmail_quote">ecxgmail_quote attachment </blockquote></div>'
+  result = false
+  verify = App.Utils.checkAttachmentReference(message)
+  assert.equal(verify, result)
+
+  message = '<div>Hi Test,</div><div data-signature="true">ecxgmail_quote attachment</div>'
   result = false
   verify = App.Utils.checkAttachmentReference(message)
   assert.equal(verify, result)
@@ -1525,6 +1530,17 @@ QUnit.test("check replace tags", assert => {
   verify = App.Utils.replaceTags(message, data)
   assert.equal(verify, result)
 
+  message = "<div>issue #4973 #{user,firstname}</div>"
+  result = '<div>issue #4973 -</div>'
+  data = {
+    user: {
+      firstname: 'Bob',
+      lastname: 'Smith',
+    },
+  }
+  verify = App.Utils.replaceTags(message, data)
+  assert.equal(verify, result)
+
   user = new App.User({
     firstname: 'Bob',
     lastname: 'Smith Good',
@@ -1560,6 +1576,155 @@ QUnit.test("check replace tags", assert => {
     user: user
   }
   verify = App.Utils.replaceTags(message, data, true)
+  assert.equal(verify, result)
+
+  var attribute_external_source = {
+    name: 'external_data_source', display: 'external_data_source',  tag: 'autocompletion_ajax_external_data_source', null: true
+  };
+  App.Ticket.configure_attributes.push(attribute_external_source)
+  data    = {
+    ticket: {
+      external_data_source: {
+        value: 1234,
+        label: 'Example Label'
+      }
+    }
+  }
+  message = "<a href=\"https://example.co/product/#{ticket.external_data_source}\">some text</a>"
+  result  = '<a href=\"https://example.co/product/1234">some text</a>'
+  verify  = App.Utils.replaceTags(message, data, true)
+  assert.equal(verify, result)
+
+  message = "<a href=\"https://example.co/product/#{ticket.external_data_source.value}\">some text</a>"
+  result = '<a href=\"https://example.co/product/Example%20Label">some text</a>'
+  verify  = App.Utils.replaceTags(message, data, true)
+  assert.equal(verify, result)
+
+  data = { ticket: {} }
+  message = "Test: #{ticket.external_data_source}"
+  result = 'Test: -'
+  verify = App.Utils.replaceTags(message, data)
+  assert.equal(verify, result)
+
+  data = { ticket: {} }
+  message = "Test: #{ticket.external_data_source.value}"
+  result = 'Test: -'
+  verify = App.Utils.replaceTags(message, data)
+  assert.equal(verify, result)
+
+  var attribute_select = {
+    name: 'select', display: 'select', tag: 'select', null: true, nulloption: true, options: { a: 'Value A', b: 'Value B' }, value: null, historical_options: { a: 'Value A', b: 'Value B', c: 'Value C' }
+  }
+  App.Ticket.configure_attributes.push(attribute_select)
+  data = {
+    ticket: {
+      select: 'b',
+    }
+  }
+  message = "Test: #{ticket.select}"
+  result  = 'Test: b'
+  verify  = App.Utils.replaceTags(message, data)
+  assert.equal(verify, result)
+
+  message = "Test: #{ticket.select.value}"
+  result  = 'Test: Value B'
+  verify  = App.Utils.replaceTags(message, data)
+  assert.equal(verify, result)
+
+  data = { ticket: {} }
+  message = "Test: #{ticket.select}"
+  result = 'Test: -'
+  verify = App.Utils.replaceTags(message, data)
+  assert.equal(verify, result)
+
+  data = { ticket: {} }
+  message = "Test: #{ticket.select.value}"
+  result = 'Test: -'
+  verify = App.Utils.replaceTags(message, data)
+  assert.equal(verify, result)
+
+  var attribute_multiselect = {
+    name: 'multiselect', display: 'multiselect', tag: 'multiselect', null: true, nulloption: true, options: { a: 'Value A', b: 'Value B', c: 'Value C' }, value: null, historical_options: { a: 'Value A', b: 'Value B', c: 'Value C' }
+  }
+  App.Ticket.configure_attributes.push(attribute_multiselect)
+  data = {
+    ticket: {
+      multiselect: ['a', 'b'],
+    }
+  }
+  message = "Test: #{ticket.multiselect}"
+  result = 'Test: a, b'
+  verify = App.Utils.replaceTags(message, data)
+  assert.equal(verify, result)
+
+  message = "Test: #{ticket.multiselect.value}"
+  result = 'Test: Value A, Value B'
+  verify = App.Utils.replaceTags(message, data)
+  assert.equal(verify, result)
+
+  data = { ticket: {} }
+  message = "Test: #{ticket.multiselect}"
+  result = 'Test: -'
+  verify = App.Utils.replaceTags(message, data)
+  assert.equal(verify, result)
+
+  data = { ticket: {} }
+  message = "Test: #{ticket.multiselect.value}"
+  result = 'Test: -'
+  verify = App.Utils.replaceTags(message, data)
+  assert.equal(verify, result)
+
+  var attribute_textarea = {
+    name: 'textarea', display: 'textarea', tag: 'textarea', null: true, nulloption: true, value: null
+  }
+  App.Ticket.configure_attributes.push(attribute_textarea)
+  data = {
+    ticket: {
+      textarea: 'Line 1\nLine 2\nLine 3',
+    }
+  }
+  message = "Test: #{ticket.textarea}"
+  result = 'Test: <div>Line 1</div><div>Line 2</div><div>Line 3</div>'
+  verify = App.Utils.replaceTags(message, data)
+  assert.equal(verify, result)
+
+  message = "Test: #{ticket.textarea.value}"
+  result = 'Test: <div>Line 1</div><div>Line 2</div><div>Line 3</div>'
+  verify = App.Utils.replaceTags(message, data)
+  assert.equal(verify, result)
+
+  data = { ticket: {} }
+  message = "Test: #{ticket.textarea}"
+  result = 'Test: -'
+  verify = App.Utils.replaceTags(message, data)
+  assert.equal(verify, result)
+
+  data = { ticket: {} }
+  message = "Test: #{ticket.textarea.value}"
+  result = 'Test: -'
+  verify = App.Utils.replaceTags(message, data)
+  assert.equal(verify, result)
+
+  message = "<div>#{user.avatar(100, 100)}</div>"
+  result  = '<div></div>'
+  data    = {
+    user: user
+  }
+  verify = App.Utils.replaceTags(message, data)
+  assert.equal(verify, result)
+
+  user = new App.User({
+    firstname: 'Bob',
+    lastname: 'Smith Good',
+    created_at: '2018-10-31T10:00:00Z',
+    image: '808d0f10f81c8b1117608cb22a73076e'
+  })
+  message = "<div>#{user.avatar(100, 100)}</div>"
+  result  = '<div><img src="api/v1/users/image/' + user.image +  '" width="100" height="100" data-user-avatar="true" /></div>'
+  data    = {
+    user: user
+  }
+  verify = App.Utils.replaceTags(message, data)
   assert.equal(verify, result)
 });
 
@@ -2447,7 +2612,6 @@ QUnit.test('check getRecipientArticle format', assert => {
     in_reply_to: 'message_id7',
   }
   verify = App.Utils.getRecipientArticle(ticket, article, article.created_by, article.type)
-  console.log(verify)
   assert.deepEqual(verify, result)
 
   customer = {
@@ -3348,14 +3512,14 @@ QUnit.test('App.Utils.icon()', assert => {
   // On a modern browser and when given a single argument,
   //   expect @icon(name) to return an <svg> tag
   window.svgPolyfill = false
-  svgTag = '<svg class="icon icon-foo "><use xlink:href="assets/images/icons.svg#icon-foo" /></svg>'
+  svgTag = '<svg class="icon icon-foo "><use xlink:href="' + App.Config.get('icons_url') + '#icon-foo" /></svg>'
   assert.equal(App.Utils.icon('foo'), svgTag, 'with one arg / no SVG polyfill')
 
   // On a modern browser and when given two arguments,
   //   expect @icon(name) to return an <svg> tag
   //   with second arg as add'l class name
   window.svgPolyfill = false
-  svgTag = '<svg class="icon icon-foo bar"><use xlink:href="assets/images/icons.svg#icon-foo" /></svg>'
+  svgTag = '<svg class="icon icon-foo bar"><use xlink:href="' + App.Config.get('icons_url') + '#icon-foo" /></svg>'
   assert.equal(App.Utils.icon('foo', 'bar'), svgTag, 'with two args / no SVG polyfill')
 
   // On a browser requiring SVG polyfill and when given a single argument,
@@ -3377,9 +3541,9 @@ QUnit.test('App.Utils.icon()', assert => {
   //   replacing '{start}' with 'left' and '{end}' with 'right'
   window.svgPolyfill = false
   App.i18n.dir = function() { return 'ltr' }
-  svgTag = '<svg class="icon icon-arrow-left "><use xlink:href="assets/images/icons.svg#icon-arrow-left" /></svg>'
+  svgTag = '<svg class="icon icon-arrow-left "><use xlink:href="' + App.Config.get('icons_url') + '#icon-arrow-left" /></svg>'
   assert.equal(App.Utils.icon('arrow-{start}'), svgTag, 'for ltr locale / name includes "{start}"')
-  svgTag = '<svg class="icon icon-arrow-right "><use xlink:href="assets/images/icons.svg#icon-arrow-right" /></svg>'
+  svgTag = '<svg class="icon icon-arrow-right "><use xlink:href="' + App.Config.get('icons_url') + '#icon-arrow-right" /></svg>'
   assert.equal(App.Utils.icon('arrow-{end}'), svgTag, 'for ltr locale / name includes "{end}"')
 
   // For a right-to-left browser language and when given an argument containing '{start}' or '{end}',
@@ -3387,9 +3551,9 @@ QUnit.test('App.Utils.icon()', assert => {
   //   replacing '{start}' with 'left' and '{end}' with 'right'
   window.svgPolyFill = false
   App.i18n.dir = function() { return 'rtl' }
-  svgTag = '<svg class="icon icon-arrow-right "><use xlink:href="assets/images/icons.svg#icon-arrow-right" /></svg>'
+  svgTag = '<svg class="icon icon-arrow-right "><use xlink:href="' + App.Config.get('icons_url') + '#icon-arrow-right" /></svg>'
   assert.equal(App.Utils.icon('arrow-{start}'), svgTag, 'for rtl locale / name includes "{start}"')
-  svgTag = '<svg class="icon icon-arrow-left "><use xlink:href="assets/images/icons.svg#icon-arrow-left" /></svg>'
+  svgTag = '<svg class="icon icon-arrow-left "><use xlink:href="' + App.Config.get('icons_url') + '#icon-arrow-left" /></svg>'
   assert.equal(App.Utils.icon('arrow-{end}'), svgTag, 'for rtl locale / name includes "{end}"')
 });
 

@@ -1,4 +1,4 @@
-import * as Types from '../types';
+import * as Types from '#shared/graphql/types.ts';
 
 import gql from 'graphql-tag';
 import * as VueApolloComposable from '@vue/apollo-composable';
@@ -16,7 +16,7 @@ export const TicketSignatureDocument = gql`
 export function useTicketSignatureQuery(variables: Types.TicketSignatureQueryVariables | VueCompositionApi.Ref<Types.TicketSignatureQueryVariables> | ReactiveFunction<Types.TicketSignatureQueryVariables>, options: VueApolloComposable.UseQueryOptions<Types.TicketSignatureQuery, Types.TicketSignatureQueryVariables> | VueCompositionApi.Ref<VueApolloComposable.UseQueryOptions<Types.TicketSignatureQuery, Types.TicketSignatureQueryVariables>> | ReactiveFunction<VueApolloComposable.UseQueryOptions<Types.TicketSignatureQuery, Types.TicketSignatureQueryVariables>> = {}) {
   return VueApolloComposable.useQuery<Types.TicketSignatureQuery, Types.TicketSignatureQueryVariables>(TicketSignatureDocument, variables, options);
 }
-export function useTicketSignatureLazyQuery(variables: Types.TicketSignatureQueryVariables | VueCompositionApi.Ref<Types.TicketSignatureQueryVariables> | ReactiveFunction<Types.TicketSignatureQueryVariables>, options: VueApolloComposable.UseQueryOptions<Types.TicketSignatureQuery, Types.TicketSignatureQueryVariables> | VueCompositionApi.Ref<VueApolloComposable.UseQueryOptions<Types.TicketSignatureQuery, Types.TicketSignatureQueryVariables>> | ReactiveFunction<VueApolloComposable.UseQueryOptions<Types.TicketSignatureQuery, Types.TicketSignatureQueryVariables>> = {}) {
+export function useTicketSignatureLazyQuery(variables?: Types.TicketSignatureQueryVariables | VueCompositionApi.Ref<Types.TicketSignatureQueryVariables> | ReactiveFunction<Types.TicketSignatureQueryVariables>, options: VueApolloComposable.UseQueryOptions<Types.TicketSignatureQuery, Types.TicketSignatureQueryVariables> | VueCompositionApi.Ref<VueApolloComposable.UseQueryOptions<Types.TicketSignatureQuery, Types.TicketSignatureQueryVariables>> | ReactiveFunction<VueApolloComposable.UseQueryOptions<Types.TicketSignatureQuery, Types.TicketSignatureQueryVariables>> = {}) {
   return VueApolloComposable.useLazyQuery<Types.TicketSignatureQuery, Types.TicketSignatureQueryVariables>(TicketSignatureDocument, variables, options);
 }
 export type TicketSignatureQueryCompositionFunctionResult = VueApolloComposable.UseQueryReturn<Types.TicketSignatureQuery, Types.TicketSignatureQueryVariables>;

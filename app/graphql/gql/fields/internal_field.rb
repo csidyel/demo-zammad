@@ -1,10 +1,10 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Gql::Fields
   # Represents internal fields like 'note' which can only be accessed with admin/agent permission.
   class InternalField < BaseField
     def resolve(object, args, context)
-      authorize_field(context) ? super(object, args, context) : nil
+      authorize_field(context) ? super : nil
     end
 
     private

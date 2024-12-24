@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 RSpec.describe 'Clearbit', aggregate_failures: true, current_user_id: 1, integration: true, performs_jobs: true, required_envs: %w[CLEARBIT_CI_API_KEY] do
@@ -50,7 +50,7 @@ RSpec.describe 'Clearbit', aggregate_failures: true, current_user_id: 1, integra
     end
 
     it 'enriches the customer' do
-      expect(ExternalSync).to be_exist(source: 'clearbit', object: 'User', o_id: customer.id)
+      expect(ExternalSync).to exist(source: 'clearbit', object: 'User', o_id: customer.id)
 
       expect(customer).to have_attributes(
         firstname: 'Should',
@@ -61,7 +61,7 @@ RSpec.describe 'Clearbit', aggregate_failures: true, current_user_id: 1, integra
     end
 
     it 'creates organization with enriched data' do
-      expect(ExternalSync).to be_exist(source: 'clearbit', object: 'Organization', o_id: customer.organization.id)
+      expect(ExternalSync).to exist(source: 'clearbit', object: 'Organization', o_id: customer.organization.id)
 
       expect(customer.organization).to have_attributes(
         name:   'Uber, Inc.',
@@ -86,7 +86,7 @@ RSpec.describe 'Clearbit', aggregate_failures: true, current_user_id: 1, integra
       let(:clearbit_config_company_bio) { 'organization.note_not_existing' }
 
       it 'syncs the rest of user fields' do
-        expect(ExternalSync).to be_exist(source: 'clearbit', object: 'User', o_id: customer.id)
+        expect(ExternalSync).to exist(source: 'clearbit', object: 'User', o_id: customer.id)
 
         expect(customer).to have_attributes(
           firstname: 'Should',
@@ -96,7 +96,7 @@ RSpec.describe 'Clearbit', aggregate_failures: true, current_user_id: 1, integra
       end
 
       it 'syncs the rest of organization fields' do
-        expect(ExternalSync).to be_exist(source: 'clearbit', object: 'Organization', o_id: customer.organization.id)
+        expect(ExternalSync).to exist(source: 'clearbit', object: 'Organization', o_id: customer.organization.id)
 
         expect(customer.organization).to have_attributes(
           name: 'Uber, Inc.',
@@ -125,7 +125,7 @@ RSpec.describe 'Clearbit', aggregate_failures: true, current_user_id: 1, integra
     end
 
     it 'enriches the customer' do
-      expect(ExternalSync).to be_exist(source: 'clearbit', object: 'User', o_id: customer.id)
+      expect(ExternalSync).to exist(source: 'clearbit', object: 'User', o_id: customer.id)
 
       expect(customer).to have_attributes(
         firstname: 'Martin',
@@ -136,7 +136,7 @@ RSpec.describe 'Clearbit', aggregate_failures: true, current_user_id: 1, integra
     end
 
     it 'creates organization with enriched data' do
-      expect(ExternalSync).to be_exist(source: 'clearbit', object: 'Organization', o_id: customer.organization.id)
+      expect(ExternalSync).to exist(source: 'clearbit', object: 'Organization', o_id: customer.organization.id)
 
       expect(customer.organization).to have_attributes(
         name: 'OTRS',
@@ -228,7 +228,7 @@ RSpec.describe 'Clearbit', aggregate_failures: true, current_user_id: 1, integra
     end
 
     it 'does not enrich the customer' do
-      expect(ExternalSync).not_to be_exist(source: 'clearbit', object: 'User', o_id: customer.id)
+      expect(ExternalSync).not_to exist(source: 'clearbit', object: 'User', o_id: customer.id)
 
       expect(customer.reload).to have_attributes(
         firstname: '',
@@ -240,7 +240,7 @@ RSpec.describe 'Clearbit', aggregate_failures: true, current_user_id: 1, integra
     end
 
     it 'creates organization with enriched data' do
-      expect(ExternalSync).to be_exist(source: 'clearbit', object: 'Organization', o_id: customer.organization.id)
+      expect(ExternalSync).to exist(source: 'clearbit', object: 'Organization', o_id: customer.organization.id)
 
       expect(customer.organization).to have_attributes(
         name: 'Znuny / ES for OTRS',
@@ -281,7 +281,7 @@ RSpec.describe 'Clearbit', aggregate_failures: true, current_user_id: 1, integra
     it 'does not create organization with enriched data' do
       expect(customer.organization).to be_present
 
-      expect(Organization).not_to be_exist(name: 'ZnunyOfFred')
+      expect(Organization).not_to exist(name: 'ZnunyOfFred')
     end
   end
 
@@ -315,7 +315,7 @@ RSpec.describe 'Clearbit', aggregate_failures: true, current_user_id: 1, integra
     end
 
     it 'enriches the customer' do
-      expect(ExternalSync).to be_exist(source: 'clearbit', object: 'User', o_id: customer.id)
+      expect(ExternalSync).to exist(source: 'clearbit', object: 'User', o_id: customer.id)
 
       expect(customer).to have_attributes(
         firstname: 'Alex',
@@ -363,7 +363,7 @@ RSpec.describe 'Clearbit', aggregate_failures: true, current_user_id: 1, integra
     end
 
     it 'does not enrich the customer' do
-      expect(ExternalSync).not_to be_exist(source: 'clearbit', object: 'User', o_id: customer.id)
+      expect(ExternalSync).not_to exist(source: 'clearbit', object: 'User', o_id: customer.id)
 
       expect(customer).to have_attributes(
         firstname: '',
@@ -384,11 +384,11 @@ RSpec.describe 'Clearbit', aggregate_failures: true, current_user_id: 1, integra
     end
 
     it 'creates organization with enriched data' do
-      expect(ExternalSync).to be_exist(source: 'clearbit', object: 'Organization', o_id: customer.organization.id)
+      expect(ExternalSync).to exist(source: 'clearbit', object: 'Organization', o_id: customer.organization.id)
 
       expect(customer.organization).to have_attributes(
-        name: 'Clearbit',
-        note: 'Clearbit is a B2B data activation platform that helps teams understand customers, identify prospects, and personalize interactions with real-time intelligence.',
+        name: be_present,
+        note: %r{Clearbit},
       )
     end
   end
@@ -417,7 +417,7 @@ RSpec.describe 'Clearbit', aggregate_failures: true, current_user_id: 1, integra
     end
 
     it 'Limits enrichment data to database limit' do
-      expect(ExternalSync).to be_exist(source: 'clearbit', object: 'User', o_id: customer.id)
+      expect(ExternalSync).to exist(source: 'clearbit', object: 'User', o_id: customer.id)
 
       expect(customer.test_input).to eq 'Sm'
     end

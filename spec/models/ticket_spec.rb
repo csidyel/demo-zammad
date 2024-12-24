@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 require 'models/application_model_examples'
@@ -12,7 +12,6 @@ require 'models/concerns/has_taskbars_examples'
 require 'models/concerns/has_xss_sanitized_note_examples'
 require 'models/concerns/has_object_manager_attributes_examples'
 require 'models/tag/writes_to_ticket_history_examples'
-require 'models/ticket/calls_stats_ticket_reopen_log_examples'
 require 'models/ticket/enqueues_user_ticket_counter_job_examples'
 require 'models/ticket/escalation_examples'
 require 'models/ticket/resets_pending_time_seconds_examples'
@@ -22,23 +21,23 @@ require 'models/ticket/sets_last_owner_update_time_examples'
 RSpec.describe Ticket, type: :model do
   subject(:ticket) { create(:ticket) }
 
-  it_behaves_like 'ApplicationModel'
+  it_behaves_like 'ApplicationModel', can_param: { sample_data_attribute: :title }
   it_behaves_like 'CanBeImported'
   it_behaves_like 'CanCsvImport'
   include_examples 'CanCsvImport - Ticket specific tests'
   it_behaves_like 'ChecksCoreWorkflow'
-  it_behaves_like 'HasHistory', history_relation_object: ['Ticket::Article', 'Mention', 'Ticket::SharedDraftZoom']
+  it_behaves_like 'HasHistory', history_relation_object: ['Ticket::Article', 'Mention', 'Ticket::SharedDraftZoom', 'Checklist', 'Checklist::Item']
   it_behaves_like 'HasTags'
   it_behaves_like 'TagWritesToTicketHistory'
   it_behaves_like 'HasTaskbars'
   it_behaves_like 'HasXssSanitizedNote', model_factory: :ticket
   it_behaves_like 'HasObjectManagerAttributes'
   it_behaves_like 'Ticket::Escalation'
-  it_behaves_like 'TicketCallsStatsTicketReopenLog'
   it_behaves_like 'TicketEnqueuesTicketUserTicketCounterJob'
   it_behaves_like 'TicketResetsPendingTimeSeconds'
   it_behaves_like 'TicketSetsCloseTime'
   it_behaves_like 'TicketSetsLastOwnerUpdateTime'
+  it_behaves_like 'Association clears cache', association: :articles, factory: :ticket_article
 
   describe 'Class methods:' do
     describe '.selectors' do
@@ -443,7 +442,7 @@ RSpec.describe Ticket, type: :model do
         before do
           user
 
-          allow(NotificationFactory::Mailer).to receive(:send) do |**args|
+          allow(NotificationFactory::Mailer).to receive(:deliver) do |**args|
             log << args[:subject]
           end
 
@@ -476,505 +475,6 @@ RSpec.describe Ticket, type: :model do
           ticket.merge_to(ticket_id: target_ticket.id, user_id: 1)
 
           expect(ApplicationHandleInfo.context).not_to eq 'merge'
-        end
-      end
-    end
-
-    describe '#perform_changes' do
-      before do
-        stub_const('PERFORMABLE_STRUCT', Struct.new(:id, :perform, keyword_init: true))
-      end
-
-      # a `performable` can be a Trigger or a Job
-      # we use DuckTyping and expect that a performable
-      # implements the following interface
-      let(:performable) do
-        PERFORMABLE_STRUCT.new(id: 1, perform: perform)
-      end
-
-      # Regression test for https://github.com/zammad/zammad/issues/2001
-      describe 'argument handling' do
-        let(:perform) do
-          {
-            'notification.email' => {
-              body:      "Hello \#{ticket.customer.firstname} \#{ticket.customer.lastname},",
-              recipient: %w[article_last_sender ticket_owner ticket_customer ticket_agents],
-              subject:   "Autoclose (\#{ticket.title})"
-            }
-          }
-        end
-
-        it 'does not mutate contents of "perform" hash' do
-          expect { ticket.perform_changes(performable, 'trigger', {}, 1) }
-            .not_to change { perform }
-        end
-      end
-
-      context 'with "ticket.state_id" key in "perform" hash' do
-        let(:perform) do
-          {
-            'ticket.state_id' => {
-              'value' => Ticket::State.lookup(name: 'closed').id
-            }
-          }
-        end
-
-        it 'changes #state to specified value' do
-          expect { ticket.perform_changes(performable, 'trigger', ticket, User.first) }
-            .to change { ticket.reload.state.name }.to('closed')
-        end
-      end
-
-      # Test for backwards compatibility after PR https://github.com/zammad/zammad/pull/2862
-      context 'with "pending_time" => { "value": DATE } in "perform" hash' do
-        let(:perform) do
-          {
-            'ticket.state_id'     => {
-              'value' => Ticket::State.lookup(name: 'pending reminder').id.to_s
-            },
-            'ticket.pending_time' => {
-              'value' => timestamp,
-            },
-          }
-        end
-
-        let(:timestamp) { Time.zone.now }
-
-        it 'changes pending date to given date' do
-          freeze_time do
-            expect { ticket.perform_changes(performable, 'trigger', ticket, User.first) }
-              .to change(ticket, :pending_time).to(be_within(1.minute).of(timestamp))
-          end
-        end
-      end
-
-      # Test for PR https://github.com/zammad/zammad/pull/2862
-      context 'with "pending_time" => { "operator": "relative" } in "perform" hash' do
-        shared_examples 'verify' do
-          it 'verify relative pending time rule' do
-            freeze_time do
-              interval = relative_value.send(relative_range).from_now
-
-              expect { ticket.perform_changes(performable, 'trigger', ticket, User.first) }
-                .to change(ticket, :pending_time).to(be_within(1.minute).of(interval))
-            end
-          end
-        end
-
-        let(:perform) do
-          {
-            'ticket.state_id'     => {
-              'value' => Ticket::State.lookup(name: 'pending reminder').id.to_s
-            },
-            'ticket.pending_time' => {
-              'operator' => 'relative',
-              'value'    => relative_value,
-              'range'    => relative_range_config
-            },
-          }
-        end
-
-        let(:relative_range_config) { relative_range.to_s.singularize }
-
-        context 'and value in days' do
-          let(:relative_value) { 2 }
-          let(:relative_range) { :days }
-
-          include_examples 'verify'
-        end
-
-        context 'and value in minutes' do
-          let(:relative_value) { 60 }
-          let(:relative_range) { :minutes }
-
-          include_examples 'verify'
-        end
-
-        context 'and value in weeks' do
-          let(:relative_value) { 2 }
-          let(:relative_range) { :weeks }
-
-          include_examples 'verify'
-        end
-      end
-
-      context 'with "ticket.action" => { "value" => "delete" } in "perform" hash' do
-        let(:perform) do
-          {
-            'ticket.state_id' => { 'value' => Ticket::State.lookup(name: 'closed').id.to_s },
-            'ticket.action'   => { 'value' => 'delete' },
-          }
-        end
-
-        it 'performs a ticket deletion on a ticket' do
-          expect { ticket.perform_changes(performable, 'trigger', ticket, User.first) }
-            .to change(ticket, :destroyed?).to(true)
-        end
-      end
-
-      context 'with a "notification.email" trigger' do
-        # Regression test for https://github.com/zammad/zammad/issues/1543
-        #
-        # If a new article fires an email notification trigger,
-        # and then another article is added to the same ticket
-        # before that trigger is performed,
-        # the email template's 'article' var should refer to the originating article,
-        # not the newest one.
-        #
-        # (This occurs whenever one action fires multiple email notification triggers.)
-        context 'when two articles are created before the trigger fires once (race condition)' do
-          let!(:article) { create(:ticket_article, ticket: ticket) }
-          let!(:new_article) { create(:ticket_article, ticket: ticket) }
-
-          let(:trigger) do
-            build(:trigger,
-                  perform: {
-                    'notification.email' => {
-                      body:      '',
-                      recipient: 'ticket_customer',
-                      subject:   ''
-                    }
-                  })
-          end
-
-          let(:objects) do
-            last_article = nil
-            last_internal_article = nil
-            last_external_article = nil
-            all_articles = ticket.articles
-
-            if article.nil?
-              last_article = all_articles.last
-              last_internal_article = all_articles.reverse.find(&:internal?)
-              last_external_article = all_articles.reverse.find { |a| !a.internal? }
-            else
-              last_article = article
-              last_internal_article = article.internal? ? article : all_articles.reverse.find(&:internal?)
-              last_external_article = article.internal? ? all_articles.reverse.find { |a| !a.internal? } : article
-            end
-
-            {
-              ticket:                   ticket,
-              article:                  last_article,
-              last_article:             last_article,
-              last_internal_article:    last_internal_article,
-              last_external_article:    last_external_article,
-              created_article:          article,
-              created_internal_article: article&.internal? ? article : nil,
-              created_external_article: article&.internal? ? nil : article,
-            }
-          end
-
-          # required by Ticket#perform_changes for email notifications
-          before { article.ticket.group.update(email_address: create(:email_address)) }
-
-          it 'passes the first article to NotificationFactory::Mailer' do
-            expect(NotificationFactory::Mailer)
-              .to receive(:template)
-              .with(hash_including(objects: objects))
-              .at_least(:once)
-              .and_call_original
-
-            expect(NotificationFactory::Mailer)
-              .not_to receive(:template)
-              .with(hash_including(objects: { ticket: ticket, article: new_article }))
-
-            ticket.perform_changes(trigger, 'trigger', { article_id: article.id }, 1)
-          end
-        end
-      end
-
-      context 'with a notification trigger' do
-        # https://github.com/zammad/zammad/issues/2782
-        #
-        # Notification triggers should log notification as private or public
-        # according to given configuration
-        let(:user) { create(:admin, mobile: '+37061010000') }
-        let(:perform) do
-          {
-            notification_key => {
-              body:      'Old programmers never die. They just branch to a new address.',
-              recipient: 'ticket_agents',
-              subject:   'Old programmers never die. They just branch to a new address.'
-            }
-          }.deep_merge(additional_options).deep_stringify_keys
-        end
-        let(:notification_key)  { "notification.#{notification_type}" }
-        let!(:ticket_article)   { create(:ticket_article, ticket: ticket) }
-        let(:item) do
-          {
-            object:     'Ticket',
-            object_id:  ticket.id,
-            user_id:    user.id,
-            type:       'update',
-            article_id: ticket_article.id
-          }
-        end
-
-        before { ticket.group.users << user }
-
-        shared_examples 'verify log visibility status' do
-          shared_examples 'notification trigger' do
-            it 'adds Ticket::Article' do
-              expect { ticket.perform_changes(performable, 'trigger', ticket, user) }
-                .to change { ticket.articles.count }.by(1)
-            end
-
-            it 'new Ticket::Article visibility reflects setting' do
-              ticket.perform_changes(performable, 'trigger', ticket, User.first)
-              new_article = ticket.articles.reload.last
-              expect(new_article.internal).to be target_internal_value
-            end
-          end
-
-          context 'when set to private' do
-            let(:additional_options) do
-              {
-                notification_key => {
-                  internal: true
-                }
-              }
-            end
-
-            let(:target_internal_value) { true }
-
-            it_behaves_like 'notification trigger'
-          end
-
-          context 'when set to internal' do
-            let(:additional_options) do
-              {
-                notification_key => {
-                  internal: false
-                }
-              }
-            end
-
-            let(:target_internal_value) { false }
-
-            it_behaves_like 'notification trigger'
-          end
-
-          context 'when no selection was made' do # ensure previously created triggers default to public
-            let(:additional_options) do
-              {}
-            end
-
-            let(:target_internal_value) { false }
-
-            it_behaves_like 'notification trigger'
-          end
-        end
-
-        context 'dispatching email' do
-          let(:notification_type) { :email }
-
-          include_examples 'verify log visibility status'
-        end
-
-        shared_examples 'add a new article' do
-          it 'adds a new article' do
-            expect { ticket.perform_changes(performable, 'trigger', item, user) }
-              .to change { ticket.articles.count }.by(1)
-          end
-        end
-
-        shared_examples 'add attachment to new article' do
-          include_examples 'add a new article'
-
-          it 'adds attachment to the new article' do
-            ticket.perform_changes(performable, 'trigger', item, user)
-            article = ticket.articles.last
-
-            expect(article.type.name).to eq('email')
-            expect(article.sender.name).to eq('System')
-            expect(article.attachments.count).to eq(1)
-            expect(article.attachments[0].filename).to eq('some_file.pdf')
-            expect(article.attachments[0].preferences['Content-ID']).to eq('image/pdf@01CAB192.K8H512Y9')
-          end
-        end
-
-        shared_examples 'does not add attachment to new article' do
-          include_examples 'add a new article'
-
-          it 'does not add attachment to the new article' do
-            ticket.perform_changes(performable, 'trigger', item, user)
-            article = ticket.articles.last
-
-            expect(article.type.name).to eq('email')
-            expect(article.sender.name).to eq('System')
-            expect(article.attachments.count).to eq(0)
-          end
-        end
-
-        context 'dispatching email with include attachment present' do
-          let(:notification_type) { :email }
-          let(:additional_options) do
-            {
-              notification_key => {
-                include_attachments: 'true'
-              }
-            }
-          end
-
-          context 'when ticket has an attachment' do
-
-            before do
-              UserInfo.current_user_id = 1
-
-              create(:store,
-                     object:      'Ticket::Article',
-                     o_id:        ticket_article.id,
-                     data:        'dGVzdCAxMjM=',
-                     filename:    'some_file.pdf',
-                     preferences: {
-                       'Content-Type': 'image/pdf',
-                       'Content-ID':   'image/pdf@01CAB192.K8H512Y9',
-                     })
-            end
-
-            include_examples 'add attachment to new article'
-          end
-
-          context 'when ticket does not have an attachment' do
-
-            include_examples 'does not add attachment to new article'
-          end
-        end
-
-        context 'dispatching email with include attachment not present' do
-          let(:notification_type) { :email }
-          let(:additional_options) do
-            {
-              notification_key => {
-                include_attachments: 'false'
-              }
-            }
-          end
-
-          context 'when ticket has an attachment' do
-
-            before do
-              UserInfo.current_user_id = 1
-
-              create(:store,
-                     object:      'Ticket::Article',
-                     o_id:        ticket_article.id,
-                     data:        'dGVzdCAxMjM=',
-                     filename:    'some_file.pdf',
-                     preferences: {
-                       'Content-Type': 'image/pdf',
-                       'Content-ID':   'image/pdf@01CAB192.K8H512Y9',
-                     })
-            end
-
-            include_examples 'does not add attachment to new article'
-          end
-
-          context 'when ticket does not have an attachment' do
-
-            include_examples 'does not add attachment to new article'
-          end
-        end
-
-        context 'dispatching SMS' do
-          let(:notification_type) { :sms }
-
-          before { create(:channel, area: 'Sms::Notification') }
-
-          include_examples 'verify log visibility status'
-        end
-      end
-
-      context 'with a "notification.webhook" trigger', performs_jobs: true do
-        let(:webhook) { create(:webhook, endpoint: 'http://api.example.com/webhook', signature_token: '53CR3t') }
-        let(:trigger) do
-          create(:trigger,
-                 perform: {
-                   'notification.webhook' => { 'webhook_id' => webhook.id }
-                 })
-        end
-
-        it 'schedules the webhooks notification job' do
-          expect { ticket.perform_changes(trigger, 'trigger', {}, 1) }.to have_enqueued_job(TriggerWebhookJob).with(
-            trigger,
-            ticket,
-            nil,
-            changes:        {},
-            user_id:        nil,
-            execution_type: 'trigger',
-            event_type:     nil,
-          )
-        end
-      end
-
-      context 'Allow placeholders in trigger perform actions for ticket/custom attributes #4216' do
-        let(:customer) { create(:customer, mobile: '+491907655431') }
-        let(:ticket) { create(:ticket, customer: customer) }
-
-        let(:perform) do
-          {
-            'ticket.title' => {
-              'value' => ticket.customer.mobile.to_s,
-            }
-          }
-        end
-
-        it 'does replace custom fields in trigger' do
-          ticket.perform_changes(performable, 'trigger', ticket, User.first)
-          expect(ticket.reload.title).to eq(customer.mobile)
-        end
-      end
-    end
-
-    describe '#trigger_based_notification?' do
-      let(:ticket) { create(:ticket) }
-
-      context 'with a normal user' do
-        let(:customer) { create(:customer) }
-
-        it 'send trigger base notification' do
-          expect(ticket.send(:trigger_based_notification?, customer)).to be(true)
-        end
-      end
-
-      context 'with a permanent failed user' do
-
-        let(:failed_date) { 1.second.ago }
-
-        let(:customer) do
-          user = create(:customer)
-          user.preferences.merge!(mail_delivery_failed: true, mail_delivery_failed_data: failed_date)
-          user.save!
-          user
-        end
-
-        it 'send no trigger base notification' do
-          expect(ticket.send(:trigger_based_notification?, customer)).to be(false)
-          expect(customer.reload.preferences[:mail_delivery_failed]).to be(true)
-          expect(customer.preferences[:mail_delivery_failed_data]).to eq(failed_date)
-        end
-
-        context 'with failed date 61 days ago' do
-
-          let(:failed_date) { 61.days.ago }
-
-          it 'send trigger base notification' do
-            expect(ticket.send(:trigger_based_notification?, customer)).to be(true)
-            expect(customer.reload.preferences[:mail_delivery_failed]).to be(false)
-            expect(customer.preferences[:mail_delivery_failed_data]).to be_nil
-          end
-        end
-
-        context 'with failed date 70 days ago' do
-
-          let(:failed_date) { 70.days.ago }
-
-          it 'send trigger base notification' do
-            expect(ticket.send(:trigger_based_notification?, customer)).to be(true)
-            expect(customer.reload.preferences[:mail_delivery_failed]).to be(false)
-            expect(customer.preferences[:mail_delivery_failed_data]).to be_nil
-          end
         end
       end
     end
@@ -1855,16 +1355,19 @@ RSpec.describe Ticket, type: :model do
           .to(false)
       end
 
-      it 'destroys all related dependencies' do
-        refs_known = { 'Ticket::Article'         => { 'ticket_id'=>1 },
-                       'Ticket::TimeAccounting'  => { 'ticket_id'=>1 },
-                       'Ticket::SharedDraftZoom' => { 'ticket_id'=>0 },
-                       'Ticket::Flag'            => { 'ticket_id'=>1 } }
+      it 'destroys all related dependencies', current_user_id: 1 do
+        refs_known = {
+          'Ticket::Article'         => { 'ticket_id' => 1 },
+          'Ticket::TimeAccounting'  => { 'ticket_id' => 1 },
+          'Ticket::SharedDraftZoom' => { 'ticket_id' => 0 },
+          'Checklist::Item'         => { 'ticket_id' => 1 },
+        }
 
-        ticket     = create(:ticket)
-        article    = create(:ticket_article, ticket: ticket)
-        accounting = create(:ticket_time_accounting, ticket: ticket)
-        flag       = create(:ticket_flag, ticket: ticket)
+        ticket         = create(:ticket)
+        article        = create(:ticket_article, ticket: ticket)
+        accounting     = create(:ticket_time_accounting, ticket: ticket)
+        checklist      = create(:checklist, ticket: ticket)
+        checklist_item = create(:checklist_item, ticket_id: ticket.id)
 
         refs_ticket = Models.references('Ticket', ticket.id, true)
         expect(refs_ticket).to eq(refs_known)
@@ -1874,7 +1377,9 @@ RSpec.describe Ticket, type: :model do
         expect { ticket.reload }.to raise_exception(ActiveRecord::RecordNotFound)
         expect { article.reload }.to raise_exception(ActiveRecord::RecordNotFound)
         expect { accounting.reload }.to raise_exception(ActiveRecord::RecordNotFound)
-        expect { flag.reload }.to raise_exception(ActiveRecord::RecordNotFound)
+        expect { checklist.reload }.to raise_exception(ActiveRecord::RecordNotFound)
+        # Related checklist_item should not be destroyed
+        expect(checklist_item.reload.ticket_id).to be_nil
       end
 
       context 'when ticket is generated from email (with attachments)' do
@@ -2264,7 +1769,7 @@ RSpec.describe Ticket, type: :model do
     subject!(:ticket) { create(:ticket) }
 
     context 'when payload is ok' do
-      let(:current_payload_size) { 3.megabyte }
+      let(:current_payload_size) { 3.megabytes }
 
       it 'return false' do
         expect(ticket.send(:search_index_attribute_lookup_oversized?, current_payload_size)).to be false
@@ -2272,7 +1777,7 @@ RSpec.describe Ticket, type: :model do
     end
 
     context 'when payload is bigger' do
-      let(:current_payload_size) { 350.megabyte }
+      let(:current_payload_size) { 350.megabytes }
 
       it 'return true' do
         expect(ticket.send(:search_index_attribute_lookup_oversized?, current_payload_size)).to be true
@@ -2290,7 +1795,7 @@ RSpec.describe Ticket, type: :model do
     end
 
     context 'when total payload is ok' do
-      let(:current_payload_size) { 200.megabyte }
+      let(:current_payload_size) { 200.megabytes }
 
       it 'return false' do
         expect(ticket.send(:search_index_attribute_lookup_file_oversized?, store, current_payload_size)).to be false
@@ -2298,7 +1803,7 @@ RSpec.describe Ticket, type: :model do
     end
 
     context 'when total payload is oversized' do
-      let(:current_payload_size) { 299.megabyte }
+      let(:current_payload_size) { 299.megabytes }
 
       it 'return true' do
         expect(ticket.send(:search_index_attribute_lookup_file_oversized?, store, current_payload_size)).to be true
@@ -2332,6 +1837,54 @@ RSpec.describe Ticket, type: :model do
 
       it 'return true' do
         expect(ticket.send(:search_index_attribute_lookup_file_ignored?, store_without_indexable_extention)).to be true
+      end
+    end
+  end
+
+  describe '.search_index_article_attachment_attributes' do
+    context 'payload for article' do
+      subject!(:store_item) do
+        create(:store,
+               object:   'SomeObject',
+               o_id:     1,
+               data:     'some content',
+               filename: 'test.TXT')
+      end
+
+      it 'verify count of attributes' do
+        expect(ticket.send(:search_index_article_attachment_attributes, store_item).count).to be 3
+      end
+
+      it 'verify size' do
+        expect(ticket.send(:search_index_article_attachment_attributes, store_item)['size']).to eq '12'
+      end
+
+      it 'verify _name' do
+        expect(ticket.send(:search_index_article_attachment_attributes, store_item)['_name']).to eq 'test.TXT'
+      end
+
+      it 'verify _content' do
+        expect(ticket.send(:search_index_article_attachment_attributes, store_item)['_content']).to eq 'c29tZSBjb250ZW50'
+      end
+    end
+  end
+
+  describe '.search_index_article_attributes' do
+    context 'payload for attachment' do
+      subject!(:ticket_article) do
+        create(:ticket_article, ticket: create(:ticket))
+      end
+
+      it 'verify count of attributes' do
+        expect(ticket.send(:search_index_article_attributes, ticket_article).count).to eq 20
+      end
+
+      it 'verify from' do
+        expect(ticket.send(:search_index_article_attributes, ticket_article)['from']).to eq ticket_article.from
+      end
+
+      it 'verify body' do
+        expect(ticket.send(:search_index_article_attributes, ticket_article)['body']).to eq ticket_article.body
       end
     end
   end
@@ -2471,6 +2024,33 @@ RSpec.describe Ticket, type: :model do
           expect(ticket.reopen_after_certain_time?).to be false
         end
       end
+    end
+  end
+
+  describe '#get_references' do
+    let!(:ticket) { create(:ticket) }
+    let!(:articles) { create_list(:ticket_article, 10, ticket: ticket, reply_to: nil) }
+
+    before do
+      articles.each do |article|
+        article.update(message_id: SecureRandom.uuid)
+      end
+    end
+
+    it 'does return references' do
+      expect(ticket.get_references.count).to eq(10)
+    end
+
+    it 'does return references by limit' do
+      expect(ticket.get_references([], max_length: articles.last.message_id.length * 3).count).to eq(3)
+    end
+
+    it 'does return last 3 references by limit' do
+      expect(ticket.get_references([], max_length: articles.last.message_id.length * 3)).to eq(articles.map(&:message_id)[-3..])
+    end
+
+    it 'does ignore references' do
+      expect(ticket.get_references([articles.last.message_id])).not_to include(articles.last.message_id)
     end
   end
 end

@@ -1,4 +1,4 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 /**
  * @fileoverview Detect unmarked translatable strings
@@ -49,7 +49,7 @@ module.exports = {
         }
 
         // Ignore strings used for comparison
-        const tokenBefore = context.getTokenBefore(node)
+        const tokenBefore = context.sourceCode.getTokenBefore(node)
         if (
           tokenBefore &&
           tokenBefore.type === 'Punctuator' &&

@@ -1,18 +1,21 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { CommonButtonOption } from '#mobile/components/CommonButtonGroup/types.ts'
-import CommonButtonGroup from '#mobile/components/CommonButtonGroup/CommonButtonGroup.vue'
-import CommonLoader from '#mobile/components/CommonLoader/CommonLoader.vue'
-import { useSessionStore } from '#shared/stores/session.ts'
-import CommonBackButton from '#mobile/components/CommonBackButton/CommonBackButton.vue'
-import { useDialog } from '#shared/composables/useDialog.ts'
-import { useStickyHeader } from '#shared/composables/useStickyHeader.ts'
-import CommonRefetch from '#mobile/components/CommonRefetch/CommonRefetch.vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ticketInformationPlugins } from './plugins/index.ts'
+
+import { useStickyHeader } from '#shared/composables/useStickyHeader.ts'
+import { useSessionStore } from '#shared/stores/session.ts'
+
+import CommonButtonGroup from '#mobile/components/CommonButtonGroup/CommonButtonGroup.vue'
+import type { CommonButtonOption } from '#mobile/components/CommonButtonGroup/types.ts'
+import CommonLoader from '#mobile/components/CommonLoader/CommonLoader.vue'
+import LayoutHeader from '#mobile/components/layout/LayoutHeader.vue'
+import { useDialog } from '#mobile/composables/useDialog.ts'
+
 import { useTicketInformation } from '../../composable/useTicketInformation.ts'
+
+import { ticketInformationPlugins } from './plugins/index.ts'
 
 defineProps<{
   internalId: string
@@ -61,36 +64,25 @@ const router = useRouter()
 </script>
 
 <template>
-  <header
+  <LayoutHeader
     ref="headerElement"
-    class="grid h-[64px] shrink-0 grid-cols-[75px_auto_75px] border-b-[0.5px] border-white/10 bg-black px-4"
+    :refetch="refetchingStatus"
+    :back-title="`#${internalId}`"
+    :title="$t('Ticket information')"
+    :back-url="`/tickets/${internalId}`"
     :style="stickyStyles.header"
   >
-    <CommonBackButton
-      class="justify-self-start"
-      :label="`#${internalId}`"
-      :fallback="`/tickets/${internalId}`"
-    />
-    <div class="flex flex-1 items-center justify-center">
-      <CommonRefetch :refetch="refetchingStatus">
-        <h1
-          class="flex items-center justify-center text-center text-lg font-bold"
-        >
-          {{ $t('Ticket information') }}
-        </h1>
-      </CommonRefetch>
-    </div>
-    <div class="flex items-center justify-end">
+    <template #after>
       <button
         v-if="hasPermission('ticket.agent')"
         type="button"
         :aria-label="$t('Show ticket actions')"
         @click="showActions()"
       >
-        <CommonIcon name="mobile-more" size="base" decorative />
+        <CommonIcon name="more" size="base" decorative />
       </button>
-    </div>
-  </header>
+    </template>
+  </LayoutHeader>
   <div class="flex p-4" :style="stickyStyles.body">
     <h1
       class="line-clamp-3 flex flex-1 items-center break-words text-xl font-bold leading-7"

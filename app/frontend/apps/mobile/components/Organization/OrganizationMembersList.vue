@@ -1,9 +1,11 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import type { OrganizationQuery } from '#shared/graphql/types.ts'
 import type { ConfidentTake } from '#shared/types/utils.ts'
-import { computed } from 'vue'
+
 import CommonSectionMenu from '../CommonSectionMenu/CommonSectionMenu.vue'
 import CommonShowMoreButton from '../CommonShowMoreButton/CommonShowMoreButton.vue'
 import CommonUsersList from '../CommonUsersList/CommonUsersList.vue'
@@ -15,11 +17,11 @@ interface Props {
 
 const props = defineProps<Props>()
 const emit = defineEmits<{
-  (e: 'load-more'): void
+  'load-more': []
 }>()
 
 const members = computed(() => {
-  return props.organization.members?.edges.map(({ node }) => node) || []
+  return props.organization.allMembers?.edges.map(({ node }) => node) || []
 })
 </script>
 
@@ -28,7 +30,7 @@ const members = computed(() => {
     <CommonUsersList :users="members" />
     <CommonShowMoreButton
       :entities="members"
-      :total-count="organization.members?.totalCount || 0"
+      :total-count="organization.allMembers?.totalCount || 0"
       :disabled="disableShowMore"
       @click="emit('load-more')"
     />

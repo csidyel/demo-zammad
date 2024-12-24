@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -35,7 +35,7 @@ RSpec.describe Gql::Mutations::Tag::Assignment::Update, :aggregate_failures, typ
 
     context 'with ticket write permission' do
       it 'adds the tag' do
-        expect(gql.result.data['success']).to be(true)
+        expect(gql.result.data[:success]).to be(true)
         expect(object.reload.tag_list).to match_array(tags_list)
       end
 
@@ -43,7 +43,7 @@ RSpec.describe Gql::Mutations::Tag::Assignment::Update, :aggregate_failures, typ
         (tags_list + ['tag3']).each { |elem| object.tag_add elem }
         gql.execute(query, variables: variables)
 
-        expect(gql.result.data['success']).to be(true)
+        expect(gql.result.data[:success]).to be(true)
         expect(object.reload.tag_list).to eq(tags_list)
       end
     end

@@ -1,21 +1,23 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
+import { useRouteQuery } from '@vueuse/router'
+import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { storeToRefs } from 'pinia'
-import { useRouteQuery } from '@vueuse/router'
-import { i18n } from '#shared/i18n.ts'
+
+import { useStickyHeader } from '#shared/composables/useStickyHeader.ts'
 import { EnumOrderDirection } from '#shared/graphql/types.ts'
+import { i18n } from '#shared/i18n.ts'
 import { useApplicationStore } from '#shared/stores/application.ts'
 import { useSessionStore } from '#shared/stores/session.ts'
-import { useStickyHeader } from '#shared/composables/useStickyHeader.ts'
-import CommonBackButton from '#mobile/components/CommonBackButton/CommonBackButton.vue'
+
 import CommonLoader from '#mobile/components/CommonLoader/CommonLoader.vue'
 import CommonSelectPill from '#mobile/components/CommonSelectPill/CommonSelectPill.vue'
 import CommonTicketCreateLink from '#mobile/components/CommonTicketCreateLink/CommonTicketCreateLink.vue'
+import LayoutHeader from '#mobile/components/layout/LayoutHeader.vue'
 import { useTicketOverviews } from '#mobile/entities/ticket/composables/useTicketOverviews.ts'
-import CommonRefetch from '#mobile/components/CommonRefetch/CommonRefetch.vue'
+
 import TicketList from '../components/TicketList/TicketList.vue'
 import TicketOrderBySelector from '../components/TicketList/TicketOrderBySelector.vue'
 
@@ -28,9 +30,8 @@ const props = defineProps<{
 const router = useRouter()
 const route = useRoute()
 
-const { overviews, loading: loadingOverviews } = storeToRefs(
-  useTicketOverviews(),
-)
+const { overviews, loading: loadingOverviews } =
+  storeToRefs(useTicketOverviews())
 
 const optionsOverviews = computed(() => {
   return overviews.value.map((overview) => ({
@@ -163,23 +164,18 @@ const showRefetch = ref(false)
       class="border-b-[0.5px] border-white/10 bg-black px-4"
       :style="stickyStyles.header"
     >
-      <div class="grid h-16 grid-cols-[75px_auto_75px]">
-        <div
-          class="flex cursor-pointer items-center justify-self-start text-base"
-        >
-          <CommonBackButton fallback="/" avoid-home-button />
-        </div>
-        <div class="flex flex-1 items-center justify-center">
-          <CommonRefetch :refetch="showRefetch">
-            <h1
-              class="flex items-center justify-center text-center text-lg font-bold"
-            >
-              {{ $t('Tickets') }}
-            </h1>
-          </CommonRefetch>
-        </div>
-        <CommonTicketCreateLink class="justify-self-end text-base" />
-      </div>
+      <LayoutHeader
+        back-url="/"
+        container-tag="div"
+        class="h-16 border-none first:px-0"
+        back-avoid-home-button
+        :refetch="showRefetch"
+        :title="__('Tickets')"
+      >
+        <template #after>
+          <CommonTicketCreateLink class="justify-self-end text-base" />
+        </template>
+      </LayoutHeader>
       <div
         v-if="optionsOverviews.length"
         class="mb-3 flex items-center justify-between gap-2"
@@ -224,7 +220,7 @@ const showRefetch = ref(false)
         v-else
         class="flex items-center justify-center gap-2 p-4 text-center"
       >
-        <CommonIcon class="text-red" name="mobile-close-small" />
+        <CommonIcon class="text-red" name="close-small" />
         {{ $t('Currently no overview is assigned to your roles.') }}
       </div>
     </div>

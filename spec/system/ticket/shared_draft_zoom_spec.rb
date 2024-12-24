@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -39,7 +39,7 @@ RSpec.describe 'Ticket Shared Draft Zoom', authenticated_as: :authenticate, type
       within :active_content do
         elem = find('.article-add input[name=shared_draft_id]', visible: :all)
 
-        expect(Ticket::SharedDraftZoom).to be_exist(elem.value)
+        expect(Ticket::SharedDraftZoom).to exist(elem.value)
       end
     end
   end

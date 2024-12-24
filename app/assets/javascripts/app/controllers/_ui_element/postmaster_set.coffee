@@ -5,7 +5,10 @@ class App.UiElement.postmaster_set extends App.UiElement.ApplicationAction
 
     groups =
       ticket:
-        name: __('Ticket')
+        name: __('Ticket creation')
+        model: 'Ticket'
+      'ticket-followup':
+        name: __('Ticket update')
         model: 'Ticket'
       article:
         name: 'Article'
@@ -31,6 +34,9 @@ class App.UiElement.postmaster_set extends App.UiElement.ApplicationAction
                   config.operator = ['static', 'relative']
                 when 'tag'
                   config.operator = ['add', 'remove']
+                when 'autocompletion_ajax_external_data_source'
+                  config.objectName = groupMeta.model
+                  config.attributeName = config.name
 
               elements["x-zammad-#{groupKey}-#{config.name}"] = config
 
@@ -45,4 +51,5 @@ class App.UiElement.postmaster_set extends App.UiElement.ApplicationAction
 
   @elementKeyGroup: (elementKey) ->
     return 'expert' if elementKey is 'x-zammad-ignore'
+    return 'ticket-followup' if elementKey.startsWith('x-zammad-ticket-followup')
     elementKey.replace('x-zammad-', '').split(/-/)[0]

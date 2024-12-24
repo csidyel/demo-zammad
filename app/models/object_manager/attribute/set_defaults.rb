@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class ObjectManager
   class Attribute
@@ -15,7 +15,7 @@ class ObjectManager
         method_name = "#{attr}="
 
         return if !record.respond_to? method_name
-        return if record.send("#{attr}_came_from_user?")
+        return if record.send(:"#{attr}_came_from_user?")
 
         record.send method_name, build_value(config)
       end
@@ -33,7 +33,7 @@ class ObjectManager
 
         return if !diff
 
-        Time.use_zone(Setting.get('timezone_default_sanitized')) do
+        Time.use_zone(Setting.get('timezone_default')) do
           diff
             .days
             .from_now
@@ -46,7 +46,7 @@ class ObjectManager
 
         return if !diff
 
-        Time.use_zone(Setting.get('timezone_default_sanitized')) do
+        Time.use_zone(Setting.get('timezone_default')) do
           diff
             .hours
             .from_now

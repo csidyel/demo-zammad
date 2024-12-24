@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class NotificationFactory::Mailer
 
@@ -51,9 +51,6 @@ returns
     matrix = user_preferences['notification_config']['matrix']
     return if !matrix
 
-    owned_by_nobody = false
-    owned_by_me = false
-    subscribed = false
     case ticket.owner_id
     when 1
       owned_by_nobody = true
@@ -76,7 +73,7 @@ returns
     end
 
     # always trigger notifications for user if he is subscribed
-    if owned_by_me == false && ticket.mentions.exists?(user: user)
+    if !owned_by_me && ticket.mentions.exists?(user: user)
       subscribed = true
     end
 
@@ -138,7 +135,7 @@ returns
 
 =begin
 
-  success = NotificationFactory::Mailer.send(
+  success = NotificationFactory::Mailer.deliver(
     recipient:    User.find(123),
     subject:      'some subject',
     body:         'some body',
@@ -150,7 +147,7 @@ returns
 
 =end
 
-  def self.send(data)
+  def self.deliver(data)
     raise Exceptions::UnprocessableEntity, "Unable to send mail to user with id #{data[:recipient][:id]} because there is no email available." if data[:recipient][:email].blank?
 
     sender = Setting.get('notification_sender')
@@ -219,10 +216,11 @@ returns
 
     # prepare scaling of images
     if result[:body]
+      result[:body] = HtmlSanitizer.adjust_inline_image_size(result[:body])
       result[:body] = HtmlSanitizer.dynamic_image_size(result[:body])
     end
 
-    NotificationFactory::Mailer.send(
+    NotificationFactory::Mailer.deliver(
       recipient:    data[:user],
       subject:      result[:subject],
       body:         result[:body],

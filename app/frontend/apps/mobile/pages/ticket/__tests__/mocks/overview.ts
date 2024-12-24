@@ -1,12 +1,15 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { mockGraphQLApi } from '#tests/support/mock-graphql-api.ts'
+import { nullableMock } from '#tests/support/utils.ts'
 
 import {
   EnumTicketStateColorCode,
   type TicketsByOverviewQuery,
 } from '#shared/graphql/types.ts'
+import { convertToGraphQLId } from '#shared/graphql/utils.ts'
 import type { ConfidentTake } from '#shared/types/utils.ts'
-import { mockGraphQLApi } from '#tests/support/mock-graphql-api.ts'
-import { nullableMock } from '#tests/support/utils.ts'
+
 import { TicketsByOverviewDocument } from '../../graphql/queries/ticketsByOverview.api.ts'
 
 type TicketItemByOverview = ConfidentTake<
@@ -36,6 +39,7 @@ export const ticketDefault = () =>
       name: 'open',
       stateType: {
         __typename: 'TicketStateType',
+        id: convertToGraphQLId('TicketStateType', '2'),
         name: 'open',
       },
     },

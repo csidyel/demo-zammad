@@ -1,10 +1,15 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { UserError, UserInput } from '#shared/graphql/types.ts'
 import gql from 'graphql-tag'
 
+import type {
+  UserError,
+  UserInput,
+  UserSignupInput,
+} from '#shared/graphql/types.ts'
+
 export interface TestAvatarQuery {
-  accountAvatarActive: {
+  userCurrentAvatarActive: {
     id: string
     imageFull: string
     createdAt: string
@@ -19,7 +24,7 @@ export interface TestUserQuery {
   }
 }
 
-export interface TestUserAuthorizationsMutation {
+export interface TestUserUpdateMutation {
   userUpdate: {
     user: {
       id: string
@@ -32,7 +37,7 @@ export interface TestUserAuthorizationsMutation {
   }
 }
 
-export interface TestUserAuthorizationsVariables {
+export interface TestUserUpdateVariables {
   userId: string
   input: UserInput
 }
@@ -42,12 +47,69 @@ export interface TestUserQueryVariables {
 }
 
 export const TestAvatarDocument = gql`
-  query accountAvatarActive {
-    accountAvatarActive {
+  query userCurrentAvatarActive {
+    userCurrentAvatarActive {
       id
       imageFull
       createdAt
       updatedAt
+    }
+  }
+`
+
+export interface TestTicketArticlesMultipleQuery {
+  description: {
+    edges: {
+      node: {
+        id: string
+        bodyWithUrls: string
+      }
+    }[]
+  }
+  articles: {
+    totalCount: number
+    edges: {
+      node: {
+        id: string
+        bodyWithUrls: string
+      }
+      cursor: string
+    }[]
+    pageInfo: {
+      endCursor: string
+      startCursor: string
+      hasPreviousPage: boolean
+    }
+  }
+}
+
+export const TestTicketArticlesMultiple = gql`
+  query ticketArticles($ticketId: ID!, $beforeCursor: String) {
+    description: ticketArticles(ticket: { ticketId: $ticketId }, first: 1) {
+      edges {
+        node {
+          id
+          bodyWithUrls
+        }
+      }
+    }
+    articles: ticketArticles(
+      ticket: { ticketId: $ticketId }
+      before: $beforeCursor
+    ) {
+      totalCount
+      edges {
+        node {
+          id
+          bodyWithUrls
+        }
+        cursor
+      }
+      pageInfo {
+        endCursor
+        startCursor
+        hasPreviousPage
+      }
     }
   }
 `
@@ -61,7 +123,7 @@ export const TestUserDocument = gql`
   }
 `
 
-export const TestUserAutorizationsDocument = gql`
+export const TestUserUpdateDocument = gql`
   mutation userUpdate($userId: ID, $input: UserInput!) {
     userUpdate(id: $userId, input: $input) {
       user {
@@ -77,7 +139,7 @@ export const TestUserAutorizationsDocument = gql`
 `
 
 export interface TestAvatarMutation {
-  accountAvatarAdd: {
+  userCurrentAvatarAdd: {
     avatar: {
       id: string
       imageFull: string
@@ -87,8 +149,8 @@ export interface TestAvatarMutation {
 }
 
 export const TestAvatarActiveMutationDocument = gql`
-  mutation accountAvatarAdd($images: AvatarInput!) {
-    accountAvatarAdd(images: $images) {
+  mutation userCurrentAvatarAdd($images: AvatarInput!) {
+    userCurrentAvatarAdd(images: $images) {
       avatar {
         id
         imageFull
@@ -110,6 +172,10 @@ export interface TestUserUpdatesSubscription {
   }
 }
 
+export interface TestUserUpdatesSubscriptionVariables {
+  userId: string
+}
+
 export const TestUserUpdatesDocument = gql`
   subscription userUpdates($userId: ID!) {
     userUpdates(userId: $userId) {
@@ -120,3 +186,43 @@ export const TestUserUpdatesDocument = gql`
     }
   }
 `
+
+export interface TestAutocompleteArrayFirstLevelQuery {
+  autocompleteSearchObjectAttributeExternalDataSource: {
+    value: number
+    label: string
+  }[]
+}
+
+export const TestAutocompleteArrayFirstLevel = gql`
+  query autocompleteSearchObjectAttributeExternalDataSource(
+    $input: AutocompleteSearchObjectAttributeExternalDataSourceInput!
+  ) {
+    autocompleteSearchObjectAttributeExternalDataSource(input: $input) {
+      value
+      label
+    }
+  }
+`
+
+export const TestUserSignupMutationDocument = gql`
+  mutation userSignup($input: UserSignupInput!) {
+    userSignup(input: $input) {
+      success
+      errors {
+        ...errors
+      }
+    }
+  }
+`
+
+export interface TestUserSignupMutationQuery {
+  userSignup: {
+    success: boolean
+    errors: UserError[] | null
+  }
+}
+
+export interface TestUserSignupArgs {
+  input: UserSignupInput
+}

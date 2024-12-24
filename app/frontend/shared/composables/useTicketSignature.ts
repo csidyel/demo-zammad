@@ -1,6 +1,8 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { TicketById } from '#shared/entities/ticket/types.ts'
+import { effectScope, type Ref } from 'vue'
+
+import type { FieldEditorContext } from '#shared/components/Form/fields/FieldEditor/types.ts'
 import type {
   FormHandler,
   FormHandlerFunction,
@@ -8,18 +10,17 @@ import type {
   ChangedField,
 } from '#shared/components/Form/types.ts'
 import { FormHandlerExecution } from '#shared/components/Form/types.ts'
-import type { FieldEditorContext } from '#shared/components/Form/fields/FieldEditor/types.ts'
+import type { TicketById } from '#shared/entities/ticket/types.ts'
 import { useTicketSignatureLazyQuery } from '#shared/graphql/queries/ticketSignature.api.ts'
+import type {
+  TicketSignatureQuery,
+  TicketSignatureQueryVariables,
+} from '#shared/graphql/types.ts'
 import {
   convertToGraphQLId,
   getIdFromGraphQLId,
 } from '#shared/graphql/utils.ts'
 import { QueryHandler } from '#shared/server/apollo/handler/index.ts'
-import type { Ref } from 'vue'
-import type {
-  TicketSignatureQuery,
-  TicketSignatureQueryVariables,
-} from '#shared/graphql/types.ts'
 
 let signatureQuery: QueryHandler<
   TicketSignatureQuery,
@@ -29,9 +30,13 @@ let signatureQuery: QueryHandler<
 export const getTicketSignatureQuery = () => {
   if (signatureQuery) return signatureQuery
 
-  signatureQuery = new QueryHandler(
-    useTicketSignatureLazyQuery({ groupId: '' }),
-  )
+  const scope = effectScope()
+
+  scope.run(() => {
+    signatureQuery = new QueryHandler(
+      useTicketSignatureLazyQuery({ groupId: '' }),
+    )
+  })
 
   return signatureQuery
 }
@@ -51,13 +56,11 @@ export const useTicketSignature = (ticket?: Ref<TicketById | undefined>) => {
   const signatureHandling = (editorName: string): FormHandler => {
     const handleSignature: FormHandlerFunction = (
       execution,
-      formNode,
-      values,
-      changeFields,
-      updateSchemaDataField,
-      schemaData,
-      changedField,
+      reactivity,
+      data,
     ) => {
+      const { formNode, values, changedField } = data
+
       if (
         changedField?.name !== 'group_id' &&
         changedField?.name !== 'articleSenderType'

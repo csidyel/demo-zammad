@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module MonitoringHelper
   class HealthChecker
@@ -59,7 +59,7 @@ module MonitoringHelper
       end
 
       def total_jobs
-        total_jobs = Delayed::Job.where('created_at < ?', TOTAL_JOBS_TIMEOUT.ago).count
+        total_jobs = Delayed::Job.where(created_at: ...TOTAL_JOBS_TIMEOUT.ago).count
 
         return if total_jobs <= TOTAL_JOBS_THRESHOLD
 

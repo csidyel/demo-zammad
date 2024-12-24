@@ -1,14 +1,15 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { translateOption } from '../../utils.ts'
-import type { ObjectAttributeSingleSelect } from './attributeSingleSelectTypes.ts'
 
-const props = defineProps<{
-  attribute: ObjectAttributeSingleSelect
-  value: string
-}>()
+import { translateOption } from '../../utils.ts'
+
+import type { ObjectAttributeSingleSelect } from './attributeSingleSelectTypes.ts'
+import type { ObjectAttributeProps } from '../../types.ts'
+
+const props =
+  defineProps<ObjectAttributeProps<ObjectAttributeSingleSelect, string>>()
 
 const body = computed(() => {
   if (props.attribute.dataType === 'tree_select') {

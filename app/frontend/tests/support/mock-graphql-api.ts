@@ -1,19 +1,21 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 /* eslint-disable no-use-before-define */
 
 import { NetworkStatus } from '@apollo/client/core'
-import type { UserError } from '#shared/graphql/types.ts'
-import type { GraphQLErrorReport } from '#shared/types/error.ts'
-import { GraphQLErrorTypes } from '#shared/types/error.ts'
-import type { DocumentNode } from 'graphql'
 import {
   createMockSubscription,
   type IMockSubscription,
   type RequestHandlerResponse,
 } from 'mock-apollo-client'
-import type { SpyInstance } from 'vitest'
+
+import type { UserError } from '#shared/graphql/types.ts'
+import { GraphQLErrorTypes } from '#shared/types/error.ts'
+
 import createMockClient from './mock-apollo-client.ts'
 import { waitForNextTick } from './utils.ts'
+
+import type { DocumentNode, GraphQLFormattedError } from 'graphql'
+import type { MockInstance } from 'vitest'
 
 interface Result {
   [key: string]: unknown
@@ -29,7 +31,7 @@ export interface MockGraphQLInstance {
   willBehave<T>(handler: (variables: any) => T): MockGraphQLInstance
   willResolve<T>(result: T): MockGraphQLInstance
   willFailWithError(
-    errors: GraphQLErrorReport[],
+    errors: GraphQLFormattedError[],
     networkStatus?: NetworkStatus,
   ): MockGraphQLInstance
   willFailWithUserError(
@@ -39,11 +41,11 @@ export interface MockGraphQLInstance {
   willFailWithNotFoundError(message?: string): MockGraphQLInstance
   willFailWithNetworkError(error: Error): MockGraphQLInstance
   spies: {
-    behave: SpyInstance
-    resolve: SpyInstance
-    error: SpyInstance
-    userError: SpyInstance
-    networkError: SpyInstance
+    behave: MockInstance
+    resolve: MockInstance
+    error: MockInstance
+    userError: MockInstance
+    networkError: MockInstance
   }
   calls: {
     behave: number
@@ -92,7 +94,7 @@ export const mockGraphQLApi = (
   }
 
   const willFailWithError = (
-    errors: GraphQLErrorReport[],
+    errors: GraphQLFormattedError[],
     networkStatus?: NetworkStatus,
   ) => {
     errorSpy.mockResolvedValue({

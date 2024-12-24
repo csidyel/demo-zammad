@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Zammad::TranslationCatalog::Extractor::ViewTemplates < Zammad::TranslationCatalog::Extractor::Base
 
@@ -18,10 +18,10 @@ class Zammad::TranslationCatalog::Extractor::ViewTemplates < Zammad::Translation
   end
 
   def find_files
-    files = []
-    %w[mailer messaging].each do |dir|
-      files += Dir.glob("#{base_path}/app/views/#{dir}/*/en.*.erb")
-    end
-    files
+    %w[mailer messaging]
+      .map do |dir|
+        Dir.glob("#{base_path}/app/views/#{dir}/*/en.*.erb")
+      end
+      .flatten
   end
 end

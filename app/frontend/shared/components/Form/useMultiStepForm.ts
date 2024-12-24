@@ -1,10 +1,11 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { createMessage, getNode } from '@formkit/core'
-import type { FormKitNode } from '@formkit/core'
 import { computed, toRef, ref, reactive, watch } from 'vue'
-import type { ComputedRef, Ref } from 'vue'
+
 import type { FormStep } from './types.ts'
+import type { FormKitNode } from '@formkit/core'
+import type { ComputedRef, Ref } from 'vue'
 
 interface InternalMultiFormSteps {
   label: string
@@ -99,7 +100,7 @@ export const useMultiStepForm = (
     const mappedSteps: Record<string, FormStep> = {}
 
     stepNames.value.forEach((stepName) => {
-      const alreadyVisisted = visitedSteps.value.includes(stepName)
+      const alreadyVisited = visitedSteps.value.includes(stepName)
 
       mappedSteps[stepName] = {
         label: internalSteps[stepName].label,
@@ -110,8 +111,8 @@ export const useMultiStepForm = (
         valid:
           internalSteps[stepName].valid &&
           internalSteps[stepName].errorCount === 0,
-        disabled: !alreadyVisisted || activeStep.value === stepName,
-        completed: alreadyVisisted,
+        disabled: !alreadyVisited || activeStep.value === stepName,
+        completed: alreadyVisited,
       }
     })
 

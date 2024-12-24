@@ -1,13 +1,18 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
+import { computed, toRef } from 'vue'
+
+import { useArticleSecurity } from '#shared/composables/useArticleSecurity.ts'
+import { useWhatsapp } from '#shared/entities/ticket/channel/composables/useWhatsapp.ts'
+import type { TicketArticle } from '#shared/entities/ticket/types.ts'
 import { getArticleChannelIcon } from '#shared/entities/ticket-article/composables/getArticleChannelIcon.ts'
+import { translateArticleSecurity } from '#shared/entities/ticket-article/composables/translateArticleSecurity.ts'
+
 import CommonDialog from '#mobile/components/CommonDialog/CommonDialog.vue'
 import CommonSectionMenu from '#mobile/components/CommonSectionMenu/CommonSectionMenu.vue'
 import CommonSectionMenuItem from '#mobile/components/CommonSectionMenu/CommonSectionMenuItem.vue'
-import { computed } from 'vue'
-import type { TicketArticle } from '#shared/entities/ticket/types.ts'
-import { translateArticleSecurity } from '#shared/entities/ticket-article/composables/translateArticleSecurity.ts'
+
 import ArticleMetadataAddress from './ArticleMetadataAddress.vue'
 
 interface Props {
@@ -23,6 +28,8 @@ const channelIcon = computed(() => {
   if (name) return getArticleChannelIcon(name)
   return undefined
 })
+
+const { articleDeliveryStatus } = useWhatsapp(toRef(props.article))
 
 const links = computed(() => {
   const { article } = props
@@ -54,23 +61,17 @@ const links = computed(() => {
   return links
 })
 
-const isEncrypted = computed(
-  () =>
-    props.article.securityState?.encryptionSuccess ||
-    (props.article.securityState?.encryptionSuccess === false &&
-      props.article.securityState?.encryptionMessage),
-)
-
-const isSigned = computed(
-  () =>
-    props.article.securityState?.signingSuccess ||
-    (props.article.securityState?.signingSuccess === false &&
-      props.article.securityState?.signingMessage),
-)
-
-const hasSecurityAttribute = computed(
-  () => props.article.securityState && (isEncrypted.value || isSigned.value),
-)
+const {
+  signingIcon,
+  signingMessage,
+  encryptionMessage,
+  isEncrypted,
+  isSigned,
+  hasSecurityAttribute,
+  encryptionIcon,
+  encryptedStatusMessage,
+  signedStatusMessage,
+} = useArticleSecurity(toRef(props.article))
 </script>
 
 <template>
@@ -109,7 +110,18 @@ const hasSecurityAttribute = computed(
           </CommonLink>
         </div>
       </CommonSectionMenuItem>
-      <CommonSectionMenuItem :label="__('Sent')">
+      <CommonSectionMenuItem
+        v-if="articleDeliveryStatus"
+        :label="__('Message Status')"
+      >
+        <CommonIcon
+          :name="articleDeliveryStatus.icon"
+          size="tiny"
+          class="inline"
+        />
+        {{ $t(articleDeliveryStatus.message) }}
+      </CommonSectionMenuItem>
+      <CommonSectionMenuItem :label="__('Created')">
         <CommonDateTime :date-time="article.createdAt" type="absolute" />
       </CommonSectionMenuItem>
       <CommonSectionMenuItem
@@ -120,48 +132,24 @@ const hasSecurityAttribute = computed(
           <span v-if="article.securityState?.type">
             {{ translateArticleSecurity(article.securityState.type) }}
           </span>
+
           <span v-if="isEncrypted">
             <CommonIcon
               class="mb-1 inline"
               size="tiny"
-              :name="
-                article.securityState?.encryptionSuccess
-                  ? 'mobile-lock'
-                  : 'mobile-encryption-error'
-              "
+              :name="encryptionIcon"
             />
-            {{
-              article.securityState?.encryptionSuccess
-                ? $t('Encrypted')
-                : $t('Encryption error')
-            }}
-            <div
-              v-if="article.securityState?.encryptionMessage"
-              class="ms-5 break-all"
-            >
-              {{ $t(article.securityState.encryptionMessage) }}
+            {{ $t(encryptedStatusMessage) }}
+            <div v-if="encryptionMessage" class="ms-5 break-all">
+              {{ $t(encryptionMessage) }}
             </div>
           </span>
+
           <span v-if="isSigned">
-            <CommonIcon
-              class="mb-1 inline"
-              size="tiny"
-              :name="
-                article.securityState?.signingSuccess
-                  ? 'mobile-signed'
-                  : 'mobile-not-signed'
-              "
-            />
-            {{
-              article.securityState?.signingSuccess
-                ? $t('Signed')
-                : $t('Sign error')
-            }}
-            <div
-              v-if="article.securityState?.signingMessage"
-              class="ms-5 break-all"
-            >
-              {{ $t(article.securityState.signingMessage) }}
+            <CommonIcon class="mb-1 inline" size="tiny" :name="signingIcon" />
+            {{ $t(signedStatusMessage) }}
+            <div v-if="signingMessage" class="ms-5 break-all">
+              {{ $t(signingMessage) }}
             </div>
           </span>
         </div>

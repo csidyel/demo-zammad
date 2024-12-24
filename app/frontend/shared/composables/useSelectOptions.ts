@@ -1,17 +1,20 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { computed, ref, type Ref, watch } from 'vue'
-import { i18n } from '#shared/i18n.ts'
 import { cloneDeep, keyBy } from 'lodash-es'
-import type { AutoCompleteOption } from '#shared/components/Form/fields/FieldAutocomplete/types'
-import type { FormFieldContext } from '#shared/components/Form/types/field.ts'
-import useValue from '#shared/components/Form/composables/useValue.ts'
+import { computed, ref, type Ref, watch } from 'vue'
+
 import type {
   SelectOption,
   SelectValue,
 } from '#shared/components/CommonSelect/types.ts'
+import useValue from '#shared/components/Form/composables/useValue.ts'
+import type { AutoCompleteOption } from '#shared/components/Form/fields/FieldAutocomplete/types'
 import type { SelectOptionSorting } from '#shared/components/Form/fields/FieldSelect/types.ts'
 import type { FlatSelectOption } from '#shared/components/Form/fields/FieldTreeSelect/types.ts'
+import type { FormFieldContext } from '#shared/components/Form/types/field.ts'
+import { i18n } from '#shared/i18n.ts'
+
+type AllowedSelectValue = SelectValue | Record<string, unknown>
 
 const useSelectOptions = <
   T extends SelectOption[] | FlatSelectOption[] | AutoCompleteOption[],
@@ -24,6 +27,7 @@ const useSelectOptions = <
       noOptionsLabelTranslation?: boolean
       rejectNonExistentValues?: boolean
       sorting?: SelectOptionSorting
+      complexValue?: boolean
     }>
   >,
 ) => {
@@ -32,18 +36,17 @@ const useSelectOptions = <
   const { currentValue, hasValue, valueContainer, clearValue } =
     useValue(context)
 
-  const appendedOptions = ref<T>([] as unknown as T) as Ref<T>
+  const appendedOptions = ref<T>([] as unknown as T)
 
   const availableOptions = computed(() => [
     ...(options.value || []),
     ...appendedOptions.value,
   ])
 
-  const hasStatusProperty = computed(
-    () =>
-      availableOptions.value?.some(
-        (option) => (option as SelectOption | FlatSelectOption).status,
-      ),
+  const hasStatusProperty = computed(() =>
+    availableOptions.value?.some(
+      (option) => (option as SelectOption | FlatSelectOption).status,
+    ),
   )
 
   const translatedOptions = computed(() => {
@@ -52,20 +55,22 @@ const useSelectOptions = <
     const { noOptionsLabelTranslation } = context.value
 
     return availableOptions.value.map((option) => {
-      const label = noOptionsLabelTranslation
-        ? option.label
-        : i18n.t(option.label, ...(option.labelPlaceholder || []))
+      const label =
+        noOptionsLabelTranslation && !option.labelPlaceholder
+          ? option.label || ''
+          : i18n.t(option.label, ...(option.labelPlaceholder || []))
 
       const variant = option as AutoCompleteOption
-      const heading = noOptionsLabelTranslation
-        ? variant.heading
-        : i18n.t(variant.heading, ...(variant.headingPlaceholder || []))
+      const heading =
+        noOptionsLabelTranslation && !variant.headingPlaceholder
+          ? variant.heading || ''
+          : i18n.t(variant.heading, ...(variant.headingPlaceholder || []))
 
       return {
         ...option,
         label,
         heading,
-      } as SelectOption | AutoCompleteOption
+      }
     })
   })
 
@@ -90,38 +95,66 @@ const useSelectOptions = <
     })
   })
 
-  const getSelectedOption = (selectedValue: SelectValue) => {
+  const getSelectedOption = (selectedValue: AllowedSelectValue): T[number] => {
+    if (typeof selectedValue === 'object' && selectedValue !== null)
+      return selectedValue as unknown as T[number]
     const key = selectedValue.toString()
     return optionValueLookup.value[key]
   }
 
-  const getSelectedOptionIcon = (selectedValue: SelectValue) => {
+  const getSelectedOptionIcon = (selectedValue: AllowedSelectValue) => {
     const option = getSelectedOption(selectedValue)
     return option?.icon as string
   }
 
-  const getSelectedOptionLabel = (selectedValue: SelectValue) => {
+  const getSelectedOptionValue = (selectedValue: AllowedSelectValue) => {
+    if (typeof selectedValue !== 'object') return selectedValue
+    const option = getSelectedOption(selectedValue)
+    return option?.value
+  }
+
+  const getSelectedOptionLabel = (selectedValue: AllowedSelectValue) => {
     const option = getSelectedOption(selectedValue)
     return option?.label
   }
 
-  const getSelectedOptionStatus = (selectedValue: SelectValue) => {
+  const getSelectedOptionStatus = (selectedValue: AllowedSelectValue) => {
     const option = getSelectedOption(selectedValue) as
       | SelectOption
       | FlatSelectOption
     return option?.status
   }
 
+  const getSelectedOptionParents = (
+    selectedValue: string | number,
+  ): SelectValue[] =>
+    (optionValueLookup.value[selectedValue] &&
+      (optionValueLookup.value[selectedValue] as FlatSelectOption).parents) ||
+    []
+
+  const getSelectedOptionFullPath = (selectedValue: string | number) =>
+    getSelectedOptionParents(selectedValue)
+      .map((parentValue) => `${getSelectedOptionLabel(parentValue)} \u203A `)
+      .join('') +
+    (getSelectedOptionLabel(selectedValue) ||
+      i18n.t('%s (unknown)', selectedValue.toString()))
+
+  const valueBuilder = (option: SelectOption): AllowedSelectValue => {
+    return context.value.complexValue
+      ? { value: option.value, label: option.label }
+      : option.value
+  }
+
   const selectOption = (option: T extends Array<infer V> ? V : never) => {
     if (!context.value.multiple) {
-      context.value.node.input(option.value)
+      context.value.node.input(valueBuilder(option))
       return
     }
 
     const selectedValues = cloneDeep(currentValue.value) || []
     const optionIndex = selectedValues.indexOf(option.value)
     if (optionIndex !== -1) selectedValues.splice(optionIndex, 1)
-    else selectedValues.push(option.value)
+    else selectedValues.push(valueBuilder(option))
     selectedValues.sort(
       (a: string | number, b: string | number) =>
         sortedOptions.value.findIndex((option) => option.value === a) -
@@ -276,9 +309,12 @@ const useSelectOptions = <
     optionValueLookup,
     sortedOptions,
     getSelectedOption,
+    getSelectedOptionValue,
     getSelectedOptionIcon,
     getSelectedOptionLabel,
     getSelectedOptionStatus,
+    getSelectedOptionParents,
+    getSelectedOptionFullPath,
     selectOption,
     getDialogFocusTargets,
     setupMissingOrDisabledOptionHandling,

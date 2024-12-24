@@ -1,4 +1,4 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import type { TicketArticleActionPlugin, TicketArticleType } from './types.ts'
 
@@ -7,16 +7,17 @@ const actionPlugin: TicketArticleActionPlugin = {
 
   addTypes() {
     const type: TicketArticleType = {
-      apps: ['mobile'],
+      apps: ['mobile', 'desktop'],
       value: 'web',
       label: __('Web'),
-      icon: {
-        mobile: 'mobile-web',
-      },
+      buttonLabel: __('Add Reply'),
+      icon: 'web',
       view: {
         customer: ['change'],
       },
-      attributes: ['attachments'],
+      fields: {
+        attachments: {},
+      },
       internal: false,
     }
     return [type]

@@ -1,0 +1,18 @@
+mutation channelEmailValidateConfigurationInbound(
+  $inboundConfiguration: ChannelEmailInboundConfigurationInput!
+) {
+  channelEmailValidateConfigurationInbound(
+    inboundConfiguration: $inboundConfiguration
+  ) {
+    success
+    mailboxStats {
+      contentMessages
+      archivePossible
+      archivePossibleIsFallback
+      archiveWeekRange
+    }
+    errors {
+      ...errors
+    }
+  }
+}

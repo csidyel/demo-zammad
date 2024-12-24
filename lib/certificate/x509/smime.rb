@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Certificate::X509::SMIME < Certificate::X509
   include Certificate::X509::SMIME::Attributes
@@ -14,7 +14,7 @@ class Certificate::X509::SMIME < Certificate::X509
   end
 
   def initialize(pem)
-    super(pem)
+    super
 
     @email_addresses = fetch_email_addresses
     @subject_hash    = subject.hash.to_s(16)
@@ -52,7 +52,7 @@ class Certificate::X509::SMIME < Certificate::X509
     extensions_as_hash.fetch('keyUsage', ['Key Encipherment']).include?('Key Encipherment')
   end
 
-  def valid_smime_certificate? # rubocop:disable Metrics/CyclomaticComplexity
+  def valid_smime_certificate?
     return true if ca?
 
     return false if !applicable?

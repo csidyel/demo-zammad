@@ -15,14 +15,17 @@ class Overview extends App.ControllerSubContent
       genericObject: 'Overview'
       defaultSortBy: 'prio'
       #groupBy: 'role'
+      searchBar: true
+      searchQuery: @search_query
       pageData:
         home: 'overviews'
         object: __('Overview')
         objects: __('Overviews')
+        pagerAjax: true
+        pagerBaseUrl: '#manage/overviews/'
+        pagerSelected: ( @page || 1 )
+        pagerPerPage: 50
         navupdate: '#overviews'
-        notes: [
-          __('Overviews are …')
-        ]
         buttons: [
           { name: __('New Overview'), 'data-type': 'new', class: 'btn--success' }
         ]
@@ -45,5 +48,12 @@ class Overview extends App.ControllerSubContent
           data:        JSON.stringify(prios: prios)
         )
     )
+
+  show: (params) =>
+    for key, value of params
+      if key isnt 'el' && key isnt 'shown' && key isnt 'match'
+        @[key] = value
+
+    @genericController.paginate(@page || 1, params)
 
 App.Config.set('Overview', { prio: 2300, name: __('Overviews'), parent: '#manage', target: '#manage/overviews', controller: Overview, permission: ['admin.overview'] }, 'NavBarAdmin')

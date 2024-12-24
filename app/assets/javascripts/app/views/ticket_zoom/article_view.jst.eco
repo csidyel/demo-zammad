@@ -41,6 +41,15 @@
         <div class="article-meta-value flex contain-text"><%= @article.subject %></div>
       </div>
     <% end %>
+    <% if @article.delivery_status_icon: %>
+      <div class="horizontal article-meta-row">
+        <div class="article-meta-key u-textTruncate"><%- @T('Message Status') %></div>
+        <div class="article-meta-value flex contain-text">
+          <%- @Icon(@article.delivery_status_icon, 'article-meta-icon') %>
+          <%- @T(@article.delivery_status_message) %>
+        </div>
+      </div>
+    <% end %>
       <% if encryptionSuccess || signSuccess || encryptionWarning || signWarning: %>
         <div class="horizontal article-meta-row">
           <div class="article-meta-key u-textTruncate"><%- @T('Security') %></div>
@@ -74,7 +83,7 @@
     </div>
   </div>
 </div>
-<% if encryptionSuccess || signSuccess || encryptionWarning || signWarning: %>
+<% if encryptionSuccess || signSuccess || encryptionWarning || signWarning || @article.preferences?.whatsapp?.media_error: %>
   <div class="article-meta-permanent">
     <% if encryptionWarning || signWarning: %>
       <div class="alert alert--warning">
@@ -97,6 +106,14 @@
         <% end %>
       </div>
     <% end %>
+
+  <% if @article.preferences?.whatsapp?.media_error: %>
+    <div class="alert alert--warning">
+      <div class="btn btn--action btn--small js-retryWhatsAppAttachmentDownload"><%- @T('Retry attachment download') %>
+      </div>
+    </div>
+  <% end %>
+
   </div>
 <% end %>
 <div class="article-content">
@@ -110,13 +127,25 @@
     <div class="internal-border">
       <div class="textBubble">
         <div class="bubble-arrow"></div>
-        <div class="textBubble-content" id="article-content-<%= @article.id %>" data-id="<%= @article.id %>">
-          <div class="richtext-content" dir="auto"><%- @article.html %></div>
-          <div class="textBubble-overflowContainer hide">
-            <div class="btn btn--text js-toggleFold"><%- @T('See more') %></div>
+        <% if @article.html: %>
+          <div class="textBubble-content" id="article-content-<%= @article.id %>" data-id="<%= @article.id %>">
+            <div class="richtext-content" dir="auto"><%- @article.html %></div>
+            <div class="textBubble-overflowContainer hide">
+              <div class="btn btn--text js-toggleFold"><%- @T('See more') %></div>
+            </div>
           </div>
-        </div>
+        <% end %>
+        <% if @article.preferences?.remote_content_removed: %>
+          <div class="remote-content-message js-fetchOriginalFormatting" role="button">
+            <%- @Icon('danger') %> <%- @T('This message contains images or other content hosted by an external source. It was blocked, but you can download the original formatting here.') %>
+          </div>
+        <% end %>
         <%- @attachments %>
+        <% if @article.preferences?.whatsapp?.reaction?.emoji: %>
+          <div class="article-reaction">
+            <span><%= @article.preferences?.whatsapp?.reaction?.emoji %></span>
+          </div>
+        <% end %>
       </div>
     </div>
   </div>

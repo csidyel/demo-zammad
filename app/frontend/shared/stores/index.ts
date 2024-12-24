@@ -1,8 +1,10 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { createPinia, type Pinia } from 'pinia'
+
+import type { UsedStore } from '#shared/types/store.ts'
 
 import type { App } from 'vue'
-import { createPinia, type Pinia } from 'pinia'
-import type { UsedStore } from '#shared/types/store.ts'
 
 declare module 'pinia' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

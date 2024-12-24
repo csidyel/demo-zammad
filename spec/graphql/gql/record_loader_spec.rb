@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -96,6 +96,7 @@ RSpec.describe Gql::RecordLoader, :aggregate_failures, authenticated_as: :agent,
                 state {
                   name
                   stateType {
+                    id
                     name
                   }
                 }
@@ -134,10 +135,9 @@ RSpec.describe Gql::RecordLoader, :aggregate_failures, authenticated_as: :agent,
         {
           'Overview Load'          => 1,
           'ObjectLookup Load'      => 1,
-          'Permission Load'        => 7,
-          'Permission Exists?'     => 6,
-          'Group Load'             => 1,
-          'UserGroup Exists?'      => 2,
+          'Permission Load'        => 5,
+          'Group Load'             => 11,
+          'UserGroup Exists?'      => 4,
           'Ticket Load'            => 1,
           # 'Ticket Exists?'         => 1,
           'User Load'              => 2,
@@ -152,10 +152,9 @@ RSpec.describe Gql::RecordLoader, :aggregate_failures, authenticated_as: :agent,
         {
           'Overview Load'          => 1,
           'ObjectLookup Load'      => 1,
-          'Permission Load'        => 6,
-          'Permission Exists?'     => 6,
-          'Group Load'             => 1,
-          'UserGroup Exists?'      => 2,
+          'Permission Load'        => 5,
+          'Group Load'             => 3,
+          'UserGroup Exists?'      => 4,
           'Ticket Load'            => 1,
           # 'Ticket Exists?'         => 1,
           'User Load'              => 2,
@@ -211,23 +210,21 @@ RSpec.describe Gql::RecordLoader, :aggregate_failures, authenticated_as: :agent,
         gql.execute(query, variables: variables)
       end
 
-      expect(gql.result.data['id']).to eq(organization_id)
+      expect(gql.result.data[:id]).to eq(organization_id)
 
       expect(total_queries).to include(
         {
-          'Permission Load'    => 7,
-          'Permission Exists?' => 5,
-          'User Load'          => 2,
-          'Organization Load'  => 1,
+          'Permission Load'   => 3,
+          'User Load'         => 2,
+          'Organization Load' => 1,
         }
       )
 
       expect(uncached_queries).to include(
         {
-          'Permission Load'    => 4,
-          'Permission Exists?' => 5,
-          'User Load'          => 2,
-          'Organization Load'  => 1,
+          'Permission Load'   => 3,
+          'User Load'         => 2,
+          'Organization Load' => 1,
         }
       )
     end

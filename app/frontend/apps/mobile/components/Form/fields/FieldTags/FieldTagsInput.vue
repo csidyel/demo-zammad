@@ -1,11 +1,13 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 import { computed, toRef } from 'vue'
-import { useDialog } from '#shared/composables/useDialog.ts'
-import { useFormBlock } from '#mobile/form/useFormBlock.ts'
+
 import useValue from '#shared/components/Form/composables/useValue.ts'
 import type { FieldTagsContext } from '#shared/components/Form/fields/FieldTags/types.ts'
+import { useFormBlock } from '#shared/form/useFormBlock.ts'
+
+import { useDialog } from '#mobile/composables/useDialog.ts'
 
 interface Props {
   context: FieldTagsContext
@@ -59,9 +61,9 @@ useFormBlock(reactiveContext, onInputClick)
       :id="context.id"
       :name="context.node.name"
       role="combobox"
-      class="flex grow items-center focus:outline-none formkit-disabled:pointer-events-none"
+      class="formkit-disabled:pointer-events-none flex grow items-center focus:outline-none"
       :aria-disabled="context.disabled ? 'true' : undefined"
-      :tabindex="context.disabled ? '-1' : '0'"
+      tabindex="0"
       v-bind="context.attrs"
       aria-haspopup="dialog"
       data-multiple="true"
@@ -81,7 +83,7 @@ useFormBlock(reactiveContext, onInputClick)
         <div
           v-for="tag of selectedTagsList"
           :key="tag"
-          class="rounded-sm bg-gray/20 px-[4px] py-[2px] text-base uppercase leading-4 text-gray"
+          class="bg-gray/20 text-gray rounded-sm px-[4px] py-[2px] text-base uppercase leading-4"
           role="listitem"
         >
           {{ tag }}

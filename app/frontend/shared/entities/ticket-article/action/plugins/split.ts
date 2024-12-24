@@ -1,25 +1,23 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import type { TicketArticleActionPlugin, TicketArticleAction } from './types.ts'
 
 const actionPlugin: TicketArticleActionPlugin = {
   order: 700,
 
-  addActions(ticket, article) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  addActions(_ticket, article) {
     const action: TicketArticleAction = {
-      apps: ['mobile'],
+      apps: ['desktop'],
       label: __('Split'),
       name: 'split',
-      icon: { mobile: 'mobile-split' },
+      icon: 'split',
       view: {
-        agent: ['change'],
+        agent: ['read'],
       },
-      link: `/tickets/create?ticket_id=${ticket.id}&article_id=${article.id}`,
+      link: `/tickets/create?splitTicketArticleId=${encodeURIComponent(article.id)}`,
     }
 
-    // TODO: Return an empty array until the support for splitting articles is implemented in the ticket create screen.
-    return []
+    return [action]
   },
 }
 

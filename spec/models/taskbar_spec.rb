@@ -1,52 +1,23 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 require 'models/taskbar/has_attachments_examples'
+require 'models/taskbar/list_examples'
 
 RSpec.describe Taskbar, type: :model do
   it_behaves_like 'Taskbar::HasAttachments'
+  it_behaves_like 'Taskbar::List'
 
   context 'item' do
     subject(:taskbar) { create(:taskbar) }
 
     it { is_expected.to validate_inclusion_of(:app).in_array(%w[desktop mobile]) }
-  end
 
-  context 'key = Search' do
-
-    context 'multiple taskbars', current_user_id: 1 do
-      let(:key)           { 'Search' }
-      let(:other_taskbar) { create(:taskbar, key: key) }
-
-      describe '#create' do
-
-        it "doesn't update other taskbar" do
-          expect do
-            create(:taskbar, key: key)
-          end.not_to change { other_taskbar.reload.updated_at }
-        end
-      end
-
-      context 'existing taskbar' do
-
-        subject(:taskbar) { create(:taskbar, key: key) }
-
-        describe '#update' do
-
-          it "doesn't update other taskbar" do
-            expect do
-              taskbar.update!(state: { foo: :bar })
-            end.not_to change { other_taskbar.reload.updated_at }
-          end
-        end
-
-        describe '#destroy' do
-          it "doesn't update other taskbar" do
-            expect do
-              taskbar.destroy!
-            end.not_to change { other_taskbar.reload.updated_at }
-          end
-        end
+    it do
+      if ActiveRecord::Base.connection_db_config.configuration_hash[:adapter] == 'mysql2'
+        expect(taskbar).to validate_uniqueness_of(:key).scoped_to(%w[user_id app]).with_message(%r{}).case_insensitive
+      else
+        expect(taskbar).to validate_uniqueness_of(:key).scoped_to(%w[user_id app]).with_message(%r{})
       end
     end
   end
@@ -58,9 +29,7 @@ RSpec.describe Taskbar, type: :model do
       described_class.destroy_all
       UserInfo.current_user_id = 1
 
-      create(:taskbar, params: {
-               id: 1234,
-             })
+      create(:taskbar, params: { id: 1234 }, key: 'Ticket-1234')
     end
 
     it 'existing key' do
@@ -126,13 +95,14 @@ RSpec.describe Taskbar, type: :model do
     end
   end
 
-  context 'multiple creation' do
+  context 'multiple creation', :aggregate_failures do
 
     it 'create tasks' do
+      # skip 'What does this test?'
 
       described_class.destroy_all
       UserInfo.current_user_id = 1
-      taskbar1 = described_class.create(
+      taskbar1 = described_class.create!(
         key:      'Ticket-1234',
         callback: 'TicketZoom',
         params:   {
@@ -145,7 +115,7 @@ RSpec.describe Taskbar, type: :model do
       )
 
       UserInfo.current_user_id = 2
-      taskbar2 = described_class.create(
+      taskbar2 = described_class.create!(
         key:      'Ticket-1234',
         callback: 'TicketZoom',
         params:   {
@@ -490,6 +460,24 @@ RSpec.describe Taskbar, type: :model do
                  user_id: 1, apps: { desktop: { last_contact: taskbar.last_contact, changed: false } }
                })
     end
+
+    it 'returns task info for an existing taskbar without changes (form_id only)' do
+      taskbar = create(:taskbar, state: { form_id: SecureRandom.uuid })
+
+      expect(taskbar.preferences_task_info)
+        .to eq({
+                 id: taskbar.id, user_id: 1, apps: { desktop: { last_contact: taskbar.last_contact, changed: false } }
+               })
+    end
+
+    it 'returns task info for an existing taskbar without changes (nested form_id only)' do
+      taskbar = create(:taskbar, state: { article: { form_id: SecureRandom.uuid } })
+
+      expect(taskbar.preferences_task_info)
+        .to eq({
+                 id: taskbar.id, user_id: 1, apps: { desktop: { last_contact: taskbar.last_contact, changed: false } }
+               })
+    end
   end
 
   describe '#update_preferences_infos' do
@@ -666,6 +654,56 @@ RSpec.describe Taskbar, type: :model do
 
     it 'returns all taskbars with the same key except given taskbars' do
       expect(described_class.related_taskbars(taskbar_1)).to contain_exactly(taskbar_2, taskbar_3)
+    end
+  end
+
+  describe '.app' do
+    let(:taskbar_1) { create(:taskbar, app: 'desktop') }
+    let(:taskbar_2) { create(:taskbar, app: 'mobile') }
+
+    before { taskbar_1 && taskbar_2 }
+
+    it 'returns given app taskbars' do
+      expect(described_class.app(:desktop)).to contain_exactly(taskbar_1)
+    end
+  end
+
+  describe '#saved_chanegs_to_dirty?' do
+    let(:taskbar) { create(:taskbar) }
+
+    it 'fresh taskbar has no changes to dirty' do
+      expect(taskbar).not_to be_saved_change_to_dirty
+    end
+
+    it 'no changes to dirty after saving without dirty lag' do
+      taskbar.active = !taskbar.active
+      taskbar.save!
+
+      expect(taskbar).not_to be_saved_change_to_dirty
+    end
+
+    it 'no changes to dirty after marking as not dirty' do
+      taskbar.preferences[:dirty] = false
+      taskbar.save!
+
+      expect(taskbar).not_to be_saved_change_to_dirty
+    end
+
+    it 'dirty was changed after marking as dirty' do
+      taskbar.preferences[:dirty] = true
+      taskbar.save!
+
+      expect(taskbar).to be_saved_change_to_dirty
+    end
+
+    it 'dirty was changed after marking previously dirty item as not dirty' do
+      taskbar.preferences[:dirty] = true
+      taskbar.save!
+
+      taskbar.preferences[:dirty] = false
+      taskbar.save!
+
+      expect(taskbar).to be_saved_change_to_dirty
     end
   end
 end

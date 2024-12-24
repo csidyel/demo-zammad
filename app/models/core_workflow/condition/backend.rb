@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class CoreWorkflow::Condition::Backend
   def initialize(condition_object:, result_object:, key:, condition:, value:)
@@ -19,8 +19,18 @@ class CoreWorkflow::Condition::Backend
     @condition_object.attributes.instance_of?(object)
   end
 
+  def selected
+    @condition_object.attribute_object.selected
+  end
+
   def condition_value
-    Array(@condition['value']).map(&:to_s)
+    Array.wrap(@condition['value']).map do |v|
+      if v.is_a?(Hash)
+        v[:value].to_s
+      else
+        v.to_s
+      end
+    end
   end
 
   def time_modifier

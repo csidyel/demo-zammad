@@ -1,7 +1,8 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { createNode } from '@formkit/core'
 import { createLibraryPlugin } from '@formkit/inputs'
+
 import formUpdaterTrigger from '../formUpdaterTrigger.ts'
 
 describe('formUpdaterTrigger', () => {

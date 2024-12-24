@@ -1,14 +1,17 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { getNode } from '@formkit/core'
+import { FormKit } from '@formkit/vue'
+import { getByText, waitFor } from '@testing-library/vue'
+import { cloneDeep, keyBy } from 'lodash-es'
+
+import { renderComponent } from '#tests/support/components/index.ts'
+import { waitForNextTick } from '#tests/support/utils.ts'
+
+import type { SelectOption } from '#shared/components/CommonSelect/types.ts'
+import { i18n } from '#shared/i18n.ts'
 
 import type { SetRequired } from 'type-fest'
-import { cloneDeep, keyBy } from 'lodash-es'
-import { getByText, waitFor } from '@testing-library/vue'
-import { FormKit } from '@formkit/vue'
-import { renderComponent } from '#tests/support/components/index.ts'
-import { i18n } from '#shared/i18n.ts'
-import { getNode } from '@formkit/core'
-import { waitForNextTick } from '#tests/support/utils.ts'
-import type { SelectOption } from '#shared/components/CommonSelect/types.ts'
 
 // Mock IntersectionObserver feature by injecting it into the global namespace.
 //   More info here: https://vitest.dev/guide/mocking.html#globals
@@ -117,7 +120,7 @@ describe('Form - Field - Select - Dialog', () => {
     expect(
       wrapper.getByIconName((name, node) => {
         return (
-          name === '#icon-mobile-check' &&
+          name === '#icon-check' &&
           !node?.parentElement?.classList.contains('invisible')
         )
       }),
@@ -346,12 +349,12 @@ describe('Form - Field - Select - Options', () => {
       {
         value: 1,
         label: 'GitLab',
-        icon: 'mobile-gitlab',
+        icon: 'gitlab',
       },
       {
         value: 2,
         label: 'GitHub',
-        icon: 'mobile-github',
+        icon: 'github',
       },
     ]
 
@@ -661,7 +664,7 @@ describe('Form - Field - Select - Features', () => {
     let selectOptions = wrapper.getAllByRole('option')
 
     expect(selectOptions).toHaveLength(
-      wrapper.queryAllByIconName('mobile-check-box-no').length,
+      wrapper.queryAllByIconName('check-box-no').length,
     )
 
     await wrapper.events.click(selectOptions[0])
@@ -673,8 +676,8 @@ describe('Form - Field - Select - Features', () => {
     const emittedInput = wrapper.emitted().inputRaw as Array<Array<InputEvent>>
 
     expect(emittedInput[0][0]).toStrictEqual([testOptions[0].value])
-    expect(wrapper.queryAllByIconName('mobile-check-box-no')).toHaveLength(2)
-    expect(wrapper.queryAllByIconName('mobile-check-box-yes')).toHaveLength(1)
+    expect(wrapper.queryAllByIconName('check-box-no')).toHaveLength(2)
+    expect(wrapper.queryAllByIconName('check-box-yes')).toHaveLength(1)
     expect(wrapper.queryByRole('dialog')).toBeInTheDocument()
     expect(wrapper.queryAllByRole('listitem')).toHaveLength(1)
 
@@ -693,8 +696,8 @@ describe('Form - Field - Select - Features', () => {
       ])
     })
 
-    expect(wrapper.queryAllByIconName('mobile-check-box-no')).toHaveLength(1)
-    expect(wrapper.queryAllByIconName('mobile-check-box-yes')).toHaveLength(2)
+    expect(wrapper.queryAllByIconName('check-box-no')).toHaveLength(1)
+    expect(wrapper.queryAllByIconName('check-box-yes')).toHaveLength(2)
     expect(wrapper.queryByRole('dialog')).toBeInTheDocument()
     expect(wrapper.queryAllByRole('listitem')).toHaveLength(2)
 
@@ -714,8 +717,8 @@ describe('Form - Field - Select - Features', () => {
       ])
     })
 
-    expect(wrapper.queryAllByIconName('mobile-check-box-no')).toHaveLength(0)
-    expect(wrapper.queryAllByIconName('mobile-check-box-yes')).toHaveLength(3)
+    expect(wrapper.queryAllByIconName('check-box-no')).toHaveLength(0)
+    expect(wrapper.queryAllByIconName('check-box-yes')).toHaveLength(3)
     expect(wrapper.queryByRole('dialog')).toBeInTheDocument()
     expect(wrapper.queryAllByRole('listitem')).toHaveLength(3)
 
@@ -734,8 +737,8 @@ describe('Form - Field - Select - Features', () => {
       ])
     })
 
-    expect(wrapper.queryAllByIconName('mobile-check-box-no')).toHaveLength(1)
-    expect(wrapper.queryAllByIconName('mobile-check-box-yes')).toHaveLength(2)
+    expect(wrapper.queryAllByIconName('check-box-no')).toHaveLength(1)
+    expect(wrapper.queryAllByIconName('check-box-yes')).toHaveLength(2)
     expect(wrapper.queryByRole('dialog')).toBeInTheDocument()
     expect(wrapper.queryAllByRole('listitem')).toHaveLength(2)
 
@@ -804,10 +807,11 @@ describe('Form - Field - Select - Features', () => {
       },
       {
         value: 2,
-        label: 'Item C (%s)',
-        labelPlaceholder: [2],
+        label: 'Item C',
       },
     ]
+
+    i18n.setTranslationMap(new Map([['Item C', 'Translated Item C']]))
 
     const translatedOptions = untranslatedOptions.map((untranslatedOption) => ({
       ...untranslatedOption,
@@ -849,13 +853,18 @@ describe('Form - Field - Select - Features', () => {
     selectOptions = wrapper.getAllByRole('option')
 
     selectOptions.forEach((selectOption, index) => {
-      expect(selectOption).toHaveTextContent(untranslatedOptions[index].label)
+      // Forces translation due to placeholder availability.
+      if (untranslatedOptions[index].labelPlaceholder) {
+        expect(selectOption).toHaveTextContent(translatedOptions[index].label)
+      } else {
+        expect(selectOption).toHaveTextContent(untranslatedOptions[index].label)
+      }
     })
 
-    await wrapper.events.click(selectOptions[1])
+    await wrapper.events.click(selectOptions[2])
 
     expect(wrapper.getByRole('listitem')).toHaveTextContent(
-      untranslatedOptions[1].label,
+      untranslatedOptions[2].label,
     )
   })
 
@@ -1021,6 +1030,20 @@ describe('Form - Field - Select - Accessibility', () => {
     })
   })
 
+  it('allows focusing of disabled field for a11y', async () => {
+    const wrapper = renderComponent(FormKit, {
+      ...wrapperParameters,
+      props: {
+        ...commonProps,
+        type: 'select',
+        options: testOptions,
+        disabled: true,
+      },
+    })
+
+    expect(wrapper.getByLabelText('Select…')).toHaveAttribute('tabindex', '0')
+  })
+
   it('restores focus on close', async () => {
     const wrapper = renderComponent(FormKit, {
       ...wrapperParameters,
@@ -1044,20 +1067,6 @@ describe('Form - Field - Select - Accessibility', () => {
     await wrapper.events.type(selectOptions[0], '{Space}')
 
     expect(selectButton).toHaveFocus()
-  })
-
-  it('prevents focusing of disabled field', async () => {
-    const wrapper = renderComponent(FormKit, {
-      ...wrapperParameters,
-      props: {
-        ...commonProps,
-        type: 'select',
-        options: testOptions,
-        disabled: true,
-      },
-    })
-
-    expect(wrapper.getByLabelText('Select…')).toHaveAttribute('tabindex', '-1')
   })
 
   it("clicking disabled field doesn't select dialog", async () => {

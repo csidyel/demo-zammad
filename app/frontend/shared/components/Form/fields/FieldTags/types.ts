@@ -1,15 +1,19 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import type { FormFieldContext } from '#shared/components/Form/types/field.ts'
 
+import type { AutoCompleteProps } from '../FieldAutocomplete/types.ts'
+
 export interface FieldTagsProps {
-  disabled?: boolean
   canCreate?: boolean
   sorting?: 'label' | 'value'
+  exclude?: string[]
+  onDeactivate?: () => void
 }
 
 export type FieldTagsContext = FormFieldContext<
-  FieldTagsProps & {
-    options: FormFieldContext['options']
-  }
+  AutoCompleteProps &
+    FieldTagsProps & {
+      options?: FormFieldContext['options']
+    }
 >

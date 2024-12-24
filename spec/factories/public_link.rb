@@ -1,10 +1,9 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 FactoryBot.define do
   factory :public_link do
     sequence(:link) { |i| "https://zammad#{i}.com" }
-
-    title         { 'Zammad Homepage' }
+    sequence(:title) { |i| "Zammad Homepage#{i}" }
     description   { 'Our fancy homepage.' }
     screen        { ['login'] }
     new_tab       { true }

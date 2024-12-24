@@ -1,8 +1,9 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { GraphQLErrorExtensions } from 'graphql'
-import type { Except } from 'type-fest'
 import type { UserError } from '#shared/graphql/types.ts'
+
+import type { ApolloError } from '@apollo/client/core'
+import type { Except } from 'type-fest'
 
 export enum GraphQLErrorTypes {
   UnknownError = 'Exceptions::UnknownError',
@@ -21,14 +22,12 @@ export interface GraphQLErrorExtensionsHandler {
   backtrace: string
 }
 
-export interface GraphQLErrorReport {
-  message: string
-  extensions: GraphQLErrorExtensions
-}
 export interface GraphQLHandlerError {
   type: GraphQLErrorTypes
   message?: string
 }
+
+export type MutationSendError = ApolloError | UserError
 
 export enum ErrorStatusCodes {
   'Forbidden' = 403,

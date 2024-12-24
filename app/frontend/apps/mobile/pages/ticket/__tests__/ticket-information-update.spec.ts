@@ -1,22 +1,26 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { ticketObjectAttributes } from '#mobile/entities/ticket/__tests__/mocks/ticket-mocks.ts'
-import { FormUpdaterDocument } from '#shared/components/Form/graphql/queries/formUpdater.api.ts'
+import { getNode } from '@formkit/core'
+
 import { visitView } from '#tests/support/components/visitView.ts'
 import {
   mockGraphQLApi,
   mockGraphQLSubscription,
 } from '#tests/support/mock-graphql-api.ts'
-import { ObjectManagerFrontendAttributesDocument } from '#shared/entities/object-attributes/graphql/queries/objectManagerFrontendAttributes.api.ts'
+import { mockPermissions } from '#tests/support/mock-permissions.ts'
 import { waitUntil } from '#tests/support/utils.ts'
-import { getNode } from '@formkit/core'
+
+import { FormUpdaterDocument } from '#shared/components/Form/graphql/queries/formUpdater.api.ts'
+import { ObjectManagerFrontendAttributesDocument } from '#shared/entities/object-attributes/graphql/queries/objectManagerFrontendAttributes.api.ts'
+import { UserUpdatesDocument } from '#shared/graphql/subscriptions/userUpdates.api.ts'
+import type { TicketQuery } from '#shared/graphql/types.ts'
+
+import { ticketObjectAttributes } from '#mobile/entities/ticket/__tests__/mocks/ticket-mocks.ts'
 import {
   mockUserGql,
   userObjectAttributes,
 } from '#mobile/entities/user/__tests__/mocks/user-mocks.ts'
-import { UserUpdatesDocument } from '#shared/graphql/subscriptions/userUpdates.api.ts'
-import { mockPermissions } from '#tests/support/mock-permissions.ts'
-import type { TicketQuery } from '#shared/graphql/types.ts'
+
 import { defaultTicket, mockTicketDetailViewGql } from './mocks/detail-view.ts'
 
 vi.hoisted(() => {
@@ -45,44 +49,46 @@ const visitTicketInformation = async (ticket?: TicketQuery) => {
   const { mockApiTicket } = mockTicketDetailViewGql({ ticket })
   mockGraphQLApi(FormUpdaterDocument).willResolve({
     formUpdater: {
-      group_id: {
-        show: true,
-        options: [
-          {
-            label: 'Users',
-            value: 1,
-          },
-        ],
-        clearable: true,
-      },
-      owner_id: {
-        show: true,
-        options: [{ value: 100, label: 'Max Mustermann' }],
-      },
-      priority_id: {
-        show: true,
-        options: [
-          { value: 1, label: '1 low' },
-          { value: 2, label: '2 normal' },
-          { value: 3, label: '3 high' },
-        ],
-        clearable: true,
-      },
-      pending_time: {
-        show: false,
-        required: false,
-        hidden: false,
-        disabled: false,
-      },
-      state_id: {
-        show: true,
-        options: [
-          { value: 4, label: 'closed' },
-          { value: 2, label: 'open' },
-          { value: 7, label: 'pending close' },
-          { value: 3, label: 'pending reminder' },
-        ],
-        clearable: true,
+      fields: {
+        group_id: {
+          show: true,
+          options: [
+            {
+              label: 'Users',
+              value: 1,
+            },
+          ],
+          clearable: true,
+        },
+        owner_id: {
+          show: true,
+          options: [{ value: 100, label: 'Max Mustermann' }],
+        },
+        priority_id: {
+          show: true,
+          options: [
+            { value: 1, label: '1 low' },
+            { value: 2, label: '2 normal' },
+            { value: 3, label: '3 high' },
+          ],
+          clearable: true,
+        },
+        pending_time: {
+          show: false,
+          required: false,
+          hidden: false,
+          disabled: false,
+        },
+        state_id: {
+          show: true,
+          options: [
+            { value: 4, label: 'closed' },
+            { value: 2, label: 'open' },
+            { value: 7, label: 'pending close' },
+            { value: 3, label: 'pending reminder' },
+          ],
+          clearable: true,
+        },
       },
     },
   })
@@ -110,9 +116,7 @@ describe('updating ticket information', () => {
 
     await view.events.click(view.getByRole('link', { name: 'open 4' }))
 
-    await expect(
-      view.findByRole('alert', { name: 'Confirm dialog' }),
-    ).resolves.toBeInTheDocument()
+    await expect(view.findByText('Confirm dialog')).resolves.toBeInTheDocument()
   })
 
   it('show save banner when some field was changed', async () => {

@@ -1,4 +1,4 @@
-query autocompleteSearchUser($input: AutocompleteSearchInput!) {
+query autocompleteSearchUser($input: AutocompleteSearchUserInput!) {
   autocompleteSearchUser(input: $input) {
     value
     label
@@ -11,6 +11,8 @@ query autocompleteSearchUser($input: AutocompleteSearchInput!) {
       ...userAttributes
       vip
       outOfOffice
+      outOfOfficeStartAt
+      outOfOfficeEndAt
       active
     }
   }

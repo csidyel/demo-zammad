@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 require 'models/concerns/checks_kb_client_notification_examples'
@@ -107,7 +107,7 @@ RSpec.describe KnowledgeBase::Category, current_user_id: 1, type: :model do
       it "returns #{is_visible} when contains #{state} answer" do
         object = create(:knowledge_base_category, "containing_#{state}")
 
-        expect(object).send is_visible ? :to : :not_to, be_public_content(object.translations.first.kb_locale)
+        expect(object).send is_visible ? :to : :not_to, be_public_content(object.translations.first.kb_locale) # rubocop:disable RSpec/MissingExpectationTargetMethod
       end
     end
 
@@ -122,7 +122,7 @@ RSpec.describe KnowledgeBase::Category, current_user_id: 1, type: :model do
       it "returns #{is_visible} when contains #{state} answer" do
         object = create(:knowledge_base_category, "containing_#{state}")
 
-        expect(object).send is_visible ? :to : :not_to, be_internal_content(object.translations.first.kb_locale)
+        expect(object).send is_visible ? :to : :not_to, be_internal_content(object.translations.first.kb_locale) # rubocop:disable RSpec/MissingExpectationTargetMethod
       end
     end
 

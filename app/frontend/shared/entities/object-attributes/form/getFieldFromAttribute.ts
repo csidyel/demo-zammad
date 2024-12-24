@@ -1,12 +1,15 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import type {
   FormSchemaField,
   FormFieldValue,
 } from '#shared/components/Form/types.ts'
-import type { ObjectManagerFrontendAttribute } from '#shared/graphql/types.ts'
-import type { ScreenConfig } from '../types/resolver.ts'
+import type { EnumObjectManagerObjects } from '#shared/graphql/types.ts'
+
 import getFieldResolver from './resolver/getFieldResolver.ts'
+
+import type { ScreenConfig } from '../types/resolver.ts'
+import type { ObjectAttribute } from '../types/store.ts'
 
 export const transformResolvedFieldForScreen = (
   screen: ScreenConfig,
@@ -22,7 +25,7 @@ export const transformResolvedFieldForScreen = (
     resolvedField.relation.filterIds = screen.filter as number[]
   }
 
-  // Special handling for the clearable prop in the select/treeselect fields.
+  // Special handling for the clearable prop in the select/treeselect/autocomplete fields.
   if (
     'nulloption' in screen &&
     resolvedField.props &&
@@ -33,9 +36,10 @@ export const transformResolvedFieldForScreen = (
 }
 
 const getFieldFromAttribute = (
-  attribute: ObjectManagerFrontendAttribute,
+  object: EnumObjectManagerObjects,
+  attribute: ObjectAttribute,
 ): FormSchemaField => {
-  const fieldResolver = getFieldResolver(attribute)
+  const fieldResolver = getFieldResolver(object, attribute)
 
   return fieldResolver.fieldAttributes()
 }

@@ -1,9 +1,14 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class CoreWorkflow < ApplicationModel
   include ChecksClientNotification
-  include CoreWorkflow::Assets
   include ChecksCoreWorkflow
+  include HasSearchIndexBackend
+  include CanSelector
+  include CanSearch
+
+  include CoreWorkflow::Assets
+  include CoreWorkflow::Search
 
   core_workflow_screens 'create', 'edit'
 
@@ -17,7 +22,7 @@ class CoreWorkflow < ApplicationModel
   store :condition_selected
   store :perform
 
-  validates :name, presence: true
+  validates :name, presence: true, uniqueness: { case_sensitive: false }
 
   def self.classes
     Models.all.keys.select { |m| m.included_modules.include?(ChecksCoreWorkflow) }
@@ -63,15 +68,43 @@ Runs the core workflow engine based on the current state of the object.
 
 Checks if the object matches a specific condition.
 
+Match saved data:
+
   CoreWorkflow.matches_selector?(
     id: Ticket.first.id,
-    user: User.find(3),
-    selector: {"ticket.state_id"=>{"operator"=>"is", "value"=>["4", "5", "1", "2", "7", "3"]}}
+    user: User.find_by(login: 'admin@example.com'),
+    selector: { 'ticket.state_id'=>{ 'operator' => 'is', 'value' => ['2'] } },
+  )
+
+Match payload selected data:
+
+  CoreWorkflow.matches_selector?(
+    check: 'selected',
+    user: User.find_by(login: 'admin@example.com'),
+    params: {
+      'group_id'    => '1',
+      'owner_id'    => '',
+      'state_id'    => '2',
+      'priority_id' => '2',
+      'article'     => {
+        'body'            => '',
+        'type'            => 'note',
+        'internal'        => true,
+        'form_id'         => 'd8416050-0987-4ae4-b36f-c488b3b9b333',
+        'shared_draft_id' => '',
+        'subtype'         => '',
+        'in_reply_to'     => '',
+        'to'              => '',
+        'cc'              => '',
+        'subject'         => ''
+      },
+    },
+    selector: { 'ticket.state_id'=>{ 'operator' => 'is', 'value' => ['2'] } },
   )
 
 =end
 
-  def self.matches_selector?(id:, user:, selector:, class_name: 'Ticket', params: {}, screen: 'edit', request_id: 'ChecksCoreWorkflow.validate_workflows', event: 'core_workflow', check: 'saved')
+  def self.matches_selector?(user:, selector:, id: nil, class_name: 'Ticket', params: {}, screen: 'edit', request_id: 'ChecksCoreWorkflow.validate_workflows', event: 'core_workflow', check: 'saved')
     if id.present?
       params['id'] = id
     end

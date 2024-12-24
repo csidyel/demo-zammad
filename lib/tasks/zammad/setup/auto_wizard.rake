@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 namespace :zammad do
 
@@ -15,7 +15,7 @@ namespace :zammad do
         FileUtils.ln(source, dest, force: true)
       end
 
-      AutoWizard.setup
+      AutoWizard.run
 
       Setting.set('system_init_done', true)
     end

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Zammad
   module Logging
@@ -7,7 +7,7 @@ module Zammad
       console.formatter = Rails.logger.formatter
       console.level = Rails.logger.level
 
-      Rails.logger.extend(ActiveSupport::Logger.broadcast(console))
+      Rails.logger.broadcast_to(console)
     end
   end
 end

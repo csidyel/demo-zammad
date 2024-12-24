@@ -1,21 +1,23 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import { computed, ref, toRef } from 'vue'
 import { watchIgnorable } from '@vueuse/shared'
+import { computed, ref, toRef } from 'vue'
+
 import type { CommonInputSearchExpose } from '#shared/components/CommonInputSearch/CommonInputSearch.vue'
 import CommonInputSearch from '#shared/components/CommonInputSearch/CommonInputSearch.vue'
-import CommonDialog from '#mobile/components/CommonDialog/CommonDialog.vue'
-import { useTraverseOptions } from '#shared/composables/useTraverseOptions.ts'
-import stopEvent from '#shared/utils/events.ts'
 import {
   NotificationTypes,
   useNotifications,
 } from '#shared/components/CommonNotifications/index.ts'
-import { QueryHandler } from '#shared/server/apollo/handler/index.ts'
-import { useAutocompleteSearchTagQuery } from '#shared/entities/tags/graphql/queries/autocompleteTags.api.ts'
 import useValue from '#shared/components/Form/composables/useValue.ts'
 import type { FieldTagsContext } from '#shared/components/Form/fields/FieldTags/types.ts'
+import { useTraverseOptions } from '#shared/composables/useTraverseOptions.ts'
+import { useAutocompleteSearchTagQuery } from '#shared/entities/tags/graphql/queries/autocompleteTags.api.ts'
+import { QueryHandler } from '#shared/server/apollo/handler/index.ts'
+import stopEvent from '#shared/utils/events.ts'
+
+import CommonDialog from '#mobile/components/CommonDialog/CommonDialog.vue'
 
 interface Props {
   name: string
@@ -108,6 +110,7 @@ const createTag = () => {
   if (!tag) return
   if (tagExists(tag)) {
     notify({
+      id: 'tag-exists',
       type: NotificationTypes.Warn,
       message: __('Tag "%s" already exists.'),
       messagePlaceholder: [tag],
@@ -151,7 +154,7 @@ const processSearchKeydown = (event: KeyboardEvent) => {
           <button
             v-if="filter.length > 0"
             :aria-label="$t('Create tag')"
-            class="rounded-3xl bg-green text-white"
+            class="bg-green rounded-3xl text-white"
             :class="{
               'bg-green/40 text-white/20': tagExists(filter),
             }"
@@ -159,7 +162,7 @@ const processSearchKeydown = (event: KeyboardEvent) => {
             :disabled="tagExists(filter)"
             @click="createTag()"
           >
-            <CommonIcon class="p-1" size="tiny" name="mobile-add" decorative />
+            <CommonIcon class="p-1" size="tiny" name="add" decorative />
           </button>
         </template>
       </CommonInputSearch>
@@ -175,7 +178,7 @@ const processSearchKeydown = (event: KeyboardEvent) => {
         v-for="option of filteredTags"
         :id="`${name}-${option}`"
         :key="option"
-        class="flex w-full items-center px-4 focus:bg-blue-highlight focus:outline-none"
+        class="focus:bg-blue-highlight flex w-full items-center px-4 focus:outline-none"
         role="option"
         aria-setsize="-1"
         :aria-posinset="sortedOptions.indexOf(option) + 1"
@@ -187,11 +190,7 @@ const processSearchKeydown = (event: KeyboardEvent) => {
           :class="{
             '!text-white': isCurrentValue(option),
           }"
-          :name="
-            isCurrentValue(option)
-              ? 'mobile-check-box-yes'
-              : 'mobile-check-box-no'
-          "
+          :name="isCurrentValue(option) ? 'check-box-yes' : 'check-box-no'"
           class="text-white/50 ltr:mr-3 rtl:ml-3"
           size="base"
           decorative

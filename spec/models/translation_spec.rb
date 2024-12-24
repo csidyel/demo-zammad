@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -33,6 +33,17 @@ RSpec.describe Translation do
 
     it 'format string with given arguments' do
       expect(described_class.translate('en', 'a %s string', 'given')).to eq('a given string')
+    end
+  end
+
+  context 'default string translations with fallback' do
+    before do
+      create(:translation, locale: 'de-de', source: 'dummy message', target: '', target_initial: '')
+      described_class.sync_locale_from_po('de-de')
+    end
+
+    it 'fallbacks to provided message/string when de-de is empty' do
+      expect(described_class.translate('de-de', 'dummy message')).to eq('dummy message')
     end
   end
 
@@ -134,74 +145,6 @@ RSpec.describe Translation do
 
   end
 
-  context 'remote_translation_need_update? tests' do
-
-    it 'translation is still the same' do
-      translation = described_class.where(locale: 'de-de').last
-      translations = described_class.where(locale: 'de-de').pluck(:id, :locale, :source, :target, :target_initial).to_a
-      expect(
-        described_class.remote_translation_need_update?(
-          {
-            'source'         => translation.source,
-            'locale'         => translation.locale,
-            'target'         => translation.target,
-            'target_initial' => translation.target_initial,
-          }, translations
-        )
-      ).to be false
-    end
-
-    it 'translation target has locally changed' do
-      translation = described_class.where(locale: 'de-de').last
-      translation.target = 'some new translation'
-      translation.save!
-      translations = described_class.where(locale: 'de-de').pluck(:id, :locale, :source, :target, :target_initial).to_a
-      expect(
-        described_class.remote_translation_need_update?(
-          {
-            'source'         => translation.source,
-            'locale'         => translation.locale,
-            'target'         => translation.target,
-            'target_initial' => translation.target_initial,
-          }, translations
-        )
-      ).to be false
-    end
-
-    it 'translation target has remotely changed' do
-      translation = described_class.where(locale: 'de-de').last
-      translations = described_class.where(locale: 'de-de').pluck(:id, :locale, :source, :target, :target_initial).to_a
-      (result, translation_result) = described_class.remote_translation_need_update?(
-        {
-          'source'         => translation.source,
-          'locale'         => translation.locale,
-          'target'         => 'some new translation by remote',
-          'target_initial' => 'some new translation by remote',
-        }, translations
-      )
-      expect(result).to be true
-      expect(translation_result.attributes).to eq translation.attributes
-    end
-
-    it 'translation target has remotely and locally changed' do
-      translation = described_class.where(locale: 'de-de').last
-      translation.target = 'some new translation'
-      translation.save!
-      translations = described_class.where(locale: 'de-de').pluck(:id, :locale, :source, :target, :target_initial).to_a
-      expect(
-        described_class.remote_translation_need_update?(
-          {
-            'source'         => translation.source,
-            'locale'         => translation.locale,
-            'target'         => 'some new translation by remote',
-            'target_initial' => 'some new translation by remote',
-          }, translations
-        )
-      ).to be false
-    end
-
-  end
-
   context 'custom translation tests' do
 
     it 'cycle of change and reload translation' do
@@ -265,4 +208,91 @@ RSpec.describe Translation do
 
   end
 
+  describe 'scope -> sources' do
+    it 'returns an source strings' do
+      expect(described_class.sources.count).to be_positive
+    end
+  end
+
+  describe 'scope -> customized' do
+    context 'when no customized translations exist' do
+      it 'returns an empty array' do
+        expect(described_class.customized).to eq([])
+      end
+    end
+
+    context 'when customized translations exist' do
+      before do
+        described_class.find_by(locale: 'de-de', source: 'New').update!(target: 'Neu!')
+      end
+
+      it 'returns the customized translation' do
+        expect(described_class.customized[0].source).to eq('New')
+      end
+    end
+
+    context 'when only a new customized translation exists' do
+      before do
+        create(:translation, locale: 'de-de', source: 'A example', target: 'Ein Beispiel')
+      end
+
+      it 'returns the customized translation' do
+        expect(described_class.customized[0].source).to eq('A example')
+      end
+    end
+  end
+
+  describe 'scope -> not_customized', :aggregate_failures do
+    let(:translation_item) { described_class.find_by(locale: 'de-de', source: 'New') }
+
+    context 'when customized items exists' do
+      before do
+        translation_item.update!(target: 'Neu!')
+        create(:translation, locale: 'de-de', source: 'A example', target: 'Ein Beispiel')
+      end
+
+      it 'list without customized translations' do
+        not_customized = described_class.not_customized.where(locale: 'de-de')
+
+        expect(not_customized).to be_none { |item| item.source == translation_item.source }
+        expect(not_customized).to be_none { |item| item.source == 'A example' }
+      end
+    end
+  end
+
+  describe '#reset' do
+    context 'when record is not synced from codebase' do
+      subject(:translation) { create(:translation, locale: 'de-de', source: 'A example', target: 'Ein Beispiel') }
+
+      it 'no changes for record' do
+        expect { translation.reset }.to not_change { translation.reload }
+      end
+    end
+
+    context 'when record is synced from codebase' do
+      subject(:translation) { described_class.find_by(locale: 'de-de', source: 'New') }
+
+      context 'when translation was not customized' do
+        it 'no changes for record' do
+          expect { translation.reset }.to not_change { translation.reload }
+        end
+      end
+
+      context 'when translation was customized' do
+        before do
+          translation.update!(target: 'Neu!')
+        end
+
+        it 'resets target to initial' do
+          expect { translation.reset }.to change { translation.reload.target }.to(translation.target_initial)
+        end
+      end
+    end
+  end
+
+  describe 'source string quality' do
+    it 'strings use the unicode ellipsis sign (…) rather than three dots (...)' do
+      expect(described_class.sources.where("source LIKE '%...%'").pluck(:source)).to eq([])
+    end
+  end
 end

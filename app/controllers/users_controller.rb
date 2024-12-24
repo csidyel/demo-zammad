@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class UsersController < ApplicationController
   include ChecksUserAttributesByCurrentUserPermission
@@ -21,10 +21,7 @@ class UsersController < ApplicationController
     users = policy_scope(User).reorder(id: :asc).offset(pagination.offset).limit(pagination.limit)
 
     if response_expand?
-      list = []
-      users.each do |user|
-        list.push user.attributes_with_association_names
-      end
+      list = users.map(&:attributes_with_association_names)
       render json: list, status: :ok
       return
     end
@@ -43,9 +40,8 @@ class UsersController < ApplicationController
       return
     end
 
-    users_all = []
-    users.each do |user|
-      users_all.push User.lookup(id: user.id).attributes_with_association_ids
+    users_all = users.map do |user|
+      User.lookup(id: user.id).attributes_with_association_ids
     end
     render json: users_all, status: :ok
   end
@@ -222,84 +218,7 @@ class UsersController < ApplicationController
   # @response_message 200 [Array<User>] A list of User records matching the search term.
   # @response_message 403               Forbidden / Invalid session.
   def search
-    query = params[:query]
-    if query.respond_to?(:permit!)
-      query.permit!.to_h
-    end
-
-    query = params[:query] || params[:term]
-    if query.respond_to?(:permit!)
-      query = query.permit!.to_h
-    end
-
-    query_params = {
-      query:        query,
-      limit:        pagination.limit,
-      offset:       pagination.offset,
-      sort_by:      params[:sort_by],
-      order_by:     params[:order_by],
-      current_user: current_user,
-    }
-    %i[ids role_ids group_ids permissions].each do |key|
-      next if params[key].blank?
-
-      query_params[key] = params[key]
-    end
-
-    # do query
-    user_all = User.search(query_params)
-
-    if response_expand?
-      list = []
-      user_all.each do |user|
-        list.push user.attributes_with_association_names
-      end
-      render json: list, status: :ok
-      return
-    end
-
-    # build result list
-    if params[:label] || params[:term]
-      users = []
-      user_all.each do |user|
-        realname = user.fullname
-        if user.email.present? && realname != user.email
-          realname = Channel::EmailBuild.recipient_line realname, user.email
-        end
-        a = if params[:term]
-              { id: user.id, label: realname, value: user.email, inactive: !user.active }
-            else
-              { id: user.id, label: realname, value: realname }
-            end
-        users.push a
-      end
-
-      # return result
-      render json: users
-      return
-    end
-
-    if response_full?
-      user_ids = []
-      assets   = {}
-      user_all.each do |user|
-        assets = user.assets(assets)
-        user_ids.push user.id
-      end
-
-      # return result
-      render json: {
-        assets:   assets,
-        user_ids: user_ids.uniq,
-      }
-      return
-    end
-
-    list = []
-    user_all.each do |user|
-      list.push user.attributes_with_association_ids
-    end
-    render json: list, status: :ok
+    model_search_render(User, params)
   end
 
   # @path       [GET] /users/history/{id}
@@ -364,12 +283,19 @@ curl http://localhost/api/v1/users/email_verify -v -u #{login}:#{password} -H "C
   def email_verify
     raise Exceptions::UnprocessableEntity, __('No token!') if !params[:token]
 
-    user = User.signup_verify_via_token(params[:token], current_user)
-    raise Exceptions::UnprocessableEntity, __('The provided token is invalid.') if !user
+    verify = Service::User::SignupVerify.new(token: params[:token], current_user: current_user)
 
-    current_user_set(user)
+    begin
+      user = verify.execute
+    rescue Service::CheckFeatureEnabled::FeatureDisabledError, Service::User::SignupVerify::InvalidTokenError => e
+      raise Exceptions::UnprocessableEntity, e.message
+    end
 
-    render json: { message: 'ok', user_email: user.email }, status: :ok
+    current_user_set(user) if user
+
+    msg = user ? { message: 'ok', user_email: user.email } : { message: 'failed' }
+
+    render json: msg, status: :ok
   end
 
 =begin
@@ -396,31 +322,18 @@ curl http://localhost/api/v1/users/email_verify_send -v -u #{login}:#{password} 
 
     raise Exceptions::UnprocessableEntity, __('No email!') if !params[:email]
 
-    user = User.find_by(email: params[:email].downcase)
-    if !user || user.verified == true
-      # result is always positive to avoid leaking of existing user accounts
-      render json: { message: 'ok' }, status: :ok
-      return
+    signup = Service::User::Deprecated::Signup.new(user_data: { email: params[:email] }, resend: true)
+
+    begin
+      signup.execute
+    rescue Service::CheckFeatureEnabled::FeatureDisabledError => e
+      raise Exceptions::UnprocessableEntity, e.message
+    rescue Service::User::Signup::TokenGenerationError
+      render json: { message: 'failed' }, status: :ok
     end
 
-    Token.create(action: 'Signup', user_id: user.id)
-
-    result = User.signup_new_token(user)
-    if result && result[:token]
-      user = result[:user]
-      NotificationFactory::Mailer.notification(
-        template: 'signup',
-        user:     user,
-        objects:  result
-      )
-
-      # token sent to user, send ok to browser
-      render json: { message: 'ok' }, status: :ok
-      return
-    end
-
-    # unable to generate token
-    render json: { message: 'failed' }, status: :ok
+    # Result is always positive to avoid leaking of existing user accounts.
+    render json: { message: 'ok' }, status: :ok
   end
 
 =begin
@@ -444,44 +357,35 @@ curl http://localhost/api/v1/users/admin_login -v -u #{login}:#{password} -H "Co
 =end
 
   def admin_password_auth_send
-    # check if feature is enabled
-    raise Exceptions::UnprocessableEntity, __('Feature not enabled!') if password_login?
     raise Exceptions::UnprocessableEntity, 'username param needed!' if params[:username].blank?
 
-    result = User.admin_password_auth_new_token(params[:username])
-    if result && result[:token]
-
-      # unable to send email
-      if !result[:user] || result[:user].email.blank?
-        render json: { message: 'failed' }, status: :ok
-        return
-      end
-
-      # send password reset emails
-      NotificationFactory::Mailer.notification(
-        template: 'admin_password_auth',
-        user:     result[:user],
-        objects:  result
-      )
-    end
-
-    # result is always positive to avoid leaking of existing user accounts
-    render json: { message: 'ok' }, status: :ok
-  end
-
-  def admin_password_auth_verify
-    # check if feature is enabled
-    raise Exceptions::UnprocessableEntity, __('Feature not enabled!') if password_login?
-    raise Exceptions::UnprocessableEntity, 'token param needed!' if params[:token].blank?
-
-    user = User.admin_password_auth_via_token(params[:token])
-    if !user
+    send = Service::Auth::Deprecated::SendAdminToken.new(login: params[:username])
+    begin
+      send.execute
+    rescue Service::CheckFeatureEnabled::FeatureDisabledError => e
+      raise Exceptions::UnprocessableEntity, e.message
+    rescue Service::Auth::Deprecated::SendAdminToken::TokenError, Service::Auth::Deprecated::SendAdminToken::EmailError
       render json: { message: 'failed' }, status: :ok
       return
     end
 
-    # result is always positive to avoid leaking of existing user accounts
-    render json: { message: 'ok', user_login: user.login }, status: :ok
+    render json: { message: 'ok' }, status: :ok
+  end
+
+  def admin_password_auth_verify
+    raise Exceptions::UnprocessableEntity, 'token param needed!' if params[:token].blank?
+
+    verify = Service::Auth::VerifyAdminToken.new(token: params[:token])
+
+    user = begin
+      verify.execute
+    rescue => e
+      raise Exceptions::UnprocessableEntity, e.message
+    end
+
+    msg = user ? { message: 'ok', user_login: user.login } : { message: 'failed' }
+
+    render json: msg, status: :ok
   end
 
 =begin
@@ -505,28 +409,20 @@ curl http://localhost/api/v1/users/password_reset -v -u #{login}:#{password} -H 
 =end
 
   def password_reset_send
+    raise Exceptions::UnprocessableEntity, 'username param needed!' if params[:username].blank?
 
-    # check if feature is enabled
-    raise Exceptions::UnprocessableEntity, __('Feature not enabled!') if !Setting.get('user_lost_password')
+    send = Service::User::PasswordReset::Deprecated::Send.new(username: params[:username])
 
-    result = User.password_reset_new_token(params[:username])
-    if result && result[:token]
-
-      # unable to send email
-      if !result[:user] || result[:user].email.blank?
-        render json: { message: 'failed' }, status: :ok
-        return
-      end
-
-      # send password reset emails
-      NotificationFactory::Mailer.notification(
-        template: 'password_reset',
-        user:     result[:user],
-        objects:  result
-      )
+    begin
+      send.execute
+    rescue Service::CheckFeatureEnabled::FeatureDisabledError => e
+      raise Exceptions::UnprocessableEntity, e.message
+    rescue Service::User::PasswordReset::Send::EmailError
+      render json: { message: 'failed' }, status: :ok
+      return
     end
 
-    # result is always positive to avoid leaking of existing user accounts
+    # Result is always positive to avoid leaking of existing user accounts.
     render json: { message: 'ok' }, status: :ok
   end
 
@@ -538,7 +434,7 @@ POST /api/v1/users/password_reset_verify
 Payload:
 {
   "token": "SoMeToKeN",
-  "password": "new_password"
+  "password": "new_pw"
 }
 
 Response:
@@ -547,50 +443,43 @@ Response:
 }
 
 Test:
-curl http://localhost/api/v1/users/password_reset_verify -v -u #{login}:#{password} -H "Content-Type: application/json" -X POST -d '{"token": "SoMeToKeN", "password" "new_password"}'
+curl http://localhost/api/v1/users/password_reset_verify -v -u #{login}:#{password} -H "Content-Type: application/json" -X POST -d '{"token": "SoMeToKeN", "password": "new_pw"}'
 
 =end
 
   def password_reset_verify
-
-    # check if feature is enabled
-    raise Exceptions::UnprocessableEntity, __('Feature not enabled!') if !Setting.get('user_lost_password')
     raise Exceptions::UnprocessableEntity, 'token param needed!' if params[:token].blank?
 
-    # if no password is given, verify token only
+    # If no password is given, verify token only.
     if params[:password].blank?
-      user = User.by_reset_token(params[:token])
-      if user
-        render json: { message: 'ok', user_login: user.login }, status: :ok
+      verify = Service::User::PasswordReset::Verify.new(token: params[:token])
+
+      begin
+        user = verify.execute
+      rescue Service::CheckFeatureEnabled::FeatureDisabledError => e
+        raise Exceptions::UnprocessableEntity, e.message
+      rescue Service::User::PasswordReset::Verify::InvalidTokenError
+        render json: { message: 'failed' }, status: :ok
         return
       end
+
+      render json: { message: 'ok', user_login: user.login }, status: :ok
+      return
+    end
+
+    update = Service::User::PasswordReset::Update.new(token: params[:token], password: params[:password])
+
+    begin
+      user = update.execute
+    rescue Service::CheckFeatureEnabled::FeatureDisabledError => e
+      raise Exceptions::UnprocessableEntity, e.message
+    rescue Service::User::PasswordReset::Update::InvalidTokenError, Service::User::PasswordReset::Update::EmailError
       render json: { message: 'failed' }, status: :ok
       return
-    end
-
-    result = PasswordPolicy.new(params[:password])
-    if !result.valid?
-      render json: { message: 'failed', notice: result.error }, status: :ok
+    rescue PasswordPolicy::Error => e
+      render json: { message: 'failed', notice: e.metadata }, status: :ok
       return
     end
-
-    # set new password with token
-    user = User.password_reset_via_token(params[:token], params[:password])
-
-    # send mail
-    if !user || user.email.blank?
-      render json: { message: 'failed' }, status: :ok
-      return
-    end
-
-    NotificationFactory::Mailer.notification(
-      template: 'password_change',
-      user:     user,
-      objects:  {
-        user:         user,
-        current_user: current_user,
-      }
-    )
 
     render json: { message: 'ok', user_login: user.login }, status: :ok
   end
@@ -602,8 +491,8 @@ POST /api/v1/users/password_change
 
 Payload:
 {
-  "password_old": "some_password_old",
-  "password_new": "some_password_new"
+  "password_old": "old_pw",
+  "password_new": "new_pw"
 }
 
 Response:
@@ -612,46 +501,35 @@ Response:
 }
 
 Test:
-curl http://localhost/api/v1/users/password_change -v -u #{login}:#{password} -H "Content-Type: application/json" -X POST -d '{"password_old": "password_old", "password_new": "password_new"}'
+curl http://localhost/api/v1/users/password_change -v -u #{login}:#{password} -H "Content-Type: application/json" -X POST -d '{"password_old": "old_pw", "password_new": "new_pw"}'
 
 =end
 
   def password_change
-
     # check old password
     if !params[:password_old] || !PasswordPolicy::MaxLength.valid?(params[:password_old])
-      render json: { message: 'failed', notice: [__('Current password needed!')] }, status: :unprocessable_entity
-      return
-    end
-
-    current_password_verified = PasswordHash.verified?(current_user.password, params[:password_old])
-    if !current_password_verified
-      render json: { message: 'failed', notice: [__('Current password is wrong!')] }, status: :unprocessable_entity
+      render json: { message: 'failed', notice: [__('Please provide your current password.')] }, status: :unprocessable_entity
       return
     end
 
     # set new password
     if !params[:password_new]
-      render json: { message: 'failed', notice: [__('Please supply your new password!')] }, status: :unprocessable_entity
+      render json: { message: 'failed', notice: [__('Please provide your new password.')] }, status: :unprocessable_entity
       return
     end
 
-    result = PasswordPolicy.new(params[:password_new])
-    if !result.valid?
-      render json: { message: 'failed', notice: result.error }, status: :unprocessable_entity
+    begin
+      Service::User::ChangePassword.new(
+        user:             current_user,
+        current_password: params[:password_old],
+        new_password:     params[:password_new]
+      ).execute
+    rescue PasswordPolicy::Error => e
+      render json: { message: 'failed', notice: e.metadata }, status: :unprocessable_entity
       return
-    end
-
-    current_user.update!(password: params[:password_new])
-
-    if current_user.email.present?
-      NotificationFactory::Mailer.notification(
-        template: 'password_change',
-        user:     current_user,
-        objects:  {
-          user: current_user,
-        }
-      )
+    rescue PasswordHash::Error
+      render json: { message: 'failed', notice: [__('The current password you provided is incorrect.')] }, status: :unprocessable_entity
+      return
     end
 
     render json: { message: 'ok', user_login: current_user.login }, status: :ok
@@ -660,13 +538,9 @@ curl http://localhost/api/v1/users/password_change -v -u #{login}:#{password} -H
   def password_check
     raise Exceptions::UnprocessableEntity, __("The required parameter 'password' is missing.") if params[:password].blank?
 
-    begin
-      Auth.new(current_user.login, params[:password], only_verify_password: true).valid!
+    password_check = Service::User::PasswordCheck.new(user: current_user, password: params[:password])
 
-      render json: { success: true }, status: :ok
-    rescue Auth::Error::AuthenticationFailed
-      render json: { success: false }, status: :ok
-    end
+    render json: { success: password_check.execute }, status: :ok
   end
 
 =begin
@@ -752,16 +626,16 @@ curl http://localhost/api/v1/users/out_of_office -v -u #{login}:#{password} -H "
 
   def out_of_office
     user = User.find(current_user.id)
-    user.with_lock do
-      user.assign_attributes(
-        out_of_office:                params[:out_of_office],
-        out_of_office_start_at:       params[:out_of_office_start_at],
-        out_of_office_end_at:         params[:out_of_office_end_at],
-        out_of_office_replacement_id: params[:out_of_office_replacement_id],
-      )
-      user.preferences[:out_of_office_text] = params[:out_of_office_text]
-      user.save!
-    end
+
+    Service::User::OutOfOffice
+      .new(user,
+           enabled:     params[:out_of_office],
+           start_at:    params[:out_of_office_start_at],
+           end_at:      params[:out_of_office_end_at],
+           replacement: User.find_by(id: params[:out_of_office_replacement_id]),
+           text:        params[:out_of_office_text])
+      .execute
+
     render json: { message: 'ok' }, status: :ok
   end
 
@@ -791,15 +665,8 @@ curl http://localhost/api/v1/users/account -v -u #{login}:#{password} -H "Conten
     raise Exceptions::UnprocessableEntity, 'provider needed!' if !params[:provider]
     raise Exceptions::UnprocessableEntity, 'uid needed!' if !params[:uid]
 
-    # remove from database
-    record = Authorization.where(
-      user_id:  current_user.id,
-      provider: params[:provider],
-      uid:      params[:uid],
-    )
-    raise Exceptions::UnprocessableEntity, __('No record found!') if !record.first
+    Service::User::RemoveLinkedAccount.new(provider: params[:provider], uid: params[:uid], current_user:).execute
 
-    record.destroy_all
     render json: { message: 'ok' }, status: :ok
   end
 
@@ -915,7 +782,7 @@ curl http://localhost/api/v1/users/avatar -v -u #{login}:#{password} -H "Content
   #
   # @summary          Download of example CSV file.
   # @notes            The requester have 'admin.user' permissions to be able to download it.
-  # @example          curl -u 'me@example.com:test' http://localhost:3000/api/v1/users/import_example
+  # @example          curl -u #{login}:#{password} http://localhost:3000/api/v1/users/import_example
   #
   # @response_message 200 File download.
   # @response_message 403 Forbidden / Invalid session.
@@ -932,8 +799,8 @@ curl http://localhost/api/v1/users/avatar -v -u #{login}:#{password} -H "Content
   #
   # @summary          Starts import.
   # @notes            The requester have 'admin.text_module' permissions to be create a new import.
-  # @example          curl -u 'me@example.com:test' -F 'file=@/path/to/file/users.csv' 'https://your.zammad/api/v1/users/import?try=true'
-  # @example          curl -u 'me@example.com:test' -F 'file=@/path/to/file/users.csv' 'https://your.zammad/api/v1/users/import'
+  # @example          curl -u #{login}:#{password} -F 'file=@/path/to/file/users.csv' 'https://your.zammad/api/v1/users/import?try=true'
+  # @example          curl -u #{login}:#{password} -F 'file=@/path/to/file/users.csv' 'https://your.zammad/api/v1/users/import'
   #
   # @response_message 201 Import started.
   # @response_message 403 Forbidden / Invalid session.
@@ -1034,11 +901,6 @@ curl http://localhost/api/v1/users/avatar -v -u #{login}:#{password} -H "Content
   # @response_message 200 [User] Created User record.
   # @response_message 403        Forbidden / Invalid session.
   def create_signup
-    # check if feature is enabled
-    if !Setting.get('user_create_account')
-      raise Exceptions::UnprocessableEntity, __('Feature not enabled!')
-    end
-
     # check signup option only after admin account is created
     if !params[:signup]
       raise Exceptions::UnprocessableEntity, __("The required parameter 'signup' is missing.")
@@ -1050,46 +912,19 @@ curl http://localhost/api/v1/users/avatar -v -u #{login}:#{password} -H "Content
 
     # check if user already exists
     if new_params[:email].blank?
-      raise Exceptions::UnprocessableEntity, __('Attribute \'email\' required!')
+      raise Exceptions::UnprocessableEntity, __("The required attribute 'email' is missing.")
     end
 
-    email_taken_by = User.find_by email: new_params[:email].downcase.strip
+    signup = Service::User::Deprecated::Signup.new(user_data: new_params)
 
-    result = PasswordPolicy.new(new_params[:password])
-    if !result.valid?
-      render json: { error: result.error }, status: :unprocessable_entity
+    begin
+      signup.execute
+    rescue PasswordPolicy::Error => e
+      render json: { message: 'failed', notice: e.metadata }, status: :unprocessable_entity
       return
+    rescue Service::CheckFeatureEnabled::FeatureDisabledError => e
+      raise Exceptions::UnprocessableEntity, e.message
     end
-
-    user = User.new(new_params)
-    user.role_ids = Role.signup_role_ids
-    user.source = 'signup'
-
-    if email_taken_by # show fake OK response to avoid leaking that email is already in use
-      user.skip_ensure_uniq_email = true
-      user.validate!
-
-      result = User.password_reset_new_token(email_taken_by.email)
-      NotificationFactory::Mailer.notification(
-        template: 'signup_taken_reset',
-        user:     email_taken_by,
-        objects:  result,
-      )
-
-      render json: { message: 'ok' }, status: :created
-      return
-    end
-
-    UserInfo.ensure_current_user_id do
-      user.save!
-    end
-
-    result = User.signup_new_token(user)
-    NotificationFactory::Mailer.notification(
-      template: 'signup',
-      user:     user,
-      objects:  result,
-    )
 
     render json: { message: 'ok' }, status: :created
   end
@@ -1102,49 +937,15 @@ curl http://localhost/api/v1/users/avatar -v -u #{login}:#{password} -H "Content
   # @response_message 200 [User] Created User record.
   # @response_message 403        Forbidden / Invalid session.
   def create_admin
-    if User.count > 2 # system and example users
-      raise Exceptions::UnprocessableEntity, __('Administrator account already created')
-    end
-
-    # check if user already exists
-    if clean_user_params[:email].blank?
-      raise Exceptions::UnprocessableEntity, __('Attribute \'email\' required!')
-    end
-
-    # check password policy
-    result = PasswordPolicy.new(clean_user_params[:password])
-    if !result.valid?
-      render json: { error: result.error }, status: :unprocessable_entity
-      return
-    end
-
-    user = User.new(clean_user_params)
-    user.associations_from_param(params)
-    user.role_ids  = Role.where(name: %w[Admin Agent]).pluck(:id)
-    user.group_ids = Group.pluck(:id)
-
-    UserInfo.ensure_current_user_id do
-      user.save!
-    end
-
-    Setting.set('system_init_done', true)
-
-    # fetch org logo
-    if user.email.present?
-      Service::Image.organization_suggest(user.email)
-    end
-
-    # load calendar
-    Calendar.init_setup(request.remote_ip)
-
-    # load text modules
-    begin
-      TextModule.load(request.env['HTTP_ACCEPT_LANGUAGE'] || 'en-us')
-    rescue => e
-      logger.error "Unable to load text modules #{request.env['HTTP_ACCEPT_LANGUAGE'] || 'en-us'}: #{e.message}"
-    end
-
+    Service::User::AddFirstAdmin.new.execute(
+      user_data: clean_user_params.slice(:firstname, :lastname, :email, :password),
+      request:   request,
+    )
     render json: { message: 'ok' }, status: :created
+  rescue PasswordPolicy::Error => e
+    render json: { message: 'failed', notice: e.metadata }, status: :unprocessable_entity
+  rescue Exceptions::MissingAttribute, Service::System::CheckSetup::SystemSetupError => e
+    raise Exceptions::UnprocessableEntity, e.message
   end
 
   def serve_default_image

@@ -1,28 +1,30 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import type { FormFieldContext } from '#shared/components/Form/types/field.ts'
-import type { Editor } from '@tiptap/vue-3'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import { useEventListener } from '@vueuse/core'
-import {
-  computed,
-  onMounted,
-  onUnmounted,
-  ref,
-  toRef,
-  watch,
-  nextTick,
-} from 'vue'
-import testFlags from '#shared/utils/testFlags.ts'
+import { computed, onMounted, onUnmounted, ref, toRef, watch } from 'vue'
+
+import { getFieldEditorClasses } from '#shared/components/Form/initializeFieldEditor.ts'
+import type { FormFieldContext } from '#shared/components/Form/types/field.ts'
 import { htmlCleanup } from '#shared/utils/htmlCleanup.ts'
 import log from '#shared/utils/log.ts'
+import testFlags from '#shared/utils/testFlags.ts'
+
 import useValue from '../../composables/useValue.ts'
+import { getNodeByName } from '../../utils.ts'
+
 import {
   getCustomExtensions,
   getHtmlExtensions,
   getPlainExtensions,
-} from './extensions/list.ts'
+} from './extensions/List.ts'
+import FieldEditorActionBar from './FieldEditorActionBar.vue'
+import FieldEditorFooter from './FieldEditorFooter.vue'
+import FieldEditorTableMenu from './FieldEditorTableMenu.vue'
+import { PLUGIN_NAME as userMentionPluginName } from './suggestions/UserMention.ts'
+import { convertInlineImages } from './utils.ts'
+
 import type {
   EditorContentType,
   EditorCustomPlugins,
@@ -30,11 +32,7 @@ import type {
   FieldEditorProps,
   PossibleSignature,
 } from './types.ts'
-import FieldEditorActionBar from './FieldEditorActionBar.vue'
-import FieldEditorFooter from './FieldEditorFooter.vue'
-import { PLUGIN_NAME as userMentionPluginName } from './suggestions/UserMention.ts'
-import { getNodeByName } from '../../utils.ts'
-import { convertInlineImages } from './utils.ts'
+import type { Editor } from '@tiptap/vue-3'
 
 interface Props {
   context: FormFieldContext<FieldEditorProps>
@@ -44,8 +42,6 @@ const props = defineProps<Props>()
 
 const reactiveContext = toRef(props, 'context')
 const { currentValue } = useValue(reactiveContext)
-
-// TODO: add maybe something to extract the props from the context, instead of using context.XYZ (or props.context.XYZ)
 
 const disabledPlugins = Object.entries(props.context.meta || {})
   .filter(([, value]) => value.disabled)
@@ -82,10 +78,9 @@ interface LoadImagesOptions {
 }
 
 const inlineImagesInEditor = (editor: Editor, files: File[]) => {
-  convertInlineImages(files, editor.view.dom).then((urls) => {
+  convertInlineImages(files, editor.view.dom).then(async (urls) => {
     if (editor?.isDestroyed) return
     editor?.commands.setImages(urls)
-    nextTick(() => testFlags.set('editor.inlineImagesLoaded'))
   })
 }
 
@@ -106,7 +101,7 @@ const addFilesToAttachments = (files: File[]) => {
 // there is also a gif, but desktop only inlines these two for now
 const imagesMimeType = ['image/png', 'image/jpeg']
 const loadFiles = (
-  files: FileList | null | undefined,
+  files: FileList | File[] | null | undefined,
   editor: Editor | undefined,
   options: LoadImagesOptions,
 ) => {
@@ -146,20 +141,33 @@ const editor = useEditor({
       name: props.context.node.name,
       id: props.context.id,
       class: props.context.classes.input,
-      'data-value': editorValue.value,
+      'data-value': editorValue.value, // for testing, do not delete
+      'data-form-id': props.context.formId,
     },
     // add inlined files
     handlePaste(view, event) {
       if (!hasImageExtension) {
         return
       }
-      const loaded = loadFiles(event.clipboardData?.files, editor.value, {
-        attachNonInlineFiles: false,
-      })
 
-      if (loaded) {
-        event.preventDefault()
-        return true
+      const items = Array.from(event.clipboardData?.items || [])
+      for (const item of items) {
+        if (item.type.startsWith('image')) {
+          const file = item.getAsFile()
+
+          if (file) {
+            const loaded = loadFiles([file], editor.value, {
+              attachNonInlineFiles: false,
+            })
+
+            if (loaded) {
+              event.preventDefault()
+              return true
+            }
+          }
+        } else {
+          return false
+        }
       }
 
       return false
@@ -202,22 +210,25 @@ const editor = useEditor({
   },
 })
 
-watch(
-  () => [props.context.id, editorValue.value],
-  ([id, value]) => {
-    editor.value?.setOptions({
-      editorProps: {
-        attributes: {
-          role: 'textbox',
-          name: props.context.node.name,
-          id,
-          class: props.context.classes.input,
-          'data-value': value,
+if (VITE_TEST_MODE) {
+  watch(
+    () => [props.context.id, editorValue.value],
+    ([id, value]) => {
+      editor.value?.setOptions({
+        editorProps: {
+          attributes: {
+            role: 'textbox',
+            name: props.context.node.name,
+            id,
+            class: props.context.classes.input,
+            'data-value': value,
+            'data-form-id': props.context.formId,
+          },
         },
-      },
-    })
-  },
-)
+      })
+    },
+  )
+}
 
 watch(
   () => props.context.disabled,
@@ -229,22 +240,51 @@ watch(
   },
 )
 
-// Set the new editor value, when it was changed from outside (e.G. form schema update).
-const updateValueKey = props.context.node.on('input', ({ payload: value }) => {
-  const currentValue =
-    contentType.value === 'text/plain'
-      ? editor.value?.getText()
-      : editor.value?.getHTML()
-  if (editor.value && value !== currentValue) {
-    editor.value.commands.setContent(
-      value && contentType.value === 'text/html' ? htmlCleanup(value) : value,
-      false,
-    )
-  }
-})
+const setEditorContent = (
+  content: string | undefined,
+  contentType: EditorContentType,
+  emitUpdate?: boolean,
+) => {
+  if (!editor.value || !content) return
+
+  editor.value.commands.setContent(
+    contentType === 'text/html' ? htmlCleanup(content) : content,
+    emitUpdate,
+  )
+}
+
+// Set the new editor content, when the value was changed from outside (e.g. form schema update).
+const updateValueKey = props.context.node.on(
+  'input',
+  ({ payload: newContent }) => {
+    const currentContent =
+      contentType.value === 'text/plain'
+        ? editor.value?.getText()
+        : editor.value?.getHTML()
+
+    // Skip the update if the value is identical.
+    if (newContent === currentContent) return
+
+    setEditorContent(newContent, contentType.value, true)
+  },
+)
+
+// Convert the current editor content, if the content type changed from outside (e.g. form schema update).
+const updateContentTypeKey = props.context.node.on(
+  'prop:contentType',
+  ({ payload: newContentType }) => {
+    const newContent =
+      newContentType === 'text/plain'
+        ? editor.value?.getText()
+        : editor.value?.getHTML()
+
+    setEditorContent(newContent, newContentType, true)
+  },
+)
 
 onUnmounted(() => {
   props.context.node.off(updateValueKey)
+  props.context.node.off(updateContentTypeKey)
 })
 
 const focusEditor = () => {
@@ -358,12 +398,13 @@ onMounted(() => {
     )
   }
 })
+
+const classes = getFieldEditorClasses()
 </script>
 
 <template>
-  <div class="p-2">
+  <div :class="classes.input.container">
     <EditorContent
-      ref="editorVueInstance"
       class="text-base ltr:text-left rtl:text-right"
       data-test-id="field-editor"
       :editor="editor"
@@ -373,6 +414,13 @@ onMounted(() => {
       :footer="context.meta.footer"
       :characters="characters"
     />
+
+    <FieldEditorTableMenu
+      v-if="editor"
+      :editor="editor"
+      :content-type="contentType"
+      :form-id="context.formId"
+    />
   </div>
 
   <!-- TODO: questionable usability - it moves, when new line is added -->
@@ -381,7 +429,99 @@ onMounted(() => {
     :content-type="contentType"
     :visible="showActionBar"
     :disabled-plugins="disabledPlugins"
+    :form-id="context.formId"
     @hide="showActionBar = false"
     @blur="focusEditor"
   />
 </template>
+
+<style>
+.tiptap {
+  pre {
+    background-color: #ced4da;
+    border-radius: 6px;
+    padding: 5px;
+    margin-bottom: 6px;
+    color: #111;
+  }
+
+  pre > code {
+    background-color: transparent;
+    padding: 0;
+    margin: 0;
+  }
+
+  code {
+    background-color: #ced4da;
+    border-radius: 4px;
+    padding: 1px 2px;
+    color: #111;
+  }
+
+  table {
+    border-collapse: collapse;
+    table-layout: fixed;
+    width: 100px;
+    max-width: 200px;
+    margin: 0;
+    overflow: hidden;
+
+    td,
+    th {
+      min-width: 1em;
+      border: 2px solid #ced4da;
+      padding: 3px 5px;
+      vertical-align: top;
+      box-sizing: border-box;
+      position: relative;
+
+      > * {
+        margin-bottom: 0;
+      }
+    }
+
+    th {
+      font-weight: bold;
+      text-align: left;
+      background-color: #f1f3f5;
+    }
+
+    .selectedCell::after {
+      z-index: 2;
+      position: absolute;
+      content: '';
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      background: rgba(200, 200, 255, 0.4);
+      pointer-events: none;
+    }
+
+    .column-resize-handle {
+      position: absolute;
+      right: -2px;
+      top: 0;
+      bottom: -2px;
+      width: 4px;
+      background-color: #adf;
+      pointer-events: none;
+    }
+
+    p {
+      margin: 0;
+    }
+  }
+}
+
+.tableWrapper {
+  padding: 1rem 0;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.resize-cursor {
+  cursor: ew-resize;
+  cursor: col-resize;
+}
+</style>

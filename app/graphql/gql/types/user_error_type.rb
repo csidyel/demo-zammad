@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Gql::Types
   class UserErrorType < Gql::Types::BaseObject
@@ -7,5 +7,6 @@ module Gql::Types
 
     field :message, String, null: false
     field :field, String
+    field :exception, Gql::Types::Enum::UserErrorExceptionType
   end
 end

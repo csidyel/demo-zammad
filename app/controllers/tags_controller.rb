@@ -1,20 +1,20 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class TagsController < ApplicationController
   prepend_before_action :authenticate_and_authorize!
 
   # GET /api/v1/tag_search?term=abc
   def search
-    list = get_tag_list(params[:term], params[:limit] || 10)
+    results = Tag::Item
+      .filter_or_recommended(params[:term])
+      .limit(params[:limit] || 10)
+      .map do |elem|
+        {
+          id:    elem.id,
+          value: elem.name,
+        }
+      end
 
-    results = []
-    list.each do |item|
-      result = {
-        id:    item.id,
-        value: item.name,
-      }
-      results.push result
-    end
     render json: results
   end
 
@@ -33,7 +33,7 @@ class TagsController < ApplicationController
 
   # POST /api/v1/tags/add
   def add
-    raise Exceptions::Forbidden if !::Tag.tag_allowed?(object: params[:object], name: params[:item], user_id: UserInfo.current_user_id)
+    raise Exceptions::Forbidden if !::Tag.tag_allowed?(name: params[:item], user_id: UserInfo.current_user_id)
 
     success = Tag.tag_add(
       object: params[:object],
@@ -63,7 +63,7 @@ class TagsController < ApplicationController
 
   # GET /api/v1/tag_list
   def admin_list
-    list = Tag::Item.reorder(name: :asc).limit(params[:limit] || 1000)
+    list = Tag::Item.reorder(name: :asc).limit(params[:limit] || 5000)
     results = []
     list.each do |item|
       result = {
@@ -95,15 +95,5 @@ class TagsController < ApplicationController
   def admin_delete
     Tag::Item.remove(params[:id])
     render json: {}
-  end
-
-  private
-
-  def get_tag_list(term, limit)
-    if term.blank?
-      return Tag::Item.left_outer_joins(:tags).group(:id).reorder('COUNT(tags.tag_item_id) DESC, name ASC').limit(limit)
-    end
-
-    Tag::Item.where('name_downcase LIKE ?', "%#{SqlHelper.quote_like(term.strip.downcase)}%").reorder(name: :asc).limit(limit)
   end
 end

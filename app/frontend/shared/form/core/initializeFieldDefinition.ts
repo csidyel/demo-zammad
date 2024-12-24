@@ -1,8 +1,5 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { FormKitTypeDefinition } from '@formkit/core'
-import type { FormKitSchemaExtendableSection } from '@formkit/inputs'
-import { mergeArray } from '#shared/utils/helpers.ts'
 import {
   outer,
   inner,
@@ -15,10 +12,28 @@ import {
   suffix,
   label,
 } from '@formkit/inputs'
-import { block } from '../sections/block.ts'
+
+import { mergeArray } from '#shared/utils/helpers.ts'
+
 import { arrow } from '../sections/arrow.ts'
+import { block } from '../sections/block.ts'
 import { link } from '../sections/link.ts'
+
 import defaulfFieldDefinition from './defaultFieldDefinition.ts'
+
+import type { FormKitTypeDefinition } from '@formkit/core'
+import type {
+  FormKitSchemaExtendableSection,
+  FormKitInputs,
+  FormKitSlotData,
+} from '@formkit/inputs'
+
+declare module '@formkit/inputs' {
+  interface FormKitBaseSlots<Props extends FormKitInputs<Props>> {
+    // Add new slots or modify existing ones directly here
+    link: FormKitSlotData<Props>
+  }
+}
 
 export interface FieldsCustomOptions {
   addDefaultProps?: boolean
@@ -42,7 +57,9 @@ const initializeFieldDefinition = (
   } = options
 
   const localDefinition = definition
-  localDefinition.props ||= []
+  localDefinition.props = Array.isArray(localDefinition.props)
+    ? localDefinition.props
+    : []
   localDefinition.features ||= []
 
   if (options.schema) {
@@ -71,11 +88,19 @@ const initializeFieldDefinition = (
     )
   }
 
-  const additionalProps = additionalDefinitionOptions.props || []
+  const additionalProps = Array.isArray(additionalDefinitionOptions.props)
+    ? additionalDefinitionOptions.props
+    : []
   if (addDefaultProps) {
+    const defaulfFieldDefinitionProps = Array.isArray(
+      defaulfFieldDefinition.props,
+    )
+      ? defaulfFieldDefinition.props
+      : []
+
     localDefinition.props = mergeArray(
       localDefinition.props,
-      defaulfFieldDefinition.props.concat(additionalProps),
+      defaulfFieldDefinitionProps.concat(additionalProps),
     )
   }
 

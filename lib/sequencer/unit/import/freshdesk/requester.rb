@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Sequencer::Unit::Import::Freshdesk::Requester
   def request(api_path:, params: nil)
@@ -8,10 +8,10 @@ module Sequencer::Unit::Import::Freshdesk::Requester
         params:   params,
       )
 
-      return response if response.is_a? Net::HTTPOK
+      return response if response.is_a?(Net::HTTPOK) || response.is_a?(Net::HTTPNotFound)
 
       handle_error response, iteration
-    rescue Net::HTTPClientError => e
+    rescue => e
       handle_exception e, iteration
     end
 

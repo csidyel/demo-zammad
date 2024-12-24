@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -76,7 +76,7 @@ RSpec.describe 'Manage > Users', type: :system do
 
         click '.js-submit'
 
-        expect(page).to have_css('table.user-list td', text: 'NewTestUserFirstName')
+        expect(page).to have_css('table td', text: 'NewTestUserFirstName')
       end
     end
 
@@ -113,7 +113,7 @@ RSpec.describe 'Manage > Users', type: :system do
 
           click '.js-submit'
 
-          expect(page).to have_css('table.user-list td', text: 'üser@äcme.corp')
+          expect(page).to have_css('table td', text: 'üser@äcme.corp')
         end
       end
     end
@@ -146,7 +146,7 @@ RSpec.describe 'Manage > Users', type: :system do
 
   context 'updating a user' do
     let(:user)   { create(:admin, firstname: 'Dummy') }
-    let(:row)    { find "table.user-list tbody tr[data-id='#{user.id}']" }
+    let(:row)    { find "table tbody tr[data-id='#{user.id}']" }
     let(:group)  { Group.first }
     let(:group2) { Group.second }
 
@@ -407,11 +407,15 @@ RSpec.describe 'Manage > Users', type: :system do
     let(:admin)              { create(:admin) }
     let(:agent)              { create(:agent) }
     let(:two_factor_pref)    { create(:user_two_factor_preference, :authenticator_app, user: agent) }
+    let(:enabled)            { true }
 
     def authenticate
+      Setting.set('two_factor_authentication_method_authenticator_app', true)
       Setting.set('two_factor_authentication_enforce_role_ids', [])
 
       two_factor_pref
+      agent.reload
+      Setting.set('two_factor_authentication_method_authenticator_app', enabled)
       admin
     end
 
@@ -444,12 +448,25 @@ RSpec.describe 'Manage > Users', type: :system do
     it 'does remove all two-factor methods' do
       open_configure_two_factor
 
-      select 'Authenticator App', from: 'method'
       click_on 'Remove all methods'
       click_on 'Yes'
       wait.until { !User::TwoFactorPreference.exists?(id: two_factor_pref.id) }
 
       expect_no_two_factor
+    end
+
+    describe 'when Two-Factor is disabled' do
+      let(:enabled) { false }
+
+      it 'does remove all two-factor methods' do
+        open_configure_two_factor
+
+        click_on 'Remove all methods'
+        click_on 'Yes'
+        wait.until { !User::TwoFactorPreference.exists?(id: two_factor_pref.id) }
+
+        expect_no_two_factor
+      end
     end
   end
 end

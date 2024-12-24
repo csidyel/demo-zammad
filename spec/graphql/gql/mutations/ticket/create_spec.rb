@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -51,7 +51,7 @@ RSpec.describe Gql::Mutations::Ticket::Create, :aggregate_failures, type: :graph
       title:      'Ticket Create Mutation Test',
       groupId:    gql.id(group),
       priorityId: gql.id(priority),
-      customerId: gql.id(customer),
+      customer:   { id: gql.id(customer) },
       ownerId:    gql.id(agent),
       tags:       %w[foo bar],
       article:    article_payload
@@ -98,7 +98,7 @@ RSpec.describe Gql::Mutations::Ticket::Create, :aggregate_failures, type: :graph
 
       it 'creates Ticket record' do
         it_creates_ticket
-        expect(gql.result.data['ticket']).to eq(expected_response)
+        expect(gql.result.data[:ticket]).to eq(expected_response)
       end
 
       context 'without title' do
@@ -134,7 +134,71 @@ RSpec.describe Gql::Mutations::Ticket::Create, :aggregate_failures, type: :graph
 
         it 'creates the ticket' do
           it_creates_ticket
-          expect(gql.result.data['ticket']).to eq(expected_response)
+          expect(gql.result.data[:ticket]).to eq(expected_response)
+        end
+      end
+
+      context 'with links' do
+        let!(:other_ticket) { create(:ticket, group: agent.groups.first) }
+        let(:links) do
+          [
+            { linkObjectId: gql.id(other_ticket), linkType: 'child' },
+            { linkObjectId: gql.id(other_ticket), linkType: 'normal' },
+          ]
+        end
+        let(:input_payload) { input_base_payload.merge(links:) }
+
+        it 'creates the ticket and adds links' do
+          it_creates_ticket
+          expect(Link.list(link_object: 'Ticket', link_object_value: Ticket.last.id)).to contain_exactly(
+            { 'link_object' => 'Ticket', 'link_object_value' => other_ticket.id, 'link_type' => 'parent' },
+            { 'link_object' => 'Ticket', 'link_object_value' => other_ticket.id, 'link_type' => 'normal' },
+          )
+        end
+      end
+
+      context 'with issue tracker links' do
+        let(:github_link)   { 'https://github.com/issue/123' }
+        let(:input_payload) { input_base_payload.merge(externalReferences: { github: [github_link] }) }
+
+        before { Setting.set('github_integration', true) }
+
+        it 'creates the ticket and adds issue trackeer links' do
+          it_creates_ticket
+
+          expect(Ticket.last.preferences)
+            .to include('github' => include('issue_links' => contain_exactly(github_link)))
+        end
+      end
+
+      context 'when customer is provided as an email address' do
+        let(:email_address) { Faker::Internet.email }
+        let(:input_payload) { input_base_payload.merge(customer: { email: email_address }) }
+
+        context 'with valid email address' do
+          it 'creates the ticket and a new customer' do
+            it_creates_ticket
+            expect(User.find_by(email: email_address)).to be_present
+            expect(gql.result.data[:ticket][:customer][:fullname]).to eq(User.find_by(email: email_address).fullname)
+          end
+        end
+
+        context 'with invalid email address' do
+          let(:email_address) { 'invalid-email' }
+
+          it 'fails to create the ticket' do
+            it_fails_to_create_ticket
+            expect(gql.result.error_message).to include('The email address is invalid.')
+          end
+        end
+
+        context 'with valid email address of an existing customer' do
+          let(:email_address) { customer.email }
+
+          it 'creates the ticket' do
+            it_creates_ticket
+            expect(gql.result.data[:ticket][:customer][:fullname]).to eq(customer.fullname)
+          end
         end
       end
 
@@ -154,6 +218,28 @@ RSpec.describe Gql::Mutations::Ticket::Create, :aggregate_failures, type: :graph
           expect(gql.result.payload['data']['ticketCreate']).to eq({ 'ticket' => nil, 'errors' => nil }) # Mutation did run, but data retrieval was not authorized.
           expect(gql.result.payload['errors'].first['message']).to eq('Access forbidden by Gql::Types::TicketType')
           expect(gql.result.payload['errors'].first['extensions']['type']).to eq('Exceptions::Forbidden')
+        end
+      end
+
+      context 'when creating the ticket in a group without email address' do
+        let(:group)           { create(:group, email_address: nil) }
+        let(:agent)           { create(:agent, groups: [group]) }
+        let(:article_payload) { { body: 'dummy', type: 'email' } }
+        let(:input_payload)   { input_base_payload.merge(groupId: gql.id(group)) }
+
+        it 'fails to create the ticket' do
+          it_fails_to_create_ticket
+          expect(gql.result.payload['data']['ticketCreate']).to eq(
+            {
+              'ticket' => nil,
+              'errors' => [
+                {
+                  'message' => 'This group has no email address configured for outgoing communication.',
+                  'field'   => 'group_id'
+                }
+              ]
+            }
+          )
         end
       end
 
@@ -196,7 +282,7 @@ RSpec.describe Gql::Mutations::Ticket::Create, :aggregate_failures, type: :graph
 
         context 'with attachments' do
           let(:article_payload) do
-            form_id = 12_345
+            form_id = SecureRandom.uuid
 
             file_name    = 'file1.txt'
             file_type    = 'text/plain'
@@ -243,7 +329,7 @@ RSpec.describe Gql::Mutations::Ticket::Create, :aggregate_failures, type: :graph
           end
 
           let(:article_payload) do
-            form_id = 12_345
+            form_id = SecureRandom.uuid
 
             file_name    = 'file1.txt'
             file_type    = 'text/plain'
@@ -322,6 +408,7 @@ RSpec.describe Gql::Mutations::Ticket::Create, :aggregate_failures, type: :graph
             {
               body: 'dummy',
               type: Ticket::Article::Type.first.name,
+              to:   'dummy@example.org',
             }
           end
 
@@ -441,10 +528,27 @@ RSpec.describe Gql::Mutations::Ticket::Create, :aggregate_failures, type: :graph
           expect(Ticket.last.articles.last).to have_attributes(to: 'to@example.com, to2@example.com', cc: 'cc@example.com, cc2@example.com')
         end
       end
+
+      context 'with a shared draft' do
+        let(:shared_draft)  { create(:ticket_shared_draft_start, group:) }
+        let(:input_payload) do
+          input_base_payload
+            .merge(sharedDraftId: Gql::ZammadSchema.id_from_object(shared_draft))
+        end
+
+        it 'passed to ticket create service' do
+          expect_any_instance_of(Service::Ticket::Create)
+            .to receive(:execute)
+            .with(ticket_data: include(shared_draft:))
+            .and_call_original
+
+          gql.execute(query, variables: variables)
+        end
+      end
     end
 
     context 'with a customer', authenticated_as: :customer do
-      let(:input_payload) { input_base_payload.tap { |h| h.delete(:customerId) } }
+      let(:input_payload) { input_base_payload.tap { |h| h.delete(:customer) } }
 
       let(:expected_response) do
         expected_base_response.merge(
@@ -458,15 +562,45 @@ RSpec.describe Gql::Mutations::Ticket::Create, :aggregate_failures, type: :graph
 
       it 'creates the ticket with filtered values' do
         it_creates_ticket
-        expect(gql.result.data['ticket']).to eq(expected_response)
+        expect(gql.result.data[:ticket]).to eq(expected_response)
       end
 
       context 'when sending a different customerId' do
-        let(:input_payload) { input_base_payload.tap { |h| h[:customerId] = create(:customer).id } }
+        let(:input_payload) { input_base_payload.tap { |h| h[:customer][:id] = gql.id(create(:customer)) } }
 
-        it 'overrides the customerId' do
+        it 'fails creating a ticket with permission exception' do
+          it_fails_to_create_ticket
+          expect(gql.result.error_type).to eq(Exceptions::Forbidden)
+          expect(gql.result.error_message).to eq('Access forbidden by Gql::Types::UserType')
+        end
+      end
+
+      context 'with links' do
+        let!(:other_ticket) { create(:ticket, customer: customer) }
+        let(:links) do
+          [
+            { linkObjectId: gql.id(other_ticket), linkType: 'child' },
+            { linkObjectId: gql.id(other_ticket), linkType: 'normal' },
+          ]
+        end
+        let(:input_payload) { input_base_payload.merge(links:) }
+
+        it 'creates the ticket without links' do
           it_creates_ticket
-          expect(gql.result.data['ticket']).to eq(expected_response)
+          expect(Link.list(link_object: 'Ticket', link_object_value: Ticket.last.id)).to eq([])
+        end
+      end
+
+      context 'with issue tracker links' do
+        let(:github_link)   { 'https://github.com/issue/123' }
+        let(:input_payload) { input_base_payload.merge(externalReferences: { github: [github_link] }) }
+
+        before { Setting.set('github_integration', true) }
+
+        it 'creates the ticket and adds issue tracker links' do
+          it_creates_ticket
+
+          expect(Ticket.last.preferences).not_to include('github')
         end
       end
 
@@ -538,10 +672,10 @@ RSpec.describe Gql::Mutations::Ticket::Create, :aggregate_failures, type: :graph
 
       let(:input_payload) do
         {
-          title:      'Test title for issue #4647',
-          groupId:    gql.id(Group.first),
-          customerId: gql.id(customer),
-          article:    article_payload,
+          title:    'Test title for issue #4647',
+          groupId:  gql.id(Group.first),
+          customer: { id: gql.id(customer) },
+          article:  article_payload,
         }
       end
 

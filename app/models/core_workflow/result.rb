@@ -1,9 +1,11 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class CoreWorkflow::Result
   include ::Mixin::HasBackends
 
-  attr_accessor :payload, :payload_backup, :user, :assets, :assets_in_result, :result, :rerun, :form_updater, :restricted_fields
+  MAX_RERUN = 25
+
+  attr_accessor :payload, :payload_backup, :user, :assets, :assets_in_result, :result, :rerun, :rerun_history, :form_updater, :restricted_fields
 
   def initialize(payload:, user:, assets: {}, assets_in_result: true, result: {}, form_updater: false)
     if payload.respond_to?(:permit!)
@@ -22,6 +24,7 @@ class CoreWorkflow::Result
     @result            = result
     @form_updater      = form_updater
     @rerun             = false
+    @rerun_history     = []
   end
 
   def attributes
@@ -134,11 +137,12 @@ class CoreWorkflow::Result
   end
 
   def run_backend(field, perform_config, skip_rerun: false, skip_mark_restricted: false)
-    result = []
-    Array(perform_config['operator']).each do |backend|
-      result << "CoreWorkflow::Result::#{backend.classify}".constantize.new(result_object: self, field: field, perform_config: perform_config, skip_rerun: skip_rerun, skip_mark_restricted: skip_mark_restricted).run
+    Array(perform_config['operator']).map do |backend|
+      "CoreWorkflow::Result::#{backend.classify}"
+        .constantize
+        .new(result_object: self, field: field, perform_config: perform_config, skip_rerun: skip_rerun, skip_mark_restricted: skip_mark_restricted)
+        .run
     end
-    result
   end
 
   def run_backend_value(backend, field, value, skip_rerun: false, skip_mark_restricted: false)
@@ -193,8 +197,15 @@ class CoreWorkflow::Result
     end
   end
 
+  def rerun_loop?
+    return false if rerun_history.size < 3
+
+    rerun_history.last(3).uniq.size != 3
+  end
+
   def consider_rerun
-    if @rerun && @result[:rerun_count] < 25
+    @rerun_history << Marshal.load(Marshal.dump(@result.except(:rerun_count)))
+    if @rerun && @result[:rerun_count] < MAX_RERUN && !rerun_loop?
       @result[:rerun_count] += 1
       return run
     end

@@ -1,7 +1,8 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { computed } from 'vue'
 
 import { useApplicationStore } from '#shared/stores/application.ts'
-import { computed } from 'vue'
 
 const ticketArticlesLoaded = new Set<string>()
 
@@ -20,8 +21,8 @@ export const useTicketArticlesQueryVariables = () => {
     if (ticketArticlesLoaded.has(ticketId)) {
       return {
         ticketId,
-        loadDescription: false,
-        pageSize: null,
+        loadFirstArticles: false,
+        pageSize: 100,
       }
     }
 

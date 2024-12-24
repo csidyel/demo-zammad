@@ -1,9 +1,9 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Channel::Driver::Sms::Massenversand
   NAME = 'sms/massenversand'.freeze
 
-  def send(options, attr, _notification = false)
+  def deliver(options, attr, _notification = false)
     Rails.logger.info "Sending SMS to recipient #{attr[:recipient]}"
 
     return true if Setting.get('import_mode')
@@ -14,6 +14,7 @@ class Channel::Driver::Sms::Massenversand
 
       true
     rescue => e
+      url     = build_url(options, attr)
       message = "Error while performing request to gateway URL '#{url}'"
       Rails.logger.error message
       Rails.logger.error e

@@ -1,4 +1,4 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 export interface FocusableOptions {
   ignoreTabindex?: boolean
@@ -36,4 +36,14 @@ export const getFocusableElements = (
 
 export const getFirstFocusableElement = (container?: Maybe<HTMLElement>) => {
   return getFocusableElements(container)[0]
+}
+
+export const getPreviousFocusableElement = (
+  currentElement?: Maybe<HTMLElement>,
+) => {
+  if (!currentElement) return null
+
+  const focusableElements = getFocusableElements(document.body)
+
+  return focusableElements[focusableElements.indexOf(currentElement) - 1]
 }

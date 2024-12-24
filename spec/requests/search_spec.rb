@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -373,6 +373,35 @@ RSpec.describe 'Search', type: :request do
       SearchIndexBackend.refresh
 
       post '/api/v1/search/Ticket', params: { query: "number:#{ticket1.number} && priority.name:ultrapriority" }, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(json_response).to be_a(Hash)
+      expect(json_response).to be_truthy
+      expect(json_response['assets']['Ticket'][ticket1.id.to_s]).to be_truthy
+    end
+
+    it 'does find the ticket by the checklist name', current_user_id: 1 do
+      authenticated_as(agent)
+
+      ticket1.create_checklist! name: 'chcklst name'
+      perform_enqueued_jobs
+      SearchIndexBackend.refresh
+
+      post '/api/v1/search/Ticket', params: { query: 'chcklst' }, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(json_response).to be_a(Hash)
+      expect(json_response).to be_truthy
+      expect(json_response['assets']['Ticket'][ticket1.id.to_s]).to be_truthy
+    end
+
+    it 'does find the ticket by a checklist entry', current_user_id: 1 do
+      authenticated_as(agent)
+
+      ticket1.create_checklist!
+      ticket1.checklist.items.create! text: 'checklist entry'
+      perform_enqueued_jobs
+      SearchIndexBackend.refresh
+
+      post '/api/v1/search/Ticket', params: { query: 'checklist entry' }, as: :json
       expect(response).to have_http_status(:ok)
       expect(json_response).to be_a(Hash)
       expect(json_response).to be_truthy

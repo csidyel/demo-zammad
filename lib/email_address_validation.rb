@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 # Validation for email addresses
 
@@ -26,5 +26,15 @@ class EmailAddressValidation
     host_validation_type = check_mx ? :mx : :syntax
 
     EmailAddressValidator.valid? email_address, host_validation: host_validation_type
+  end
+
+  def valid!(check_mx: false)
+    raise InvalidEmailAddressError if !valid?(check_mx:)
+  end
+
+  class InvalidEmailAddressError < StandardError
+    def initialize
+      super(__('The email address is invalid.'))
+    end
   end
 end

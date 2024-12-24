@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class TicketsController < ApplicationController
   include CreatesTicketArticles
@@ -7,7 +7,7 @@ class TicketsController < ApplicationController
   include TicketStats
   include CanPaginate
 
-  prepend_before_action -> { authorize! }, only: %i[create selector import_example import_start ticket_customer ticket_history ticket_related ticket_recent ticket_merge ticket_split]
+  prepend_before_action -> { authorize! }, only: %i[create import_example import_start ticket_customer ticket_history ticket_related ticket_recent ticket_merge ticket_split]
   prepend_before_action :authentication_check
 
   # GET /api/v1/tickets
@@ -20,10 +20,7 @@ class TicketsController < ApplicationController
                                      .limit(pagination.limit)
 
     if response_expand?
-      list = []
-      tickets.each do |ticket|
-        list.push ticket.attributes_with_association_names
-      end
+      list = tickets.map(&:attributes_with_association_names)
       render json: list, status: :ok
       return
     end
@@ -99,6 +96,11 @@ class TicketsController < ApplicationController
         shared_draft&.destroy
       end
 
+      # Prevent direct access to checklist via API
+      # Otherwise users may get unauthorized access to checklists of other tickets
+      params.delete(:checklist)
+      params.delete(:checklist_id)
+
       clean_params = Ticket.association_name_to_id_convert(params)
 
       # overwrite params
@@ -166,19 +168,21 @@ class TicketsController < ApplicationController
 
       # create tags if given
       if params[:tags].present?
-        tags = params[:tags].split(',')
+        tags = params[:tags].split(',').map(&:strip)
         tags.each do |tag|
-          next if !::Tag.tag_allowed?(object: 'Ticket', name: tag, user_id: UserInfo.current_user_id)
+          next if !::Tag.tag_allowed?(name: tag, user_id: UserInfo.current_user_id)
 
           ticket.tag_add(tag)
         end
       end
 
-      # create mentions if given
+      # This mentions handling is used by custom API calls only
+      # Mentions created in UI are handled by Ticket::Article#check_mentions
       if params[:mentions].present?
         authorize!(ticket, :create_mentions?)
+
         Array(params[:mentions]).each do |user_id|
-          Mention.where(mentionable: ticket, user_id: user_id).first_or_create(mentionable: ticket, user_id: user_id)
+          Mention.subscribe! ticket, User.find(user_id)
         end
       end
 
@@ -243,6 +247,11 @@ class TicketsController < ApplicationController
   def update
     ticket = Ticket.find(params[:id])
     authorize!(ticket, :follow_up?)
+
+    # Prevent direct access to checklist via API
+    # Otherwise users may get unauthorized access to checklists of other tickets
+    params.delete(:checklist)
+    params.delete(:checklist_id)
 
     clean_params = Ticket.association_name_to_id_convert(params)
     clean_params = Ticket.param_cleanup(clean_params, true)
@@ -350,7 +359,7 @@ class TicketsController < ApplicationController
     # if we do not have open related tickets, search for any tickets
     tickets ||= TicketPolicy::ReadScope.new(current_user).resolve
                                        .where(customer_id: ticket.customer_id)
-                                       .where.not(state_id: Ticket::State.by_category(:merged).pluck(:id))
+                                       .where.not(state_id: Ticket::State.by_category_ids(:merged))
                                        .where.not(id: ticket.id)
                                        .reorder(created_at: :desc)
                                        .limit(6)
@@ -457,71 +466,7 @@ class TicketsController < ApplicationController
 
   # GET /api/v1/tickets/search
   def search
-
-    # permit nested conditions
-    if params[:condition]
-      params.require(:condition).permit!
-    end
-
-    paginate_with(max: 200, default: 50)
-
-    query = params[:query]
-    if query.respond_to?(:permit!)
-      query = query.permit!.to_h
-    end
-
-    # build result list
-    tickets = Ticket.search(
-      query:        query,
-      condition:    params[:condition].to_h,
-      limit:        pagination.limit,
-      offset:       pagination.offset,
-      order_by:     params[:order_by],
-      sort_by:      params[:sort_by],
-      current_user: current_user,
-    )
-
-    if response_expand?
-      list = []
-      tickets.each do |ticket|
-        list.push ticket.attributes_with_association_names
-      end
-      render json: list, status: :ok
-      return
-    end
-
-    assets = {}
-    ticket_result = []
-    tickets.each do |ticket|
-      ticket_result.push ticket.id
-      assets = ticket.assets(assets)
-    end
-
-    # return result
-    render json: {
-      tickets:       ticket_result,
-      tickets_count: tickets.count,
-      assets:        assets,
-    }
-  end
-
-  # GET /api/v1/tickets/selector
-  def selector
-    ticket_count, tickets = Ticket.selectors(params[:condition], limit: 6, execution_time: true)
-
-    assets = {}
-    ticket_ids = []
-    tickets&.each do |ticket|
-      ticket_ids.push ticket.id
-      assets = ticket.assets(assets)
-    end
-
-    # return result
-    render json: {
-      ticket_ids:   ticket_ids,
-      ticket_count: ticket_count || 0,
-      assets:       assets,
-    }
+    model_search_render(Ticket, params)
   end
 
   # GET /api/v1/ticket_stats
@@ -546,7 +491,7 @@ class TicketsController < ApplicationController
         closed_ids: {
           'ticket.state_id'    => {
             operator: 'is',
-            value:    Ticket::State.by_category(:closed).pluck(:id),
+            value:    Ticket::State.by_category_ids(:closed),
           },
           'ticket.customer_id' => {
             operator: 'is',
@@ -556,7 +501,7 @@ class TicketsController < ApplicationController
         open_ids:   {
           'ticket.state_id'    => {
             operator: 'is',
-            value:    Ticket::State.by_category(:open).pluck(:id),
+            value:    Ticket::State.by_category_ids(:open),
           },
           'ticket.customer_id' => {
             operator: 'is',
@@ -591,7 +536,7 @@ class TicketsController < ApplicationController
         closed_ids: {
           'ticket.state_id'        => {
             operator: 'is',
-            value:    Ticket::State.by_category(:closed).pluck(:id),
+            value:    Ticket::State.by_category_ids(:closed),
           },
           'ticket.organization_id' => {
             operator: 'is',
@@ -601,7 +546,7 @@ class TicketsController < ApplicationController
         open_ids:   {
           'ticket.state_id'        => {
             operator: 'is',
-            value:    Ticket::State.by_category(:open).pluck(:id),
+            value:    Ticket::State.by_category_ids(:open),
           },
           'ticket.organization_id' => {
             operator: 'is',
@@ -632,7 +577,7 @@ class TicketsController < ApplicationController
   #
   # @summary          Download of example CSV file.
   # @notes            The requester have 'admin' permissions to be able to download it.
-  # @example          curl -u 'me@example.com:test' http://localhost:3000/api/v1/tickets/import_example
+  # @example          curl -u #{login}:#{password} http://localhost:3000/api/v1/tickets/import_example
   #
   # @response_message 200 File download.
   # @response_message 403 Forbidden / Invalid session.
@@ -653,8 +598,8 @@ class TicketsController < ApplicationController
   #
   # @summary          Starts import.
   # @notes            The requester have 'admin' permissions to be create a new import.
-  # @example          curl -u 'me@example.com:test' -F 'file=@/path/to/file/tickets.csv' 'https://your.zammad/api/v1/tickets/import?try=true'
-  # @example          curl -u 'me@example.com:test' -F 'file=@/path/to/file/tickets.csv' 'https://your.zammad/api/v1/tickets/import'
+  # @example          curl -u #{login}:#{password} -F 'file=@/path/to/file/tickets.csv' 'https://your.zammad/api/v1/tickets/import?try=true'
+  # @example          curl -u #{login}:#{password} -F 'file=@/path/to/file/tickets.csv' 'https://your.zammad/api/v1/tickets/import'
   #
   # @response_message 201 Import started.
   # @response_message 403 Forbidden / Invalid session.
@@ -726,6 +671,17 @@ class TicketsController < ApplicationController
 
     if (draft = ticket.shared_draft) && authorized?(draft, :show?)
       assets = draft.assets(assets)
+    end
+
+    if Setting.get('checklist') && current_user.permissions?('ticket.agent')
+      ticket.checklist&.assets(assets)
+
+      ticket.referencing_checklists
+        .includes(:ticket)
+        .each do |elem|
+          elem.assets(assets)
+          elem.ticket.assets(assets) if elem.ticket.authorized_asset?
+        end
     end
 
     # return result

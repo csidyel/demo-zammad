@@ -1,4 +1,4 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { FormHandlerExecution } from '#shared/components/Form/types.ts'
 import type {
@@ -7,12 +7,7 @@ import type {
   FormHandlerFunction,
   ReactiveFormSchemData,
 } from '#shared/components/Form/types.ts'
-
-export type TicketDuplicateDetectionItem = [
-  id: number,
-  number: string,
-  title: string,
-]
+import type { TicketDuplicateDetectionItem } from '#shared/entities/ticket/types.ts'
 
 export interface TicketDuplicateDetectionPayload {
   count: number
@@ -42,21 +37,20 @@ export const useTicketDuplicateDetectionHandler = (
 
   const handleTicketDuplicateDetection: FormHandlerFunction = async (
     execution,
-    formNode,
-    values,
-    changeFields,
-    updateSchemaDataField,
-    schemaData,
-    changedField,
+    reactivity,
+    data,
   ) => {
+    const { changedField } = data
+    const { schemaData } = reactivity
+
     if (!executeHandler(execution, schemaData, changedField)) return
 
-    const data =
+    const newFieldData =
       changedField?.newValue as unknown as TicketDuplicateDetectionPayload
 
-    if (!data?.count) return
+    if (!newFieldData?.count) return
 
-    showTicketDuplicateDetectionDialog(data)
+    showTicketDuplicateDetectionDialog(newFieldData)
   }
 
   return {

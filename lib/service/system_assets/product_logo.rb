@@ -1,10 +1,13 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Service
   class SystemAssets
     class ProductLogo
       PRODUCT_LOGO_RESIZED = 2
       PRODUCT_LOGO_RAW     = 1
+
+      PRODUCT_LOGO_FIT_WIDTH  = 200
+      PRODUCT_LOGO_FIT_HEIGHT = 100
 
       def self.sendable_asset
         if (asset = custom_logo)
@@ -30,11 +33,27 @@ module Service
         Time.current.to_i
       end
 
-      def self.store(logo, logo_resize)
-        raw_preprocessed     = preprocess(logo)
-        resized_preprocessed = preprocess(logo_resize)
+      def self.store(logo, logo_resize = nil) # rubocop:disable Metrics/CyclomaticComplexity,Metrics/PerceivedComplexity
+        return if !logo && !logo_resize
 
-        return if !raw_preprocessed && !resized_preprocessed
+        if logo&.match?(%r{<svg}i)
+          return store_logo({ content: logo, mime_type: 'image/svg+xml' })
+        end
+
+        begin
+          original_image = Rszr::Image.load_data logo if logo
+
+          resized_image = if logo_resize
+                            Rszr::Image.load_data logo_resize
+                          else
+                            original_image.resize(PRODUCT_LOGO_FIT_WIDTH, PRODUCT_LOGO_FIT_HEIGHT)
+                          end
+
+          raw_preprocessed     = { content: logo, mime_type: "image/#{original_image.format}" } if logo
+          resized_preprocessed = { content: logo_resize || resized_image.save_data, mime_type: "image/#{resized_image.format}" } if resized_image
+        rescue Rszr::LoadError, Rszr::TransformationError
+          return
+        end
 
         clear_all
 

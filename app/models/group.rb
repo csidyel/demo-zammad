@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Group < ApplicationModel
   include HasDefaultModelUserRelations
@@ -11,6 +11,8 @@ class Group < ApplicationModel
   include HasObjectManagerAttributes
   include HasCollectionUpdate
   include HasSearchIndexBackend
+  include CanSelector
+  include CanSearch
 
   include Group::Assets
 
@@ -31,13 +33,14 @@ class Group < ApplicationModel
   before_save :update_path
   after_save :update_path_children
 
+  validates :name, uniqueness: { case_sensitive: false }
   validates :name_last, presence: true, format: { without: %r{::}, message: __('No double colons (::) allowed, reserved delimiter') }
   validates :note, length: { maximum: 250 }
   sanitized_html :note, no_images: true
 
   activity_stream_permission 'admin.group'
 
-  @@max_depth = 6 # rubocop:disable Style/ClassVars
+  @@max_depth = nil # rubocop:disable Style/ClassVars
 
   def guess_name_last_and_parent
     split = name.split('::')
@@ -76,9 +79,9 @@ class Group < ApplicationModel
                 end
 
     new_depth = depth(force: true)
-    return if new_depth < @@max_depth && all_children(force: true).all? { |child| new_depth + (child.depth - old_depth) < @@max_depth }
+    return if new_depth < self.class.max_depth && all_children(force: true).all? { |child| new_depth + (child.depth - old_depth) < self.class.max_depth }
 
-    raise Exceptions::UnprocessableEntity, __('Group or children exceeded max depth!')
+    raise Exceptions::UnprocessableEntity, __('This group or its children exceed the allowed nesting depth.')
   end
 
   def update_path
@@ -98,7 +101,7 @@ class Group < ApplicationModel
     Rails.cache.fetch("Group/#{Group.latest_change}/all_parents/#{id}", force: force) do
       result     = []
       check_next = self
-      (@@max_depth * 2).times do
+      (self.class.max_depth * 2).times do
         break if check_next.parent.blank?
 
         result << check_next.parent
@@ -114,7 +117,7 @@ class Group < ApplicationModel
     Rails.cache.fetch("Group/#{Group.latest_change}/all_children/#{id}", force: force) do
       result     = []
       check_next = [self]
-      (@@max_depth * 2).times do
+      (self.class.max_depth * 2).times do
         break if check_next.blank?
 
         children = self.class.where(parent_id: check_next)
@@ -127,7 +130,7 @@ class Group < ApplicationModel
 
   def self.all_max_depth(force: false)
     Rails.cache.fetch("Group/#{Group.latest_change}/all_max_depth", force: force) do
-      Group.select { |group| group.depth >= @@max_depth }
+      Group.select { |group| group.depth >= max_depth }
     end
   end
 
@@ -141,5 +144,11 @@ class Group < ApplicationModel
 
   def path(force: false)
     all_parents(force: force).map(&:name_last).reverse + [name_last]
+  end
+
+  def self.max_depth
+    return @@max_depth if @@max_depth
+
+    @@max_depth = ActiveRecord::Base.connection_db_config.configuration_hash[:adapter] == 'mysql2' ? 6 : 10 # rubocop:disable Style/ClassVars
   end
 end

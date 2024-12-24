@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module HasTimeplan
   extend ActiveSupport::Concern
@@ -14,7 +14,7 @@ module HasTimeplan
   private
 
   def timeplan_calculation
-    timezone = Setting.get('timezone_default_sanitized')
+    timezone = Setting.get('timezone_default')
 
     TimeplanCalculation.new(timeplan, timezone)
   end

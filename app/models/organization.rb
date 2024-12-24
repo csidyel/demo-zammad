@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Organization < ApplicationModel
   include HasDefaultModelUserRelations
@@ -7,10 +7,13 @@ class Organization < ApplicationModel
   include ChecksClientNotification
   include HasHistory
   include HasSearchIndexBackend
+  include CanSelector
   include CanCsvImport
   include ChecksHtmlSanitized
   include HasObjectManagerAttributes
   include HasTaskbars
+  include CanSelector
+  include CanPerformChanges
 
   include Organization::Assets
   include Organization::Search
@@ -26,6 +29,8 @@ class Organization < ApplicationModel
   before_create :domain_cleanup
   before_update :domain_cleanup
 
+  available_perform_change_actions :attribute_updates
+
   # workflow checks should run after before_create and before_update callbacks
   # the transaction dispatcher must be run after the workflow checks!
   include ChecksCoreWorkflow
@@ -34,7 +39,9 @@ class Organization < ApplicationModel
   core_workflow_screens 'create', 'edit'
   core_workflow_admin_screens 'create', 'edit'
 
-  validates :name,   presence: true
+  taskbar_entities 'OrganizationProfile'
+
+  validates :name,   presence: true, uniqueness: { case_sensitive: false }
   validates :domain, presence: { message: 'required when Domain Based Assignment is enabled' }, if: :domain_assignment
 
   # secondary_members will break eager_load of attributes_with_association_ids because it mixes up with the members relation.
@@ -45,6 +52,13 @@ class Organization < ApplicationModel
 
   validates :note, length: { maximum: 5000 }
   sanitized_html :note, no_images: true
+
+  def all_members
+    User
+      .left_outer_joins(:organization, :organizations_users)
+      .distinct
+      .where('organizations.id = :id OR organizations_users.organization_id = :id', id:)
+  end
 
   def destroy(associations: false)
     if associations

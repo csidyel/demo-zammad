@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Channel::Driver::Facebook
 
@@ -27,7 +27,7 @@ class Channel::Driver::Facebook
     }
   end
 
-  def send(options, fb_object_id, article, _notification = false)
+  def deliver(options, fb_object_id, article, _notification = false)
     access_token = nil
     options['pages'].each do |page|
       next if page['id'].to_s != fb_object_id.to_s

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Channel::Filter::BounceFollowUpCheck
 
@@ -14,7 +14,7 @@ module Channel::Filter::BounceFollowUpCheck
       next if attachment[:preferences]['Mime-Type'] != 'message/rfc822'
       next if !attachment[:data]
 
-      result = Channel::EmailParser.new.parse(attachment[:data])
+      result = Channel::EmailParser.new.parse(attachment[:data], allow_missing_attribute_exceptions: false)
       next if !result[:message_id]
 
       message_id_md5 = Digest::MD5.hexdigest(result[:message_id])

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class TriggerWebhookJob::CustomPayload::Track::Notification < TriggerWebhookJob::CustomPayload::Track
   class << self
@@ -26,7 +26,7 @@ class TriggerWebhookJob::CustomPayload::Track::Notification < TriggerWebhookJob:
       }
     end
 
-    Notification = Struct.new('Notification', :subject, :message, :link, :changes, :body)
+    Struct.new('Notification', :subject, :message, :link, :changes, :body) if !defined?(Struct::Notification)
 
     def generate(tracks, data)
       return if data[:event].blank?
@@ -36,7 +36,7 @@ class TriggerWebhookJob::CustomPayload::Track::Notification < TriggerWebhookJob:
 
       type = type!(event)
       template = fetch(tracks, event, type)
-      tracks[:notification] = assemble(template, has_article: tracks[:article].present?)
+      tracks[:notification] = assemble(template, has_body: tracks[:article].present? && tracks[:article].body_as_text.strip.present?, type:)
     end
 
     private
@@ -45,7 +45,7 @@ class TriggerWebhookJob::CustomPayload::Track::Notification < TriggerWebhookJob:
       NotificationFactory::Messaging.template(
         template: "ticket_#{type}",
         locale:   Setting.get('locale_default') || 'en-us',
-        timezone: Setting.get('timezone_default_sanitized'),
+        timezone: Setting.get('timezone_default'),
         objects:  {
           ticket:       tracks.fetch(:ticket, nil),
           article:      tracks.fetch(:article, nil),
@@ -62,23 +62,26 @@ class TriggerWebhookJob::CustomPayload::Track::Notification < TriggerWebhookJob:
       raise ArgumentError, __("The required event field 'execution' is unknown or missing.")
     end
 
-    def assemble(template, has_article: false)
-      match = regex(has_article).match(template[:body])
+    def assemble(template, has_body: false, type: nil)
+      match = regex(has_body).match(template[:body])
+
+      raise ArgumentError, "Extracting information for the notification failed due to a non-matching template (template: #{"ticket_#{type}"}, locale: #{Setting.get('locale_default')})." if match.nil?
+
       notification = {
         subject: template[:subject][2..],
         message: match[:message].presence || '',
         link:    match[:link].presence || '',
         changes: match[:changes].presence || '',
-        body:    has_article ? match[:body].presence || '' : '',
+        body:    has_body ? match[:body].presence || '' : '',
       }
 
       sanitize(notification)
-      Notification.new(*notification.values)
+      Struct::Notification.new(*notification.values)
     end
 
     def regex(extended)
-      source = '_<(?<link>.+)\|.+>:(?<message>.+)_\n(?<changes>.+)?'
-      source = "#{source}\n{3,4}(?<body>.+)?" if extended
+      source = '_<(?<link>.+)\|.+>[ ]?:(?<message>.+)_(\n(?<changes>.+))?'
+      source += '\n{3,4}(?<body>.+)?' if extended
 
       Regexp.new(source, Regexp::MULTILINE)
     end

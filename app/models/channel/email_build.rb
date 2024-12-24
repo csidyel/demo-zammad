@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Channel::EmailBuild
 
@@ -99,6 +99,8 @@ generate email with S/MIME
       rescue => e
         logger.error e
       end
+
+      html_alternative.body = HtmlSanitizer.adjust_inline_image_size(html_alternative.body.to_s) if found_content_ids.present?
 
       html_container = Mail::Part.new { content_type 'multipart/related' }
       html_container.add_part html_alternative
@@ -223,5 +225,4 @@ Add/change markup to display html in any mail client nice.
     new_html.gsub!(%r{</?hr>}mxi, '<hr style="margin-top: 6px; margin-bottom: 6px; border: 0; border-top: 1px solid #dfdfdf;">')
     new_html
   end
-
 end

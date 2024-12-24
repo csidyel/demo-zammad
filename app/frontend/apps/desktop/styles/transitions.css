@@ -1,0 +1,96 @@
+.fade {
+  &-enter-active,
+  &-leave-active {
+    transition: opacity 0.3s ease;
+  }
+
+  &-enter-from,
+  &-leave-to {
+    opacity: 0;
+  }
+}
+
+.fade-absolute {
+  &-enter-active,
+  &-leave-active {
+    transition: opacity 0.3s ease;
+  }
+
+  &-enter-from,
+  &-leave-to {
+    position: absolute;
+    opacity: 0;
+  }
+}
+
+.fade-up {
+  &-enter-active,
+  &-leave-active {
+    transition:
+      opacity 0.3s ease,
+      transform 0.3s ease-in-out;
+  }
+
+  &-enter-from,
+  &-leave-to {
+    opacity: 0;
+    transform: translateY(0.3rem);
+  }
+}
+
+.fade-move {
+  &-enter-active,
+  &-move,
+  &-leave-active {
+    transition: opacity 0.5s ease;
+  }
+
+  &-leave-active {
+    position: absolute;
+    top: -100%; /*  Add overflow clip on parent to hide elements */
+  }
+
+  &-enter-from,
+  &-leave-to {
+    opacity: 0;
+  }
+}
+
+.collapse {
+  &-enter-active,
+  &-leave-active {
+    transition:
+      height 0.2s ease-in-out,
+      opacity 0.2s ease;
+    overflow: hidden;
+  }
+
+  &-enter-from,
+  &-leave-to {
+    opacity: 0;
+  }
+}
+
+.pseudo-transition {
+  &-enter-active,
+  &-leave-active {
+    transition: transform 0.3s ease;
+  }
+
+  &-enter-from,
+  &-leave-to {
+    transform: translateY(0);
+  }
+}
+
+.slide-down {
+  &-enter-active,
+  &-leave-active {
+    transition: transform 0.2s ease;
+  }
+
+  &-enter-from,
+  &-leave-to {
+    transform: translateY(-100%);
+  }
+}

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'browser_test_helper'
 
@@ -355,7 +355,7 @@ class AgentTicketAttachmentTest < TestCase
   def large_file
     file = Tempfile.new
     file.binmode
-    file.write(SecureRandom.random_bytes(6.megabyte))
+    file.write(SecureRandom.random_bytes(6.megabytes))
     file.close
     file.path
   end

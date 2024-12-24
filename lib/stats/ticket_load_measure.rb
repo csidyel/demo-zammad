@@ -1,10 +1,10 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Stats::TicketLoadMeasure
 
   def self.generate(user)
 
-    open_state_ids = Ticket::State.by_category(:open).pluck(:id)
+    open_state_ids = Ticket::State.by_category_ids(:open)
 
     # owned tickets
     count = Ticket.where(owner_id: user.id, state_id: open_state_ids).count

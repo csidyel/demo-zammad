@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Channel::Driver::Telegram
 
@@ -18,7 +18,7 @@ class Channel::Driver::Telegram
 
 =end
 
-  def send(options, article, _notification = false)
+  def deliver(options, article, _notification = false)
 
     # return if we run import mode
     return if Setting.get('import_mode')

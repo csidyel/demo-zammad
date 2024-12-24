@@ -1,11 +1,15 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 import { computed, toRef } from 'vue'
 import { useLink } from 'vue-router'
-import stopEvent from '#shared/utils/events.ts'
-import type { Link } from '#shared/types/router.ts'
+
+import { getLinkClasses } from '#shared/initializer/initializeLinkClasses.ts'
 import { useApplicationStore } from '#shared/stores/application.ts'
+import type { Link } from '#shared/types/router.ts'
+import stopEvent from '#shared/utils/events.ts'
+
+import type { Sizes } from './types.ts'
 
 export interface Props {
   link: Link
@@ -19,6 +23,7 @@ export interface Props {
   replace?: boolean
   activeClass?: string
   exactActiveClass?: string
+  size?: Sizes
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -30,26 +35,32 @@ const props = withDefaults(defineProps<Props>(), {
   disabled: false,
   activeClass: 'router-link-active',
   exactActiveClass: 'router-link-exact-active',
+  size: 'large',
 })
 
 const emit = defineEmits<{
-  (e: 'click', event: MouseEvent): void
+  click: [event: MouseEvent]
 }>()
 
 const target = computed(() => {
   if (props.target) return props.target
   if (props.openInNewTab) return '_blank'
-  return null
+  return undefined
 })
 
-// TODO: Other default styles possible?
 const linkClass = computed(() => {
-  if (props.disabled) {
-    return 'pointer-events-none'
-  }
-
-  return ''
+  const { base } = getLinkClasses()
+  if (props.disabled) return `${base} pointer-events-none`
+  return base
 })
+
+const fontSizeClassMap = {
+  xs: 'text-[10px] leading-[10px]',
+  small: 'text-xs leading-snug',
+  medium: 'text-sm leading-snug',
+  large: 'text-base leading-snug',
+  xl: 'text-xl leading-snug',
+}
 
 const { href, route, navigate, isActive, isExactActive } = useLink({
   to: toRef(props, 'link'),
@@ -94,6 +105,11 @@ const onClick = (event: MouseEvent) => {
     stopEvent(event, { propagation: false })
   }
 }
+
+defineExpose({
+  isActive,
+  isExactActive,
+})
 </script>
 
 <template>
@@ -104,6 +120,7 @@ const onClick = (event: MouseEvent) => {
     :rel="rel"
     :class="[
       linkClass,
+      fontSizeClassMap[props.size],
       {
         [activeClass]: isActive,
         [exactActiveClass]: isExactActive,

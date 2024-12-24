@@ -1,10 +1,10 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 require 'system/examples/pagination_examples'
 
 RSpec.describe 'Manage > Role', type: :system do
-  context 'ajax pagination' do
+  context 'when ajax pagination' do
     include_examples 'pagination', model: :role, klass: Role, path: 'manage/roles'
   end
 
@@ -107,9 +107,9 @@ RSpec.describe 'Manage > Role', type: :system do
           scroll_into_view '[data-attribute-name="group_ids"]'
 
           expect(page).to have_css('[data-attribute-name="group_ids"]')
-          click 'span', text: 'Agent'
+          click 'span', text: 'Agent tickets'
           expect(page).to have_no_css('[data-attribute-name="group_ids"]')
-          click 'span', text: 'Agent'
+          click 'span', text: 'Agent tickets'
           expect(page).to have_css('[data-attribute-name="group_ids"]')
         end
       end

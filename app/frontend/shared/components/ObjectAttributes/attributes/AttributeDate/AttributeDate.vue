@@ -1,13 +1,12 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 import CommonDateTime from '#shared/components/CommonDateTime/CommonDateTime.vue'
-import type { ObjectAttributeDate } from './attributeDateTypes.ts'
 
-defineProps<{
-  attribute: ObjectAttributeDate
-  value: string
-}>()
+import type { ObjectAttributeDate } from './attributeDateTypes.ts'
+import type { ObjectAttributeProps } from '../../types.ts'
+
+defineProps<ObjectAttributeProps<ObjectAttributeDate, string>>()
 </script>
 
 <template>

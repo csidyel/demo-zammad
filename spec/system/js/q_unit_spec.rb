@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -58,7 +58,7 @@ RSpec.describe 'QUnit', time_zone: 'Europe/London', type: :system do
   files.each do |elem|
     context "when testing #{elem.humanize}", authenticated_as: :user do
       # Some tests require an authenticated session.
-      let(:needs_user) { elem.include?('form') }
+      let(:needs_user) { elem.include?('form') || elem.include?('taskbar') }
       let(:user)       { needs_user ? create(:agent) : false }
 
       it "#{elem.humanize} qunit tests" do

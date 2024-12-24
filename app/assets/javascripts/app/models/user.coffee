@@ -5,9 +5,9 @@ class App.User extends App.Model
 
 #  @hasMany 'roles', 'App.Role'
   @configure_attributes = [
-    { name: 'login',            display: __('Login'),         tag: 'input',    type: 'text',     limit: 100, null: false, autocapitalize: false, signup: false, quick: false },
-    { name: 'firstname',        display: __('First name'),     tag: 'input',    type: 'text',     limit: 100, null: true, signup: true, info: true, invite_agent: true, invite_customer: true },
-    { name: 'lastname',         display: __('Last name'),      tag: 'input',    type: 'text',     limit: 100, null: true, signup: true, info: true, invite_agent: true, invite_customer: true },
+    { name: 'login',            display: __('Login'),         tag: 'input',    type: 'text',     limit: 100, null: false, autocapitalize: false, signup: false, quick: false, no_perform_changes: true },
+    { name: 'firstname',        display: __('First name'),    tag: 'input',    type: 'text',     limit: 100, null: true, signup: true, info: true, invite_agent: true, invite_customer: true },
+    { name: 'lastname',         display: __('Last name'),     tag: 'input',    type: 'text',     limit: 100, null: true, signup: true, info: true, invite_agent: true, invite_customer: true },
     { name: 'email',            display: __('Email'),         tag: 'input',    type: 'email',    limit: 100, null: true, signup: true, info: true, invite_agent: true, invite_customer: true },
     { name: 'organization_id',  display: __('Organization'),  tag: 'select',   multiple: false, nulloption: true, null: true, relation: 'Organization', signup: false, info: true, invite_customer: true, note: __("Attention! Changing the organization will update the user's most recent tickets to the new organization.") },
     { name: 'group_ids',        display: __('Group permissions'), tag: 'group_permissions', item_class: 'checkbox' },
@@ -20,6 +20,16 @@ class App.User extends App.Model
 #    'login', 'firstname', 'lastname', 'email', 'updated_at',
     'login', 'firstname', 'lastname', 'organization'
   ]
+  @configure_preview = [
+    'login', 'firstname', 'lastname', 'organization', 'created_at'
+  ]
+  @allowedReplaceTagsFunctionMapping = {
+    avatar: {
+      function_name: 'avatar_image_tag',
+      placeholder_display: __('Avatar'),
+      placeholder_content: 'avatar(60,60)',
+    }
+  }
 
   uiUrl: ->
     "#user/profile/#{@id}"
@@ -30,18 +40,27 @@ class App.User extends App.Model
   initials: ->
     if @firstname && @lastname && @firstname[0] && @lastname[0]
       return @firstname[0] + @lastname[0]
-    else if @firstname && @firstname[0] && !@lastname
+
+    if @firstname && @firstname[0] && !@lastname
       if @firstname[1]
         return @firstname[0] + @firstname[1]
       return @firstname[0]
-    else if !@firstname && @lastname && @lastname[0]
+
+    if !@firstname && @lastname && @lastname[0]
       if @lastname[1]
         return @lastname[0] + @lastname[1]
       return @lastname[0]
-    else if @email
+
+    if @email
       return @email[0] + @email[1]
-    else
-      return '??'
+
+    if @phone
+      return @phone.slice(-2)
+
+    if @mobile
+      return @mobile.slice(-2)
+
+    return '??'
 
   avatar: (size = 40, placement = '', cssClass = '', unique = false, avatar, type = undefined) ->
     baseSize = 40
@@ -107,6 +126,14 @@ class App.User extends App.Model
       vip: vip
       url: @imageUrl()
       initials: @initials()
+
+  # Used to return a image tag (e.g. for variable replacement).
+  avatar_image_tag: (width = 60, height = 60) ->
+    image_url = @imageUrl()
+    return if !image_url
+
+    '<img src="' + image_url + '" width="' + width + '" height="' + height + '" data-user-avatar="true" />'
+
 
   isOutOfOffice: ->
     return false if @out_of_office isnt true
@@ -302,11 +329,11 @@ class App.User extends App.Model
 
   @outOfOfficeTextPlaceholder: ->
     today = new Date()
-    outOfOfficeText = App.i18n.translateContent('Christmas holiday')
+    outOfOfficeText = App.i18n.translatePlain('Christmas holiday')
     if today.getMonth() < 3
-      outOfOfficeText = App.i18n.translateContent('Easter holiday')
+      outOfOfficeText = App.i18n.translatePlain('Easter holiday')
     else if today.getMonth() < 9
-      outOfOfficeText = App.i18n.translateContent('Summer holiday')
+      outOfOfficeText = App.i18n.translatePlain('Summer holiday')
     outOfOfficeText
 
   outOfOfficeText: ->
@@ -368,7 +395,7 @@ class App.User extends App.Model
     (@preferences.tickets_closed || 0) + (@preferences.tickets_open || 0)
 
   isInOrganization: (organization_id) ->
-    _.contains(@allOrganizationIds(), organization_id)
+    _.contains(@allOrganizationIds(), parseInt(organization_id, 10))
 
   allOrganizationIds: ->
     result = []
@@ -430,6 +457,8 @@ class App.User extends App.Model
       return @email
     if @phone
       return @phone
+    if @mobile
+      return @mobile
     if @login
       return @login
     return '-'
@@ -456,6 +485,8 @@ class App.User extends App.Model
       return @email
     if @phone
       return @phone
+    if @mobile
+      return @mobile
     if @login
       return @login
     return '-'

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module ApplicationModel::CanCreatesAndUpdates
   extend ActiveSupport::Concern
@@ -21,7 +21,7 @@ returns
     def create_if_not_exists(data)
       identifier = [:id, :name, :login, :email, %i[source locale]].map { |a| data.slice(*a) }.find(&:any?) || {}
 
-      case_sensitive_find_by(**identifier) || create(data)
+      case_sensitive_find_by(**identifier) || create!(data)
     end
 
 =begin
@@ -42,24 +42,7 @@ returns
       raise ArgumentError, __('One of the required parameters must be provided, but none was found.') if attr.nil?
 
       record = case_sensitive_find_by(**data.slice(attr))
-      record.nil? ? create(data) : record.tap { |r| r.update(data) }
-    end
-
-=begin
-
-Model.create_if_not_exists with ref lookups
-
-  result = Model.create_if_not_exists_with_ref(attributes)
-
-returns
-
-  result = model # with all attributes
-
-=end
-
-    def create_if_not_exists_with_ref(data)
-      data = association_name_to_id_convert(data)
-      create_or_update(data)
+      record.nil? ? create!(data) : record.tap { |r| r.update!(data) }
     end
 
 =begin

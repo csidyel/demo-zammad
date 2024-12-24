@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -8,7 +8,7 @@ RSpec.describe 'Organization Profile', type: :system do
   it 'does show the edit link' do
     visit "#organization/profile/#{organization.id}"
     click '#userAction label'
-    click_link 'Edit'
+    click_on 'Edit'
     modal_ready
   end
 

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require_relative 'boot'
 
@@ -12,25 +12,15 @@ Bundler.setup
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
-# EmailAddress gem clashes with EmailAddress model.
-# https://github.com/afair/email_address#namespace-conflict-resolution
-EmailAddressValidator = EmailAddress
-Object.send(:remove_const, :EmailAddress)
-
-# Only load gems for asset compilation if they are needed to avoid
-#   having unneeded runtime dependencies like NodeJS.
-if ArgvHelper.argv.any? { |e| e.start_with? 'assets:' } || Rails.groups.exclude?('production')
-  Bundler.load.current_dependencies.select do |dep|
-    require dep.name if dep.groups.include?(:assets)
-  end
+# Initializers for before the app gets set up.
+Pathname(__dir__).glob('pre_initializers/*.rb').each do |file|
+  require file
 end
-
-Zammad::SafeMode.hint
 
 module Zammad
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
-    config.load_defaults 6.1
+    config.load_defaults 7.2
 
     Rails.autoloaders.each do |autoloader|
       autoloader.ignore            "#{config.root}/app/frontend"
@@ -53,18 +43,12 @@ module Zammad
 
     # Custom directories with classes and modules you want to be autoloadable.
     config.add_autoload_paths_to_load_path = false
-    config.autoload_paths += %W[#{config.root}/lib]
 
-    # zeitwerk:check will only check preloaded paths. To make sure that also lib/ gets validated,
-    #   add it to the eager_load_paths only if zeitwerk:check is running.
-    config.eager_load_paths += %W[#{config.root}/lib] if ArgvHelper.argv[0].eql? 'zeitwerk:check'
+    config.autoload_lib(ignore: %w[tasks templates])
 
     config.active_job.queue_adapter = :delayed_job
 
     config.active_record.use_yaml_unsafe_load = true
-
-    # Remove PDF from the allowed inline content types so they have to be downloaded first (#4479).
-    config.active_storage.content_types_allowed_inline.delete('application/pdf')
 
     # Use custom logger to log Thread id next to Process pid
     config.log_formatter = ::Logger::Formatter.new

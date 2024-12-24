@@ -1,12 +1,13 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 FactoryBot.define do
   factory :tag do
     transient do
-      o { Ticket.first }
+      o   { Ticket.first }
+      tag { 'blub' }
     end
 
-    tag_item_id   { Tag::Item.lookup_by_name_and_create('blub').id }
+    tag_item_id   { Tag::Item.lookup_by_name_and_create(tag).id }
     o_id          { o.id }
     created_by_id { 1 }
 

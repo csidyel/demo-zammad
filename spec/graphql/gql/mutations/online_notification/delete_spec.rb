@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -27,7 +27,7 @@ RSpec.describe Gql::Mutations::OnlineNotification::Delete, authenticated_as: :us
     let(:notification_to_delete) { notification }
 
     it 'deletes notification' do
-      expect(notification.class).not_to be_exist(notification.id)
+      expect(notification.class).not_to exist(notification.id)
     end
   end
 
@@ -35,7 +35,7 @@ RSpec.describe Gql::Mutations::OnlineNotification::Delete, authenticated_as: :us
     let(:notification_to_delete) { another_user_notification }
 
     it 'does not delete notification' do
-      expect(notification.class).to be_exist(notification.id)
+      expect(notification.class).to exist(notification.id)
     end
   end
 end

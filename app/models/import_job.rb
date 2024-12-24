@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class ImportJob < ApplicationModel
   extend ::Mixin::StartFinishLogger
@@ -179,15 +179,16 @@ class ImportJob < ApplicationModel
       # we need to exclude jobs that were updated at or since we started
       # cleaning up (via the #reschedule? call) because they might
       # were started `.delay`-ed and are flagged for restart
-      ImportJob.running.where('updated_at < ?', after).each do |job|
-
-        job.update!(
-          finished_at: after,
-          result:      {
-            error: error
-          }
-        )
-      end
+      running
+        .where(updated_at: ...after)
+        .each do |job|
+          job.update!(
+            finished_at: after,
+            result:      {
+              error: error
+            }
+          )
+        end
     end
   end
 end

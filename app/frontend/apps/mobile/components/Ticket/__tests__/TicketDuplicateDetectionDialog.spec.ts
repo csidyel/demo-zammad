@@ -1,8 +1,10 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { renderComponent } from '#tests/support/components/index.ts'
 import { mockApplicationConfig } from '#tests/support/mock-applicationConfig.ts'
-import type { TicketDuplicateDetectionItem } from '#mobile/pages/ticket/composable/useTicketDuplicateDetectionHandler.ts'
+
+import type { TicketDuplicateDetectionItem } from '#shared/entities/ticket/types.ts'
+
 import TicketDuplicateDetectionDialog from '../TicketDuplicateDetectionDialog.vue'
 
 describe('TicketDuplicateDetectionDialog.vue', () => {

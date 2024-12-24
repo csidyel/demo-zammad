@@ -1,25 +1,28 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
+# Class variables are used here as performance optimization.
+# Technically it is not thread-safe, but it never caused issues.
+# rubocop:disable Style/ClassVars
 class Setting < ApplicationModel
   store         :options
   store         :state_current
   store         :state_initial
   store         :preferences
-  before_validation :execute_validations
-  before_create :state_check, :set_initial
-  after_create  :reset_change_id, :reset_cache, :check_broadcast
-  before_update :state_check
-  after_update  :reset_change_id, :reset_cache, :check_broadcast
-  after_commit  :check_refresh
+  before_validation :state_check
+  before_create :set_initial
+  after_save    :reset_class_cache_key
+  after_commit  :reset_other_caches, :broadcast_frontend, :check_refresh
+
+  validates_with Setting::Validator
 
   attr_accessor :state
 
-  @@current         = {} # rubocop:disable Style/ClassVars
-  @@raw             = {} # rubocop:disable Style/ClassVars
-  @@change_id       = nil # rubocop:disable Style/ClassVars
-  @@last_changed_at = nil # rubocop:disable Style/ClassVars
-  @@lookup_at       = nil # rubocop:disable Style/ClassVars
-  @@lookup_timeout  = if ENV['ZAMMAD_SETTING_TTL'] # rubocop:disable Style/ClassVars
+  @@current         = {}
+  @@raw             = {}
+  @@query_cache_key = nil
+  @@last_changed_at = nil
+  @@lookup_at       = nil
+  @@lookup_timeout  = if ENV['ZAMMAD_SETTING_TTL']
                         ENV['ZAMMAD_SETTING_TTL'].to_i.seconds
                       else
                         15.seconds
@@ -41,7 +44,8 @@ set config setting
 
     setting.state_current = { value: value }
     setting.save!
-    logger.info "Setting.set('#{name}', #{value.inspect})"
+
+    logger.info "Setting.set('#{name}', #{filter_param(name, value).inspect})"
     true
   end
 
@@ -77,7 +81,8 @@ reset config setting to default
 
     setting.state_current = setting.state_initial
     setting.save!
-    logger.info "Setting.reset('#{name}', #{setting.state_current.inspect})"
+
+    logger.info "Setting.reset('#{name}', #{filter_param(name, setting.state_current).inspect})"
     true
   end
 
@@ -90,8 +95,31 @@ reload config settings
 =end
 
   def self.reload
-    @@last_changed_at = nil # rubocop:disable Style/ClassVars
+    @@last_changed_at = nil
     load(true)
+  end
+
+  # check if cache is still valid
+  def self.cache_valid?
+    # Check if last last lookup was recent enough
+    if @@lookup_at && @@lookup_at > @@lookup_timeout.ago
+      # logger.debug "Setting.cache_valid?: cache_id has been set within last #{@@lookup_timeout} seconds"
+      return true
+    end
+
+    if @@query_cache_key && Setting.reorder(:id).cache_key_with_version == @@query_cache_key
+      @@lookup_at = Time.current
+
+      return true
+    end
+
+    false
+  end
+
+  # Used to mask values of sensitive settings such as passwords, tokens etc.
+  def self.filter_param(key, value)
+    @@parameter_filter ||= ActiveSupport::ParameterFilter.new(Rails.application.config.filter_parameters)
+    @@parameter_filter.filter_param(key, value)
   end
 
   private
@@ -103,99 +131,80 @@ reload config settings
     return false if !force && @@current.present? && cache_valid?
 
     # read all or only changed since last read
-    latest = Setting.reorder(updated_at: :desc).limit(1).pluck(:updated_at)
-    settings = if @@last_changed_at && @@current.present?
-                 Setting.where('updated_at >= ?', @@last_changed_at).reorder(:id).pluck(:name, :state_current)
-               else
-                 Setting.reorder(:id).pluck(:name, :state_current)
-               end
+    latest = Setting.maximum(:updated_at)
 
-    Setting::Processed.process_settings! settings
+    base_query = Setting.reorder(:id)
 
-    if latest && latest[0]
-      @@last_changed_at = [Time.current, latest[0]].min # rubocop:disable Style/ClassVars
-    end
+    settings_query = if @@last_changed_at && @@current.present?
+                       base_query.where(updated_at: @@last_changed_at..)
+                     else
+                       base_query
+                     end
+
+    settings = settings_query.pluck(:name, :state_current)
+
+    @@last_changed_at = [Time.current, latest].min if latest
 
     if settings.present?
       settings.each do |setting|
         @@raw[setting[0]] = setting[1]['value']
       end
+
       @@raw.each do |key, value|
-        if value.class != String
-          @@current[key] = value
-          next
-        end
-        @@current[key] = value.gsub(%r{\#\{config\.(.+?)\}}) do
-          @@raw[$1].to_s
-        end
+        @@current[key] = interpolate_value value
       end
     end
 
-    @@change_id = Rails.cache.read('Setting::ChangeId') # rubocop:disable Style/ClassVars
-    @@lookup_at = Time.now.to_i # rubocop:disable Style/ClassVars
+    @@query_cache_key = base_query.cache_key_with_version
+    @@lookup_at = Time.current
+
     true
   end
   private_class_method :load
 
+  def self.interpolate_value(input)
+    return input if !input.is_a? String
+
+    input.gsub(%r{\#\{config\.(.+?)\}}) do
+      @@raw[$1].to_s
+    end
+  end
+  private_class_method :interpolate_value
+
   # set initial value in state_initial
   def set_initial
     self.state_initial = state_current
-    true
   end
 
-  def reset_change_id
-    @@current[name] = state_current[:value]
-    change_id = SecureRandom.uuid
-    logger.debug { "Setting.reset_change_id: set new cache, #{change_id}" }
-    Rails.cache.write('Setting::ChangeId', change_id, { expires_in: 24.hours })
-    @@lookup_at = nil # rubocop:disable Style/ClassVars
-    true
+  def reset_class_cache_key
+    @@lookup_at = nil
+    @@query_cache_key = nil
   end
 
-  def reset_cache
-    return true if preferences[:cache].blank?
+  # Resets caches related to the setting in question.
+  def reset_other_caches
+    return if preferences[:cache].blank?
 
-    preferences[:cache].each do |key|
+    Array(preferences[:cache]).each do |key|
       Rails.cache.delete(key)
     end
-    true
   end
 
-  # check if cache is still valid
-  def self.cache_valid?
-    if @@lookup_at && @@lookup_at > Time.now.to_i - @@lookup_timeout
-      # logger.debug "Setting.cache_valid?: cache_id has been set within last #{@@lookup_timeout} seconds"
-      return true
-    end
-
-    change_id = Rails.cache.read('Setting::ChangeId')
-    if @@change_id && change_id == @@change_id
-      @@lookup_at = Time.now.to_i # rubocop:disable Style/ClassVars
-      # logger.debug "Setting.cache_valid?: cache still valid, #{@@change_id}/#{change_id}"
-      return true
-    end
-    # logger.debug "Setting.cache_valid?: cache has changed, #{@@change_id}/#{change_id}"
-    false
-  end
-  private_class_method :cache_valid?
-
-  # convert state into hash to be able to store it as store
+  # Convert state into hash to be able to store it as store.
   def state_check
-    return true if state.nil? # allow false value
-    return true if state.try(:key?, :value)
+    return if state.nil? # allow false value
+    return if state.try(:key?, :value)
 
     self.state_current = { value: state }
-    true
   end
 
   # Notify clients about config changes.
-  def check_broadcast
-    return true if frontend != true
+  def broadcast_frontend
+    return if !frontend
 
-    value = state_current
-    if state_current.key?(:value)
-      value = state_current[:value]
-    end
+    # Some setting values use interpolation to reference other settings.
+    # This is applied in `Setting.get`, thus direct reading of the value should be avoided.
+    value = self.class.get(name)
 
     Sessions.broadcast(
       {
@@ -204,8 +213,8 @@ reload config settings
       },
       preferences[:authentication] ? 'authenticated' : 'public'
     )
+
     Gql::Subscriptions::ConfigUpdates.trigger(self)
-    true
   end
 
   # NB: Force users to reload on SAML credentials config changes
@@ -215,20 +224,7 @@ reload config settings
   def check_refresh
     return if ['auth_saml_credentials'].exclude?(name)
 
-    AppVersion.set(true, AppVersion::MSG_CONFIG_CHANGED)
-  end
-
-  def execute_validations
-    return if preferences.blank? || preferences[:validations].blank?
-
-    preferences[:validations].each do |validation_module|
-      validation_result = validation_module.constantize.new(self).run
-
-      next if validation_result[:success]
-
-      errors.add(:base, :invalid, message: validation_result[:message])
-
-      return false
-    end
+    AppVersion.trigger_browser_reload AppVersion::MSG_CONFIG_CHANGED
   end
 end
+# rubocop:enable Style/ClassVars

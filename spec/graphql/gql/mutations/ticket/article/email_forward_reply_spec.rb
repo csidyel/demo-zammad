@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -6,7 +6,7 @@ RSpec.describe Gql::Mutations::Ticket::Article::EmailForwardReply, :aggregate_fa
   let(:article)  { create(:ticket_article, :inbound_email, :with_attachment, from: customer.email) }
   let(:agent)    { create(:agent, groups: [article.ticket.group]) }
   let(:customer) { create(:customer) }
-  let(:form_id)  { 12_345 }
+  let(:form_id)  { SecureRandom.uuid }
 
   let(:query) do
     <<~QUERY
@@ -109,7 +109,7 @@ RSpec.describe Gql::Mutations::Ticket::Article::EmailForwardReply, :aggregate_fa
 
       it 'works as expected' do
         gql.execute(query, variables: variables)
-        expect(gql.result.data['quotableFrom']).to eq(expected_response)
+        expect(gql.result.data[:quotableFrom]).to eq(expected_response)
       end
     end
 
@@ -123,7 +123,7 @@ RSpec.describe Gql::Mutations::Ticket::Article::EmailForwardReply, :aggregate_fa
 
       it 'works as expected' do
         gql.execute(query, variables: variables)
-        expect(gql.result.data['quotableFrom']).to eq(expected_response)
+        expect(gql.result.data[:quotableFrom]).to eq(expected_response)
       end
     end
   end
@@ -143,7 +143,7 @@ RSpec.describe Gql::Mutations::Ticket::Article::EmailForwardReply, :aggregate_fa
 
       it 'works as expected' do
         gql.execute(query, variables: variables)
-        expect(gql.result.data['quotableTo']).to eq(expected_response)
+        expect(gql.result.data[:quotableTo]).to eq(expected_response)
       end
     end
 
@@ -157,7 +157,7 @@ RSpec.describe Gql::Mutations::Ticket::Article::EmailForwardReply, :aggregate_fa
 
       it 'works as expected' do
         gql.execute(query, variables: variables)
-        expect(gql.result.data['quotableTo']).to eq(expected_response)
+        expect(gql.result.data[:quotableTo]).to eq(expected_response)
       end
     end
 
@@ -171,7 +171,21 @@ RSpec.describe Gql::Mutations::Ticket::Article::EmailForwardReply, :aggregate_fa
 
       it 'works as expected' do
         gql.execute(query, variables: variables)
-        expect(gql.result.data['quotableTo']).to eq(expected_response)
+        expect(gql.result.data[:quotableTo]).to eq(expected_response)
+      end
+    end
+
+    context 'when article has no to field set' do
+      let(:user)    { create(:customer) }
+      let(:article) { create(:ticket_article, :inbound_phone, to: nil) }
+
+      let(:expected_response) do
+        nil
+      end
+
+      it 'works as expected' do
+        gql.execute(query, variables: variables)
+        expect(gql.result.data[:quotableTo]).to eq(expected_response)
       end
     end
   end
@@ -186,7 +200,7 @@ RSpec.describe Gql::Mutations::Ticket::Article::EmailForwardReply, :aggregate_fa
 
     it 'works as expected' do
       gql.execute(query, variables: variables)
-      expect(gql.result.data['quotableCc']).to eq(expected_response)
+      expect(gql.result.data[:quotableCc]).to eq(expected_response)
     end
   end
 end

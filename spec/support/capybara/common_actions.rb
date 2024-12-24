@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module CommonActions
 
@@ -39,8 +39,21 @@ module CommonActions
 
         find_toggle('Remember me').toggle_on if remember_me
 
-        click_button('Sign in')
+        click_on('Sign in')
       end
+
+      wait_for_test_flag('useSessionUserStore.getCurrentUser.loaded', skip_clearing: true) if !skip_waiting
+    when :desktop_view
+      wait_for_test_flag('applicationLoaded.loaded', skip_clearing: true)
+
+      within('main') do
+        find_input('Username / Email').type(username)
+        find_input('Password').type(password)
+
+        find_toggle('Remember me').toggle_on if remember_me
+      end
+
+      click_on('Sign in')
 
       wait_for_test_flag('useSessionUserStore.getCurrentUser.loaded', skip_clearing: true) if !skip_waiting
     else
@@ -54,7 +67,7 @@ module CommonActions
         click('.checkbox-replacement') if remember_me
 
         # submit
-        click_button
+        click_on('Sign in')
       end
 
       current_login
@@ -119,6 +132,8 @@ module CommonActions
     case app
     when :mobile
       wait_for_test_flag('logout.success', skip_clearing: true)
+    when :desktop_view # rubocop:disable Lint/DuplicateBranch
+      wait_for_test_flag('logout.success', skip_clearing: true)
     else
       wait.until_disappears { find('.user-menu .user a', wait: false) }
     end
@@ -132,8 +147,8 @@ module CommonActions
   # @see Capybara::Session#visit
   #
   # @example
-  #  visit('logout')
-  # => visited SPA route 'localhost:32435/#logout'
+  #  visit('signup')
+  # => visited SPA route 'localhost:32435/#signup'
   #
   # @example
   #  visit('/test/ui')
@@ -149,7 +164,7 @@ module CommonActions
         super(route)
       end
     elsif !route.start_with?('/')
-      route = if app == :mobile || route.start_with?('#')
+      route = if %i[mobile desktop_view].include?(app) || route.start_with?('#')
                 "/#{route}"
               else
                 "/##{route}"
@@ -158,6 +173,8 @@ module CommonActions
 
     if app == :mobile
       route = "/mobile#{route}"
+    elsif app == :desktop_view
+      route = "/desktop#{route}"
     end
 
     super(route)
@@ -165,9 +182,13 @@ module CommonActions
     wait_for_loading_to_complete(route: route, app: app, skip_waiting: skip_waiting)
   end
 
-  def wait_for_loading_to_complete(route:, app: self.class.metadata[:app], skip_waiting: false)
+  def wait_for_loading_to_complete(route: nil, app: self.class.metadata[:app], skip_waiting: false, wait_ws: false)
     case app
     when :mobile
+      return if skip_waiting
+
+      wait_for_test_flag('applicationLoaded.loaded', skip_clearing: true)
+    when :desktop_view # rubocop:disable Lint/DuplicateBranch
       return if skip_waiting
 
       wait_for_test_flag('applicationLoaded.loaded', skip_clearing: true)
@@ -181,6 +202,9 @@ module CommonActions
 
       # make sure loading is completed (e.g. ticket zoom may take longer)
       expect(page).to have_no_css('.icon-loading', wait: 30) if !skip_waiting
+
+      # make sure WS connection is ready to use
+      ensure_websocket if wait_ws
     end
   end
 
@@ -212,6 +236,11 @@ module CommonActions
           route = "/#{route}"
         end
         route = Regexp.new(Regexp.quote("/mobile#{route}"))
+      when :desktop_view
+        if !route.start_with?('/')
+          route = "/#{route}"
+        end
+        route = Regexp.new(Regexp.quote("/desktop#{route}"))
       else
         route = Regexp.new(Regexp.quote("/##{route}"))
       end
@@ -229,8 +258,8 @@ module CommonActions
   #  expect_current_route('login')
   # => checks for SPA route '/#login'
   #
-  def expect_current_route(route, app: self.class.metadata[:app], **options)
-    expect(page).to have_current_route(route, app: app, **options)
+  def expect_current_route(route, app: self.class.metadata[:app], **)
+    expect(page).to have_current_route(route, app: app, **)
   end
 
   # Create and migrate an object manager attribute and verify that it exists. Returns the newly attribute.
@@ -279,11 +308,16 @@ module CommonActions
     end
   end
 
-  def use_template(template)
+  def use_template(template, without_taskbar: false)
     field  = find('#form-template select[name="id"]')
     option = field.find(:option, template.name)
     option.select_option
+
+    taskbar_timestamp = Taskbar.last.updated_at if !without_taskbar
+
     click '.sidebar-content .js-apply'
+
+    wait.until { Taskbar.last.updated_at != taskbar_timestamp } if !without_taskbar
   end
 
   # Checks if modal is ready.
@@ -382,6 +416,13 @@ module CommonActions
         click '.js-submit'
       end
     end
+  end
+
+  def refresh_with_wait
+    page.refresh
+
+    # After the refresh, we must explictly wait for the app to be completely ready.
+    wait_for_loading_to_complete(wait_ws: true)
   end
 
   private

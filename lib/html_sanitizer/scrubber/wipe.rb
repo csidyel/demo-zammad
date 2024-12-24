@@ -1,8 +1,16 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class HtmlSanitizer
   module Scrubber
     class Wipe < Base
+      attr_reader :remote_content_removed
+
+      def initialize # rubocop:disable Lint/MissingSuper
+        @direction = :bottom_up
+
+        @remote_content_removed = false
+      end
+
       def scrub(node)
         return STOP if clear_tags_allowlist(node)
         return STOP if remove_unsafe_src(node)
@@ -17,7 +25,7 @@ class HtmlSanitizer
       private
 
       def remove_attributes_not_in_allowlist(node)
-        node.each do |attribute, _value|
+        node.each do |attribute, _value| # rubocop:disable Style/HashEachMethods
           attribute_name = attribute.downcase
           next if attributes_allowlist[:all].include?(attribute_name) || attributes_allowlist[node.name]&.include?(attribute_name)
 
@@ -88,7 +96,10 @@ class HtmlSanitizer
       end
 
       def node_has_css?(node, key)
-        node['style'].present? && node['style']&.include?("#{key}:")
+        return false if node['style'].blank?
+        return false if node['style'].split(';').blank?
+
+        node['style'].split(';').filter_map { |attr| attr.split(':')&.first&.strip }.include?(key)
       end
 
       def node_init_style(node)
@@ -134,13 +145,15 @@ class HtmlSanitizer
         return if src !~ %r{(javascript|livescript|vbscript):}i && !src.downcase.start_with?('http', 'ftp', '//')
 
         node.remove
+        @remote_content_removed = true if !src.match?(%r{javascript|livescript|vbscript:}i)
         true
       end
 
       def clear_tags_allowlist(node)
         return if tags_allowlist.include?(node.name)
 
-        node.replace node.children.to_s
+        node.before(node.children)
+        node.remove
         true
       end
 

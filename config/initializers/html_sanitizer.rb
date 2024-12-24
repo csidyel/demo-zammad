@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 # content of this tags will also be removed
 Rails.application.config.html_sanitizer_tags_remove_content = %w[
@@ -6,6 +6,7 @@ Rails.application.config.html_sanitizer_tags_remove_content = %w[
   comment
   meta
   script
+  title
 ]
 
 # content of this tags will will be inserted html quoted

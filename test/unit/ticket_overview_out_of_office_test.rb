@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'test_helper'
 
@@ -74,7 +74,7 @@ class TicketOverviewOutOfOfficeTest < ActiveSupport::TestCase
       condition:     {
         'ticket.state_id'                     => {
           operator: 'is',
-          value:    Ticket::State.by_category(:open).pluck(:id),
+          value:    Ticket::State.by_category_ids(:open),
         },
         'ticket.out_of_office_replacement_id' => {
           operator:      'is',
@@ -100,7 +100,7 @@ class TicketOverviewOutOfOfficeTest < ActiveSupport::TestCase
       condition: {
         'ticket.state_id' => {
           operator: 'is',
-          value:    Ticket::State.by_category(:open).pluck(:id),
+          value:    Ticket::State.by_category_ids(:open),
         },
         'ticket.owner_id' => {
           operator:      'is',

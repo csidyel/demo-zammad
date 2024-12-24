@@ -1,4 +1,6 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { EnumTicketArticleSenderName } from '#shared/graphql/types.ts'
 
 import type {
   TicketArticleAction,
@@ -10,19 +12,20 @@ const actionPlugin: TicketArticleActionPlugin = {
   order: 300,
 
   addActions(ticket, article) {
-    if (article.sender?.name !== 'Customer' || article.type?.name !== 'sms')
+    if (
+      article.sender?.name !== EnumTicketArticleSenderName.Customer ||
+      article.type?.name !== 'sms'
+    )
       return []
     const action: TicketArticleAction = {
-      apps: ['mobile'],
+      apps: ['mobile', 'desktop'],
       label: __('Reply'),
       name: 'sms',
-      icon: {
-        mobile: 'mobile-reply',
-      },
+      icon: 'reply',
       view: {
         agent: ['change'],
       },
-      perform(ticket, article, { openReplyDialog }) {
+      perform(ticket, article, { openReplyForm }) {
         const from = article.from?.raw
         const articleData = {
           articleType: 'sms',
@@ -30,7 +33,7 @@ const actionPlugin: TicketArticleActionPlugin = {
           inReplyTo: article.messageId,
         }
 
-        openReplyDialog(articleData)
+        openReplyForm(articleData)
       },
     }
     return [action]
@@ -40,20 +43,22 @@ const actionPlugin: TicketArticleActionPlugin = {
     const descriptionType = ticket.createArticleType?.name
     if (descriptionType !== 'sms') return []
     const type: TicketArticleType = {
-      apps: ['mobile'],
+      apps: ['mobile', 'desktop'],
       value: 'sms',
       label: __('Sms'),
-      icon: {
-        mobile: 'mobile-message',
-      },
+      buttonLabel: __('Add sms'),
+      icon: 'message',
       view: {
         agent: ['change'],
       },
-      attributes: ['to'],
       internal: false,
       contentType: 'text/plain',
-      validation: {
-        body: 'length:1,160',
+      fields: {
+        body: {
+          required: true,
+          validation: 'length:1,160',
+        },
+        to: {},
       },
       options: {
         recipientContact: 'phone',
@@ -63,6 +68,12 @@ const actionPlugin: TicketArticleActionPlugin = {
           maxlength: 160,
           warningLength: 30,
         },
+      },
+      performReply(ticket) {
+        const { preferences } = ticket
+        return {
+          to: [preferences?.sms?.originator || preferences?.sms?.From],
+        }
       },
     }
     return [type]

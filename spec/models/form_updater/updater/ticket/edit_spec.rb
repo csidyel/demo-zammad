@@ -1,9 +1,12 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
 require 'models/form_updater/concerns/checks_core_workflow_examples'
 require 'models/form_updater/concerns/has_security_options_examples'
+require 'models/form_updater/concerns/applies_ticket_shared_draft_examples'
+require 'models/form_updater/concerns/stores_taskbar_state_examples'
+require 'models/form_updater/concerns/applies_taskbar_state_examples'
 
 RSpec.describe(FormUpdater::Updater::Ticket::Edit) do
   subject(:resolved_result) do
@@ -16,12 +19,13 @@ RSpec.describe(FormUpdater::Updater::Ticket::Edit) do
     )
   end
 
-  let(:group)   { create(:group) }
-  let(:user)    { create(:agent, groups: [group]) }
-  let(:context) { { current_user: user } }
-  let(:meta)    { { initial: true, form_id: 12_345 } }
-  let(:data)    { {} }
-  let(:id)      { nil }
+  let(:group)        { create(:group) }
+  let(:user)         { create(:agent, groups: [group]) }
+  let(:context)      { { current_user: user } }
+  let(:meta)         { { initial: true, form_id: SecureRandom.uuid, dirty_fields: } }
+  let(:data)         { {} }
+  let(:dirty_fields) { [] }
+  let(:id)           { nil }
 
   let(:relation_fields) do
     [
@@ -56,7 +60,7 @@ RSpec.describe(FormUpdater::Updater::Ticket::Edit) do
 
   context 'when resolving' do
     it 'returns all resolved relation fields with correct value + label' do
-      expect(resolved_result.resolve).to include(
+      expect(resolved_result.resolve[:fields]).to include(
         'group_id'    => include(expected_result['group_id']),
         'state_id'    => include(expected_result['state_id']),
         'priority_id' => include(expected_result['priority_id']),
@@ -75,7 +79,7 @@ RSpec.describe(FormUpdater::Updater::Ticket::Edit) do
       end
 
       it 'body (and also attachments) should be disabled' do
-        expect(resolved_result.resolve).to include(
+        expect(resolved_result.resolve[:fields]).to include(
           'body'        => include({
                                      disabled: true,
                                    }),
@@ -130,7 +134,7 @@ RSpec.describe(FormUpdater::Updater::Ticket::Edit) do
         it 'checks that "rejectNonExistentValues" is false' do
           # Trigger first object authorization check.
           resolved_result.authorized?
-          result = resolved_result.resolve
+          result = resolved_result.resolve[:fields]
           expect(result[field_name]).to include(expected_result)
         end
       end
@@ -235,8 +239,138 @@ RSpec.describe(FormUpdater::Updater::Ticket::Edit) do
         include_examples 'resolve fields'
       end
     end
+
+    context 'when time accounting should be triggered' do
+      let(:id) do
+        Gql::ZammadSchema.id_from_object(create(:ticket, group: group))
+      end
+
+      before do
+        Setting.set('time_accounting', true)
+      end
+
+      it 'checks that time_accounting flag is not present' do
+        # Trigger first object authorization check.
+        resolved_result.authorized?
+
+        # Time accounting check was moved into a separate validator, the flag should be absent.
+        flags = resolved_result.resolve[:flags]
+        expect(flags).not_to have_key(:time_accounting)
+      end
+    end
+
+    context 'when auto save should be applied', :aggregate_failures do
+      let(:taskbar_key)     { 'TicketZoom-1234' }
+      let(:taskbar)         { create(:taskbar, key: taskbar_key, callback: 'Ticket', user_id: user.id, state: taskbar_state) }
+      let(:taskbar_state)   { { 'ticket' => { 'title' => 'test', 'owner_id' => 1 } } }
+      let(:field_name)      { 'title' }
+      let(:field_result)    { { value: 'test' } }
+      let(:additional_data) { { 'taskbarId' => Gql::ZammadSchema.id_from_object(taskbar), 'applyTaskbarState' => true } }
+      let(:meta)            { { additional_data:, dirty_fields: } }
+
+      let(:id) do
+        Gql::ZammadSchema.id_from_object(create(:ticket, title: 'Example ticket', group: group, priority_id: 1))
+      end
+
+      before do
+        # Trigger first object authorization check.
+        resolved_result.authorized?
+      end
+
+      it 'owner_id should be nil for system user' do
+        fields = resolved_result.resolve[:fields]
+        expect(fields['owner_id'][:value]).to be_nil
+      end
+
+      context 'when apply should reset to default field value but field was changed' do
+        let(:taskbar_state) { { 'ticket' => {} } }
+        let(:dirty_fields) { %w[priority_id title] }
+
+        it 'priority_id should be present for reset of default' do
+          fields = resolved_result.resolve[:fields]
+          expect(fields['priority_id'][:value]).to eq(1)
+        end
+
+        context 'with partial reseted fields' do
+          let(:taskbar_state) { { 'ticket' => { 'priority_id' => 2 } } }
+
+          it 'priority_id should be present for reset of default' do
+            fields = resolved_result.resolve[:fields]
+            expect(fields['priority_id'][:value]).to eq(2)
+            expect(fields['title'][:value]).to eq('Example ticket')
+          end
+        end
+      end
+
+      context 'when new article exists' do
+        let(:taskbar_state) { { 'ticket' => { 'title' => 'test' }, 'article' => { 'articleType' => 'email' } } }
+
+        it 'checks that newArticlePresent flag is present' do
+          flags = resolved_result.resolve[:flags]
+          expect(flags[:newArticlePresent]).to be_truthy
+
+          fields = resolved_result.resolve[:fields]
+          expect(fields['title'][:value]).to eq('test')
+        end
+      end
+    end
+
+    context 'when data should be stored' do
+      let(:taskbar_key)     { 'TicketZoom-1234' }
+      let(:taskbar)         { create(:taskbar, key: taskbar_key, callback: 'Ticket', user_id: user.id) }
+      let(:additional_data) { { 'taskbarId' => Gql::ZammadSchema.id_from_object(taskbar) } }
+      let(:meta)            { { additional_data: } }
+
+      let(:id) do
+        Gql::ZammadSchema.id_from_object(create(:ticket, group: group, state_id: 1))
+      end
+
+      shared_examples 'stores the form value of the field' do
+        it 'checks that data was stored correctly' do
+          # Trigger first object authorization check.
+          resolved_result.authorized?
+
+          resolved_result.resolve
+          state = taskbar.reload.state
+
+          expect(state).to include(result)
+        end
+      end
+
+      context 'when new article is saved' do
+        let(:result)          { { 'ticket' => include({ 'title' => 'test' }), 'article' => { 'type' => 'email' } } }
+        let(:data)            { { 'title' => 'test', 'article' => { 'articleType' => 'email' } } }
+
+        include_examples 'stores the form value of the field'
+      end
+
+      context 'when data should be skipped' do
+        let(:data)            { { 'title' => 'test', 'state_id' => 1 } }
+        let(:result)          { { 'ticket' => { 'title' => 'test' } } }
+
+        include_examples 'stores the form value of the field'
+      end
+    end
   end
 
   include_examples 'FormUpdater::ChecksCoreWorkflow', object_name: 'Ticket'
-  include_examples 'HasSecurityOptions', type: 'edit'
+  include_examples 'FormUpdater::HasSecurityOptions', type: 'edit'
+  include_examples 'FormUpdater::AppliesTicketSharedDraft', draft_type: 'detail-view'
+
+  context 'when data should be stored and applied' do
+    let(:id) do
+      Gql::ZammadSchema.id_from_object(create(:ticket, group: group))
+    end
+
+    before do
+      # Trigger creation of the ticket and handover the id.
+      id
+
+      # Trigger first object authorization check.
+      resolved_result.authorized?
+    end
+
+    include_examples 'FormUpdater::StoresTaskbarState', taskbar_key: 'TicketZoom-1234', taskbar_callback: 'Ticket', store_state_collect_group_key: 'ticket', store_state_group_keys: ['article'] # gitleaks:allow
+    include_examples 'FormUpdater::AppliesTaskbarState', taskbar_key: 'TicketZoom-1234', taskbar_callback: 'Ticket', apply_state_group_keys: %w[ticket article] # gitleaks:allow
+  end
 end

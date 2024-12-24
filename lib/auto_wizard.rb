@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module AutoWizard
 
@@ -35,7 +35,7 @@ returns
 
   def self.data
     auto_wizard_file_location = file_location
-    raise "So such file #{auto_wizard_file_location}" if !File.file?(auto_wizard_file_location)
+    raise "The required file #{auto_wizard_file_location} was not found." if !File.file?(auto_wizard_file_location)
 
     JSON.parse(File.read(auto_wizard_file_location))
   end
@@ -59,6 +59,13 @@ returns
 =end
 
   def self.setup
+    raise AutoWizardDisabledError if !enabled?
+
+    ttl = 60.minutes.to_i * 60.seconds.to_i * 1000
+    Service::ExecuteLockedBlock.new('Zammad::System::Setup', ttl).execute { run }
+  end
+
+  def self.run
     auto_wizard_file_location = file_location
 
     auto_wizard_hash = data
@@ -147,7 +154,11 @@ returns
     DbHelper.import_post
 
     # remove auto wizard file
-    FileUtils.rm auto_wizard_file_location
+    begin
+      FileUtils.rm auto_wizard_file_location
+    rescue
+      # Tolerate deletion errors, e.g. on read-only file systems.
+    end
 
     admin_user
   end
@@ -156,4 +167,10 @@ returns
     Rails.root.join(ENV['AUTOWIZARD_RELATIVE_PATH'].presence || 'auto_wizard.json')
   end
   private_class_method :file_location
+
+  class AutoWizardDisabledError < StandardError
+    def initialize
+      super(__('AutoWizard is disabled'))
+    end
+  end
 end

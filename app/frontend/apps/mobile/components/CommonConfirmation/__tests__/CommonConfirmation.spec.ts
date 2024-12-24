@@ -1,18 +1,21 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { confirmationOptions } from '#shared/utils/confirmation.ts'
 import {
   renderComponent,
   type ExtendedRenderResult,
 } from '#tests/support/components/index.ts'
 import { waitForNextTick } from '#tests/support/utils.ts'
 
+import { useConfirmation } from '#shared/composables/useConfirmation.ts'
+
 import CommonConfirmation from '../CommonConfirmation.vue'
 
 let wrapper: ExtendedRenderResult
 
+const { confirmationOptions } = useConfirmation()
+
 beforeEach(() => {
-  confirmationOptions.value = undefined
+  confirmationOptions.value.delete('confirmation')
 
   wrapper = renderComponent(CommonConfirmation, { shallow: false })
 })
@@ -21,10 +24,12 @@ describe('popup confirm behaviour', () => {
   it('renders confirmation dialog with default values', async () => {
     const confirmCallbackSpy = vi.fn()
 
-    confirmationOptions.value = {
-      heading: 'Test heading',
+    confirmationOptions.value.set('confirmation', {
+      text: 'Test heading',
       confirmCallback: confirmCallbackSpy,
-    }
+      cancelCallback: vi.fn(),
+      closeCallback: vi.fn(),
+    })
 
     await waitForNextTick()
 
@@ -38,30 +43,33 @@ describe('popup confirm behaviour', () => {
   it('renders confirmation dialog with custom values', async () => {
     const confirmCallbackSpy = vi.fn()
 
-    confirmationOptions.value = {
-      heading: 'Test heading',
-      buttonTitle: 'Custom button title',
+    confirmationOptions.value.set('confirmation', {
+      text: 'Test heading',
+      buttonLabel: 'Custom button title',
       buttonVariant: 'danger',
       confirmCallback: confirmCallbackSpy,
-    }
+      cancelCallback: vi.fn(),
+      closeCallback: vi.fn(),
+    })
 
     await waitForNextTick()
 
-    expect(wrapper.getByText('Custom button title')).toBeInTheDocument()
-    expect(wrapper.getByText('Custom button title')).toHaveClass(
-      'text-red-bright',
-    )
+    const button = wrapper.getByRole('button', { name: 'Custom button title' })
+
+    expect(button).toBeInTheDocument()
+    expect(button).toHaveClass('text-red-bright')
   })
 
   it('closes the confirmation dialog by using cancel', async () => {
     const confirmCallbackSpy = vi.fn()
     const cancelCallbackSpy = vi.fn()
 
-    confirmationOptions.value = {
-      heading: 'Test heading',
+    confirmationOptions.value.set('confirmation', {
+      text: 'Test heading',
       confirmCallback: confirmCallbackSpy,
       cancelCallback: cancelCallbackSpy,
-    }
+      closeCallback: vi.fn(),
+    })
 
     await waitForNextTick()
 

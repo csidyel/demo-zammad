@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -15,7 +15,7 @@ RSpec.describe Gql::Queries::AutocompleteSearch::Tag, authenticated_as: :agent, 
     end
     let(:query) do
       <<~QUERY
-        query autocompleteSearchTag($input: AutocompleteSearchInput!)  {
+        query autocompleteSearchTag($input: AutocompleteSearchTagInput!)  {
           autocompleteSearchTag(input: $input) {
             value
             label
@@ -28,6 +28,8 @@ RSpec.describe Gql::Queries::AutocompleteSearch::Tag, authenticated_as: :agent, 
     let(:limit)        { nil }
 
     before do
+      allow(Tag::Item).to receive(:recommended).and_call_original
+      allow(Tag::Item).to receive(:filter_by_name).and_call_original
       gql.execute(query, variables: variables)
     end
 
@@ -46,24 +48,57 @@ RSpec.describe Gql::Queries::AutocompleteSearch::Tag, authenticated_as: :agent, 
     end
 
     context 'with exact search' do
+      let(:tag)          { tags.first }
+      let(:query_string) { tag.name }
+
       let(:first_tag_payload) do
         {
-          'value' => gql.id(tags.first),
-          'label' => tags.first.name,
+          'value' => tag.name,
+          'label' => tag.name,
         }
       end
-      let(:query_string) { tags.first.name }
 
       it 'has data' do
-        expect(gql.result.data).to eq([first_tag_payload])
+        expect(gql.result.data).to include(first_tag_payload)
       end
     end
 
     context 'when sending an empty search string' do
       let(:query_string) { '   ' }
 
-      it 'still returns tags' do
-        expect(gql.result.data.length).to eq(tags.length)
+      it 'returns recommended tags' do
+        expect(Tag::Item).to have_received(:recommended)
+      end
+    end
+
+    context 'when sending an asterisk' do
+      let(:query_string) { '*' }
+
+      it 'returns recommended tags' do
+        expect(Tag::Item).to have_received(:recommended)
+      end
+    end
+
+    context 'when asterisk is added to the query' do
+      let(:query_string) { 'Tag*' }
+
+      it 'returns filtered tags' do
+        expect(Tag::Item).to have_received(:filter_by_name).with('Tag')
+      end
+    end
+
+    context 'when tags are being excluded from the results' do
+      let(:except_tags)  { %w[TagAutoComplete1 TagAutoComplete2] }
+      let(:query_string) { 'Tag*' }
+      let(:variables)    { { input: { query: query_string, limit: limit, exceptTags: except_tags } } }
+
+      it 'returns filtered tags without excluded entries' do
+        expect(gql.result.data).to include(
+          include(
+            'value' => not_include('TagAutoComplete1', 'TagAutoComplete2'),
+            'label' => not_include('TagAutoComplete1', 'TagAutoComplete2'),
+          )
+        )
       end
     end
 

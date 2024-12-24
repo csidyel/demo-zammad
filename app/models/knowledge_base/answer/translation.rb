@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class KnowledgeBase::Answer::Translation < ApplicationModel
   include HasDefaultModelUserRelations
@@ -6,8 +6,8 @@ class KnowledgeBase::Answer::Translation < ApplicationModel
   include HasAgentAllowedParams
   include HasLinks
   include HasSearchIndexBackend
-  include KnowledgeBase::Search
   include KnowledgeBase::HasUniqueTitle
+  include KnowledgeBase::Answer::Translation::Search
 
   AGENT_ALLOWED_ATTRIBUTES       = %i[title kb_locale_id].freeze
   AGENT_ALLOWED_NESTED_RELATIONS = %i[content].freeze
@@ -25,17 +25,10 @@ class KnowledgeBase::Answer::Translation < ApplicationModel
 
   alias assets_essential assets
 
-  def attributes_with_association_ids
-    attrs = super
-    attrs[:linked_references] = linked_references
-    attrs
-  end
-
   def assets(data = {})
     return data if assets_added_to?(data)
 
-    data = super(data)
-    data = Link.reduce_assets(data, linked_references)
+    data = super
     answer.assets(data)
     ApplicationModel::CanAssets.reduce inline_linked_objects, data
   end
@@ -47,17 +40,11 @@ class KnowledgeBase::Answer::Translation < ApplicationModel
   def search_index_attribute_lookup(include_references: true)
     attrs = super
 
-    attrs.merge({
-                  title:      ActionController::Base.helpers.strip_tags(attrs['title']),
-                  content:    content&.search_index_attribute_lookup,
-                  scope_id:   answer.category_id,
-                  attachment: answer.attachments_for_search_index_attribute_lookup,
-                  tags:       answer.tag_list
-                })
-  end
-
-  def linked_references
-    Link.list(link_object: self.class.name, link_object_value: id)
+    attrs.merge('title'      => ActionController::Base.helpers.strip_tags(attrs['title']),
+                'content'    => content&.search_index_attribute_lookup,
+                'scope_id'   => answer.category_id,
+                'attachment' => answer.attachments_for_search_index_attribute_lookup,
+                'tags'       => answer.tag_list)
   end
 
   def inline_linked_objects
@@ -80,50 +67,18 @@ class KnowledgeBase::Answer::Translation < ApplicationModel
     output
   end
 
-  class << self
-    def search_preferences(current_user)
-      return false if !KnowledgeBase.exists? || !current_user.permissions?('knowledge_base.*')
+  scope :search_sql_text_fallback, lambda { |query|
+    fields = %w[title]
+    fields << KnowledgeBase::Answer::Translation::Content.arel_table[:body]
 
-      {
-        prio:                1209,
-        direct_search_index: false,
-      }
-    end
+    where_or_cis(fields, query).joins(:content)
+  }
 
-    def search_es_filter(es_response, _query, kb_locales, options)
-      return es_response if options[:user]&.permissions?('knowledge_base.editor')
-
-      answer_translations_id = es_response.pluck(:id)
-
-      allowed_answer_translation_ids = KnowledgeBase::Answer
-        .internal
-        .joins(:translations)
-        .where(knowledge_base_answer_translations: { id: answer_translations_id, kb_locale_id: kb_locales.map(&:id) })
-        .pluck('knowledge_base_answer_translations.id')
-
-      es_response.filter { |elem| allowed_answer_translation_ids.include? elem[:id].to_i }
-    end
-
-    def search_fallback(query, scope = nil, options: {})
-      fields = %w[title]
-      fields << KnowledgeBase::Answer::Translation::Content.arel_table[:body]
-
-      output = where_or_cis(fields, query)
-               .joins(:content)
-
-      if !options[:user]&.permissions?('knowledge_base.editor')
-        answer_ids = KnowledgeBase::Answer.internal.pluck(:id)
-
-        output = output.where(answer_id: answer_ids)
-      end
-
-      if scope.present?
-        output = output
-                 .joins(:answer)
-                 .where(knowledge_base_answers: { category_id: scope })
-      end
-
+  scope :apply_kb_scope, lambda { |scope|
+    if scope.present?
       output
+        .joins(:answer)
+        .where(knowledge_base_answers: { category_id: scope })
     end
-  end
+  }
 end

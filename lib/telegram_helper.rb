@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'telegram/bot'
 
@@ -18,7 +18,7 @@ check token and return bot attributes of token
     result = nil
     begin
       Telegram::Bot::Client.run(token) do |bot|
-        result = bot.api.getMe['result']
+        result = bot.api.getMe
       end
     rescue
       raise Exceptions::UnprocessableEntity, 'invalid api token'
@@ -70,7 +70,7 @@ returns
     # verify token
     bot = check_token(token)
 
-    if !channel && bot_duplicate?(bot['id'])
+    if !channel && bot_duplicate?(bot.id)
       raise Exceptions::UnprocessableEntity, __('This bot already exists.')
     end
 
@@ -91,11 +91,11 @@ returns
                      end
 
     # set webhook / callback url for this bot @ telegram
-    callback_url = "#{Setting.get('http_type')}://#{Setting.get('fqdn')}/api/v1/channels_telegram_webhook/#{callback_token}?bid=#{bot['id']}"
+    callback_url = "#{Setting.get('http_type')}://#{Setting.get('fqdn')}/api/v1/channels_telegram_webhook/#{callback_token}?bid=#{bot.id}"
     set_webhook(token, callback_url)
 
     if !channel
-      channel = bot_by_bot_id(bot['id'])
+      channel = bot_by_bot_id(bot.id)
       if !channel
         channel = Channel.new
       end
@@ -103,10 +103,10 @@ returns
     channel.area = 'Telegram::Bot'
     channel.options = {
       bot:            {
-        id:         bot['id'],
-        username:   bot['username'],
-        first_name: bot['first_name'],
-        last_name:  bot['last_name'],
+        id:         bot.id,
+        username:   bot.username,
+        first_name: bot.first_name,
+        last_name:  bot.last_name,
       },
       callback_token: callback_token,
       callback_url:   callback_url,
@@ -674,7 +674,7 @@ returns
           last_name:  'Channel',
           username:   "channel#{params.dig(:channel_post, :chat, :id)}"
         },
-        caption:    (params.dig(:channel_post, :caption) || {}),
+        caption:    params.dig(:channel_post, :caption) || {},
         date:       params.dig(:channel_post, :date),
         message_id: params.dig(:channel_post, :message_id),
         text:       params.dig(:channel_post, :text),
@@ -760,8 +760,6 @@ returns
   end
 
   def from_article(article)
-
-    message = nil
     Rails.logger.debug { "Create telegram personal message from article to '#{article[:to]}'..." }
 
     message = {}
@@ -795,10 +793,10 @@ returns
   def download_file(file_id)
     document = nil
     Telegram::Bot::Client.run(@token) do |bot|
-      document = bot.api.getFile(file_id: file_id)['result']
+      document = bot.api.getFile(file_id: file_id)
     end
 
-    url = "https://api.telegram.org/file/bot#{@token}/#{document['file_path']}"
+    url = "https://api.telegram.org/file/bot#{@token}/#{document.file_path}"
     UserAgent.get(
       url,
       {},

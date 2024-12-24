@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -62,7 +62,6 @@ RSpec.describe Gql::Queries::Ticket::Articles, type: :graphql do
                 messageIdMd5
                 inReplyTo
                 contentType
-                references
                 attachments {
                   name
                 }
@@ -114,7 +113,7 @@ RSpec.describe Gql::Queries::Ticket::Articles, type: :graphql do
     let(:customer)             { create(:customer) }
     let(:ticket)               { create(:ticket, customer: customer) }
     let(:cc)                   { 'Zammad CI <ci@zammad.org>' }
-    let(:to)                   { '@unparseable_address' }
+    let(:to)                   { Faker::Internet.unique.email }
     let(:cid)                  { "#{SecureRandom.uuid}@zammad.example.com" }
     let!(:articles) do
       create_list(:ticket_article, 2, :outbound_email, ticket: ticket, to: to, cc: cc, content_type: 'text/html', body: "<img src=\"cid:#{cid}\"> some text") do |article, _i|
@@ -148,7 +147,7 @@ RSpec.describe Gql::Queries::Ticket::Articles, type: :graphql do
     end
     let!(:internal_article)    { create(:ticket_article, :outbound_email, ticket: ticket, internal: true) }
     let(:response_articles)    { gql.result.nodes }
-    let(:response_total_count) { gql.result.data['totalCount'] }
+    let(:response_total_count) { gql.result.data[:totalCount] }
 
     before do
       gql.execute(query, variables: variables)
@@ -174,10 +173,15 @@ RSpec.describe Gql::Queries::Ticket::Articles, type: :graphql do
               'raw'    => cc,
             },
             'to'                       => {
-              'parsed' => nil,
+              'parsed' => [
+                {
+                  'emailAddress'    => to,
+                  'name'            => nil,
+                  'isSystemAddress' => false,
+                }
+              ],
               'raw'    => to,
             },
-            'references'               => article1.references,
             'type'                     => {
               'name' => article1.type.name,
             },

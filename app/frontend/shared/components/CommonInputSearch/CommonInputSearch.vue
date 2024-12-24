@@ -1,8 +1,8 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
-import { shallowRef } from 'vue'
+import { useTemplateRef } from 'vue'
 
 export interface CommonInputSearchProps {
   modelValue?: string
@@ -26,7 +26,7 @@ const emit = defineEmits<CommonInputSearchEmits>()
 
 const filter = useVModel(props, 'modelValue', emit)
 
-const filterInput = shallowRef<HTMLInputElement>()
+const filterInput = useTemplateRef('filter-input')
 
 const focus = () => {
   filterInput.value?.focus()
@@ -52,21 +52,22 @@ export default {
     :class="wrapperClass"
   >
     <CommonIcon
-      class="absolute shrink-0 text-gray ltr:left-2 rtl:right-2"
+      class="text-gray absolute shrink-0 ltr:left-2 rtl:right-2"
       size="base"
-      name="mobile-search"
+      name="search"
       decorative
     />
     <input
-      ref="filterInput"
+      ref="filter-input"
       v-model="filter"
       v-bind="$attrs"
       :placeholder="i18n.t(placeholder)"
-      class="h-12 w-full grow rounded-xl bg-gray-500 px-9 text-base placeholder:text-gray focus:shadow-none focus:outline-none focus:ring-0"
+      class="placeholder:text-gray h-12 w-full grow rounded-xl bg-gray-500 px-9 text-base focus:shadow-none focus:outline-none focus:ring-0"
       :class="{
         'focus:border-white focus:ring-0': !noBorder,
         'focus:border-transparent': noBorder,
       }"
+      :aria-label="$t('Search…')"
       type="text"
       role="searchbox"
     />
@@ -77,7 +78,7 @@ export default {
         :aria-label="i18n.t('Clear Search')"
         class="text-gray"
         size="base"
-        name="mobile-close-small"
+        name="input-cancel"
         @click.stop="clearFilter"
       />
     </div>

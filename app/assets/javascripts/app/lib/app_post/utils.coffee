@@ -83,6 +83,7 @@ class App.Utils
       'color:#b3b3b3' # use in UI, ignore it
       'color:rgb(34, 34, 34)' # use in UI, ignore it
       'color:rgb(219, 219, 220)' # use in UI, ignore it
+      'color:rgb(255, 255, 255)' # use in UI, ignore it
     ],
     'SPAN': [
       'color:white',
@@ -97,6 +98,7 @@ class App.Utils
       'color:#b3b3b3' # use in UI, ignore it
       'color:rgb(34, 34, 34)' # use in UI, ignore it
       'color:rgb(219, 219, 220)' # use in UI, ignore it
+      'color:rgb(255, 255, 255)' # use in UI, ignore it
     ],
     'TABLE': [
       'font-size:0',
@@ -241,7 +243,8 @@ class App.Utils
     attributes = {
       title: href,
     }
-    if /^https?:/.test(href) then attributes.target = '_blank'
+    if /^https?:/.test(href) && !href.startsWith("#{App.Config.get('http_type')}://#{App.Config.get('fqdn')}")
+      attributes.target = '_blank'
     return attributes
 
   # htmlEscapedAndPhoneified = App.Utils.phoneify(rawText)
@@ -880,9 +883,18 @@ class App.Utils
       dataRef = objects
       dataRefLast = undefined
       for level in levels
-        if typeof dataRef is 'object' && level of dataRef
+        if _.isObject(dataRef) && dataRef && level of dataRef
           dataRefLast = dataRef
           dataRef = dataRef[level]
+        else if _.isObject(dataRef) && typeof level is 'string' && matches = level.match(/(?<functionName>\w+)\((?<params>.*?)\)/)
+          dataRefLast = dataRef
+          { functionName, params } = matches.groups
+          parameters = params.split(',').map((param) -> param.trim())
+
+          if 'replaceTagsFunctionCallback' of dataRefLast
+            return dataRefLast.replaceTagsFunctionCallback(functionName, parameters) || ''
+          else
+            dataRef = ''
         else
           dataRef = ''
           break
@@ -894,18 +906,53 @@ class App.Utils
 
       # if value has content
       else if dataRef isnt undefined && dataRef isnt null && dataRef.toString
-
         # in case if we have a references object, check what datatype the attribute has
         # and e. g. convert timestamps/dates to browser locale
-        if dataRefLast?.constructor?.className
-          localClassRef = App[dataRefLast.constructor.className]
+        attributeName = level
+        objectName    = levels[levels.length - 2]
+        className     = dataRefLast?.constructor?.className
+        if !className && objectName
+          className = objectName.charAt(0).toUpperCase() + objectName.slice(1)
+
+        if level is 'value'
+          attributeName = levels[levels.length - 2]
+          objectName    = levels[levels.length - 3]
+          className     = objectName.charAt(0).toUpperCase() + objectName.slice(1)
+
+        if className && App[className]
+          localClassRef = App[className]
           if localClassRef?.attributesGet
             attributes = localClassRef.attributesGet()
-            if attributes?[level]
-              if attributes[level]['tag'] is 'datetime'
-                value = App.i18n.translateTimestamp(dataRef)
-              else if attributes[level]['tag'] is 'date'
-                value = App.i18n.translateDate(dataRef)
+            if attributes?[attributeName]
+              dataType = attributes[attributeName]['tag']
+
+              if level is 'value'
+                switch dataType
+                  when 'textarea'
+                    value = App.Utils.text2html(dataRefLast[attributeName])
+                  when 'select'
+                    key = dataRefLast[attributeName]
+                    value = attributes[attributeName]['historical_options'][key]
+                  when 'multiselect'
+                    key = dataRefLast[attributeName] || []
+                    value = key.map((element) -> attributes[attributeName]['historical_options'][element]).join(', ')
+                  when 'autocompletion_ajax_external_data_source'
+                    value = dataRefLast.label
+                  else
+                    value = dataRefLast[attributeName]
+              else
+                switch dataType
+                  when 'textarea'
+                    value = if dataRef then App.Utils.text2html(dataRef) else '-'
+                  when 'datetime'
+                    value = App.i18n.translateTimestamp(dataRef)
+                  when 'date'
+                    value = App.i18n.translateDate(dataRef)
+                  when 'multiselect'
+                    dataRef = dataRef || []
+                    value = dataRef.map((element) -> element).join(', ')
+                  when 'autocompletion_ajax_external_data_source'
+                    value = dataRef.value || '-'
 
         # as fallback use value of toString()
         if !value
@@ -935,24 +982,32 @@ class App.Utils
     @_formDiffChanges(dataNow, dataLast)
 
   @_formDiffChanges: (dataNow, dataLast, changes = {}) ->
-    for dataNowkey, dataNowValue of dataNow
-      if dataNow[dataNowkey] isnt dataLast[dataNowkey]
-        if _.isArray( dataNow[dataNowkey] ) && _.isArray( dataLast[dataNowkey] )
-          diffFromLast = _.difference( dataNow[dataNowkey], dataLast[dataNowkey] )
-          diffFromNow  = _.difference( dataLast[dataNowkey], dataNow[dataNowkey] )
+    for dataNowKey, dataNowValue of dataNow
+      if dataNowValue isnt dataLast[dataNowKey]
+        if _.isArray( dataNowValue ) && _.isArray( dataLast[dataNowKey] )
+          diffFromLast = _.difference( dataNowValue, dataLast[dataNowKey] )
+          diffFromNow  = _.difference( dataLast[dataNowKey], dataNowValue )
           diff         = diffFromLast.concat(diffFromNow)
 
           if !_.isEmpty( diff )
-            changes[dataNowkey] = diff
-        else if _.isObject( dataNow[dataNowkey] ) &&  _.isObject( dataLast[dataNowkey] )
-          changes = @_formDiffChanges( dataNow[dataNowkey], dataLast[dataNowkey], changes )
+            changes[dataNowKey] = diff
+        else if _.isObject( dataNowValue ) &&  _.isObject( dataLast[dataNowKey] )
+          if @_formDataStructureField(dataNowValue) || @_formDataStructureField(dataLast[dataNowKey])
+            changed = !_.isEqual(dataNowValue, dataLast[dataNowKey])
+            if changed
+              changes[dataNowKey] = dataNowValue
+          else
+            changes = @_formDiffChanges( dataNowValue, dataLast[dataNowKey], changes )
+        else if _.isObject( dataNowValue ) && _.isEmpty(dataNowValue) && dataLast[dataNowKey] is undefined
+        else if _.isObject( dataNowValue ) && _.isEmpty(dataNowValue) && dataLast[dataNowKey] is undefined
+
         # fix for issue #2042 - incorrect notification when closing a tab after setting up an object
         # Ignore the diff if both conditions are true:
         # 1. current value is the empty string (no user input yet)
         # 2. no previous value (it's a newly added attribute)
-        else if dataNow[dataNowkey] == '' && !dataLast[dataNowkey]?
+        else if dataNowValue == '' && !dataLast[dataNowKey]?
         else
-          changes[dataNowkey] = dataNow[dataNowkey]
+          changes[dataNowKey] = dataNowValue
     changes
 
   @_formDiffNormalizer: (data) ->
@@ -986,25 +1041,32 @@ class App.Utils
 
     value
 
+  @_formDataStructureField: (value) ->
+    keys = Object.keys(value)
+    _.includes(keys, 'value') && _.includes(keys, 'label')
+
   # check if attachment is referenced in message
   @checkAttachmentReference: (message) ->
     return false if !message
 
-    # remove blockquote from message, check only the unquoted content
+    # remove blockquote, signatures and images from message, check only the unquoted content
     tmp = $('<div>' + message + '</div>')
-    tmp.find('blockquote').remove()
+    tmp.find('blockquote, img, div[data-signature="true"]').remove()
+
     text = tmp.text()
 
-    matchwords = [__('Attachment'), __('attachment'), __('Attached'), __('attached'), __('Enclosed'), __('enclosed'), __('Enclosure'), __('enclosure')]
-    for word in matchwords
-      # en
-      attachmentTranslatedRegExp = new RegExp("\\W#{word}\\W", 'i')
-      return word if text.match(attachmentTranslatedRegExp)
+    matchwords = __('attachment,attached,enclosed,enclosure')
 
-      # user locale
-      attachmentTranslated = App.i18n.translateContent(word)
-      attachmentTranslatedRegExp = new RegExp("\\W#{attachmentTranslated}\\W", 'i')
-      return attachmentTranslated if text.match(attachmentTranslatedRegExp)
+    #en
+    for word in matchwords.split(',')
+      regexp = new RegExp("\\b#{word}\\b", 'i')
+      return word if text.match(regexp)
+
+    # user locale
+    for word in App.i18n.translateContent(matchwords).split(',')
+      regexp = new RegExp("\\b#{word}\\b", 'i')
+      return word if text.match(regexp)
+
     false
 
   # human readable file size
@@ -1130,7 +1192,7 @@ class App.Utils
     # search: <svg class="icon icon-([^\s]+)\s([^"]*).*<\/svg>
     # replace: <%- @Icon('$1', '$2') %>
     #
-    path = if window.svgPolyfill then '' else 'assets/images/icons.svg'
+    path = if window.svgPolyfill then '' else App.Config.get('icons_url')
     "<svg class=\"icon icon-#{name} #{className}\"><use xlink:href=\"#{path}#icon-#{name}\" /></svg>"
 
   @fontIcon: (name, font, className = '') ->
@@ -1554,3 +1616,13 @@ class App.Utils
       display_name = '"' + display_name.replace(/([\\"])/g, '\\$1') + '"'
 
     return display_name + ' <' + email + '>'
+
+  # Truncate the passed text to desired length
+  @truncate: (input, length = 100) ->
+    return input if not input
+
+    string = input.replace(/<([^>]+)>/g, '')
+
+    return string if string.length < length
+
+    string.substring(0, length) + '…'

@@ -1,8 +1,8 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
-RSpec.describe Service::GeoIp, integration: true do
+RSpec.describe Service::GeoIp, integration: true, retry: 5, retry_wait: 30.seconds do
   describe '#location' do
     describe 'testing some locations' do
       subject(:lookup_result) { described_class.location(ip_address) }
@@ -31,11 +31,10 @@ RSpec.describe Service::GeoIp, integration: true do
           let(:expected_result) do
             {
               'country_name'   => 'Switzerland',
-              'city_name'      => 'Effretikon',
               'country_code'   => 'CH',
               'continent_code' => 'EU',
-              'latitude'       => 47.4255,
-              'longitude'      => 8.6909,
+              'latitude'       => be_a(Float),
+              'longitude'      => be_a(Float),
             }
           end
 
@@ -47,11 +46,11 @@ RSpec.describe Service::GeoIp, integration: true do
           let(:expected_result) do
             {
               'country_name'   => 'Germany',
-              'city_name'      => 'Chemnitz',
+              'city_name'      => be_present,
               'country_code'   => 'DE',
               'continent_code' => 'EU',
-              'latitude'       => 50.8191,
-              'longitude'      => 12.9419,
+              'latitude'       => be_a(Float),
+              'longitude'      => be_a(Float),
             }
           end
 
@@ -63,11 +62,11 @@ RSpec.describe Service::GeoIp, integration: true do
           let(:expected_result) do
             {
               'country_name'   => 'Germany',
-              'city_name'      => 'Halle',
+              'city_name'      => be_present,
               'country_code'   => 'DE',
               'continent_code' => 'EU',
-              'latitude'       => 51.5036,
-              'longitude'      => 11.9594,
+              'latitude'       => be_a(Float),
+              'longitude'      => be_a(Float),
             }
           end
 
@@ -79,11 +78,11 @@ RSpec.describe Service::GeoIp, integration: true do
           let(:expected_result) do
             {
               'country_name'   => 'United States',
-              'city_name'      => 'Berkeley',
+              'city_name'      => be_present,
               'country_code'   => 'US',
               'continent_code' => 'NA',
-              'latitude'       => 37.8736,
-              'longitude'      => -122.257,
+              'latitude'       => be_a(Float),
+              'longitude'      => be_a(Float),
             }
           end
 

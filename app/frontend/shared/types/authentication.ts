@@ -1,7 +1,10 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import type { EnumAuthenticationProvider } from '#shared/graphql/types.ts'
 
 export interface ThirdPartyAuthProvider {
-  name: string
+  name: EnumAuthenticationProvider
+  label: string
   enabled: boolean
   icon: string
   url: string

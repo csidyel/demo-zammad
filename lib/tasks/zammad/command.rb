@@ -1,4 +1,6 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+require 'English'
 
 module Tasks
   module Zammad
@@ -26,6 +28,11 @@ module Tasks
         raise "The required method 'description' is not implemented by #{name}"
       end
 
+      # Needs to be implemented by child classes.
+      def self.task_handler
+        raise "The required method 'task_handler' is not implemented by #{name}"
+      end
+
       def self.register_rake_task
         Rake::Task.define_task task_name => :environment do
           run_task
@@ -50,7 +57,25 @@ module Tasks
           abort "Error: wrong number of arguments given.\n#{usage}"
         end
         # Rake will try to run additional arguments as tasks, so make sure nothing happens for these.
-        args[1..].each { |a| Rake::Task.define_task(a.to_sym => :environment) {} }  # rubocop:disable Lint/EmptyBlock
+        args[1..].each { |a| Rake::Task.define_task(a.to_sym => :environment) {} } # rubocop:disable Lint/EmptyBlock
+      end
+
+      # Rake switches the current working directory to the Rails root.
+      # Make sure that relative pathnames still get resolved correctly.
+      # Note: This works only when invoked via 'rake', not 'rails'!
+      def self.resolve_filepath(path)
+        given_path = Pathname.new(path)
+
+        return given_path if given_path.absolute?
+
+        Pathname.new(Rake.original_dir).join(path)
+      end
+
+      def self.exec_command(cmd)
+        puts "> #{cmd}"
+        puts `#{cmd}`
+        puts ''
+        raise if !$CHILD_STATUS.success?
       end
     end
   end

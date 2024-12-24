@@ -1,21 +1,24 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { getAllByTestId, getByTestId, within } from '@testing-library/vue'
+
+import { getByIconName } from '#tests/support/components/iconQueries.ts'
 import { visitView } from '#tests/support/components/visitView.ts'
+import { mockUserCurrent } from '#tests/support/mock-userCurrent.ts'
+import { mockTicketOverviews } from '#tests/support/mocks/ticket-overviews.ts'
+
 import {
   NotificationTypes,
   useNotifications,
 } from '#shared/components/CommonNotifications/index.ts'
-import { mockAccount } from '#tests/support/mock-account.ts'
-import { getByIconName } from '#tests/support/components/iconQueries.ts'
-import { mockTicketOverviews } from '#tests/support/mocks/ticket-overviews.ts'
+
 import { getTicketOverviewStorage } from '#mobile/entities/ticket/helpers/ticketOverviewStorage.ts'
 
 const actualLocalStorage = window.localStorage
 
 describe('playing with overviews', () => {
   beforeEach(() => {
-    mockAccount({ id: '666' })
+    mockUserCurrent({ id: '666' })
     mockTicketOverviews()
   })
 
@@ -29,7 +32,7 @@ describe('playing with overviews', () => {
     const { saveOverviews, LOCAL_STORAGE_NAME } = getTicketOverviewStorage()
     saveOverviews(['1', '2'])
 
-    const view = await visitView('/favorite/ticker-overviews/edit')
+    const view = await visitView('/favorite/ticket-overviews/edit')
 
     const includedOverviewsUtils = within(
       await view.findByTestId('includedOverviews'),
@@ -67,9 +70,9 @@ describe('playing with overviews', () => {
   it('removing/adding overviews', async () => {
     const { LOCAL_STORAGE_NAME } = getTicketOverviewStorage()
 
-    const view = await visitView('/favorite/ticker-overviews/edit')
+    const view = await visitView('/favorite/ticket-overviews/edit')
 
-    const buttonsRemove = await view.findAllByIconName('mobile-minus')
+    const buttonsRemove = await view.findAllByIconName('minus')
 
     expect(buttonsRemove).toHaveLength(3)
 
@@ -77,7 +80,7 @@ describe('playing with overviews', () => {
 
     await view.events.click(overviewOneButton)
 
-    expect(view.getAllByIconName('mobile-minus')).toHaveLength(2)
+    expect(view.getAllByIconName('minus')).toHaveLength(2)
 
     const overviewOneInExcluded = getByTestId(
       view.getByTestId('excludedOverviews'),
@@ -86,7 +89,7 @@ describe('playing with overviews', () => {
 
     expect(overviewOneInExcluded).toHaveTextContent('Overview 1')
 
-    const buttonAdd = getByIconName(overviewOneInExcluded, 'mobile-plus')
+    const buttonAdd = getByIconName(overviewOneInExcluded, 'plus')
 
     await view.events.click(buttonAdd)
 
@@ -111,6 +114,7 @@ describe('playing with overviews', () => {
     const { notify } = useNotifications()
 
     expect(notify).toHaveBeenCalledWith({
+      id: 'overview-save',
       type: NotificationTypes.Success,
       message: 'Ticket Overview settings are saved.',
     })
@@ -119,9 +123,9 @@ describe('playing with overviews', () => {
   it('gives error, when trying to save no overviews', async () => {
     const { saveOverviews } = getTicketOverviewStorage()
     saveOverviews(['1'])
-    const view = await visitView('/favorite/ticker-overviews/edit')
+    const view = await visitView('/favorite/ticket-overviews/edit')
 
-    const buttonRemove = await view.findByIconName('mobile-minus')
+    const buttonRemove = await view.findByIconName('minus')
 
     await view.events.click(buttonRemove)
     await view.events.click(view.getByText('Save'))
@@ -129,6 +133,7 @@ describe('playing with overviews', () => {
     const { notify } = useNotifications()
 
     expect(notify).toHaveBeenCalledWith({
+      id: 'no-overview',
       type: NotificationTypes.Error,
       message: 'Please select at least one ticket overview',
     })

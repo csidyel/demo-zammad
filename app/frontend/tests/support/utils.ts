@@ -1,12 +1,14 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { nextTick } from 'vue'
 
 import type { ViewerOptions } from '#shared/composables/useImageViewer.ts'
-import type { Ref } from 'vue'
-import { nextTick } from 'vue'
-import type { Mock } from 'vitest'
-import type { MockGraphQLInstance } from './mock-graphql-api'
 
-const state = Symbol('test:state')
+import type { MockGraphQLInstance } from './mock-graphql-api'
+import type { Mock } from 'vitest'
+import type { Ref } from 'vue'
+
+const state = Symbol('test-state')
 
 interface TestState {
   imageViewerOptions: Ref<ViewerOptions>
@@ -84,7 +86,10 @@ export const nullableMock = <T extends object>(obj: T): T => {
         return null
       }
       const value = Reflect.get(target, prop, receiver)
-      if (Array.isArray(value)) {
+      if (
+        Array.isArray(value) &&
+        value.every((item) => typeof item === 'object' && item !== null)
+      ) {
         return value.map(nullableMock)
       }
       if (typeof value === 'object' && value !== null) {
@@ -93,4 +98,17 @@ export const nullableMock = <T extends object>(obj: T): T => {
       return value
     },
   })
+}
+
+export const dataURItoBlob = (dataURI: string) => {
+  const byteString = atob(dataURI.split(',')[1])
+  const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0]
+
+  const ab = new ArrayBuffer(byteString.length)
+  const ia = new Uint8Array(ab)
+  for (let i = 0; i < byteString.length; i += 1) {
+    ia[i] = byteString.charCodeAt(i)
+  }
+
+  return new Blob([ab], { type: mimeString })
 }

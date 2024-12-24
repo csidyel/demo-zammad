@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class KnowledgeBase::Public::CategoriesController < KnowledgeBase::Public::BaseController
   skip_before_action :load_kb, only: :forward_root
@@ -34,7 +34,7 @@ class KnowledgeBase::Public::CategoriesController < KnowledgeBase::Public::BaseC
 
     path = help_root_path(locale: primary_locale.locale)
 
-    redirect_to custom_path_if_needed(path, knowledge_base, full: true)
+    redirect_to custom_path_if_needed(path, knowledge_base, full: true), allow_other_host: true
   end
 
   private

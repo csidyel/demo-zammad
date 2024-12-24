@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module ApplicationModel::CanLookup
   extend ActiveSupport::Concern
@@ -26,9 +26,7 @@ returns
       attr.transform_keys!(&:to_sym).slice!(*lookup_keys)
       raise ArgumentError, "Valid lookup attribute required (#{lookup_keys.join(', ')})" if attr.empty?
 
-      return find_by(attr) if columns.exclude?('updated_at')
-
-      Rails.cache.fetch("#{self}/#{latest_change}/lookup/#{Digest::MD5.hexdigest(Marshal.dump(attr))}") do
+      Auth::RequestCache.fetch_value("#{self}/lookup/#{Digest::MD5.hexdigest(Marshal.dump(attr))}") do
         find_by(attr)
       end
     end

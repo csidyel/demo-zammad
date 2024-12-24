@@ -1,4 +1,4 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import type { RouteRecordRaw } from 'vue-router'
 
@@ -27,7 +27,7 @@ const route: RouteRecordRaw[] = [
     },
   },
   {
-    path: '/favorite/ticker-overviews/edit',
+    path: '/favorite/ticket-overviews/edit',
     props: true,
     name: 'TicketOverviews',
     component: () => import('./views/FavoriteTicketOverviewsEdit.vue'),

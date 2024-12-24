@@ -1,9 +1,11 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { faker } from '@faker-js/faker'
+
 import type { Ticket } from '#shared/graphql/types.ts'
-import type { DeepPartial } from '#shared/types/utils.ts'
 import { convertToGraphQLId } from '#shared/graphql/utils.ts'
+import type { DeepPartial } from '#shared/types/utils.ts'
+
 import type { ResolversMeta } from '../builders/index.ts'
 
 export default (
@@ -28,7 +30,7 @@ export default (
     policy: {
       destroy: true,
       update: true,
-      agentReadAccess: permissions?.names.includes('ticket.agent') ?? false,
+      agentReadAccess: !!permissions?.names.includes('ticket.agent'),
     },
     createArticleType: {
       __typename: 'TicketArticleType',
@@ -36,6 +38,8 @@ export default (
       name: 'email',
       communication: false,
     },
+    checklist: null,
+    referencingChecklistTickets: [],
   }
   if (meta.variables.ticketNumber) {
     ticket.number = meta.variables.ticketNumber as string

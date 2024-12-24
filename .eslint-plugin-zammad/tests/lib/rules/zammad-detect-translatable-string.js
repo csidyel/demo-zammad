@@ -1,4 +1,4 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 /**
  * @fileoverview Detect unmarked translatable strings
@@ -9,8 +9,11 @@
 // Requirements
 //------------------------------------------------------------------------------
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { RuleTester } = require('eslint')
+
 const rule = require('../../../lib/rules/zammad-detect-translatable-string.js')
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 //------------------------------------------------------------------------------
 // Tests

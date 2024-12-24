@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -17,7 +17,7 @@ RSpec.describe 'Login', authenticated_as: false, type: :system do
         fill_in 'username', with: 'admin@example.com'
         fill_in 'password', with: 'wrong'
 
-        click_button
+        click_on('Sign in')
       end
 
       expect(page).to have_css('#login .alert')
@@ -26,6 +26,11 @@ RSpec.describe 'Login', authenticated_as: false, type: :system do
 
   context 'with enabled two factor authentication' do
     let(:user) { User.find_by(login: 'admin@example.com') }
+
+    before do
+      Setting.set('two_factor_authentication_method_security_keys', true)
+      Setting.set('two_factor_authentication_method_authenticator_app', true)
+    end
 
     context 'with security keys method' do
       before do
@@ -43,7 +48,7 @@ RSpec.describe 'Login', authenticated_as: false, type: :system do
           fill_in 'username', with: 'admin@example.com'
           fill_in 'password', with: 'test'
 
-          click_button
+          click_on('Sign in')
         end
       end
 
@@ -77,7 +82,7 @@ RSpec.describe 'Login', authenticated_as: false, type: :system do
           fill_in 'username', with: 'admin@example.com'
           fill_in 'password', with: 'test'
 
-          click_button
+          click_on('Sign in')
         end
       end
 
@@ -85,7 +90,7 @@ RSpec.describe 'Login', authenticated_as: false, type: :system do
         within('#login') do
           fill_in 'security_code', with: token
 
-          click_button
+          click_on('Sign in')
         end
 
         expect(page).to have_no_selector('#login')
@@ -95,7 +100,7 @@ RSpec.describe 'Login', authenticated_as: false, type: :system do
         within('#login') do
           fill_in 'security_code', with: 'asd'
 
-          click_button
+          click_on('Sign in')
         end
 
         expect(page).to have_css('#login .alert')
@@ -117,7 +122,7 @@ RSpec.describe 'Login', authenticated_as: false, type: :system do
           fill_in 'username', with: 'admin@example.com'
           fill_in 'password', with: 'test'
 
-          click_button
+          click_on('Sign in')
         end
       end
 
@@ -132,7 +137,7 @@ RSpec.describe 'Login', authenticated_as: false, type: :system do
         it 'login with correct payload' do
           within('#login') do
             fill_in 'security_code', with: token
-            click_button
+            click_on('Sign in')
           end
 
           expect(page).to have_no_selector('#login')
@@ -141,7 +146,7 @@ RSpec.describe 'Login', authenticated_as: false, type: :system do
         it 'login with wrong payload' do
           within('#login') do
             fill_in 'security_code', with: 'wrong token'
-            click_button
+            click_on('Sign in')
           end
 
           expect(page).to have_css('#login .alert')

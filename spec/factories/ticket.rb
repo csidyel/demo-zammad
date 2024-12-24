@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 FactoryBot.define do
   factory :ticket do
@@ -24,7 +24,8 @@ FactoryBot.define do
 
       preferences do
         {
-          channel_id: channel.id,
+          channel_id:   channel.id,
+          channel_area: channel.area,
         }
       end
     end
@@ -49,6 +50,11 @@ FactoryBot.define do
     factory :telegram_ticket do
       with_channel
       channel_name { :telegram_channel }
+    end
+
+    factory :whatsapp_ticket do
+      with_channel
+      channel_name { :whatsapp_channel }
     end
 
     factory :facebook_ticket do

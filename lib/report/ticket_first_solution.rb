@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Report::TicketFirstSolution
 
@@ -18,7 +18,7 @@ returns
 =end
 
   def self.aggs(params_origin)
-    params = params_origin.dup
+    params = params_origin.deep_dup
 
     result = []
     case params[:interval]

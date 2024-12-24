@@ -1,9 +1,10 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import type {
   ObjectSelectOption,
   ObjectSelectValue,
 } from '#shared/entities/object-attributes/form/resolver/fields/select.ts'
+
 import type { FormKitFrameworkContext, FormKitNode } from '@formkit/core'
 import type { Dictionary } from 'ts-essentials'
 

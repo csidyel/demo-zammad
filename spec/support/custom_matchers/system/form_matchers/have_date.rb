@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module FormMatchers
   extend RSpec::Matchers::DSL
@@ -35,7 +35,7 @@ module FormMatchers
       end
 
       # TODO: Support locales other than `en`, depending on the language of the current user.
-      datetime.strftime('%m/%d/%Y %l:%M %P')
+      datetime.strftime('%m/%d/%Y %-l:%M %P')
     end
   end
 
@@ -44,4 +44,5 @@ end
 
 RSpec.configure do |config|
   config.include FormMatchers, type: :system, app: :mobile
+  config.include FormMatchers, type: :system, app: :desktop_view
 end

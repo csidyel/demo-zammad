@@ -1,8 +1,10 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { createNode } from '@formkit/core'
 import { createLibraryPlugin } from '@formkit/inputs'
+
 import { i18n } from '#shared/i18n.ts'
+
 import translateWrapperProps from '../translateWrapperProps.ts'
 
 const map = new Map([

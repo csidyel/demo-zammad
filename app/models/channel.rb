@@ -1,12 +1,18 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Channel < ApplicationModel
   include Channel::Assets
+  include Channel::Area::Whatsapp
 
   belongs_to :group, optional: true
 
   store :options
   store :preferences
+
+  scope :active, -> { where(active: true) }
+  scope :in_area, ->(area) { where(area: area) }
+
+  validates_with Validations::ChannelEmailAccountUniquenessValidator
 
   after_create   :email_address_check
   after_update   :email_address_check
@@ -39,10 +45,12 @@ fetch one account
 
 =end
 
-  def fetch(force = false)
+  def fetch(force = false, driver_call_result = {})
+    args            = options[:args]
     adapter         = options[:adapter]
     adapter_options = options
     if options[:inbound] && options[:inbound][:adapter]
+      args            = options[:inbound][:args]
       adapter         = options[:inbound][:adapter]
       adapter_options = options[:inbound][:options]
     end
@@ -53,9 +61,10 @@ fetch one account
     driver_instance = driver_class.new
     return if !force && !driver_instance.fetchable?(self)
 
-    result = driver_instance.fetch(adapter_options, self)
+    result = driver_instance.fetch(adapter_options, self, *args)
     self.status_in   = result[:result]
     self.last_log_in = result[:notice]
+    driver_call_result.replace result
     preferences[:last_fetch] = Time.zone.now
     save!
     true
@@ -169,7 +178,7 @@ stream all accounts
         if @@channel_stream[channel_id].blank? && @@channel_stream_started_till_at[channel_id].present?
           wait_in_seconds = @@channel_stream_started_till_at[channel_id] - (Time.zone.now - local_delay_before_reconnect.seconds)
           if wait_in_seconds.positive?
-            logger.info "skipp channel (#{channel_id}) for streaming, already tried to connect or connection was active within the last #{local_delay_before_reconnect} seconds - wait another #{wait_in_seconds} seconds"
+            logger.info "skip channel (#{channel_id}) for streaming, already tried to connect or connection was active within the last #{local_delay_before_reconnect} seconds - wait another #{wait_in_seconds} seconds"
             next
           end
         end
@@ -254,20 +263,33 @@ send via account
 
     driver_class    = self.class.driver_class(adapter)
     driver_instance = driver_class.new
-    result = driver_instance.send(adapter_options, params, notification)
+    result = driver_instance.deliver(adapter_options, params, notification)
     self.status_out   = 'ok'
     self.last_log_out = ''
     save!
 
     result
   rescue => e
-    error = "Can't use Channel::Driver::#{adapter.to_classname}: #{e.inspect}"
-    logger.error error
-    logger.error e
-    self.status_out = 'error'
-    self.last_log_out = error
+    handle_delivery_error!(e, adapter)
+  end
+
+  def handle_delivery_error!(error, adapter)
+    message = "Can't use Channel::Driver::#{adapter.to_classname}: #{error.inspect}"
+
+    if error.respond_to?(:retryable?) && error.retryable?
+      self.status_out = 'ok'
+      self.last_log_out = ''
+    else
+      logger.error message
+      logger.error error
+
+      self.status_out = 'error'
+      self.last_log_out = error.inspect
+    end
+
     save!
-    raise error
+
+    raise DeliveryError.new(message, error)
   end
 
 =begin
@@ -356,4 +378,19 @@ get instance of channel driver
     EmailAddress.channel_cleanup
   end
 
+  class DeliveryError < StandardError
+    attr_reader :original_error
+
+    def initialize(message, original_error)
+      super(message)
+
+      @original_error = original_error
+    end
+
+    def retryable?
+      return true if !original_error.respond_to?(:retryable?)
+
+      original_error.retryable?
+    end
+  end
 end

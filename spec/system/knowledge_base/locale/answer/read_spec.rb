@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -89,6 +89,72 @@ RSpec.describe 'Knowledge Base Locale Answer Read', authenticated_as: true, type
 
       within :active_content do
         expect(page).to have_text('new title')
+      end
+    end
+  end
+
+  context 'when switching between locales' do
+    let(:long_locale_name)   { 'sr-cyrl-rs' }
+    let(:long_system_locale) { Locale.find_by(locale: long_locale_name) }
+    let(:long_kb_locale)     { create(:knowledge_base_locale, knowledge_base: knowledge_base, system_locale: long_system_locale) }
+
+    let(:short_locale_name)   { 'lt' }
+    let(:short_system_locale) { Locale.find_by(locale: short_locale_name) }
+    let(:short_kb_locale)     { create(:knowledge_base_locale, knowledge_base: knowledge_base, system_locale: short_system_locale) }
+
+    before do
+      long_kb_locale && short_kb_locale
+    end
+
+    it 'switches from long locale back to main locale' do
+      open_page long_locale_name
+      select_locale 'English'
+
+      within '.knowledge-base-article' do
+        expect(page).to have_text(published_answer.translations.first.title)
+      end
+    end
+
+    it 'switches from short locale back to main locale' do
+      open_page short_locale_name
+      select_locale 'English'
+
+      within '.knowledge-base-article' do
+        expect(page).to have_text(published_answer.translations.first.title)
+      end
+    end
+
+    it 'switches from main locale to another locale' do
+      another_translation = create(:knowledge_base_answer_translation, kb_locale: short_kb_locale, answer: published_answer)
+
+      open_page locale_name
+      select_locale 'Lietuvių'
+
+      within '.knowledge-base-article' do
+        expect(page).to have_text(another_translation.title)
+      end
+    end
+
+    it 'switches to invalid locale and back' do
+      open_page('lol')
+
+      in_modal do
+        click_on 'Open in primary locale'
+      end
+
+      within '.knowledge-base-article' do
+        expect(page).to have_text(published_answer.translations.first.title)
+      end
+    end
+
+    def open_page(locale_name)
+      visit "#knowledge_base/#{knowledge_base.id}/locale/#{locale_name}/answer/#{published_answer.id}"
+    end
+
+    def select_locale(text)
+      within '.js-pickedLanguage + .dropdown' do
+        click '.icon-arrow-down'
+        click 'li a', text: text
       end
     end
   end

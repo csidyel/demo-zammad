@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -50,6 +50,40 @@ RSpec.describe 'iCal endpoints', type: :request do
       get '/ical/tickets', headers: { 'REQUEST_METHOD' => 'PROPFIND' }
 
       expect(response.body).to match(%r{BEGIN:VCALENDAR})
+    end
+  end
+
+  describe 'methods', authenticated_as: :user do
+    let(:group)    { create(:group) }
+    let(:user)     { create(:agent) }
+    let(:ticket_1) { create(:ticket, title: SecureRandom.uuid, group: group, owner: user, state_name: 'open') }
+    let(:ticket_2) { create(:ticket, title: SecureRandom.uuid, group: group, owner: user, state_name: 'pending reminder', pending_time: 1.day.from_now) }
+
+    before do
+      user.groups << group
+      ticket_1
+      ticket_2
+    end
+
+    it 'returns open tickets', :aggregate_failures do
+      get '/ical/tickets/new_open'
+
+      expect(response.body).to include(ticket_1.title)
+      expect(response.body).not_to include(ticket_2.title)
+    end
+
+    it 'returns pending tickets', :aggregate_failures do
+      get '/ical/tickets/pending'
+
+      expect(response.body).not_to include(ticket_1.title)
+      expect(response.body).to include(ticket_2.title)
+    end
+
+    it 'raises error on unknown method', :aggregate_failures do
+      get '/ical/tickets/xxx'
+
+      expect(json_response['error']).to eq('An unknown method name was requested.')
+      expect(response).to have_http_status(:unprocessable_entity)
     end
   end
 end

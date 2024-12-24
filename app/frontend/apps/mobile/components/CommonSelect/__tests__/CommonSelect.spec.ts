@@ -1,10 +1,14 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { ref } from 'vue'
+
+import { renderComponent } from '#tests/support/components/index.ts'
 
 import { i18n } from '#shared/i18n.ts'
-import { renderComponent } from '#tests/support/components/index.ts'
-import type { Ref } from 'vue'
-import { ref } from 'vue'
+
 import CommonSelect, { type Props } from '../CommonSelect.vue'
+
+import type { Ref } from 'vue'
 
 const options = [
   {
@@ -63,7 +67,7 @@ describe('interacting with CommonSelect', () => {
     expect(
       view.getByIconName((name, node) => {
         return (
-          name === '#icon-mobile-check' &&
+          name === '#icon-check' &&
           !node?.parentElement?.classList.contains('invisible')
         )
       }),
@@ -92,7 +96,7 @@ describe('interacting with CommonSelect', () => {
 
     expect(modelValue.value).toEqual([0])
 
-    expect(view.queryAllByIconName('mobile-check-box-yes')).toHaveLength(1)
+    expect(view.queryAllByIconName('check-box-yes')).toHaveLength(1)
     await view.events.click(view.getByText('Item A'))
 
     expect(modelValue.value).toEqual([])
@@ -102,7 +106,7 @@ describe('interacting with CommonSelect', () => {
 
     expect(modelValue.value).toEqual([0, 1])
 
-    expect(view.queryAllByIconName('mobile-check-box-yes')).toHaveLength(2)
+    expect(view.queryAllByIconName('check-box-yes')).toHaveLength(2)
   })
 
   test("passive mode doesn't change local value, but emits select", async () => {

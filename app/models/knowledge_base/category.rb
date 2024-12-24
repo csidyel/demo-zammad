@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class KnowledgeBase::Category < ApplicationModel
   include HasTranslations
@@ -44,7 +44,7 @@ class KnowledgeBase::Category < ApplicationModel
   def assets(data = {})
     return data if assets_added_to?(data)
 
-    data = super(data)
+    data = super
     data = knowledge_base.assets(data)
 
     data = ApplicationModel::CanAssets.reduce(translations, data)

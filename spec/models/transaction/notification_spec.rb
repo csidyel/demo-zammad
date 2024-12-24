@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -42,19 +42,19 @@ RSpec.describe Transaction::Notification, type: :model do
     let(:reason_en) { 'You are receiving this because you are the owner of this ticket.' }
     let(:reason_de) do
       Translation.translate('de-de', reason_en).tap do |translated|
-        expect(translated).not_to eq(reason_en)
+        expect(translated).not_to eq(reason_en) # rubocop:disable RSpec/ExpectInLet
       end
     end
 
     before do
-      allow(NotificationFactory::Mailer).to receive(:send)
+      allow(NotificationFactory::Mailer).to receive(:deliver)
     end
 
     it 'notification includes English footer' do
       run(ticket, user, 'reminder_reached')
 
       expect(NotificationFactory::Mailer)
-        .to have_received(:send)
+        .to have_received(:deliver)
         .with hash_including body: %r{#{reason_en}}
     end
 
@@ -68,7 +68,7 @@ RSpec.describe Transaction::Notification, type: :model do
         run(ticket, user, 'reminder_reached')
 
         expect(NotificationFactory::Mailer)
-          .to have_received(:send)
+          .to have_received(:deliver)
           .with hash_including body: %r{#{reason_de}}
       end
     end
@@ -136,6 +136,43 @@ RSpec.describe Transaction::Notification, type: :model do
 
           expect(replacements).to include replacement_2
         end
+      end
+    end
+  end
+
+  describe 'SMTP errors' do
+    let(:group)    { create(:group) }
+    let(:user)     { create(:agent, groups: [group]) }
+    let(:ticket)   { create(:ticket, owner: user, state_name: 'open', pending_time: Time.current) }
+    let(:response) { Net::SMTP::Response.new(response_status_code, 'mocked SMTP response') }
+    let(:error)    { Net::SMTPFatalError.new(response) }
+
+    before do
+      allow_any_instance_of(Net::SMTP).to receive(:start).and_raise(error)
+
+      Service::System::SetEmailNotificationConfiguration
+        .new(
+          adapter:           'smtp',
+          new_configuration: {}
+        ).execute
+    end
+
+    context 'when there is a problem with the sending SMTP server' do
+      let(:response_status_code) { 535 }
+
+      it 'raises an eroror' do
+        expect { run(ticket, user, 'reminder_reached') }
+          .to raise_error(Channel::DeliveryError)
+      end
+    end
+
+    context 'when there is a problem with the receiving SMTP server' do
+      let(:response_status_code) { 550 }
+
+      it 'logs the information about failed email delivery' do
+        allow(Rails.logger).to receive(:info)
+        run(ticket, user, 'reminder_reached')
+        expect(Rails.logger).to have_received(:info)
       end
     end
   end

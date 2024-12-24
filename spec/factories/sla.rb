@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 FactoryBot.define do
   factory :sla do
@@ -11,7 +11,7 @@ FactoryBot.define do
       {
         'ticket.state_id' => {
           operator: 'is',
-          value:    Ticket::State.by_category(:open).pluck(:id),
+          value:    Ticket::State.by_category_ids(:open),
         },
       }
     end

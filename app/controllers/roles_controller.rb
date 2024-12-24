@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class RolesController < ApplicationController
   prepend_before_action :authenticate_and_authorize!
@@ -124,6 +124,10 @@ curl http://localhost/api/v1/roles.json -v -u #{login}:#{password} -H "Content-T
 
   def update
     model_update_render(Role, params)
+  end
+
+  def search
+    model_search_render(Role, params)
   end
 
 =begin

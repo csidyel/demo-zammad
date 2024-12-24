@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Gql::Subscriptions
   class ConfigUpdates < BaseSubscription
@@ -15,13 +15,14 @@ module Gql::Subscriptions
     end
 
     def update
-      setting = object
+      return no_update if !object.frontend
+      return no_update if object.preferences[:authentication] && !context.current_user?
 
-      if !setting.frontend || (setting.preferences[:authentication] && !context.current_user?)
-        return no_update
-      end
+      # Some setting values use interpolation to reference other settings.
+      # This is applied in `Setting.get`, thus direct reading of the value should be avoided.
+      value = Setting.get(object.name)
 
-      { setting: { key: setting.name, value: setting.state_current[:value] } }
+      { setting: { key: object.name, value: value } }
     end
   end
 end

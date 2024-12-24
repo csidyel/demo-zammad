@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Sla < ApplicationModel
   include ChecksClientNotification
@@ -13,7 +13,7 @@ class Sla < ApplicationModel
 
   core_workflow_screens 'create', 'edit'
 
-  validates  :name, presence: true
+  validates  :name, presence: true, uniqueness: { case_sensitive: false }
 
   validate   :cannot_have_response_and_update
 

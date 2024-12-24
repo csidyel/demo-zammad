@@ -1,16 +1,19 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import type { ShallowRef } from 'vue'
-import type { FormKitNode } from '@formkit/core'
 import { cloneDeep, isEqual } from 'lodash-es'
 import { computed, onMounted, onUnmounted } from 'vue'
+
+import type { FormRef } from '#shared/components/Form/types.ts'
+import { useConfirmation } from '#shared/composables/useConfirmation.ts'
+import type { TicketById } from '#shared/entities/ticket/types.ts'
+
 import CommonButton from '#mobile/components/CommonButton/CommonButton.vue'
 import CommonDialog from '#mobile/components/CommonDialog/CommonDialog.vue'
-import { closeDialog } from '#shared/composables/useDialog.ts'
-import type { TicketById } from '#shared/entities/ticket/types.ts'
-import type { FormRef } from '#shared/components/Form/types.ts'
-import { waitForConfirmation } from '#shared/utils/confirmation.ts'
+import { closeDialog } from '#mobile/composables/useDialog.ts'
+
+import type { FormKitNode } from '@formkit/core'
+import type { ShallowRef } from 'vue'
 
 interface Props {
   name: string
@@ -24,10 +27,10 @@ interface Props {
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  (e: 'showArticleForm'): void
-  (e: 'hideArticleForm'): void
-  (e: 'discard'): void
-  (e: 'done'): void
+  'show-article-form': []
+  'hide-article-form': []
+  discard: []
+  done: []
 }>()
 
 const label = computed(() =>
@@ -53,12 +56,14 @@ const dialogFormIsDirty = computed(() => {
   )
 })
 
+const { waitForConfirmation } = useConfirmation()
+
 const cancelDialog = async () => {
   if (dialogFormIsDirty.value) {
     const confirmed = await waitForConfirmation(
       __('Are you sure? You have changes that will get lost.'),
       {
-        buttonTitle: __('Discard changes'),
+        buttonLabel: __('Discard changes'),
         buttonVariant: 'danger',
       },
     )
@@ -80,7 +85,7 @@ const discardDialog = async () => {
   const confirmed = await waitForConfirmation(
     __('Are you sure? The prepared article will be removed.'),
     {
-      buttonTitle: __('Discard article'),
+      buttonLabel: __('Discard article'),
       buttonVariant: 'danger',
     },
   )
@@ -95,11 +100,11 @@ const discardDialog = async () => {
 }
 
 onMounted(() => {
-  emit('showArticleForm')
+  emit('show-article-form')
 })
 
 onUnmounted(() => {
-  emit('hideArticleForm')
+  emit('hide-article-form')
 })
 
 const close = () => {

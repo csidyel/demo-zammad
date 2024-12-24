@@ -1,10 +1,21 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module HasTaskbars
   extend ActiveSupport::Concern
 
   included do
     before_destroy :destroy_taskbars
+  end
+
+  class_methods do
+    # Defines the entities which are available for the taskbar.
+    def taskbar_entities(*entities)
+      @taskbar_entities ||= entities
+    end
+
+    def taskbar_ignore_state_updates_entities(*entities)
+      @taskbar_ignore_state_updates_entities ||= entities
+    end
   end
 
 =begin

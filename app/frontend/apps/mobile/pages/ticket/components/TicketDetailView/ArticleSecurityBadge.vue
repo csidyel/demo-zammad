@@ -1,7 +1,8 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import CommonSectionPopup from '#mobile/components/CommonSectionPopup/CommonSectionPopup.vue'
+import { computed, ref } from 'vue'
+
 import {
   NotificationTypes,
   useNotifications,
@@ -10,7 +11,8 @@ import { useTicketArticleRetrySecurityProcessMutation } from '#shared/entities/t
 import type { TicketArticleSecurityState } from '#shared/graphql/types.ts'
 import { i18n } from '#shared/i18n.ts'
 import { MutationHandler } from '#shared/server/apollo/handler/index.ts'
-import { computed, ref } from 'vue'
+
+import CommonSectionPopup from '#mobile/components/CommonSectionPopup/CommonSectionPopup.vue'
 
 export interface Props {
   articleId: string
@@ -22,8 +24,8 @@ const props = defineProps<Props>()
 
 const securityIcon = computed(() => {
   const { signingSuccess } = props.security
-  if (signingSuccess === false) return 'mobile-not-signed'
-  return 'mobile-unlock'
+  if (signingSuccess === false) return 'not-signed'
+  return 'unlock'
 })
 
 const hasError = computed(() => {
@@ -60,6 +62,7 @@ const tryAgain = async () => {
   const security = result?.ticketArticleRetrySecurityProcess?.retryResult
   if (!security) {
     notify({
+      id: 'retry-security-error',
       type: NotificationTypes.Error,
       message: __('The retried security process failed!'),
       timeout: 2000,
@@ -69,6 +72,7 @@ const tryAgain = async () => {
   if (security.type !== props.security.type) {
     // shouldn't be possible, we only support S/MIME
     notify({
+      id: 'security-mechanism-error',
       type: NotificationTypes.Error,
       message: __('Article uses different security mechanism.'),
       timeout: 2000,
@@ -81,11 +85,13 @@ const tryAgain = async () => {
 
   if (security.signingSuccess) {
     notify({
+      id: 'signature-verified',
       type: NotificationTypes.Success,
       message: __('The signature was successfully verified.'),
     })
   } else if (security.signingMessage) {
     notify({
+      id: 'signature-verification-failed',
       type: NotificationTypes.Error,
       message: __('Signature verification failed! %s'),
       messagePlaceholder: [i18n.t(security.signingMessage)],
@@ -96,11 +102,13 @@ const tryAgain = async () => {
 
   if (security.encryptionSuccess) {
     notify({
+      id: 'decryption-success',
       type: NotificationTypes.Success,
       message: __('Decryption was successful.'),
     })
   } else if (security.encryptionMessage) {
     notify({
+      id: 'decryption-failed',
       type: NotificationTypes.Error,
       message: __('Decryption failed! %s'),
       messagePlaceholder: [i18n.t(security.encryptionMessage)],
@@ -133,7 +141,7 @@ const popupItems = computed(() =>
     v-if="hasError"
     v-bind="$attrs"
     type="button"
-    class="inline-flex h-7 grow items-center gap-1 rounded-lg bg-yellow px-2 py-1 text-xs font-bold text-black"
+    class="bg-yellow inline-flex h-7 grow items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-black"
     @click.prevent="showPopup = !showPopup"
     @keydown.space.prevent="showPopup = !showPopup"
   >
@@ -152,13 +160,13 @@ const popupItems = computed(() =>
   >
     <CommonIcon
       v-if="security.encryptionSuccess"
-      name="mobile-lock"
+      name="lock"
       size="tiny"
       :label="$t('Encrypted')"
     />
     <CommonIcon
       v-if="security.signingSuccess"
-      name="mobile-signed"
+      name="signed"
       size="tiny"
       :label="$t('Signed')"
     />
@@ -170,7 +178,7 @@ const popupItems = computed(() =>
       >
         <div
           v-if="hasError"
-          class="flex w-full items-center justify-center gap-1 text-yellow"
+          class="text-yellow flex w-full items-center justify-center gap-1"
         >
           <CommonIcon :name="securityIcon" size="tiny" />
           {{ $t('Security Error') }}

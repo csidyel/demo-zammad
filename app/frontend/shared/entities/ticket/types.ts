@@ -1,13 +1,14 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import type { FileUploaded } from '#shared/components/Form/fields/FieldFile/types.ts'
+import type { SecurityValue } from '#shared/components/Form/fields/FieldSecurity/types.ts'
 import type { FormFieldValue } from '#shared/components/Form/types.ts'
-import type {
-  TicketQuery,
-  TicketArticlesQuery,
-  TicketLiveUser,
-  EnumTaskbarApp,
-  EnumSecurityOption,
+import {
+  type TicketQuery,
+  type TicketArticlesQuery,
+  type TicketLiveUser,
+  type EnumTaskbarApp,
+  type EnumSecurityOption,
 } from '#shared/graphql/types.ts'
 import type { ConfidentTake } from '#shared/types/utils.ts'
 
@@ -30,18 +31,17 @@ export type TicketView = 'agent' | 'customer'
 export interface TicketLiveAppUser {
   user: TicketLiveUser['user']
   editing: boolean
-  lastInteraction: string
+  lastInteraction?: string
   app: EnumTaskbarApp
+  isIdle?: boolean
 }
 
 export type TicketById = TicketQuery['ticket']
+
 export type TicketArticle = ConfidentTake<
   TicketArticlesQuery,
   'articles.edges.node'
 >
-
-export type TicketArticleAttachment =
-  TicketArticle['attachmentsWithoutInline'][number]
 
 export interface TicketCustomerUpdateFormData {
   customer_id: number
@@ -62,5 +62,44 @@ export interface TicketFormData {
   articleSenderType: TicketCreateArticleType
   tags: string[]
   security?: EnumSecurityOption[]
+  externalReferences: {
+    github: string[]
+    gitlab: string[]
+  }
   [index: string]: FormFieldValue
 }
+
+export interface TicketUpdateFormData {
+  group_id: number
+  owner_id?: number
+  state_id?: number
+  priority_id?: number
+  pending_time?: string
+  isDefaultFollowUpStateSet?: boolean
+  article?: {
+    articleType?: string
+    body?: string
+    internal?: boolean
+    cc?: string[]
+    subtype?: string
+    inReplyTo?: string
+    to?: string[]
+    subject?: string
+    contentType?: string
+    security?: SecurityValue
+    timeUnit?: number
+    accountedTimeTypeId?: ID
+  }
+  [index: string]: FormFieldValue
+}
+
+export interface TicketArticleTimeAccountingFormData {
+  time_unit?: string
+  accounted_time_type_id?: number
+}
+
+export type TicketDuplicateDetectionItem = [
+  id: number,
+  number: string,
+  title: string,
+]

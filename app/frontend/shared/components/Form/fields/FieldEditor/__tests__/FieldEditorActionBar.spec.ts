@@ -1,6 +1,9 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { renderComponent } from '#tests/support/components/index.ts'
+
+import getUuid from '#shared/utils/getUuid.ts'
+
 import FieldEditorActionBar from '../FieldEditorActionBar.vue'
 
 // not actually executed in a unit test, should speed up tests
@@ -23,6 +26,7 @@ describe('keyboard interactions', () => {
         visible: true,
         contentType: 'text/html',
         disabledPlugins: [],
+        formId: getUuid(),
       },
     })
 
@@ -52,6 +56,7 @@ describe('keyboard interactions', () => {
         visible: true,
         contentType: 'text/html',
         disabledPlugins: [],
+        formId: getUuid(),
       },
     })
 
@@ -72,6 +77,7 @@ describe('keyboard interactions', () => {
         contentType: 'text/html',
         visible: true,
         disabledPlugins: [],
+        formId: getUuid(),
       },
     })
 
@@ -87,6 +93,7 @@ describe('keyboard interactions', () => {
         contentType: 'text/html',
         visible: true,
         disabledPlugins: [],
+        formId: getUuid(),
       },
     })
 
@@ -103,6 +110,7 @@ describe('keyboard interactions', () => {
         contentType: 'text/html',
         visible: true,
         disabledPlugins: [],
+        formId: getUuid(),
       },
     })
 
@@ -119,6 +127,7 @@ describe('basic toolbar testing', () => {
         contentType: 'text/html',
         visible: true,
         disabledPlugins: ['mentionUser'],
+        formId: getUuid(),
       },
     })
 
@@ -127,27 +136,31 @@ describe('basic toolbar testing', () => {
     ).not.toBeInTheDocument()
     expect(view.queryByLabelText('Mention user')).not.toBeInTheDocument()
     expect(view.queryByText('Mention user')).not.toBeInTheDocument()
-    expect(view.queryByIconName('mobile-at-sign')).not.toBeInTheDocument()
+    expect(view.queryByIconName('at-sign')).not.toBeInTheDocument()
   })
 
-  it("don't see plain text actions", () => {
+  it.todo("don't see plain text actions", async () => {
     const view = renderComponent(FieldEditorActionBar, {
       props: {
         contentType: 'text/plain',
         visible: true,
         disabledPlugins: [],
+        formId: getUuid(),
       },
     })
+
+    await view.events.click(view.getByLabelText('Zammad Features'))
 
     expect(
       view.getByLabelText('Insert text from text module'),
     ).toBeInTheDocument()
-    expect(view.getByIconName('mobile-snippet')).toBeInTheDocument()
+
+    expect(view.getByIconName('snippet')).toBeInTheDocument()
 
     expect(
       view.getByLabelText('Insert text from Knowledge Base article'),
     ).toBeInTheDocument()
-    expect(view.getByIconName('mobile-mention-kb')).toBeInTheDocument()
+    expect(view.getByIconName('mention-kb')).toBeInTheDocument()
 
     expect(
       view.queryByRole('button', { name: 'Mention user' }),

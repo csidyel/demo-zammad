@@ -1,51 +1,39 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class TimeAccountingsController < ApplicationController
   prepend_before_action :authenticate_and_authorize!
 
   def index
-    model_index_render(ticket_time_accounting, params)
+    model_index_render(ticket_time_accounting_scope, params)
   end
 
   def show
-    model_show_render(ticket_time_accounting, params)
+    model_show_render(ticket_time_accounting_scope, params)
   end
 
   def create
-    model_create_render(ticket_time_accounting, params)
+    model_create_render(ticket_time_accounting_scope, params)
   end
 
   def update
-    model_update_render(ticket_time_accounting, params)
+    model_update_render(ticket_time_accounting_scope, params)
   end
 
   def destroy
     model_references_check(Ticket::TimeAccounting, params)
-    model_destroy_render(ticket_time_accounting, params)
-  end
-
-  def ticket_time_accounting
-    @ticket_time_accounting ||= begin
-      if params[:ticket_id]
-        Ticket::TimeAccounting.where(ticket_id: params[:ticket_id])
-      else
-        Ticket::TimeAccounting
-      end
-    end
+    model_destroy_render(ticket_time_accounting_scope, params)
   end
 
   def by_activity
-
-    year = params[:year] || Time.zone.now.year
+    year  = params[:year] || Time.zone.now.year
     month = params[:month] || Time.zone.now.month
 
-    start_periode = Time.zone.parse("#{year}-#{month}-01")
-    end_periode = start_periode.end_of_month
+    start_period = Time.zone.parse("#{year}-#{month}-01")
+    end_period   = start_period.end_of_month
 
-    records = []
-    Ticket::TimeAccounting.where('created_at >= ? AND created_at <= ?', start_periode, end_periode).pluck(:ticket_id, :ticket_article_id, :time_unit, :type_id, :created_by_id, :created_at).each do |record|
-      records.push record
-    end
+    records = Ticket::TimeAccounting
+      .where(created_at: (start_period..end_period))
+      .pluck(:ticket_id, :ticket_article_id, :time_unit, :type_id, :created_by_id, :created_at)
 
     customers     = {}
     organizations = {}
@@ -77,7 +65,7 @@ class TimeAccountingsController < ApplicationController
                  {
                    ticket:       ticket.attributes,
                    time_unit:    record[2],
-                   type:         ((types[record[3]] || '-') if Setting.get('time_accounting_types')),
+                   type:         (types[record[3]] || '-' if Setting.get('time_accounting_types')),
                    customer:     customers[ticket.customer_id] || '-',
                    organization: organizations[ticket.organization_id] || '-',
                    agent:        agents[record[4]].fullname,
@@ -131,8 +119,9 @@ class TimeAccountingsController < ApplicationController
           }]
         end),
       {
-        name:  __('Created at'),
-        width: 20,
+        name:      __('Created at'),
+        width:     20,
+        data_type: 'datetime',
       },
     ]
 
@@ -152,23 +141,24 @@ class TimeAccountingsController < ApplicationController
   end
 
   def by_ticket
-
-    year = params[:year] || Time.zone.now.year
+    year  = params[:year] || Time.zone.now.year
     month = params[:month] || Time.zone.now.month
 
-    start_periode = Time.zone.parse("#{year}-#{month}-01")
-    end_periode = start_periode.end_of_month
+    start_period = Time.zone.parse("#{year}-#{month}-01")
+    end_period   = start_period.end_of_month
 
-    time_unit = {}
-    Ticket::TimeAccounting.where('created_at >= ? AND created_at <= ?', start_periode, end_periode).pluck(:ticket_id, :time_unit, :created_by_id).each do |record|
-      if !time_unit[record[0]]
-        time_unit[record[0]] = {
-          time_unit: 0,
-          agent_id:  record[2],
-        }
+    time_unit = Ticket::TimeAccounting
+      .where(created_at: (start_period..end_period))
+      .pluck(:ticket_id, :time_unit, :created_by_id)
+      .each_with_object({}) do |record, memo|
+        if !memo[record[0]]
+          memo[record[0]] = {
+            time_unit: 0,
+            agent_id:  record[2],
+          }
+        end
+        memo[record[0]][:time_unit] += record[1]
       end
-      time_unit[record[0]][:time_unit] += record[1]
-    end
 
     if !params[:download]
       customers = {}
@@ -227,41 +217,37 @@ class TimeAccountingsController < ApplicationController
   end
 
   def by_customer
-
-    year = params[:year] || Time.zone.now.year
+    year  = params[:year] || Time.zone.now.year
     month = params[:month] || Time.zone.now.month
 
-    start_periode = Time.zone.parse("#{year}-#{month}-01")
-    end_periode = start_periode.end_of_month
+    start_period = Time.zone.parse("#{year}-#{month}-01")
+    end_period   = start_period.end_of_month
 
-    time_unit = {}
-    Ticket::TimeAccounting.where('created_at >= ? AND created_at <= ?', start_periode, end_periode).pluck(:ticket_id, :time_unit, :created_by_id).each do |record|
-      time_unit[record[0]] ||= {
-        time_unit: 0,
-        agent_id:  record[2],
-      }
-      time_unit[record[0]][:time_unit] += record[1]
-    end
-
-    customers = {}
-    time_unit.each do |ticket_id, local_time_unit|
-      ticket = Ticket.lookup(id: ticket_id)
-      next if !ticket
-
-      customers[ticket.customer_id] ||= {}
-      customers[ticket.customer_id][ticket.organization_id] ||= {
-        customer:     User.lookup(id: ticket.customer_id).attributes,
-        organization: Organization.lookup(id: ticket.organization_id)&.attributes,
-        time_unit:    0,
-      }
-      customers[ticket.customer_id][ticket.organization_id][:time_unit] += local_time_unit[:time_unit]
-    end
-    results = []
-    customers.each_value do |organizations|
-      organizations.each_value do |content|
-        results.push content
+    results = Ticket::TimeAccounting
+      .where(created_at: (start_period..end_period))
+      .pluck(:ticket_id, :time_unit, :created_by_id)
+      .each_with_object({}) do |record, memo|
+        memo[record[0]] ||= {
+          time_unit: 0,
+          agent_id:  record[2],
+        }
+        memo[record[0]][:time_unit] += record[1]
       end
-    end
+      .each_with_object({}) do |(ticket_id, local_time_unit), memo|
+        ticket = Ticket.lookup(id: ticket_id)
+        next if !ticket
+
+        memo[ticket.customer_id] ||= {}
+        memo[ticket.customer_id][ticket.organization_id] ||= {
+          customer:     User.lookup(id: ticket.customer_id).attributes,
+          organization: Organization.lookup(id: ticket.organization_id)&.attributes,
+          time_unit:    0,
+        }
+        memo[ticket.customer_id][ticket.organization_id][:time_unit] += local_time_unit[:time_unit]
+      end
+      .values
+      .map(&:values)
+      .flatten
 
     if params[:download]
       header = [
@@ -279,15 +265,13 @@ class TimeAccountingsController < ApplicationController
           data_type: 'float'
         }
       ]
-      records = []
-      results.each do |row|
+      records = results.map do |row|
         customer_name = User.find(row[:customer]['id']).fullname
         organization_name = ''
         if row[:organization].present?
           organization_name = row[:organization]['name']
         end
-        result_row = [customer_name, organization_name, row[:time_unit]]
-        records.push result_row
+        [customer_name, organization_name, row[:time_unit]]
       end
 
       excel = ExcelSheet.new(
@@ -311,38 +295,34 @@ class TimeAccountingsController < ApplicationController
   end
 
   def by_organization
-
-    year = params[:year] || Time.zone.now.year
+    year  = params[:year] || Time.zone.now.year
     month = params[:month] || Time.zone.now.month
 
-    start_periode = Time.zone.parse("#{year}-#{month}-01")
-    end_periode = start_periode.end_of_month
+    start_period = Time.zone.parse("#{year}-#{month}-01")
+    end_period   = start_period.end_of_month
 
-    time_unit = {}
-    Ticket::TimeAccounting.where('created_at >= ? AND created_at <= ?', start_periode, end_periode).pluck(:ticket_id, :time_unit, :created_by_id).each do |record|
-      time_unit[record[0]] ||= {
-        time_unit: 0,
-        agent_id:  record[2],
-      }
-      time_unit[record[0]][:time_unit] += record[1]
-    end
+    results = Ticket::TimeAccounting
+      .where(created_at: (start_period..end_period))
+      .pluck(:ticket_id, :time_unit, :created_by_id)
+      .each_with_object({}) do |record, memo|
+        memo[record[0]] ||= {
+          time_unit: 0,
+          agent_id:  record[2],
+        }
+        memo[record[0]][:time_unit] += record[1]
+      end
+      .each_with_object({}) do |(ticket_id, local_time_unit), memo|
+        ticket = Ticket.lookup(id: ticket_id)
+        next if !ticket
+        next if !ticket.organization_id
 
-    organizations = {}
-    time_unit.each do |ticket_id, local_time_unit|
-      ticket = Ticket.lookup(id: ticket_id)
-      next if !ticket
-      next if !ticket.organization_id
-
-      organizations[ticket.organization_id] ||= {
-        organization: Organization.lookup(id: ticket.organization_id).attributes,
-        time_unit:    0,
-      }
-      organizations[ticket.organization_id][:time_unit] += local_time_unit[:time_unit]
-    end
-    results = []
-    organizations.each_value do |content|
-      results.push content
-    end
+        memo[ticket.organization_id] ||= {
+          organization: Organization.lookup(id: ticket.organization_id).attributes,
+          time_unit:    0,
+        }
+        memo[ticket.organization_id][:time_unit] += local_time_unit[:time_unit]
+      end
+      .values
 
     if params[:download]
       header = [
@@ -356,14 +336,13 @@ class TimeAccountingsController < ApplicationController
           data_type: 'float',
         }
       ]
-      records = []
-      results.each do |row|
+
+      records = results.map do |row|
         organization_name = ''
         if row[:organization].present?
           organization_name = row[:organization]['name']
         end
-        result_row = [organization_name, row[:time_unit]]
-        records.push result_row
+        [organization_name, row[:time_unit]]
       end
 
       excel = ExcelSheet.new(
@@ -384,5 +363,17 @@ class TimeAccountingsController < ApplicationController
 
     results = results.last(params[:limit].to_i) if params[:limit]
     render json: results
+  end
+
+  private
+
+  def ticket_time_accounting_scope
+    @ticket_time_accounting_scope ||= begin
+      if params[:ticket_id]
+        Ticket::TimeAccounting.where(ticket_id: params[:ticket_id])
+      else
+        Ticket::TimeAccounting
+      end
+    end
   end
 end

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -15,8 +15,8 @@ RSpec.describe Gql::Mutations::Form::UploadCache::Remove, type: :graphql do
         }
       QUERY
     end
-    let(:form_id)           { 12_345 }
-    let(:upload_cache_file) { UploadCache.new(form_id).add(filename: file_name, data: file_content, created_by_id: 1) }
+    let(:form_id)           { SecureRandom.uuid }
+    let(:upload_cache_file) { UploadCache.new(form_id).add(filename: file_name, data: file_content, created_by_id: agent.id) }
     let(:file_name)         { 'my_testfile.pdf' }
     let(:file_type)         { 'application/pdf' }
     let(:file_content)      { 'some test content' }
@@ -42,6 +42,14 @@ RSpec.describe Gql::Mutations::Form::UploadCache::Remove, type: :graphql do
 
       it 'fails' do
         expect(gql.result.error_type).to eq(ActiveRecord::RecordNotFound)
+      end
+    end
+
+    context 'when trying to delete a not owned upload cache' do
+      let(:upload_cache_file) { UploadCache.new(form_id).add(filename: file_name, data: file_content, created_by_id: 2) }
+
+      it 'fails' do
+        expect(gql.result.error_type).to eq(Exceptions::Forbidden)
       end
     end
 

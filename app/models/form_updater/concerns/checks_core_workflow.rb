@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module FormUpdater::Concerns::ChecksCoreWorkflow
   extend ActiveSupport::Concern
@@ -15,16 +15,29 @@ module FormUpdater::Concerns::ChecksCoreWorkflow
     perform_result = CoreWorkflow.perform(payload: perform_payload, user: current_user, assets: false, form_updater: true)
 
     FormUpdater::CoreWorkflow.perform_mapping(perform_result, result, relation_fields: relation_fields)
+
+    return if perform_result[:flags].blank?
+
+    @flags = @flags.merge(perform_result[:flags])
   end
 
   private
 
   def perform_payload
-    params = data
+    # Copy data to avoid changing the original data inside core workflow.
+    params = data.dup
 
     # Add object id information for the perform worklow for already existing objects.
     if object
       params['id'] = object.id
+    end
+
+    # Make sure that current values are used for the perform workflow.
+    # For example: Apply template can change the values.
+    result.each do |name, field|
+      next if !field.key?(:value)
+
+      params[name] = field[:value]
     end
 
     # Currently we need to convert the relation field values (integer) to strings for the

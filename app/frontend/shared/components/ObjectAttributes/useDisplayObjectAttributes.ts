@@ -1,27 +1,27 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type {
-  ObjectManagerFrontendAttribute,
-  ObjectAttributeValue,
-} from '#shared/graphql/types.ts'
+import { keyBy, get } from 'lodash-es'
+import { computed } from 'vue'
+
+import type { ObjectAttribute } from '#shared/entities/object-attributes/types/store.ts'
+import type { ObjectAttributeValue } from '#shared/graphql/types.ts'
 import { useSessionStore } from '#shared/stores/session.ts'
 import type { ObjectLike } from '#shared/types/utils.ts'
-import { keyBy, get } from 'lodash-es'
-import type { Dictionary } from 'ts-essentials'
 import { camelize } from '#shared/utils/formatter.ts'
-import type { Component } from 'vue'
-import { computed } from 'vue'
+
 import type { AttributeDeclaration } from './types.ts'
+import type { Dictionary } from 'ts-essentials'
+import type { Component } from 'vue'
 
 export interface ObjectAttributesDisplayOptions {
   object: ObjectLike
-  attributes: ObjectManagerFrontendAttribute[]
+  attributes: ObjectAttribute[]
   skipAttributes?: string[]
   accessors?: Record<string, string>
 }
 
 interface AttributeField {
-  attribute: ObjectManagerFrontendAttribute
+  attribute: ObjectAttribute
   component: Component
   value: unknown
   link: Maybe<string>
@@ -80,6 +80,7 @@ export const useDisplayObjectAttributes = (
 
   const fields = computed<AttributeField[]>(() => {
     return options.attributes
+      .filter((attribute) => !attribute.isStatic)
       .map((attribute) => {
         let value = getValue(attribute.name)
 
@@ -101,6 +102,7 @@ export const useDisplayObjectAttributes = (
 
         if (
           'permission' in dataOption &&
+          dataOption.permission &&
           !session.hasPermission(dataOption.permission)
         ) {
           return false

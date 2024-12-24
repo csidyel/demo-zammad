@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class OverviewsController < ApplicationController
   include CanPrioritize
@@ -142,6 +142,10 @@ curl http://localhost/api/v1/overviews -v -u #{login}:#{password} -H "Content-Ty
 
   def update
     model_update_render(Overview, params)
+  end
+
+  def search
+    model_search_render(Overview, params)
   end
 
 =begin

@@ -1,6 +1,7 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { renderComponent } from '#tests/support/components/index.ts'
+
 import CommonOrganizationAvatar from '../CommonOrganizationAvatar.vue'
 
 describe('CommonOrganizationAvatar', () => {
@@ -14,7 +15,7 @@ describe('CommonOrganizationAvatar', () => {
       },
     })
 
-    expect(view.getByIconName('mobile-organization')).toBeInTheDocument()
+    expect(view.getByIconName('organization')).toBeInTheDocument()
 
     await view.rerender({
       entity: {
@@ -23,8 +24,6 @@ describe('CommonOrganizationAvatar', () => {
       },
     })
 
-    expect(
-      view.getByIconName('mobile-inactive-organization'),
-    ).toBeInTheDocument()
+    expect(view.getByIconName('inactive-organization')).toBeInTheDocument()
   })
 })

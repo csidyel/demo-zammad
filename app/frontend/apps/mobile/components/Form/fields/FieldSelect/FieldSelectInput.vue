@@ -1,17 +1,18 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import { ref, toRef } from 'vue'
-import { i18n } from '#shared/i18n.ts'
-import CommonTicketStateIndicator from '#shared/components/CommonTicketStateIndicator/CommonTicketStateIndicator.vue'
-import CommonSelect from '#mobile/components/CommonSelect/CommonSelect.vue'
-import type { CommonSelectInstance } from '#mobile/components/CommonSelect/types.ts'
-import { useFormBlock } from '#mobile/form/useFormBlock.ts'
-import { EnumTicketStateColorCode } from '#shared/graphql/types.ts'
+import { toRef, useTemplateRef } from 'vue'
+
 import useValue from '#shared/components/Form/composables/useValue.ts'
+import type { SelectContext } from '#shared/components/Form/fields/FieldSelect/types.ts'
 import useSelectOptions from '#shared/composables/useSelectOptions.ts'
 import useSelectPreselect from '#shared/composables/useSelectPreselect.ts'
-import type { SelectContext } from '#shared/components/Form/fields/FieldSelect/types.ts'
+import { useFormBlock } from '#shared/form/useFormBlock.ts'
+import { EnumTicketStateColorCode } from '#shared/graphql/types.ts'
+import { i18n } from '#shared/i18n.ts'
+
+import CommonSelect from '#mobile/components/CommonSelect/CommonSelect.vue'
+import CommonTicketStateIndicator from '#mobile/components/CommonTicketStateIndicator/CommonTicketStateIndicator.vue'
 
 interface Props {
   context: SelectContext
@@ -33,7 +34,7 @@ const {
   setupMissingOrDisabledOptionHandling,
 } = useSelectOptions(toRef(props.context, 'options'), contextReactive)
 
-const select = ref<CommonSelectInstance>()
+const select = useTemplateRef('select')
 
 const openSelectDialog = () => {
   if (
@@ -82,15 +83,12 @@ setupMissingOrDisabledOptionHandling()
         aria-haspopup="dialog"
         :aria-expanded="expanded"
         :name="context.node.name"
-        class="flex grow items-center focus:outline-none formkit-disabled:pointer-events-none"
+        class="formkit-disabled:pointer-events-none flex grow items-center focus:outline-none"
         :aria-labelledby="`label-${context.id}`"
         :aria-disabled="context.disabled"
         :data-multiple="context.multiple"
-        :tabindex="context.disabled ? '-1' : '0'"
-        v-bind="{
-          ...context.attrs,
-          onBlur: undefined,
-        }"
+        tabindex="0"
+        v-bind="context.attrs"
         @keyup.shift.down.prevent="openSelectDialog()"
         @keypress.space.prevent="openSelectDialog()"
         @blur="context.handlers.blur"
@@ -137,8 +135,8 @@ setupMissingOrDisabledOptionHandling()
         <CommonIcon
           v-if="context.clearable && hasValue && !context.disabled"
           :aria-label="i18n.t('Clear Selection')"
-          class="absolute -mt-5 shrink-0 text-gray ltr:right-2 rtl:left-2"
-          name="mobile-close-small"
+          class="text-gray absolute -mt-5 shrink-0 ltr:right-2 rtl:left-2"
+          name="close-small"
           size="base"
           role="button"
           tabindex="0"

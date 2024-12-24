@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -8,11 +8,25 @@ RSpec.describe BackgroundServices::Service::ProcessScheduledJobs::JobExecutor, e
     let(:backend_instance) { backend.new(job) }
 
     shared_examples 'verify job dispatching' do
-      it 'dispatches to the right back end' do
+      before do
         allow(backend).to receive(:new).and_return(backend_instance)
         allow(backend_instance).to receive(:run).and_return(true)
+      end
+
+      it 'dispatches to the right back end' do
         described_class.run(job)
         expect(backend_instance).to have_received(:run)
+      end
+
+      context 'when shutdown is requested' do
+        before do
+          allow(BackgroundServices).to receive(:shutdown_requested).and_return(true)
+        end
+
+        it 'does not start the job' do
+          described_class.run(job)
+          expect(backend_instance).not_to have_received(:run)
+        end
       end
     end
 

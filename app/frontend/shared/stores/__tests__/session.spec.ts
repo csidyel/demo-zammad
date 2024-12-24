@@ -1,12 +1,15 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { CurrentUserDocument } from '#shared/graphql/queries/currentUser.api.ts'
-import { CurrentUserUpdatesDocument } from '#shared/graphql/subscriptions/currentUserUpdates.api.ts'
+import { createPinia, setActivePinia } from 'pinia'
+
 import {
   mockGraphQLApi,
   mockGraphQLSubscription,
 } from '#tests/support/mock-graphql-api.ts'
-import { createPinia, setActivePinia } from 'pinia'
+
+import { CurrentUserDocument } from '#shared/graphql/queries/currentUser.api.ts'
+import { CurrentUserUpdatesDocument } from '#shared/graphql/subscriptions/currentUserUpdates.api.ts'
+
 import { useSessionStore } from '../session.ts'
 
 const userData = {
@@ -21,7 +24,83 @@ const userData = {
   preferences: {
     locale: 'de-de',
   },
+  personalSettings: {
+    __typename: 'UserPersonalSettings',
+    notificationConfig: {
+      __typename: 'UserPersonalSettingsNotificationConfig',
+      groupIds: [1],
+      matrix: {
+        __typename: 'UserPersonalSettingsNotificationMatrix',
+        create: {
+          __typename: 'UserPersonalSettingsNotificationMatrixRow',
+          channel: {
+            __typename: 'UserPersonalSettingsNotificationMatrixChannel',
+            email: true,
+            online: true,
+          },
+          criteria: {
+            __typename: 'UserPersonalSettingsNotificationMatrixCriteria',
+            no: false,
+            ownedByMe: true,
+            ownedByNobody: true,
+            subscribed: true,
+          },
+        },
+        escalation: {
+          __typename: 'UserPersonalSettingsNotificationMatrixRow',
+          channel: {
+            __typename: 'UserPersonalSettingsNotificationMatrixChannel',
+            email: true,
+            online: true,
+          },
+          criteria: {
+            __typename: 'UserPersonalSettingsNotificationMatrixCriteria',
+            no: false,
+            ownedByMe: true,
+            ownedByNobody: true,
+            subscribed: true,
+          },
+        },
+        reminderReached: {
+          __typename: 'UserPersonalSettingsNotificationMatrixRow',
+          channel: {
+            __typename: 'UserPersonalSettingsNotificationMatrixChannel',
+            email: true,
+            online: true,
+          },
+          criteria: {
+            __typename: 'UserPersonalSettingsNotificationMatrixCriteria',
+            no: false,
+            ownedByMe: true,
+            ownedByNobody: true,
+            subscribed: true,
+          },
+        },
+        update: {
+          __typename: 'UserPersonalSettingsNotificationMatrixRow',
+          channel: {
+            __typename: 'UserPersonalSettingsNotificationMatrixChannel',
+            email: true,
+            online: true,
+          },
+          criteria: {
+            __typename: 'UserPersonalSettingsNotificationMatrixCriteria',
+            no: false,
+            ownedByMe: true,
+            ownedByNobody: true,
+            subscribed: true,
+          },
+        },
+      },
+    },
+    notificationSound: {
+      __typename: 'UserPersonalSettingsNotificationSound',
+      enabled: true,
+      file: 'Ring',
+    },
+  },
   objectAttributeValues: [],
+  authorizations: [],
   organization: {
     __typename: 'Organization',
     id: '234241',
@@ -35,6 +114,10 @@ const userData = {
     names: ['admin'],
   },
   hasSecondaryOrganizations: false,
+  outOfOffice: false,
+  outOfOfficeStartAt: null,
+  outOfOfficeEndAt: null,
+  outOfOfficeReplacement: null,
 }
 
 describe('Session Store', () => {

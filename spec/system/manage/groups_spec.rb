@@ -1,12 +1,12 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 require 'system/examples/core_workflow_examples'
 require 'system/examples/pagination_examples'
 
 RSpec.describe 'Manage > Groups', type: :system do
-  context 'ajax pagination' do
-    include_examples 'pagination', model: :group, klass: Group, path: 'manage/groups'
+  context 'when ajax pagination' do
+    include_examples 'pagination', model: :group, klass: Group, path: 'manage/groups', create_params: { email_address_id: 1 }
   end
 
   describe 'with nested groups' do
@@ -41,7 +41,7 @@ RSpec.describe 'Manage > Groups', type: :system do
         # Needed for chrome, when element is outside viewport.
         scroll_into_view('button.js-submit', position: :bottom)
 
-        click_button
+        click_on 'Submit'
 
         expect(Group.last.name).to eq("#{group3.name}::#{Group.last.name_last}")
       end
@@ -105,7 +105,7 @@ RSpec.describe 'Manage > Groups', type: :system do
         # Needed for chrome, when element is outside viewport.
         scroll_into_view('button.js-submit', position: :bottom)
 
-        click_button
+        click_on 'Submit'
       end
 
       expect(Group.find_by(name: 'Users').assignment_timeout).to eq(30)
@@ -118,7 +118,7 @@ RSpec.describe 'Manage > Groups', type: :system do
         # Needed for chrome, when element is outside viewport.
         scroll_into_view('button.js-submit', position: :bottom)
 
-        click_button
+        click_on 'Submit'
       end
       expect(Group.find_by(name: 'Users').assignment_timeout).to be_nil
     end

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module SessionHelper
   def self.json_hash(user)
@@ -43,26 +43,38 @@ module SessionHelper
   end
 
   def self.models(user = nil)
-    models = {}
-    objects = ObjectManager.list_objects
-    objects.each do |object|
-      # User related fields are needed for register.
-      next if user.nil? && !object.eql?('User')
+    return models_public if user.blank?
 
-      attributes = ObjectManager::Object.new(object).attributes(user, skip_permission: user.nil?)
+    ObjectManager.list_objects.each_with_object({}) do |object, models|
+      attributes = ObjectManager::Object.new(object).attributes(user)
       models[object] = attributes
     end
-    models
+  end
+
+  def self.models_public
+    allowed_user_attributes = %w[firstname lastname email password]
+
+    user_attributes = ObjectManager::Object
+      .new('User')
+      .attributes(nil, skip_permission: true)
+      .select { |attribute| allowed_user_attributes.include?(attribute[:name]) }
+
+    {
+      'User' => user_attributes,
+    }
   end
 
   def self.cleanup_expired
 
     # delete temp. sessions
-    ActiveRecord::SessionStore::Session.where('persistent IS NULL AND updated_at < ?', 2.hours.ago).delete_all
+    ActiveRecord::SessionStore::Session
+      .where(persistent: nil, updated_at: ...2.hours.ago)
+      .delete_all
 
     # web sessions not updated the last x days
-    ActiveRecord::SessionStore::Session.where('updated_at < ?', 60.days.ago).delete_all
-
+    ActiveRecord::SessionStore::Session
+      .where(updated_at: ...60.days.ago)
+      .delete_all
   end
 
   def self.get(id)
@@ -74,9 +86,8 @@ module SessionHelper
   end
 
   def self.destroy(id)
-    session = ActiveRecord::SessionStore::Session.find_by(id: id)
-    return if !session
-
-    session.destroy
+    ActiveRecord::SessionStore::Session
+      .find_by(id: id)
+      &.destroy
   end
 end

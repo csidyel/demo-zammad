@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 RSpec.shared_examples 'FormUpdater::ChecksCoreWorkflow' do |object_name:|
   let(:field_name) { SecureRandom.uuid }
@@ -34,7 +34,7 @@ RSpec.shared_examples 'FormUpdater::ChecksCoreWorkflow' do |object_name:|
     it 'checks that mapping was correct' do
       result = resolved_result.resolve
 
-      expect(result[field_name]).to include(expected_result)
+      expect(result[:fields][field_name]).to include(expected_result)
     end
   end
 

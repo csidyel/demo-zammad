@@ -1,5 +1,11 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
+import type { NotificationTypes } from '#shared/components/CommonNotifications/index.ts'
+import type { PageInfo } from '#shared/graphql/types.ts'
+import type { ReactiveFunction } from '#shared/types/utils.ts'
+
+import type { GraphQLHandlerError } from '../../error.ts'
+import type { OperationVariables } from '@apollo/client/core'
 import type {
   UseMutationReturn,
   UseQueryReturn,
@@ -9,11 +15,6 @@ import type {
   UseMutationOptions,
 } from '@vue/apollo-composable'
 import type { Ref } from 'vue'
-import type { ReactiveFunction } from '#shared/types/utils.ts'
-import type { NotificationTypes } from '#shared/components/CommonNotifications/index.ts'
-import type { PageInfo } from '#shared/graphql/types.ts'
-import type { OperationVariables } from '@apollo/client/core'
-import type { GraphQLHandlerError } from '../../error.ts'
 
 export type OperationReturn<TResult, TVariables extends OperationVariables> =
   | UseQueryReturn<TResult, TVariables>
@@ -60,6 +61,11 @@ export type OperationMutationFunction<
 > = (
   options: OperationMutationOptions<TResult, TVariables>,
 ) => UseMutationReturn<TResult, TVariables>
+
+export type OperationQueryFunction<
+  TResult = OperationQueryResult,
+  TVariables extends OperationVariables = OperationVariables,
+> = (options: OperationVariables) => UseQueryReturn<TResult, TVariables>
 
 export type BaseConnection = {
   __typename?: string

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -58,6 +58,30 @@ RSpec.describe 'Public Knowledge Base for guest', authenticated_as: false, type:
       it { expect(page).to have_breadcrumb_item(knowledge_base.translation.title).at_index(0) }
       it { expect(page).to have_breadcrumb_item(category.translation.title).at_index(1) }
     end
+
+    context 'when looking at translated subcategory' do
+      let(:translated_title) { Faker::Lorem.sentence }
+
+      before do
+        create(:knowledge_base_translation,
+               knowledge_base:, kb_locale: alternative_locale)
+
+        create(:knowledge_base_category_translation,
+               category: category, title:  translated_title, kb_locale: alternative_locale)
+
+        create(:knowledge_base_category_translation,
+               category: subcategory, kb_locale: alternative_locale)
+
+        create(:knowledge_base_answer_translation,
+               answer: published_answer_in_subcategory, kb_locale: alternative_locale)
+
+        visit help_category_path(alternative_locale.system_locale.locale, subcategory)
+      end
+
+      it 'shows translated parent category in breadcrumb' do
+        expect(page).to have_breadcrumb_item(translated_title).at_index(1)
+      end
+    end
   end
 
   context 'answer' do
@@ -68,6 +92,30 @@ RSpec.describe 'Public Knowledge Base for guest', authenticated_as: false, type:
       it { expect(page).to have_breadcrumb_item(knowledge_base.translation.title).at_index(0) }
       it { expect(page).to have_breadcrumb_item(category.translation.title).at_index(1) }
       it { expect(page).to have_breadcrumb_item(published_answer.translation.title).at_index(2) }
+    end
+  end
+
+  context 'preview token' do
+    context 'when token is valid' do
+      let(:token) { Token.renew_token! 'KnowledgeBasePreview', create(:admin).id }
+
+      it 'loads draft answer' do
+        visit help_answer_path(primary_locale.system_locale.locale, category, draft_answer, preview_token: token)
+
+        within '.main--article' do
+          expect(page).to have_text(draft_answer.translations.first.title)
+        end
+      end
+    end
+
+    context 'when token user does not have access' do
+      let(:token) { Token.renew_token! 'KnowledgeBasePreview', create(:customer).id }
+
+      it 'loads draft answer' do
+        visit help_answer_path(primary_locale.system_locale.locale, category, draft_answer, preview_token: token)
+
+        expect(page).to have_no_text(draft_answer.translations.first.title)
+      end
     end
   end
 
@@ -100,7 +148,7 @@ RSpec.describe 'Public Knowledge Base for guest', authenticated_as: false, type:
     context 'follow primary locale' do
       before { click_on published_answer.translation_primary.title }
 
-      it { expect(page).to have_selector('h1', text: published_answer.translation_primary.title) }
+      it { expect(page).to have_css('h1', text: published_answer.translation_primary.title) }
     end
   end
 

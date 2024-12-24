@@ -1,18 +1,21 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 import { markRaw, ref, toRef, watch } from 'vue'
-import { i18n } from '#shared/i18n.ts'
-import { useDialog } from '#shared/composables/useDialog.ts'
-import type { ObjectLike } from '#shared/types/utils.ts'
-import { useFormBlock } from '#mobile/form/useFormBlock.ts'
-import type { FormFieldContext } from '#shared/components/Form/types/field.ts'
+
 import useValue from '#shared/components/Form/composables/useValue.ts'
-import useSelectOptions from '#shared/composables/useSelectOptions.ts'
 import type {
   AutoCompleteOption,
   AutoCompleteProps,
+  AutocompleteSelectValue,
 } from '#shared/components/Form/fields/FieldAutocomplete/types.ts'
+import type { FormFieldContext } from '#shared/components/Form/types/field.ts'
+import useSelectOptions from '#shared/composables/useSelectOptions.ts'
+import { useFormBlock } from '#shared/form/useFormBlock.ts'
+import { i18n } from '#shared/i18n.ts'
+import type { ObjectLike } from '#shared/types/utils.ts'
+
+import { useDialog } from '#mobile/composables/useDialog.ts'
 
 interface Props {
   context: FormFieldContext<AutoCompleteProps>
@@ -22,7 +25,7 @@ const props = defineProps<Props>()
 const contextReactive = toRef(props, 'context')
 
 const { hasValue, valueContainer, currentValue, clearValue } =
-  useValue(contextReactive)
+  useValue<AutocompleteSelectValue>(contextReactive)
 
 const localOptions = ref(props.context.options || [])
 
@@ -58,8 +61,12 @@ const openModal = () => {
   })
 }
 
-const { optionValueLookup, getSelectedOptionIcon, getSelectedOptionLabel } =
-  useSelectOptions(localOptions, contextReactive)
+const {
+  optionValueLookup,
+  getSelectedOptionIcon,
+  getSelectedOptionValue,
+  getSelectedOptionLabel,
+} = useSelectOptions(localOptions, contextReactive)
 
 // Remember current optionValueLookup in node context.
 contextReactive.value.optionValueLookup = optionValueLookup
@@ -110,7 +117,7 @@ useFormBlock(contextReactive, onInputClick)
       :id="context.id"
       role="combobox"
       :name="context.node.name"
-      class="flex grow items-center focus:outline-none formkit-disabled:pointer-events-none"
+      class="formkit-disabled:pointer-events-none flex grow items-center focus:outline-none"
       :aria-disabled="context.disabled ? 'true' : undefined"
       :aria-labelledby="`label-${context.id}`"
       aria-haspopup="dialog"
@@ -118,12 +125,9 @@ useFormBlock(contextReactive, onInputClick)
       :aria-controls="`dialog-${nameDialog}`"
       :aria-owns="`dialog-${nameDialog}`"
       :aria-expanded="dialog.isOpened.value"
-      :tabindex="context.disabled ? '-1' : '0'"
+      tabindex="0"
       :data-multiple="context.multiple ? 'true' : undefined"
-      v-bind="{
-        ...context.attrs,
-        onBlur: undefined,
-      }"
+      v-bind="context.attrs"
       @keyup.shift.down.prevent="toggleDialog(true)"
       @keypress.space.prevent="toggleDialog(true)"
       @blur="context.handlers.blur"
@@ -131,7 +135,7 @@ useFormBlock(contextReactive, onInputClick)
       <div v-if="hasValue" class="flex grow flex-wrap gap-1" role="list">
         <div
           v-for="(selectedValue, idx) in valueContainer"
-          :key="selectedValue"
+          :key="getSelectedOptionValue(selectedValue)?.toString()"
           class="flex items-center text-base leading-[19px]"
           role="listitem"
         >
@@ -142,15 +146,15 @@ useFormBlock(contextReactive, onInputClick)
             class="ltr:mr-1 rtl:ml-1"
           />{{
             getSelectedOptionLabel(selectedValue) ||
-            i18n.t('%s (unknown)', selectedValue)
+            i18n.t('%s (unknown)', getSelectedOptionValue(selectedValue))
           }}{{ idx === valueContainer.length - 1 ? '' : ',' }}
         </div>
       </div>
       <CommonIcon
         v-if="context.clearable && hasValue && !context.disabled"
         :aria-label="i18n.t('Clear Selection')"
-        class="absolute -mt-5 shrink-0 text-gray ltr:right-2 rtl:left-2"
-        name="mobile-close-small"
+        class="text-gray absolute -mt-5 shrink-0 ltr:right-2 rtl:left-2"
+        name="close-small"
         size="base"
         role="button"
         tabindex="0"

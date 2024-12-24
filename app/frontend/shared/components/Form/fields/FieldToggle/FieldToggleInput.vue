@@ -1,9 +1,14 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import stopEvent from '#shared/utils/events.ts'
 import { computed, nextTick, toRef, watch } from 'vue'
+
+import stopEvent from '#shared/utils/events.ts'
+
 import useValue from '../../composables/useValue.ts'
+
+import { getToggleClasses } from './initializeToggleClasses.ts'
+
 import type { FormFieldContext } from '../../types/field.ts'
 
 const props = defineProps<{
@@ -13,6 +18,7 @@ const props = defineProps<{
       true?: string
       false?: string
     }
+    size?: 'medium' | 'small'
   }>
 }>()
 
@@ -61,7 +67,7 @@ const disabled = computed(() => {
 
   const nextValueString = localValue.value ? 'false' : 'true'
 
-  // if ca't select next value, disable the toggle
+  // if can't select next value, disable the toggle
   return !(nextValueString in variants.value)
 })
 
@@ -76,6 +82,29 @@ const updateLocalValue = (e: Event) => {
     localValue.value = newValue === 'true'
   }
 }
+
+const ariaChecked = computed(() => (localValue.value ? 'true' : 'false'))
+
+const buttonSizeClasses = computed(() => {
+  if (context.value.size === 'small') return 'w-8 h-5'
+
+  return 'w-10 h-6'
+})
+
+const knobSizeClasses = computed(() => {
+  if (context.value.size === 'small') return 'w-[18px] h-[18px]'
+
+  return 'w-[22px] h-[22px]'
+})
+
+const knobTranslateClasses = computed(() => {
+  if (context.value.size === 'small')
+    return 'ltr:translate-x-[13px] rtl:-translate-x-[13px]'
+
+  return 'ltr:translate-x-[17px] rtl:-translate-x-[17px]'
+})
+
+const classMap = getToggleClasses()
 </script>
 
 <template>
@@ -83,20 +112,34 @@ const updateLocalValue = (e: Event) => {
     :id="context.id"
     type="button"
     role="switch"
-    class="relative inline-flex h-6 w-10 flex-shrink-0 cursor-pointer rounded-full border border-transparent bg-gray-300 transition-colors duration-200 ease-in-out focus-within:ring-1 focus-within:ring-white focus-within:ring-opacity-75 focus:outline-none formkit-invalid:border-solid formkit-invalid:border-red"
-    :class="[context.classes.input, { '!bg-blue': localValue }]"
+    class="formkit-disabled:pointer-events-none relative inline-flex flex-shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ease-in-out"
+    :class="[
+      context.classes.input,
+      classMap.track,
+      buttonSizeClasses,
+      {
+        [classMap.trackOn]: localValue,
+      },
+    ]"
     :aria-labelledby="`label-${context.id}`"
     :aria-disabled="disabled"
-    :aria-checked="localValue"
+    :aria-checked="ariaChecked"
+    :aria-describedby="context.describedBy"
     :tabindex="context.disabled ? '-1' : '0'"
+    :v-bind="context.attrs"
     @click="updateLocalValue"
     @keydown.space="updateLocalValue"
   >
     <div
-      class="pointer-events-none inline-block h-[22px] w-[22px] transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ltr:translate-x-0 rtl:-translate-x-0"
-      :class="{
-        'ltr:translate-x-4 rtl:-translate-x-4': localValue,
-      }"
+      class="pointer-events-none inline-block transform rounded-full transition duration-200 ease-in-out"
+      :class="[
+        classMap.knob,
+        knobSizeClasses,
+        {
+          'ltr:translate-x-px rtl:-translate-x-px': !localValue,
+          [knobTranslateClasses]: localValue,
+        },
+      ]"
     ></div>
   </button>
 </template>

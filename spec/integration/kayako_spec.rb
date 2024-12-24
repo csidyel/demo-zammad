@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -33,33 +33,33 @@ RSpec.describe 'Kayako import', db_strategy: :reset, integration: true, required
         },
         'Users'         => {
           'skipped'     => 0,
-          'created'     => 7,
+          'created'     => 8,
           'updated'     => 0,
+          'unchanged'   => 0,
+          'failed'      => 0,
+          'deactivated' => 0,
+          'sum'         => 8,
+          'total'       => 8,
+        },
+        'Organizations' => {
+          'skipped'     => 0,
+          'created'     => 3,
+          'updated'     => 1,
+          'unchanged'   => 0,
+          'failed'      => 0,
+          'deactivated' => 0,
+          'sum'         => 4,
+          'total'       => 4,
+        },
+        'Tickets'       => {
+          'skipped'     => 0,
+          'created'     => 6,
+          'updated'     => 1,
           'unchanged'   => 0,
           'failed'      => 0,
           'deactivated' => 0,
           'sum'         => 7,
           'total'       => 7,
-        },
-        'Organizations' => {
-          'skipped'     => 0,
-          'created'     => 2,
-          'updated'     => 1,
-          'unchanged'   => 0,
-          'failed'      => 0,
-          'deactivated' => 0,
-          'sum'         => 3,
-          'total'       => 3,
-        },
-        'Tickets'       => {
-          'skipped'     => 0,
-          'created'     => 4,
-          'updated'     => 1,
-          'unchanged'   => 0,
-          'failed'      => 0,
-          'deactivated' => 0,
-          'sum'         => 5,
-          'total'       => 5,
         },
       }
     end

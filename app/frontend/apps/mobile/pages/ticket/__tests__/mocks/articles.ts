@@ -1,11 +1,14 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type {
-  TicketArticleEdge,
-  TicketArticlesQuery,
-} from '#shared/graphql/types.ts'
 import { nullableMock } from '#tests/support/utils.ts'
+
+import {
+  EnumTicketArticleSenderName,
+  type TicketArticleEdge,
+  type TicketArticlesQuery,
+} from '#shared/graphql/types.ts'
 import { convertToGraphQLId } from '#shared/graphql/utils.ts'
+
 import type { LastArrayElement } from 'type-fest'
 
 export const mockTicketDate = new Date(2022, 0, 30, 0, 0, 0, 0)
@@ -47,7 +50,7 @@ export const articleContent = (
     bodyWithUrls: '<p>default body</p>',
     sender: {
       __typename: 'TicketArticleSender',
-      name: 'Customer',
+      name: EnumTicketArticleSenderName.Customer,
     },
     type: {
       __typename: 'TicketArticleType',
@@ -61,7 +64,7 @@ export const articleContent = (
 }
 
 export const mockArticleQuery = (
-  description: Partial<ArticleNode>,
+  firstArticles: Partial<ArticleNode>,
   articles: Partial<ArticleNode>[] = [],
   totalCount = articles.length + 1,
 ): TicketArticlesQuery => {
@@ -74,12 +77,12 @@ export const mockArticleQuery = (
   })
 
   return nullableMock({
-    description: {
+    firstArticles: {
       __typename: 'TicketArticleConnection',
       edges: [
         {
           __typename: 'TicketArticleEdge',
-          node: articleContent(description.internalId ?? 1, description),
+          node: articleContent(firstArticles.internalId ?? 1, firstArticles),
         },
       ],
     },

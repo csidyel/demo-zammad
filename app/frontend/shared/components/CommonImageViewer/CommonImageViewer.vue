@@ -1,7 +1,8 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 import VueEasyLightbox from 'vue-easy-lightbox'
+
 import 'vue-easy-lightbox/dist/external-css/vue-easy-lightbox.css'
 import { imageViewerOptions } from '#shared/composables/useImageViewer.ts'
 </script>

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 # A wrapper class around Store that handles temporary attachment uploads
 # and provides an interface for those.
@@ -13,8 +13,7 @@ class UploadCache
   #
   # @return [UploadCache]
   def initialize(id)
-    # conversion to Integer is required for proper Store#o_id comparsion
-    @id = id.to_i
+    @id = id
   end
 
   # Adds a Store item with the given attributes for the form_id.
@@ -88,6 +87,17 @@ class UploadCache
     Store.remove_item(store_id)
   end
 
+  # Checks if files list includes a similar looking store attachment.
+  # Similar-looking attachment is detected by name and file type if it is present.
+  #
+  # @param files [Array<Hash>] list of hashes with name and type keys.
+  # @param single_attachment [Store] a Store object or a similar-looking hash.
+  #
+  # @see Store.check_attachment_match
+  def self.files_include_attachment?(files, single_attachment)
+    files.any? { |elem| attachment_matches?(single_attachment, elem) }
+  end
+
   private
 
   def store_object
@@ -97,4 +107,20 @@ class UploadCache
   def store_object_id
     Store::Object.lookup(name: store_object).id
   end
+
+  # Checks if attachment is similar to the given file.
+  #
+  # @param attachment [Store] with filename key and preferences hash with Content-Type key.
+  # @param file [Hash] with name and type keys.
+  def self.attachment_matches?(attachment, file)
+    return false if file[:name] != attachment.filename
+
+    attachment_content_type = attachment.preferences['Content-Type']
+    if file[:type].blank? || attachment_content_type.blank?
+      return true
+    end
+
+    file[:type] == attachment_content_type
+  end
+  private_class_method :attachment_matches?
 end

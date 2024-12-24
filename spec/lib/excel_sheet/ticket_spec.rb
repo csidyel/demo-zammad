@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -18,14 +18,14 @@ RSpec.describe ExcelSheet::Ticket do
       expect(tags_count).to eq 1
     end
 
-    it 'has 31 column in default configuration' do
+    it 'has 32 column in default configuration' do
       tags_count = instance.ticket_header.count
 
-      expect(tags_count).to eq 31
+      expect(tags_count).to eq 32
     end
 
     it 'all elements have width attribute' do
-      expect(instance.ticket_header).to be_all(have_key(:width))
+      expect(instance.ticket_header).to all(have_key(:width))
     end
   end
 end

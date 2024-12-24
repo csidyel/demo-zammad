@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Idoit
 
@@ -15,8 +15,7 @@ returns
 =end
 
   def self.verify(api_token, endpoint, _client_id = nil, verify_ssl: false)
-    raise 'api_token required' if api_token.blank?
-    raise 'endpoint required' if endpoint.blank?
+    raise __('Invalid i-doit configuration (missing endpoint or api_token).') if api_token.blank? || endpoint.blank?
 
     params = {
       apikey: api_token,
@@ -125,6 +124,7 @@ or with filter:
     )
 
     raise "Can't fetch objects from #{url}: Unable to parse response from server. Invalid JSON response." if !result.success? && result.error =~ %r{JSON::ParserError:.+?\s+unexpected\s+token\s+at\s+'<!DOCTYPE\s+html}i
+    raise "Can't fetch object from #{url}: Unable to login using given credentials and apiKey." if result.data['error'].present?
     raise "Can't fetch objects from #{url}: #{result.error}" if !result.success?
 
     # add link to idoit

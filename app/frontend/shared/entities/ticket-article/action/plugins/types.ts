@@ -1,22 +1,27 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { FormSubmitData } from '#shared/components/Form/types.ts'
 import type {
   EditorContentType,
   FieldEditorContext,
   FieldEditorProps,
 } from '#shared/components/Form/fields/FieldEditor/types.ts'
+import type { FileUploaded } from '#shared/components/Form/fields/FieldFile/types.ts'
+import type { SecurityValue } from '#shared/components/Form/fields/FieldSecurity/types.ts'
+import type { FormRef, FormSubmitData } from '#shared/components/Form/types.ts'
 import type {
   TicketArticle,
   TicketById,
+  TicketFormData,
+  TicketUpdateFormData,
 } from '#shared/entities/ticket/types.ts'
 import type { getTicketView } from '#shared/entities/ticket/utils/getTicketView.ts'
-import type { AppName, AppSpecificRecord } from '#shared/types/app.ts'
+import type { AppName } from '#shared/types/app.ts'
 import type { ConfigList } from '#shared/types/store.ts'
-import type { SelectionData } from '#shared/utils/selection.ts'
-import type { SecurityValue } from '#shared/components/Form/fields/FieldSecurity/types.ts'
 import type { MaybeRecord } from '#shared/types/utils.ts'
-import type { FileUploaded } from '#shared/components/Form/fields/FieldFile/types.ts'
+import type { AllowedFile } from '#shared/utils/files.ts'
+import type { SelectionData } from '#shared/utils/selection.ts'
+
+import type { ComputedRef } from 'vue'
 
 export interface TicketArticleSelectionOptions {
   body: FieldEditorContext
@@ -34,12 +39,16 @@ export interface TicketArticleFormValues {
   attachments?: FileUploaded[]
   contentType?: string
   security?: SecurityValue
+  timeUnit?: number
+  accountedTimeTypeId?: ID
 }
 
 export interface TicketArticlePerformOptions {
   selection?: SelectionData
   formId: string
-  openReplyDialog(values?: MaybeRecord<TicketArticleFormValues>): Promise<void>
+
+  openReplyForm(values?: MaybeRecord<TicketArticleFormValues>): Promise<void>
+
   getNewArticleBody(type: EditorContentType): string
 }
 
@@ -50,6 +59,7 @@ export interface CommonTicketAddOptions {
 
 export interface TicketActionAddOptions extends CommonTicketAddOptions {
   recalculate(): void
+
   onDispose(callback: () => unknown): void
 }
 
@@ -65,9 +75,10 @@ export interface TicketArticleAction {
   apps: AppName[]
   label: string // "name" in desktop view
   name: string // "type" in desktop view, but clashes with ArticleType
-  icon: AppSpecificRecord<string>
+  icon: string
   view: TicketViewPolicyMap
-  link?: string // do we need it(?)
+  link?: string
+  alwaysVisible?: boolean
 
   perform?(
     ticket: TicketById,
@@ -76,36 +87,84 @@ export interface TicketArticleAction {
   ): void
 }
 
+export interface TicketArticleTypeReactiveFieldProps {
+  validation: ComputedRef<
+    null | string | Array<[rule: string, ...args: unknown[]]>
+  >
+  required: ComputedRef<boolean>
+}
+
+export interface TicketArticleTypeProps {
+  validation?: string | Array<[rule: string, ...args: unknown[]]>
+  required?: boolean
+  accept?: string
+  multiple?: boolean
+  allowedFiles?: AllowedFile[]
+  [index: string]: unknown
+}
+
+export interface TicketFieldsType {
+  to: TicketArticleTypeProps
+  cc: TicketArticleTypeProps
+  subject: TicketArticleTypeProps
+  body: TicketArticleTypeProps
+  attachments: TicketArticleTypeProps
+  security: TicketArticleTypeProps
+  subtype: TicketArticleTypeProps
+}
+
+export interface TicketArticleTypeFields {
+  to: TicketArticleTypeReactiveFieldProps
+  cc: TicketArticleTypeReactiveFieldProps
+  subject: TicketArticleTypeReactiveFieldProps
+  body: TicketArticleTypeReactiveFieldProps
+  attachments: TicketArticleTypeReactiveFieldProps
+  security: TicketArticleTypeReactiveFieldProps
+}
+
 export interface AppSpecificTicketArticleType {
   value: string
   icon: string
   label: string
-  attributes: string[]
+  buttonLabel: string
   internal: boolean
   view: TicketViewPolicyMap
-  validation?: Record<
-    string,
-    string | Array<[rule: string, ...args: unknown[]]>
-  >
+  fields: Partial<Record<keyof TicketArticleTypeFields, TicketArticleTypeProps>>
+  required?: Record<string, boolean>
   options?: Record<string, unknown>
   contentType?: FieldEditorProps['contentType']
   editorMeta?: FieldEditorProps['meta']
+
   // when clicked on type, and type is not selected, or when dialog is opened with this type
-  onOpened?(ticket: TicketById, options: TicketArticleSelectionOptions): void
-  onSelected?(ticket: TicketById, options: TicketArticleSelectionOptions): void
+  onOpened?(
+    ticket: TicketById,
+    options: TicketArticleSelectionOptions,
+    form: FormRef | undefined,
+  ): void
+
+  onSelected?(
+    ticket: TicketById,
+    options: TicketArticleSelectionOptions,
+    form: FormRef | undefined,
+  ): void
+
   // when clicked on other type, but this one is selected
   onDeselected?(
     ticket: TicketById,
     options: TicketArticleSelectionOptions,
   ): void
-  // TODO use actual type instead of FormValues
-  updateForm?(formValues: FormSubmitData): FormSubmitData
+
+  updateForm?(
+    formValues: FormSubmitData<TicketFormData | TicketUpdateFormData>,
+  ): FormSubmitData<TicketFormData | TicketUpdateFormData>
+
+  performReply?(ticket: TicketById): MaybeRecord<TicketArticleFormValues>
 }
 
 export interface TicketArticleType
   extends Omit<AppSpecificTicketArticleType, 'icon'> {
   apps: AppName[]
-  icon: AppSpecificRecord<string>
+  icon: string
 }
 
 // inspired by tiptap plugins config
@@ -117,6 +176,7 @@ export interface TicketArticleActionPlugin {
     article: TicketArticle,
     options: TicketActionAddOptions,
   ): TicketArticleAction[]
+
   addTypes?(
     ticket: TicketById,
     options: TicketTypeAddOptions,

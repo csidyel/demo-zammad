@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'test_helper'
 
@@ -660,7 +660,7 @@ Comment: [] =
 "
     ticket_1, _article_p, _user_p, _mail = Channel::EmailParser.new.process({}, email_raw_string)
     ticket_count = Ticket.count
-    assert_not(ticket_1)
+    assert_equal(ticket_1, {})
     assert_equal(ticket_count, Ticket.count)
   end
 

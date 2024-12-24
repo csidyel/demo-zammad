@@ -1,4 +1,6 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { within } from '@testing-library/vue'
 
 import { visitView } from '#tests/support/components/visitView.ts'
 import {
@@ -6,15 +8,17 @@ import {
   mockGraphQLSubscription,
 } from '#tests/support/mock-graphql-api.ts'
 import { waitUntil } from '#tests/support/utils.ts'
-import { OrganizationDocument } from '#mobile/entities/organization/graphql/queries/organization.api.ts'
-import { OrganizationUpdatesDocument } from '#mobile/entities/organization/graphql/subscriptions/organizationUpdates.api.ts'
+
+import { OrganizationDocument } from '#shared/entities/organization/graphql/queries/organization.api.ts'
+import { OrganizationUpdatesDocument } from '#shared/entities/organization/graphql/subscriptions/organizationUpdates.api.ts'
+import type { OrganizationQuery } from '#shared/graphql/types.ts'
+import type { ConfidentTake } from '#shared/types/utils.ts'
+
 import {
   defaultOrganization,
   mockOrganizationObjectAttributes,
 } from '#mobile/entities/organization/__tests__/mocks/organization-mocks.ts'
-import type { ConfidentTake } from '#shared/types/utils.ts'
-import type { OrganizationQuery } from '#shared/graphql/types.ts'
-import { within } from '@testing-library/vue'
+
 import { mockTicketDetailViewGql } from './mocks/detail-view.ts'
 
 const visitTicketOrganization = async (
@@ -103,9 +107,9 @@ describe('static organization', () => {
     organization.vip = true
     const { view, mockApi } = await visitTicketOrganization({
       ...organization,
-      members: {
-        ...organization.members,
-        edges: organization.members?.edges || [],
+      allMembers: {
+        ...organization.allMembers,
+        edges: organization.allMembers?.edges || [],
         totalCount: 2,
       },
     })
@@ -120,7 +124,7 @@ describe('static organization', () => {
 
     expect(view.container).toHaveTextContent('Members')
 
-    const members = organization.members?.edges || []
+    const members = organization.allMembers?.edges || []
 
     expect(members).toHaveLength(1)
     expect(view.container).toHaveTextContent(members[0].node.fullname!)
@@ -129,8 +133,8 @@ describe('static organization', () => {
       data: {
         organization: {
           ...organization,
-          members: {
-            ...organization.members,
+          allMembers: {
+            ...organization.allMembers,
             edges: [
               ...members,
               {
@@ -143,7 +147,11 @@ describe('static organization', () => {
                   vip: false,
                   lastname: 'Hunter',
                   fullname: 'Jane Hunter',
+                  email: 'jane.hunter@example.com',
+                  phone: null,
                   outOfOffice: false,
+                  outOfOfficeStartAt: null,
+                  outOfOfficeEndAt: null,
                   active: true,
                   image: null,
                 },

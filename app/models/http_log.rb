@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class HttpLog < ApplicationModel
   store :request
@@ -20,7 +20,9 @@ optional you can put the max oldest chat entries as argument
 =end
 
   def self.cleanup(diff = 1.month)
-    HttpLog.where('created_at < ?', Time.zone.now - diff).delete_all
+    where(created_at: ...diff.ago)
+      .delete_all
+
     true
   end
 

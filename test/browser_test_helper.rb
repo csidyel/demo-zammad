@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 ENV['RAILS_ENV'] = 'test'
 # rubocop:disable Lint/NonLocalExitFromIterator, Style/GuardClause, Lint/MissingCopEnableDirective
@@ -28,7 +28,7 @@ class TestCase < ActiveSupport::TestCase
     # print current test case to STDOUT
     # for status reasoning and debugging purposes
     source_location  = self.class.instance_method(method_name).source_location
-    test_file_path   = source_location[0].remove("#{Rails.root}/") # rubocop:disable Rails/FilePath
+    test_file_path   = source_location[0].remove("#{Rails.root}/")
     test_method_line = source_location[1]
     puts <<~HTML
 
@@ -87,7 +87,7 @@ class TestCase < ActiveSupport::TestCase
           'profile.default_content_setting_values.notifications' => 1, # ALLOW notifications
         },
         # Disable shared memory usage as it does not really provide a performance gain but cause resource limit issues in CI.
-        args:             %w[--enable-logging --v=1 --disable-dev-shm-usage],
+        args:             %w[--enable-logging --v=1 --disable-dev-shm-usage --disable-search-engine-choice-screen],
         # Disable the "Chrome is being controlled by automated test software." info bar.
         exclude_switches: ['enable-automation'],
       )
@@ -3148,11 +3148,11 @@ wait untill text in selector disabppears
     if data[:email]
       search_query =  data[:email]
       search_target = data[:email]
-      search_css =    '.content.active .user-list .js-tableBody td:first-child'
+      search_css =    '.content.active .js-tableBody td:first-child'
     else
       search_query =  data[:phone]
       search_target = data[:firstname]
-      search_css =    '.content.active .user-list .js-tableBody td:nth-child(2)'
+      search_css =    '.content.active .js-tableBody td:nth-child(2)'
     end
 
     60.times do |i|
@@ -3209,7 +3209,7 @@ wait untill text in selector disabppears
       css:      '.content.active a[href="#manage/users"]',
       mute_log: true,
     )
-    instance.find_elements(css: '.content.active .user-list td:first-child').each do |element|
+    instance.find_elements(css: '.content.active td:first-child').each do |element|
       next if element.text.strip != data[:login]
 
       element.click
@@ -4877,7 +4877,7 @@ wait untill text in selector disabppears
     begin
       alert = instance.switch_to.alert
       alert.dismiss
-    rescue e
+    rescue => e
       tries -= 1
       sleep 0.5
       retry if tries.positive?

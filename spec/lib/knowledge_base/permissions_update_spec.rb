@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -96,6 +96,58 @@ RSpec.describe KnowledgeBase::PermissionsUpdate do
                 have_attributes(role: role_editor,  access: 'editor', permissionable: knowledge_base),
                 have_attributes(role: role_another, access: 'reader', permissionable: category),
               )
+          end
+        end
+
+        context 'when limiting sub-category in category with editor permission' do
+          before do
+            create(:knowledge_base_permission, permissionable: category, role: role_editor, access: 'editor')
+          end
+
+          it 'ignores redundant editor permission' do
+            described_class.new(child_category).update! role_editor => 'editor'
+            child_category.reload
+
+            expect(child_category.permissions_effective)
+              .to contain_exactly(
+                have_attributes(role: role_editor,  access: 'editor', permissionable: category),
+              )
+          end
+
+          it 'raises error on updating to reader permission' do
+            expect { described_class.new(child_category).update! role_editor => 'reader' }
+              .to raise_error(Exceptions::UnprocessableEntity)
+          end
+
+          it 'raises error on updating to none permission' do
+            expect { described_class.new(child_category).update! role_editor => 'none' }
+              .to raise_error(Exceptions::UnprocessableEntity)
+          end
+        end
+
+        context 'when limiting sub-category in category with none permission' do
+          before do
+            create(:knowledge_base_permission, permissionable: category, role: role_editor, access: 'none')
+          end
+
+          it 'ignores redundant none permission' do
+            described_class.new(child_category).update! role_editor => 'none'
+            child_category.reload
+
+            expect(child_category.permissions_effective)
+              .to contain_exactly(
+                have_attributes(role: role_editor,  access: 'none', permissionable: category),
+              )
+          end
+
+          it 'raises error on updating to reader permission' do
+            expect { described_class.new(child_category).update! role_editor => 'reader' }
+              .to raise_error(Exceptions::UnprocessableEntity)
+          end
+
+          it 'raises error on updating to editor permission' do
+            expect { described_class.new(child_category).update! role_editor => 'editor' }
+              .to raise_error(Exceptions::UnprocessableEntity)
           end
         end
       end

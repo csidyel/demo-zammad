@@ -1,18 +1,17 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-const now = new Date('2020-02-01 00:00:00')
-vi.setSystemTime(now)
+import { renderComponent } from '#tests/support/components/index.ts'
 
-const { defaultTicket } = await import(
-  '#mobile/pages/ticket/__tests__/mocks/detail-view.ts'
-)
-const { EnumTaskbarApp } = await import('#shared/graphql/types.ts')
-const { default: TicketDetailViewHeader } = await import(
-  '../TicketDetailViewHeader.vue'
-)
-const { renderComponent } = await import('#tests/support/components/index.ts')
+import { EnumTaskbarApp } from '#shared/graphql/types.ts'
 
-export {}
+import { defaultTicket } from '#mobile/pages/ticket/__tests__/mocks/detail-view.ts'
+
+import TicketDetailViewHeader from '../TicketDetailViewHeader.vue'
+
+vi.hoisted(() => {
+  const now = new Date('2020-02-01 00:00:00')
+  vi.setSystemTime(now)
+})
 
 const createdAt = new Date('2020-01-29 00:00:00')
 
@@ -34,10 +33,7 @@ describe('tickets zoom header', () => {
       router: true,
     })
 
-    expect(
-      view.getByIconName('mobile-home'),
-      'has home icon',
-    ).toBeInTheDocument()
+    expect(view.getByIconName('home'), 'has home icon').toBeInTheDocument()
     expect(
       view.getByText(`#${ticket.number}`),
       'has ticket id',

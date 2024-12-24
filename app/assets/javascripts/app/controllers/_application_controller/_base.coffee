@@ -251,8 +251,10 @@ class App.Controller extends Spine.Controller
     if closeTab
       App.TaskManager.remove(@taskKey)
 
-    # redirect to login
-    @navigate '#login'
+    if App.Session.get()
+      @navigate '#profile'
+    else
+      @navigate '#login'
 
     throw "No permission for #{key}"
 
@@ -367,8 +369,8 @@ class App.Controller extends Spine.Controller
     e.stopPropagation()
 
   preventDefaultAndStopPropagation: (e) ->
-    e.preventDefault()
-    e.stopPropagation()
+    e?.preventDefault()
+    e?.stopPropagation()
 
   startLoading: (el) =>
     return if @initLoadingDone && !el

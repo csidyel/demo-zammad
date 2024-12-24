@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Gql::Mutations
   class Organization::Update < BaseMutation
@@ -11,7 +11,7 @@ module Gql::Mutations
 
     # TODO/FIXME: Remove this again when we have a proper solution to deal with Pundit stuff in GraphQL mutations.
     def self.authorize(_obj, ctx)
-      ctx[:current_user].permissions?(['admin.organization', 'ticket.agent'])
+      ctx.current_user.permissions?(['admin.organization', 'ticket.agent'])
     end
 
     def resolve(current_organization:, input:)

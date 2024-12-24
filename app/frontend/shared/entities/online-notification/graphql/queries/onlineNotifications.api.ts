@@ -1,4 +1,4 @@
-import * as Types from '../../../../graphql/types';
+import * as Types from '#shared/graphql/types.ts';
 
 import gql from 'graphql-tag';
 import * as VueApolloComposable from '@vue/apollo-composable';
@@ -21,6 +21,8 @@ export const OnlineNotificationsDocument = gql`
           email
           vip
           outOfOffice
+          outOfOfficeStartAt
+          outOfOfficeEndAt
           active
           image
         }
@@ -31,6 +33,20 @@ export const OnlineNotificationsDocument = gql`
             id
             internalId
             title
+          }
+          ... on TicketArticle {
+            id
+            internalId
+            ticket {
+              id
+              internalId
+              title
+            }
+            to {
+              raw
+            }
+            bodyWithUrls
+            preferences
           }
         }
       }

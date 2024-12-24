@@ -1,9 +1,9 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Sequencer::Unit::Import::Kayako::Requester
   mattr_accessor :session_id
 
-  def request(api_path:, params: nil)
+  def request(api_path:, params: nil, attachment: false)
     10.times do |iteration|
       response = perform_request(
         api_path: api_path,
@@ -11,12 +11,12 @@ module Sequencer::Unit::Import::Kayako::Requester
       )
 
       if response.is_a? Net::HTTPOK
-        refresh_session_id(response)
+        refresh_session_id(response) if !attachment
         return response
       end
 
       handle_error response, iteration
-    rescue Net::HTTPClientError => e
+    rescue => e
       handle_exception e, iteration
     end
 

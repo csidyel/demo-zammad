@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class KnowledgeBase::Answer < ApplicationModel
   include HasTranslations
@@ -33,8 +33,14 @@ class KnowledgeBase::Answer < ApplicationModel
 
   acts_as_list scope: :category, top_of_list: 0
 
-  # provide consistent naming with KB category
-  alias_attribute :parent, :category
+  # Provide consistent naming with KB category
+  #
+  # Originally this used alias_attribute. But alias_attribute for relations for deprecated in Rails 7.1 and removed in 7.2
+  # However, alias_association was not merged in time for 7.2... So here is a workaround that will hopefully get removed in 7.3!
+  #
+  # Related PR: https://github.com/rails/rails/pull/49801
+  alias parent category
+  alias parent= category=
 
   alias assets_essential assets
 
@@ -48,7 +54,7 @@ class KnowledgeBase::Answer < ApplicationModel
   def assets(data = {})
     return data if assets_added_to?(data)
 
-    data = super(data)
+    data = super
     data = category.assets(data)
 
     ApplicationModel::CanAssets.reduce(translations, data)
@@ -103,7 +109,9 @@ class KnowledgeBase::Answer < ApplicationModel
   private
 
   def touch_translations
-    translations.each(&:touch) # move to #touch_all when migrationg to Rails 6
+    translations
+      .reject(&:destroyed?)
+      .each(&:touch) # touch each translation separately to trigger after_commit callbacks
   end
   after_touch :touch_translations
 

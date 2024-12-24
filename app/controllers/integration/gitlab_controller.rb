@@ -1,10 +1,10 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Integration::GitLabController < ApplicationController
   prepend_before_action :authenticate_and_authorize!
 
   def verify
-    gitlab = ::GitLab.new(params[:endpoint], params[:api_token], verify_ssl: params[:verify_ssl])
+    gitlab = ::GitLab.new(endpoint: params[:endpoint], api_token: params[:api_token], verify_ssl: params[:verify_ssl])
 
     gitlab.verify!
 
@@ -21,13 +21,21 @@ class Integration::GitLabController < ApplicationController
   end
 
   def query
-    config = Setting.get('gitlab_config')
-
-    gitlab = ::GitLab.new(config['endpoint'], config['api_token'], verify_ssl: config['verify_ssl'])
+    issue_tracker_list_service = if params[:ticket_id]
+                                   Service::Ticket::ExternalReferences::IssueTracker::TicketList.new(
+                                     type:   'gitlab',
+                                     ticket: Ticket.find(params[:ticket_id]),
+                                   )
+                                 else
+                                   Service::Ticket::ExternalReferences::IssueTracker::FetchMetadata.new(
+                                     type:        'gitlab',
+                                     issue_links: params[:links],
+                                   )
+                                 end
 
     render json: {
       result:   'ok',
-      response: gitlab.issues_by_urls(params[:links]),
+      response: issue_tracker_list_service.execute,
     }
   rescue => e
     logger.error e
@@ -51,5 +59,4 @@ class Integration::GitLabController < ApplicationController
       result: 'ok',
     }
   end
-
 end

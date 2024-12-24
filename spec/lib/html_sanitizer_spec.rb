@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -225,6 +225,15 @@ Building dependency tree...</code></pre>'
     context 'when HTML sanitizer is removing attributes/styles which are white listed. #4605' do
       it 'does not remove whitelisted attributes width' do
         expect(described_class.strict('<table width=20><tr width=20><td width=20>123</td></tr></table>')).to eq('<table style="width:20px;"><tr style="width:20px;"><td style="width:20px;">123</td></tr></table>')
+      end
+    end
+
+    context 'when handling <title> tags' do
+      let(:source) { '<title>some title</title><p>actual content</p>' }
+      let(:target) { '<p>actual content</p>' }
+
+      it 'removes them' do
+        expect(described_class.strict(source)).to eq(target)
       end
     end
   end

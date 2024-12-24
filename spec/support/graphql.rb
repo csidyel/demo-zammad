@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'graphql/gql/shared_examples/fails_if_unauthenticated'
 
@@ -45,7 +45,7 @@ module ZammadSpecSupportGraphql
       end
 
       def mock_broadcast(message)
-        @mock_channels.each do |_channel, handler|
+        @mock_channels.each_value do |handler|
           handler&.call(message)
         end
       end
@@ -102,7 +102,7 @@ module ZammadSpecSupportGraphql
       attr_reader :payload
 
       def initialize(payload)
-        @payload = payload
+        @payload = payload.with_indifferent_access
       end
 
       #
@@ -113,12 +113,12 @@ module ZammadSpecSupportGraphql
       #
       def data
         assert('GraphQL result does not contain errors') do
-          @payload['errors'].nil?
+          @payload[:errors].nil?
         end
         assert('GraphQL result contains exactly one data entry') do
-          @payload['data']&.count == 1
+          @payload[:data]&.count == 1
         end
-        @payload['data'].values.first
+        @payload[:data].values.first
       end
 
       #
@@ -131,11 +131,11 @@ module ZammadSpecSupportGraphql
       #   expect(gql.response.nodes('first_level', 'second_level').first).to include(...)
       #
       def nodes(*subkeys)
-        content = data.dig(*subkeys, 'edges')
+        content = data.dig(*subkeys, :edges)
         assert('GraphQL result contains node entries') do
           !content.nil?
         end
-        content.pluck('node')
+        content.pluck(:node)
       end
 
       #
@@ -145,12 +145,12 @@ module ZammadSpecSupportGraphql
       #
       def error
         assert('GraphQL result does not contain data') do
-          @payload['data'].nil? || @payload['data'].values.first.nil?
+          @payload[:data].nil? || @payload[:data].values.first.nil?
         end
         assert('GraphQL result contains exactly one error entry') do
-          @payload['errors']&.count == 1
+          @payload[:errors]&.count == 1
         end
-        @payload['errors'][0]
+        @payload[:errors][0]
       end
 
       #
@@ -160,9 +160,9 @@ module ZammadSpecSupportGraphql
       #
       def error_type
         assert('GraphQL result has error type') do
-          error.dig('extensions', 'type').present?
+          error.dig(:extensions, :type).present?
         end
-        error.dig('extensions', 'type').constantize
+        error.dig(:extensions, :type).constantize
       end
 
       #
@@ -171,7 +171,7 @@ module ZammadSpecSupportGraphql
       #   expect(gql.result.error_message).to eq('Something went wrong in this test...')
       #
       def error_message
-        error['message']
+        error[:message]
       end
 
       private
@@ -201,6 +201,12 @@ module ZammadSpecSupportGraphql
     #   gql.result
     #
     def execute(query, variables: {}, context: {})
+      context[:controller] ||= GraphqlController.new
+                                 .tap do |controller|
+                                   controller.request = ActionDispatch::Request.new({})
+                                   controller.request.remote_ip = context[:REMOTE_IP] || '127.0.0.1'
+                                 end
+
       context[:current_user] ||= @graphql_current_user
       if @graphql_current_user
         # TODO: we only fake a SID for now, create a real session?

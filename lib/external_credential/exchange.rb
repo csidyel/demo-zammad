@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class ExternalCredential::Exchange
 
@@ -88,7 +88,7 @@ class ExternalCredential::Exchange
     uri    = authorize_tokens_uri(credentials[:client_tenant])
     params = authorize_tokens_params(credentials, authorization_code)
 
-    response = Net::HTTP.post_form(uri, params)
+    response = UserAgent.post(uri.to_s, params)
     if response.code != 200 && response.body.blank?
       Rails.logger.error "Request failed! (code: #{response.code})"
       raise "Request failed! (code: #{response.code})"
@@ -123,6 +123,8 @@ class ExternalCredential::Exchange
   end
 
   def self.refresh_token
+    return {} if !Setting.get('exchange_integration')
+
     config = Setting.get('exchange_oauth')
     return {} if config.blank?
     return config if config[:created_at] >= 50.minutes.ago
@@ -130,7 +132,7 @@ class ExternalCredential::Exchange
     params = refresh_token_params(config)
     uri    = refresh_token_uri(config)
 
-    response = Net::HTTP.post_form(uri, params)
+    response = UserAgent.post(uri.to_s, params)
     if response.code != 200 && response.body.blank?
       HttpLog.create(
         direction:     'out',

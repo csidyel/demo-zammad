@@ -1,11 +1,13 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import type { TransitionProps } from 'vue'
 import { markRaw, shallowRef } from 'vue'
+
 import { Events } from './manage.ts'
+
 import type { DestroyComponentData, PushComponentData } from './types.ts'
+import type { TransitionProps } from 'vue'
 
 const props = defineProps<{
   /**
@@ -60,7 +62,7 @@ useEventListener(
     <Component
       :is="cmp"
       v-for="{ cmp, name: cmpName, id, props: cmpProps } in components"
-      :key="`${cmpName + id}`"
+      :key="`${cmpName}-${id}`"
       v-bind="cmpProps"
     />
   </TransitionGroup>
@@ -69,7 +71,7 @@ useEventListener(
     <Component
       :is="cmp"
       v-for="{ cmp, name: cmpName, id, props: cmpProps } in components"
-      :key="`${cmpName + id}`"
+      :key="`${cmpName}-${id}`"
       v-bind="cmpProps"
     />
   </template>

@@ -1,13 +1,18 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { createPinia, setActivePinia } from 'pinia'
-import { EnumObjectManagerObjects } from '#shared/graphql/types.ts'
+import { effectScope } from 'vue'
+
 import { mockGraphQLApi } from '#tests/support/mock-graphql-api.ts'
 import { waitForTimeout } from '#tests/support/utils.ts'
+
+import { EnumObjectManagerObjects } from '#shared/graphql/types.ts'
+
 import { ObjectManagerFrontendAttributesDocument } from '../../graphql/queries/objectManagerFrontendAttributes.api.ts'
-import { useObjectAttributes } from '../useObjectAttributes.ts'
-import objectFrontendAttributes from './mocks/objectFrontendAttributes.json'
 import { useObjectAttributeFormData } from '../useObjectAttributeFormData.ts'
+import { useObjectAttributes } from '../useObjectAttributes.ts'
+
+import objectFrontendAttributes from './mocks/objectFrontendAttributes.json'
 
 const mockOrganizationObjectManagerAttributes = () => {
   mockGraphQLApi(ObjectManagerFrontendAttributesDocument).willResolve({
@@ -26,29 +31,33 @@ const getObjectAttributeLookup = async () => {
   return attributesLookup
 }
 
+const scope = effectScope()
+
 describe('useObjectAttributeFormFields', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
   })
 
   it('check for correct internal values and additional object attribute values', async () => {
-    const objectAttributesLookup = await getObjectAttributeLookup()
+    await scope.run(async () => {
+      const objectAttributesLookup = await getObjectAttributeLookup()
 
-    const { internalObjectAttributeValues, additionalObjectAttributeValues } =
-      useObjectAttributeFormData(objectAttributesLookup.value, {
-        formId: '123456',
+      const { internalObjectAttributeValues, additionalObjectAttributeValues } =
+        useObjectAttributeFormData(objectAttributesLookup.value, {
+          formId: '123456',
+          name: 'Example',
+          textarea: 'some example',
+        })
+
+      expect(internalObjectAttributeValues).toEqual({
         name: 'Example',
-        textarea: 'some example',
       })
-
-    expect(internalObjectAttributeValues).toEqual({
-      name: 'Example',
+      expect(additionalObjectAttributeValues).toEqual([
+        {
+          name: 'textarea',
+          value: 'some example',
+        },
+      ])
     })
-    expect(additionalObjectAttributeValues).toEqual([
-      {
-        name: 'textarea',
-        value: 'some example',
-      },
-    ])
   })
 })

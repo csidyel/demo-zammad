@@ -1,5 +1,5 @@
 class ProfilePassword extends App.ControllerSubContent
-  @requiredPermission: 'user_preferences.password'
+  @requiredPermission: ['user_preferences.password', 'user_preferences.two_factor_authentication']
   header: __('Password & Authentication')
   events:
     'submit form':                       'update'
@@ -47,9 +47,13 @@ class ProfilePassword extends App.ControllerSubContent
     )
 
   allowsChangePassword: ->
+    return false if !@permissionCheck('user_preferences.password')
+
     App.Config.get('user_show_password_login') || @permissionCheck('admin.*')
 
   allowsTwoFactor: ->
+    return false if !@permissionCheck('user_preferences.two_factor_authentication')
+
     _.some(
       App.Config.all(),
       (state, setting) -> /^two_factor_authentication_method_/.test(setting) and state
@@ -91,14 +95,14 @@ class ProfilePassword extends App.ControllerSubContent
       @$('[name=password_new_confirm]').val('')
       @notify
         type:      'error'
-        msg:       __('Can\'t update password, your entered passwords do not match. Please try again!')
+        msg:       __("Can't update password, your entered passwords do not match. Please try again.")
         removeAll: true
       return
     if !params['password_new']
       @formEnable(e)
       @notify
         type:      'error'
-        msg:       __('Please supply your new password!')
+        msg:       __('Please provide your new password.')
         removeAll: true
       return
 
@@ -118,14 +122,13 @@ class ProfilePassword extends App.ControllerSubContent
 
     @notify(
       type: 'success'
-      msg:  App.i18n.translateContent( 'Password changed successfully!' )
+      msg:  __('Password changed successfully!')
     )
 
   error: (xhr, status, error) =>
     return if xhr.status != 422
 
-    data = xhr.responseJSON
-
+    data    = xhr.responseJSON
     message = if data.notice
                 App.i18n.translateContent( data.notice[0], data.notice[1] )
               else
@@ -184,7 +187,7 @@ class ProfilePassword extends App.ControllerSubContent
           success: (data, status, xhr) =>
             @notify
               type:      'success'
-              msg:       App.i18n.translateContent('Two-factor authentication method was removed.')
+              msg:       __('Two-factor authentication method was removed.')
               removeAll: true
 
             @load()
@@ -195,7 +198,7 @@ class ProfilePassword extends App.ControllerSubContent
 
             @notify
               type:      'error'
-              msg:       App.i18n.translateContent(message)
+              msg:       message
               removeAll: true
         )
     )
@@ -214,7 +217,7 @@ class ProfilePassword extends App.ControllerSubContent
       success: (data, status, xhr) =>
         @notify
           type:      'success'
-          msg:       App.i18n.translateContent('Two-factor authentication method was set as default.')
+          msg:       __('Two-factor authentication method was set as default.')
           removeAll: true
 
         @load()
@@ -225,7 +228,7 @@ class ProfilePassword extends App.ControllerSubContent
 
         @notify
           type:      'error'
-          msg:       App.i18n.translateContent(message)
+          msg:       message
           removeAll: true
     )
 
@@ -245,9 +248,12 @@ App.Config.set('Password', {
   target: '#profile/password',
   controller: ProfilePassword,
   permission: (controller) ->
-    canChangePassword = App.Config.get('user_show_password_login') || controller.permissionCheck('admin.*')
-    twoFactorEnabled  = App.Config.get('two_factor_authentication_method_authenticator_app')
+    canChangePassword = App.Config.get('user_show_password_login') ||
+      controller.permissionCheck('admin.*')
+
+    twoFactorEnabled  = App.TwoFactorMethods.isAnyAuthenticationMethodEnabled() &&
+      controller.permissionCheck('user_preferences.two_factor_authentication')
 
     return false if !canChangePassword && !twoFactorEnabled
-    return controller.permissionCheck('user_preferences.password')
+    return controller.permissionCheck('user_preferences.password') || twoFactorEnabled
 }, 'NavBarProfile')

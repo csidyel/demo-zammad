@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -37,6 +37,18 @@ RSpec.describe Sequencer::Unit::Import::Common::User::Skip::IsLdapSource, sequen
 
     context 'when LDAP source is not active' do
       let(:ldap_source) { create(:ldap_source, active: false) }
+
+      it 'does not skip' do
+        result = process({
+                           instance: user,
+                         })
+
+        expect(result).not_to include(action: :skipped)
+      end
+    end
+
+    context 'when user is empty' do
+      let(:user) { nil }
 
       it 'does not skip' do
         result = process({

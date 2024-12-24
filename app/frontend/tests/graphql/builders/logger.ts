@@ -1,4 +1,4 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { onTestFailed } from 'vitest'
 
@@ -9,11 +9,11 @@ afterEach(() => {
 })
 
 const logger = {
-  log(...mesages: unknown[]) {
+  log(...messages: unknown[]) {
     if (process.env.VITEST_LOG_GQL_FACTORY) {
-      console.log(...mesages)
+      console.log(...messages)
     } else {
-      logs.push(mesages)
+      logs.push(messages)
     }
   },
   printMockerLog() {

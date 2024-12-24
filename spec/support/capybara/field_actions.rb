@@ -1,6 +1,6 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-module FieldActions
+module FieldActions # rubocop:disable Metrics/ModuleLength
 
   delegate :app_host, to: Capybara
 
@@ -75,6 +75,19 @@ module FieldActions
     end
   end
 
+  # Set the field value of a form external data source field.
+  #
+  # @example
+  #  set_external_data_source_value('external_data_source', '*', 'Users')
+  #
+  def set_external_data_source_value(name, search, value)
+    input_elem = page.find(%( input[name*='#{name}']+.js-input ))
+
+    input_elem.fill_in with: search, fill_options: { clear: :backspace }
+
+    find('.js-optionsList span', text: value).click
+  end
+
   # Check the field value of a form select field.
   #
   # @example
@@ -83,6 +96,24 @@ module FieldActions
   def check_select_field_value(name, value)
     select_field = find("select[name='#{name}']")
     expect(select_field.value).to eq(value)
+  end
+
+  # Set the field value of a form select field.
+  #
+  # @example
+  #  set_select_field_value('select_field_name', '1')
+  #
+  def set_select_field_value(name, value)
+    find("select[name='#{name}'] option[value='#{value}']").select_option
+  end
+
+  # Set the value of a form select field via an option label.
+  #
+  # @example
+  #  set_select_field_label('select_field_name', 'A')
+  #
+  def set_select_field_label(name, label)
+    find("select[name='#{name}']").select(label)
   end
 
   # Check the field value of a form tree select field.
@@ -204,6 +235,48 @@ module FieldActions
     wait.until { find_all("input[name='#{name}'] ~ .token").length == token_count }
   end
 
+  # Check the field value of a form switch field.
+  #
+  # @example
+  #  check_switch_field_value('switch_field_name', true)
+  #
+  def check_switch_field_value(name, value, **find_options)
+    switch_field = find("input[name='#{name}']", visible: :all, **find_options)
+
+    if value
+      expect(switch_field).to be_checked
+    else
+      expect(switch_field).not_to be_checked
+    end
+  end
+
+  # Set the field value of a form switch field.
+  #
+  # @example
+  #  set_switch_field_value('switch_field_name', false)
+  #
+  def set_switch_field_value(name, value, **find_options)
+    find("input[name='#{name}']", visible: :all, **find_options).set(value)
+  end
+
+  # Check the field value of a form textarea field.
+  #
+  # @example
+  #  check_textarea_field_value('textarea_field_name', 'text', visible: :all)
+  #
+  def check_textarea_field_value(name, value, **find_options)
+    textarea_field = find("textarea[name='#{name}']", **find_options)
+    expect(textarea_field.value).to eq(value)
+  end
+
+  # Set the field value of a form textarea field.
+  #
+  # @example
+  #  set_textarea_field_value('textarea_field_name', 'text', visible: :all)
+  #
+  def set_textarea_field_value(name, value, **find_options)
+    find("textarea[name='#{name}']", **find_options).fill_in with: value
+  end
 end
 
 RSpec.configure do |config|

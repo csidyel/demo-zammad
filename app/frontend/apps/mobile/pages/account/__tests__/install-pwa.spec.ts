@@ -1,10 +1,13 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { computed } from 'vue'
+
+import { visitView } from '#tests/support/components/visitView.ts'
+
+import * as utilsBrowser from '#shared/utils/browser.ts'
+import * as utilsPWA from '#shared/utils/pwa.ts'
 
 import type { Mock } from 'vitest'
-import { visitView } from '#tests/support/components/visitView.ts'
-import * as utilsPWA from '#shared/utils/pwa.ts'
-import * as utilsBrowser from '#shared/utils/browser.ts'
-import { computed } from 'vue'
 
 const utilsPWAmock = vi.mocked(utilsPWA)
 const utilsBrowsermock = vi.mocked(utilsBrowser)
@@ -71,7 +74,7 @@ describe('Installing Zammad as PWA', () => {
     expect(
       view.getByText(/To install Zammad as an app, press/),
     ).toBeInTheDocument()
-    expect(view.getByIconName('mobile-ios-share')).toBeInTheDocument()
-    expect(view.getByIconName('mobile-add-square')).toBeInTheDocument()
+    expect(view.getByIconName('ios-share')).toBeInTheDocument()
+    expect(view.getByIconName('add-square')).toBeInTheDocument()
   })
 })

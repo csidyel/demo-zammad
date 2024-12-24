@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class CreateBase < ActiveRecord::Migration[4.2]
   def up
@@ -115,7 +115,13 @@ class CreateBase < ActiveRecord::Migration[4.2]
     create_table :groups do |t|
       t.references :signature,                      null: true
       t.references :email_address,                  null: true
-      t.string :name,   limit: (160 * 6) + (2 * 5), null: false # max depth of 6 and 5 delimiters inbetween
+
+      if ActiveRecord::Base.connection_db_config.configuration_hash[:adapter] == 'mysql2'
+        t.string :name, limit: (160 * 6) + (2 * 5), null: false # max depth of 6 and 5 delimiters in between
+      else
+        t.string :name, limit: (160 * 10) + (2 * 9), null: false # max depth of 10 and 9 delimiters in between
+      end
+
       t.string :name_last,              limit: 160, null: false
       t.integer :parent_id,                         null: true
       t.integer :assignment_timeout,                null: true
@@ -152,7 +158,8 @@ class CreateBase < ActiveRecord::Migration[4.2]
 
     create_table :permissions do |t|
       t.string :name,          limit: 255, null: false
-      t.string :note,          limit: 500, null: true
+      t.string :label,         limit: 255, null: true
+      t.string :description,   limit: 500, null: true
       t.string :preferences,   limit: 10_000, null: true
       t.boolean :active,       null: false, default: true
       t.boolean :allow_signup, null: false, default: false
@@ -327,6 +334,7 @@ class CreateBase < ActiveRecord::Migration[4.2]
       t.string :app,                                null: false, default: 'desktop'
       t.timestamps limit: 3, null: false
     end
+    add_index :taskbars, %i[user_id key app], unique: true
     add_index :taskbars, [:user_id]
     add_index :taskbars, [:key]
     add_foreign_key :taskbars, :users
@@ -481,7 +489,7 @@ class CreateBase < ActiveRecord::Migration[4.2]
     create_table :stores do |t|
       t.references :store_object,               null: false
       t.references :store_file,                 null: false
-      t.integer :o_id,              limit: 8,   null: false
+      t.string :o_id,               limit: 255, null: false
       t.string :preferences,        limit: 2500, null: true
       t.string :size,               limit: 50,  null: true
       t.string :filename,           limit: 250, null: false
@@ -793,6 +801,31 @@ class CreateBase < ActiveRecord::Migration[4.2]
     add_foreign_key :mentions, :users, column: :updated_by_id
     add_foreign_key :mentions, :users, column: :user_id
 
+    create_table :jobs do |t|
+      t.column :name,                 :string,  limit: 250,    null: false
+      t.column :timeplan,             :string,  limit: 2500,   null: false
+      t.column :object,               :string,  limit: 100,    null: false
+      t.column :condition,            :text, limit: 500.kilobytes + 1, null: false
+      t.column :perform,              :text, limit: 500.kilobytes + 1, null: false
+      t.column :disable_notification, :boolean,                null: false, default: true
+      t.column :last_run_at,          :timestamp, limit: 3,    null: true
+      t.column :next_run_at,          :timestamp, limit: 3,    null: true
+      t.column :running,              :boolean,                null: false, default: false
+      t.column :processed,            :integer,                null: false, default: 0
+      t.column :matching,             :integer,                null: false
+      t.column :pid,                  :string,  limit: 250,    null: true
+      t.column :localization,         :string,  limit: 20,     null: true # thx to ApplicationModel::CanCreatesAndUpdates ...
+      t.column :timezone,             :string,  limit: 250,    null: true
+      t.column :note,                 :string,  limit: 250,    null: true
+      t.column :active,               :boolean,                null: false, default: false
+      t.column :updated_by_id,        :integer,                null: false
+      t.column :created_by_id,        :integer,                null: false
+      t.timestamps limit: 3, null: false
+    end
+    add_index :jobs, [:name], unique: true
+    add_foreign_key :jobs, :users, column: :created_by_id
+    add_foreign_key :jobs, :users, column: :updated_by_id
+
     create_table :core_workflows do |t|
       t.string :name,                     limit: 100, null: false
       t.string :object,                   limit: 100, null: true
@@ -893,5 +926,19 @@ class CreateBase < ActiveRecord::Migration[4.2]
 
       t.timestamps limit: 3, null: false
     end
+
+    create_table :failed_emails do |t|
+      t.binary  :data,         null: false
+      t.integer :retries,      null: false, default: 1
+      t.text    :parsing_error
+    end
+
+    create_table :system_reports do |t|
+      t.text :data
+      t.string :uuid, limit: 50, null: false
+      t.integer :created_by_id, null: false
+      t.timestamps limit: 3, null: false
+    end
+    add_index :system_reports, [:uuid], unique: true
   end
 end

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -17,7 +17,7 @@ RSpec.describe(FormUpdater::Updater::User::Edit) do
 
   let(:user)                    { create(:agent) }
   let(:context)                 { { current_user: user } }
-  let(:meta)                    { { initial: true, form_id: 12_345 } }
+  let(:meta)                    { { initial: true, form_id: SecureRandom.uuid } }
   let(:data)                    { {} }
   let(:organization)            { create(:organization) }
   let(:secondary_organizations) { create_list(:organization, 5) }
@@ -33,7 +33,7 @@ RSpec.describe(FormUpdater::Updater::User::Edit) do
       # Triggers the object initialization from the id.
       resolved_result.authorized?
 
-      expect(resolved_result.resolve).to include(
+      expect(resolved_result.resolve[:fields]).to include(
         'organization_ids' => include({
                                         initialValue: secondary_organizations.map(&:id),
                                         options:      secondary_organizations.each_with_object([]) do |organization, options|

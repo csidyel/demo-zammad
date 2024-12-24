@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -22,8 +22,10 @@ RSpec.describe Auth::RequestCache do
   describe '.clear' do
     it 'does clear after update of an object' do
       described_class.fetch_value('a') { true }
-      Ticket.first.touch
-      expect(described_class.request_cache).to be_blank
+
+      expect { Ticket.first.touch }
+        .to change { described_class.request_cache.key? 'a' }
+        .to(false)
     end
   end
 end

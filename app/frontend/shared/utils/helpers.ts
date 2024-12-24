@@ -1,6 +1,7 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import linkifyStr from 'linkify-string'
+import { isEqual } from 'lodash-es'
 
 export { htmlCleanup } from './htmlCleanup.ts'
 
@@ -20,7 +21,7 @@ export const edgesToArray = <T>(
 export const normalizeEdges = <T>(
   object?: Maybe<{ edges?: { node: T }[]; totalCount?: number }>,
 ): { array: T[]; totalCount: number } => {
-  const array = edgesToArray(object)
+  const array = edgesToArray<T>(object)
   return {
     array,
     totalCount: object?.totalCount ?? array.length,
@@ -56,14 +57,14 @@ export const textToHtml = (text: string) => {
   return text.replace(/<div><\/div>/g, '<div><br></div>')
 }
 
-export const humanizeFileSize = (size: number) => {
-  if (size > 1024 * 1024) {
-    return `${Math.round((size * 10) / (1024 * 1024)) / 10} MB`
-  }
-  if (size > 1024) {
-    return `${Math.round(size / 1024)} KB`
-  }
-  return `${size} Bytes`
+export const textTruncate = (text: string, length = 100) => {
+  if (!text) return text
+
+  text = text.replace(/<([^>]+)>/g, '')
+
+  if (text.length < length) return text
+
+  return `${text.substring(0, length)}…`
 }
 
 export const debouncedQuery = <A extends unknown[], R>(
@@ -101,3 +102,26 @@ export const createDeferred = <T>() => {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   return { resolve: resolve!, reject: reject!, promise }
 }
+
+export const waitForElement = async (
+  query: string,
+  tries = 60,
+): Promise<Element | null> => {
+  if (tries === 0) return null
+  const element = document.querySelector(query)
+  if (element) return element
+  await new Promise((resolve) => requestAnimationFrame(resolve))
+  return waitForElement(query, tries - 1)
+}
+
+/**
+ * **Note:** @Generic T supports comparing arrays, array buffers, booleans,
+ * date objects, error objects, maps, numbers, `Object` objects, regexes,
+ * sets, strings, symbols, and typed arrays.
+ * `Object` objects are compared
+ * by their own, not inherited, enumerable properties.
+ * Functions and DOM
+ * nodes are **not** supported.
+ * */
+export const findChangedIndex = <T>(oldArray: T[], newArray: T[]) =>
+  oldArray.findIndex((item, index) => !isEqual(item, newArray[index]))

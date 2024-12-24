@@ -1,10 +1,10 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
 require 'keycloak/admin'
 
-RSpec.describe 'SAML Authentication', authenticated_as: false, integration: true, required_envs: %w[KEYCLOAK_BASE_URL KEYCLOAK_ADMIN_USER KEYCLOAK_ADMIN_PASSWORD], type: :system do
+RSpec.describe 'SAML Authentication', authenticated_as: false, integration: true, integration_standalone: :saml, required_envs: %w[KEYCLOAK_BASE_URL KEYCLOAK_ADMIN_USER KEYCLOAK_ADMIN_PASSWORD], type: :system do
   let(:zammad_base_url)              { "#{Capybara.app_host}:#{Capybara.current_session.server.port}" }
   let(:zammad_saml_metadata)         { "#{zammad_base_url}/auth/saml/metadata" }
   let(:saml_base_url)                { ENV['KEYCLOAK_BASE_URL'] }
@@ -14,55 +14,7 @@ RSpec.describe 'SAML Authentication', authenticated_as: false, integration: true
 
   # Only before(:each) can access let() variables.
   before do
-    # Setup Keycloak SAML authentication.
-    if !Keycloak::Admin.configured?
-      Keycloak::Admin.configure do |config|
-        config.username = ENV['KEYCLOAK_ADMIN_USER']
-        config.password = ENV['KEYCLOAK_ADMIN_PASSWORD']
-        config.realm    = 'zammad'
-        config.base_url = ENV['KEYCLOAK_BASE_URL']
-      end
-    end
-
-    # Force create Zammad client in Keycloak.
-    client = Keycloak::Admin.clients.lookup(clientId: zammad_saml_metadata)
-    if client.count.positive?
-      Keycloak::Admin.clients.delete(client.first['id'])
-    end
-    Keycloak::Admin.clients.create(JSON.parse(saml_client_json))
-  end
-
-  def set_saml_config(name_identifier_format: nil, uid_attribute: nil, idp_slo_service_url: true, security: nil)
-    # Setup Zammad SAML authentication.
-    response = UserAgent.get(saml_realm_zammad_descriptor)
-    raise 'No Zammad realm descriptor found' if !response.success?
-
-    match = response.body.match(%r{<ds:X509Certificate>(?<cert>.+)</ds:X509Certificate>})
-    raise 'No X509Certificate found' if !match[:cert]
-
-    auth_saml_credentials =
-      {
-        display_name:           'SAML',
-        idp_sso_target_url:     "#{saml_base_url}/realms/zammad/protocol/saml",
-        idp_cert:               "-----BEGIN CERTIFICATE-----\n#{match[:cert]}\n-----END CERTIFICATE-----",
-        name_identifier_format: name_identifier_format || 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
-      }
-    auth_saml_credentials[:idp_slo_service_url] = "#{saml_base_url}/realms/zammad/protocol/saml" if idp_slo_service_url
-    auth_saml_credentials[:uid_attribute] = uid_attribute if uid_attribute
-
-    if security.present?
-      auth_saml_credentials[:security] = 'on'
-      auth_saml_credentials[:certificate] = "-----BEGIN CERTIFICATE-----\n#{security[:cert]}\n-----END CERTIFICATE-----"
-      auth_saml_credentials[:private_key] = "-----BEGIN RSA PRIVATE KEY-----\n#{security[:key]}\n-----END RSA PRIVATE KEY-----" # gitleaks:allow
-      auth_saml_credentials[:private_key_secret] = ''
-    end
-
-    # Disable setting validation. We have an explicit test for this.
-    setting = Setting.find_by(name: 'auth_saml_credentials')
-    setting.update!(preferences: {})
-
-    Setting.set('auth_saml_credentials', auth_saml_credentials)
-    Setting.set('auth_saml', true)
+    saml_configure_keycloak(zammad_saml_metadata:, saml_client_json:)
   end
 
   # Shared_examples does not work.
@@ -73,25 +25,12 @@ RSpec.describe 'SAML Authentication', authenticated_as: false, integration: true
       find('.auth-provider--saml').click
     when 'mobile'
       visit '/login', app: :mobile
-      find('.icon-mobile-saml').click
+      find('.icon-saml').click
     end
 
-    login_saml_keycloak
+    saml_login_keycloak
 
     check_logged_in(app: app)
-  end
-
-  def login_saml_keycloak
-    find_by_id('kc-form')
-    expect(page).to have_current_path(%r{/realms/zammad/protocol/saml\?SAMLRequest=.+})
-    expect(page).to have_css('#kc-form-login')
-
-    within '#kc-form-login' do
-      fill_in 'username', with: 'john.doe'
-      fill_in 'password', with: 'test'
-
-      click_button
-    end
   end
 
   def check_logged_in(app: 'desktop')
@@ -114,9 +53,10 @@ RSpec.describe 'SAML Authentication', authenticated_as: false, integration: true
     find_by_id('app')
   end
 
+  # TODO: Should be replaced with tests for the new desktop-view (or the test in general should be removed outside of selenium).
   describe 'SP login and SP logout' do
     before do
-      set_saml_config(security: security)
+      saml_configure_zammad(saml_base_url:, saml_realm_zammad_descriptor:, security:)
     end
 
     let(:security) { nil }
@@ -125,14 +65,12 @@ RSpec.describe 'SAML Authentication', authenticated_as: false, integration: true
       login_saml
 
       visit saml_realm_zammad_accounts
-      expect(page).to have_css('#landingSignOutButton')
-      find_by_id('landingWelcomeMessage')
+      expect(page).to have_text('John Doe')
 
       logout_saml
 
       visit saml_realm_zammad_accounts
-      expect(page).to have_no_css('#landingSignOutButton')
-      find_by_id('landingWelcomeMessage')
+      expect(page).to have_text('Sign in')
     end
 
     context 'with client signature required and encrypted assertions enabled' do
@@ -164,8 +102,8 @@ RSpec.describe 'SAML Authentication', authenticated_as: false, integration: true
         cert = pem
 
         pem = key.to_pem
-        pem.gsub!('-----BEGIN RSA PRIVATE KEY-----', '')
-        pem.gsub!('-----END RSA PRIVATE KEY-----', '')
+        pem.gsub!('-----BEGIN RSA PRIVATE KEY-----', '') # gitleaks:allow
+        pem.gsub!('-----END RSA PRIVATE KEY-----', '') # gitleaks:allow
         pem.delete!("\n").strip!
         key = pem
 
@@ -186,14 +124,12 @@ RSpec.describe 'SAML Authentication', authenticated_as: false, integration: true
         login_saml
 
         visit saml_realm_zammad_accounts
-        expect(page).to have_css('#landingSignOutButton')
-        find_by_id('landingWelcomeMessage')
+        expect(page).to have_text('John Doe')
 
         logout_saml
 
         visit saml_realm_zammad_accounts
-        expect(page).to have_no_css('#landingSignOutButton')
-        find_by_id('landingWelcomeMessage')
+        expect(page).to have_text('Sign in')
       end
 
     end
@@ -201,7 +137,7 @@ RSpec.describe 'SAML Authentication', authenticated_as: false, integration: true
 
   describe 'SP login and IDP logout' do
     before do
-      set_saml_config
+      saml_configure_zammad(saml_base_url:, saml_realm_zammad_descriptor:)
     end
 
     it 'is successful' do
@@ -209,8 +145,8 @@ RSpec.describe 'SAML Authentication', authenticated_as: false, integration: true
 
       visit saml_realm_zammad_accounts
 
-      find_by_id('landingWelcomeMessage')
-      find('#landingSignOutButton').click
+      click_on 'John Doe'
+      find('a', text: 'Sign out').click
 
       visit '/'
       expect(page).to have_current_route('login')
@@ -220,7 +156,7 @@ RSpec.describe 'SAML Authentication', authenticated_as: false, integration: true
 
   describe "use custom user attribute 'uid' as uid_attribute" do
     before do
-      set_saml_config(uid_attribute: 'uid')
+      saml_configure_zammad(saml_base_url:, saml_realm_zammad_descriptor:, uid_attribute: 'uid')
     end
 
     it 'is successful' do
@@ -235,7 +171,7 @@ RSpec.describe 'SAML Authentication', authenticated_as: false, integration: true
 
   describe 'use unspecified (IDP provided) name identifier' do
     before do
-      set_saml_config(name_identifier_format: 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified')
+      saml_configure_zammad(saml_base_url:, saml_realm_zammad_descriptor:, name_identifier_format: 'urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified')
     end
 
     it 'is successful' do
@@ -250,7 +186,7 @@ RSpec.describe 'SAML Authentication', authenticated_as: false, integration: true
 
   describe 'SAML logout without IDP SLO service URL' do
     before do
-      set_saml_config(idp_slo_service_url: false)
+      saml_configure_zammad(saml_base_url:, saml_realm_zammad_descriptor:, idp_slo_service_url: false)
     end
 
     it 'is successful' do
@@ -262,7 +198,7 @@ RSpec.describe 'SAML Authentication', authenticated_as: false, integration: true
       logout_saml
 
       visit saml_realm_zammad_accounts
-      expect(page).to have_css('#landingSignOutButton')
+      expect(page).to have_text('John Doe')
     end
   end
 
@@ -273,37 +209,35 @@ RSpec.describe 'SAML Authentication', authenticated_as: false, integration: true
 
     context 'when login is tested' do
       before do
-        set_saml_config
+        saml_configure_zammad(saml_base_url:, saml_realm_zammad_descriptor:)
       end
 
       it 'is successful' do
         login_saml(app: 'mobile')
 
         visit saml_realm_zammad_accounts
-        find('#landingMobileKebabButton').click
-        expect(page).to have_css('#landingSignOutLink')
+        click_on 'Actions'
+        expect(page).to have_text('Sign out')
       end
     end
 
     context 'when logout is tested' do
       before do
-        set_saml_config
+        saml_configure_zammad(saml_base_url:, saml_realm_zammad_descriptor:)
       end
 
       it 'is successful' do
         login_saml(app: 'mobile')
 
         visit '/account', app: :mobile
-        click_button('Sign out')
+        click_on('Sign out')
 
         wait.until do
           expect(page).to have_button('Sign in')
         end
 
         visit saml_realm_zammad_accounts
-        find('#landingMobileKebabButton').click
-        expect(page).to have_no_css('#landingSignOutLink')
-        find_by_id('landingWelcomeMessage')
+        expect(page).to have_text('Sign in')
       end
     end
 
@@ -312,36 +246,36 @@ RSpec.describe 'SAML Authentication', authenticated_as: false, integration: true
         Setting.set('auth_third_party_auto_link_at_inital_login', true)
         create(:agent, email: 'john.doe@saml.example.com', login: 'john.doe', firstname: 'John', lastname: 'Doe')
 
-        set_saml_config
+        saml_configure_zammad(saml_base_url:, saml_realm_zammad_descriptor:)
       end
 
       it 'is successful' do
         login_saml(app: 'mobile')
 
         visit saml_realm_zammad_accounts
-        find('#landingMobileKebabButton').click
-        expect(page).to have_css('#landingSignOutLink')
+        click_on 'Actions'
+        expect(page).to have_text('Sign out')
       end
     end
 
     context 'when logout is tested without IDP SLO service URL' do
       before do
-        set_saml_config(idp_slo_service_url: false)
+        saml_configure_zammad(saml_base_url:, saml_realm_zammad_descriptor:, idp_slo_service_url: false)
       end
 
       it 'is successful' do
         login_saml(app: 'mobile')
 
         visit '/account', app: :mobile
-        click_button('Sign out')
+        click_on('Sign out')
 
         wait.until do
           expect(page).to have_button('Sign in')
         end
 
         visit saml_realm_zammad_accounts
-        find('#landingMobileKebabButton').click
-        expect(page).to have_css('#landingSignOutLink')
+        click_on 'Actions'
+        expect(page).to have_text('Sign out')
       end
     end
 

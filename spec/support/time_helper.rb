@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module TimeHelperCache
   %w[travel travel_to freeze_time travel_back].each do |method_name|
@@ -21,7 +21,7 @@ module TimeHelperCache
 
   # Reimplementation of `setMonth(month[, date])` from the ECMAScript specification.
   #   https://tc39.es/ecma262/multipage/numbers-and-dates.html#sec-date.prototype.setmonth
-  def frontend_relative_month(obj, month, date = nil)
+  def frontend_relative_month(obj, month, date = nil, year: nil)
     # 1. Let t be ? thisTimeValue(this value).
     t = obj
 
@@ -51,6 +51,9 @@ module TimeHelperCache
       new_year += 1
       new_month -= 12
     end
+
+    new_year += year if year
+
     Time.zone.local(new_year, new_month, dt, t.hour, t.min, t.sec)
 
     # Ignore the rest, as `Time#local` already handles it correctly:

@@ -1,8 +1,10 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { TicketView } from '#shared/entities/ticket/types.ts'
 import { mockApplicationConfig } from '#tests/support/mock-applicationConfig.ts'
 import { setupView } from '#tests/support/mock-user.ts'
+
+import type { TicketView } from '#shared/entities/ticket/types.ts'
+
 import {
   createTicketArticle,
   createTestArticleActions,
@@ -29,15 +31,24 @@ describe('article delete action', () => {
     const ticket = createTicket({ policy: { update: true } })
     const article = createDeletableArticle()
     const actions = createTestArticleActions(ticket, article)
-    expect(actions.find((a) => a.name === 'articleDelete')).toBeDefined()
-  })
 
+    expect(actions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'articleDelete' }),
+      ]),
+    )
+  })
   it('does not return article delete for article created by another user', () => {
     setupView('agent')
     const ticket = createTicket({ policy: { update: true } })
     const article = createDeletableArticle('456')
     const actions = createTestArticleActions(ticket, article)
-    expect(actions.find((a) => a.name === 'articleDelete')).toBeUndefined()
+
+    expect(actions).toEqual(
+      expect.not.arrayContaining([
+        expect.objectContaining({ name: 'articleDelete' }),
+      ]),
+    )
   })
 
   it('does not return article delete for communication article', () => {
@@ -45,7 +56,12 @@ describe('article delete action', () => {
     const ticket = createTicket({ policy: { update: true } })
     const article = createDeletableArticle('123', true, false)
     const actions = createTestArticleActions(ticket, article)
-    expect(actions.find((a) => a.name === 'articleDelete')).toBeUndefined()
+
+    expect(actions).toEqual(
+      expect.not.arrayContaining([
+        expect.objectContaining({ name: 'articleDelete' }),
+      ]),
+    )
   })
 
   it('returns article delete for internal communication article', () => {
@@ -53,7 +69,12 @@ describe('article delete action', () => {
     const ticket = createTicket({ policy: { update: true } })
     const article = createDeletableArticle('123', true, true)
     const actions = createTestArticleActions(ticket, article)
-    expect(actions.find((a) => a.name === 'articleDelete')).toBeDefined()
+
+    expect(actions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'articleDelete' }),
+      ]),
+    )
   })
 
   it('does not return article delete for old article', () => {
@@ -67,7 +88,12 @@ describe('article delete action', () => {
       new Date('1999 12 31'),
     )
     const actions = createTestArticleActions(ticket, article)
-    expect(actions.find((a) => a.name === 'articleDelete')).toBeUndefined()
+
+    expect(actions).toEqual(
+      expect.not.arrayContaining([
+        expect.objectContaining({ name: 'articleDelete' }),
+      ]),
+    )
   })
 
   it('returns article delete for old article if delete timeframe is disabled', () => {
@@ -83,7 +109,11 @@ describe('article delete action', () => {
       new Date('1999 12 31'),
     )
     const actions = createTestArticleActions(ticket, article)
-    expect(actions.find((a) => a.name === 'articleDelete')).toBeDefined()
+    expect(actions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'articleDelete' }),
+      ]),
+    )
   })
 
   const views: TicketView[] = ['agent', 'customer']
@@ -94,7 +124,12 @@ describe('article delete action', () => {
       const ticket = createTicket({ policy: { update: false } })
       const article = createDeletableArticle()
       const actions = createTestArticleActions(ticket, article)
-      expect(actions.find((a) => a.name === 'articleDelete')).toBeUndefined()
+
+      expect(actions).toEqual(
+        expect.not.arrayContaining([
+          expect.objectContaining({ name: 'articleDelete' }),
+        ]),
+      )
     },
   )
 
@@ -103,6 +138,11 @@ describe('article delete action', () => {
     const ticket = createTicket({ policy: { update: true } })
     const article = createTicketArticle()
     const actions = createTestArticleActions(ticket, article)
-    expect(actions.find((a) => a.name === 'articleDelete')).toBeUndefined()
+
+    expect(actions).toEqual(
+      expect.not.arrayContaining([
+        expect.objectContaining({ name: 'articleDelete' }),
+      ]),
+    )
   })
 })

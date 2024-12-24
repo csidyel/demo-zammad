@@ -1,13 +1,14 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { Content, Editor } from '@tiptap/core'
-import type { SuggestionOptions } from '@tiptap/suggestion'
+import { PluginKey } from '@tiptap/pm/state'
 import { VueRenderer } from '@tiptap/vue-3'
 import tippy, { type GetReferenceClientRect, type Instance } from 'tippy.js'
-import { PluginKey } from '@tiptap/pm/state'
 
 import SuggestionsList from '../SuggestionsList.vue'
+
 import type { MentionType } from '../types.ts'
+import type { Content, Editor } from '@tiptap/core'
+import type { SuggestionOptions } from '@tiptap/suggestion'
 
 interface MentionOptions<T> {
   activator: string
@@ -69,7 +70,7 @@ export default function buildMentionExtension<T>(
           ;[popup] = tippy('body', {
             getReferenceClientRect: props.clientRect as GetReferenceClientRect,
             appendTo: () => document.body,
-            content: component.element,
+            content: component.element || undefined,
             showOnCreate: true,
             interactive: true,
             trigger: 'manual',

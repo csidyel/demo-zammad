@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class NotificationFactory::Renderer
 
@@ -32,7 +32,7 @@ examples how to use
   def initialize(objects:, template:, locale: nil, timezone: nil, escape: true, url_encode: false, trusted: false)
     @objects  = objects
     @locale   = locale || Locale.default
-    @timezone = timezone || Setting.get('timezone_default_sanitized')
+    @timezone = timezone || Setting.get('timezone_default')
     @template = NotificationFactory::Template.new(template, escape || url_encode, trusted)
     @escape = escape
     @url_encode = url_encode
@@ -49,7 +49,7 @@ examples how to use
 
   # d - data of object
   # d('user.firstname', htmlEscape)
-  def d(key, escape = nil)
+  def d(key, escape = nil, escaping: true)
 
     # do validation, ignore some methods
     return "\#{#{key} / not allowed}" if !data_key_valid?(key)
@@ -96,16 +96,24 @@ examples how to use
       return debug("\#{#{key} / no such method}")
     end
 
+    method_whitelist = %w[avatar]
+
     previous_object_refs = ''
     object_methods_s = ''
-    object_methods.each do |method_raw|
+    object_methods.each_with_index do |method_raw, index|
 
       method = method_raw.strip
 
       if method == 'value'
+        escape = textarea_attributes(previous_object_refs).exclude?(object_methods_s.split('.').last)
         temp = object_refs
         object_refs = display_value(previous_object_refs, method, object_methods_s, object_refs)
         previous_object_refs = temp
+      elsif index == object_methods.length - 1 && (is_textarea_attribute = textarea_attributes(object_refs).include?(method))
+        temp = object_refs
+        object_refs = object_refs.send(method.to_sym)&.text2html
+        previous_object_refs = temp
+        escape = false
       end
 
       if object_methods_s != ''
@@ -113,7 +121,7 @@ examples how to use
       end
       object_methods_s += method
 
-      next if method == 'value'
+      next if method == 'value' || is_textarea_attribute
 
       if object_methods_s == ''
         value = debug("\#{#{object_name}.#{object_methods_s} / no such method}")
@@ -123,13 +131,26 @@ examples how to use
       arguments = nil
       if %r{\A(?<method_id>[^(]+)\((?<parameter>[^)]+)\)\z} =~ method
 
-        if parameter != parameter.to_i.to_s
+        parameters = []
+        parameter.split(',').each do |p|
+          p = p.strip!
+
+          if p != p.to_i.to_s
+            value = debug("\#{#{object_name}.#{object_methods_s} / invalid parameter: #{p}}")
+            break
+          end
+
+          parameters << parameter.to_i
+        end
+
+        # Ensure that e.g. 'ticket.title.slice(3,4)' is not allowed, but 'ticket.owner.avatar(150,150)' is
+        if !parameters.size.eql?(1) && method_whitelist.exclude?(method_id)
           value = debug("\#{#{object_name}.#{object_methods_s} / invalid parameter: #{parameter}}")
           break
         end
 
         begin
-          arguments = Array(parameter.to_i)
+          arguments = parameters
           method    = method_id
         rescue
           value = debug("\#{#{object_name}.#{object_methods_s} / #{e.message}}")
@@ -138,12 +159,20 @@ examples how to use
       end
 
       # if method exists
-      if !object_refs.respond_to?(method.to_sym)
+      if !object_refs.respond_to?(method.to_sym) && method_whitelist.exclude?(method)
         value = debug("\#{#{object_name}.#{object_methods_s} / no such method}")
         break
       end
+
       begin
         previous_object_refs = object_refs
+
+        if method.to_sym.eql?(:avatar)
+          object_refs = handle_user_avatar(previous_object_refs, *arguments)
+          escape = false
+          break
+        end
+
         object_refs = object_refs.send(method.to_sym, *arguments)
 
         # body_as_html should trigger the cloning of all inline attachments from the parent article (issue #2399)
@@ -156,6 +185,8 @@ examples how to use
       end
     end
     placeholder = value || object_refs
+
+    return placeholder if !escaping
 
     escaping(convert_to_timezone(placeholder), escape)
   end
@@ -182,6 +213,29 @@ examples how to use
     CGI.escapeHTML(convert_to_timezone(value).to_s)
   end
 
+  def dt(params_string)
+    datetime_object, format_string, timezone = params_string.scan(%r{(?:['"].*?["']|[^,])+}).map do |param|
+      param.strip.sub(%r{^["']}, '').sub(%r{["']$}, '')
+    end
+    return debug("\#{datetime object missing / invalid parameter}") if datetime_object.blank?
+
+    value = d(datetime_object, escaping: false)
+
+    allowed_classes = %w[ActiveSupport::TimeWithZone Date Time DateTime].freeze
+    return debug("\#{#{datetime_object} / invalid parameter}") if allowed_classes.exclude?(value.class.to_s)
+
+    format_string = format_string.presence || '%Y-%m-%d %H:%M:%S'
+    timezone      = timezone.presence || @timezone
+
+    begin
+      result = value.in_time_zone(timezone).strftime(format_string)
+    rescue
+      return debug("\#{#{timezone} / invalid parameter}")
+    end
+
+    result
+  end
+
   private
 
   def debug(message)
@@ -196,6 +250,7 @@ examples how to use
   end
 
   def escaping(key, escape)
+    return escaping(key['value'], escape) if key.is_a?(Hash) && key.key?('value')
     return escaping(key.join(', '), escape) if key.respond_to?(:join)
     return key if escape == false
     return key if escape.nil? && !@escape && !@url_encode
@@ -223,17 +278,46 @@ examples how to use
 
   def display_value(object, method_name, previous_method_names, key)
     return key if method_name != 'value' ||
-                  (!key.instance_of?(String) && !key.instance_of?(Array))
+                  (!key.instance_of?(String) && !key.instance_of?(Array) && !key.is_a?(Hash))
 
-    attributes = ObjectManager::Attribute
-                 .where(object_lookup_id: ObjectLookup.by_name(object.class.to_s))
-                 .where(name: previous_method_names.split('.').last)
+    attribute = object_manager_attributes(object)
+                  .where(name: previous_method_names.split('.').last)
+                  .first
 
-    case attributes.first.data_type
+    case attribute.data_type
     when %r{^(multi)?select$}
-      select_value(attributes.first, key)
+      select_value(attribute, key)
+    when 'textarea'
+      key.text2html
+    when 'autocompletion_ajax_external_data_source'
+      key['label']
     else
       key
     end
+  end
+
+  def handle_user_avatar(user, width = 60, height = 60)
+    return if user.image.blank?
+
+    file = avatar_file(user.image)
+    return if file.nil?
+
+    file_content_type = file.preferences['Content-Type'] || file.preferences['Mime-Type']
+
+    "<img src='data:#{file_content_type};base64,#{Base64.strict_encode64(file.content)}' width='#{width}' height='#{height}' />"
+  end
+
+  def avatar_file(image_hash)
+    Avatar.get_by_hash(image_hash)
+  rescue
+    nil
+  end
+
+  def object_manager_attributes(object)
+    ObjectManager::Attribute.where(object_lookup_id: ObjectLookup.by_name(object.class.to_s))
+  end
+
+  def textarea_attributes(object)
+    object_manager_attributes(object).where(data_type: :textarea).map(&:name)
   end
 end

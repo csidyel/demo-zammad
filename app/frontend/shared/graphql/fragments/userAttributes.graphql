@@ -5,7 +5,21 @@ fragment userAttributes on User {
   lastname
   fullname
   image
+  outOfOffice
+  outOfOfficeStartAt
+  outOfOfficeEndAt
+  outOfOfficeReplacement {
+    id
+    internalId
+    firstname
+    lastname
+    fullname
+    login
+    phone
+    email
+  }
   preferences
+  ...userPersonalSettings
   objectAttributeValues {
     ...objectAttributeValues
   }

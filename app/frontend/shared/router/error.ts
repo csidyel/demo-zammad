@@ -1,10 +1,18 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { ref } from 'vue'
 
 import { ErrorStatusCodes } from '#shared/types/error.ts'
-import { ref } from 'vue'
+
 import type { NavigationHookAfter, Router } from 'vue-router'
 
-interface ErrorOptions {
+export enum ErrorRouteType {
+  PublicError = 'Error',
+  AuthenticatedError = 'ErrorTab',
+}
+
+export interface ErrorOptions {
+  type?: ErrorRouteType
   title: string
   message: string
   statusCode: ErrorStatusCodes
@@ -14,7 +22,7 @@ interface ErrorOptions {
 
 const defaultOptions: ErrorOptions = {
   title: __('Not Found'),
-  message: __("We're sorry, but this page doesn't exist."),
+  message: __("This page doesn't exist."),
   messagePlaceholder: [],
   statusCode: ErrorStatusCodes.NotFound,
 }
@@ -29,19 +37,21 @@ export const errorAfterGuard: NavigationHookAfter = (to) => {
   }
 }
 
-export const redirectToError = (
-  router: Router,
-  options: Partial<ErrorOptions> = {},
-) => {
+export const redirectErrorRoute = (options: Partial<ErrorOptions> = {}) => {
   errorOptions.value = {
     ...defaultOptions,
     ...options,
   }
 
-  return router.replace({
-    name: 'Error',
+  return {
+    name: options.type ?? ErrorRouteType.PublicError,
     query: {
       redirect: '1',
     },
-  })
+  }
 }
+
+export const redirectToError = (
+  router: Router,
+  options: Partial<ErrorOptions> = {},
+) => router.replace(redirectErrorRoute(options))

@@ -73,7 +73,7 @@ class ProfileTokenAccess extends App.ControllerSubContent
     data = JSON.parse(xhr.responseText)
     @notify(
       type: 'error'
-      msg:  App.i18n.translateContent(data.message || data.error)
+      msg:  data.message || data.error
     )
 
 class Create extends App.ControllerModal
@@ -81,6 +81,8 @@ class Create extends App.ControllerModal
   buttonSubmit: __('Create')
   buttonCancel: true
   shown: true
+  events:
+    'change input[name=permission]': 'onToggle'
 
   content: ->
     content = $(App.view('profile/token_access_create')(
@@ -93,6 +95,12 @@ class Create extends App.ControllerModal
     content.find('.js-date').html(datepicker)
     content
 
+  onToggle: (e) =>
+    isChecked = e.currentTarget.checked
+    prefix    = e.currentTarget.value + '.'
+
+    @$(".js-subPermissionList:has(input[value^='#{prefix}'])").toggle(!isChecked)
+
   onSubmit: (e) =>
     e.preventDefault()
     params = @formParam(e.target)
@@ -101,12 +109,18 @@ class Create extends App.ControllerModal
     if _.isEmpty(params['permission'])
       @notify(
         type: 'error'
-        msg:  App.i18n.translateContent("The required parameter 'permission' is missing.")
+        msg:  __("The required parameter 'permission' is missing.")
       )
       return
 
     if !_.isArray(params['permission'])
       params['permission'] = [params['permission']]
+
+    params['permission'] = _.reduce(params['permission'], (memo, permissionName) ->
+      startsWithRegex = '^'+permissionName + '\\.'
+
+      _.filter(memo, (elem) -> !elem.match(startsWithRegex))
+    , params['permission'])
 
     @ajax(
       id:          'user_access_token_create'
@@ -146,7 +160,7 @@ class Create extends App.ControllerModal
     data = JSON.parse(xhr.responseText)
     @notify(
       type: 'error'
-      msg:  App.i18n.translateContent(data.message || data.error)
+      msg:  data.message || data.error
     )
 
 App.Config.set('Token Access', {

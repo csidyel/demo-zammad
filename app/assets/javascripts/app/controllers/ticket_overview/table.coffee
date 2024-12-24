@@ -56,7 +56,7 @@ class App.TicketOverviewTable extends App.Controller
     # get ticket list
     ticketListShow = []
     for ticket in tickets
-      ticketListShow.push App.Ticket.find(ticket.id)
+      ticketListShow.push App.Ticket.fullLocal(ticket.id)
     @overview = App.Overview.find(overview.id)
 
     @removePopovers()
@@ -88,7 +88,7 @@ class App.TicketOverviewTable extends App.Controller
     # get ticket list
     ticketListShow = []
     for ticket in tickets
-      ticketListShow.push App.Ticket.find(ticket.id)
+      ticketListShow.push App.Ticket.fullLocal(ticket.id)
 
     # if customer and no ticket exists, show the following message only
     return if @renderCustomerNotTicketExistIfNeeded(ticketListShow)
@@ -277,7 +277,7 @@ class App.TicketOverviewTable extends App.Controller
         number:
           [ callbackLinkToTicket, callbackTicketTitleAdd ]
 
-      if App.Config.get('ui_ticket_overview_priority_icon') == true
+      if App.Config.get('ui_ticket_priority_icons') == true
         callbackHeader = [ callbackIconHeader, callbackIconPriorityHeader ]
         callbackAttributes.icon_priority = [ callbackIconPriority ]
 

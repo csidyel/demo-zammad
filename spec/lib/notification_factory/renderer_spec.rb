@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -174,6 +174,24 @@ RSpec.describe NotificationFactory::Renderer do
           it "renders an #{tag} body with quote" do
             expect(renderer.render).to eq "&gt; #{body}<br>"
           end
+
+          context 'with links' do
+            context 'with &amp;' do
+              let(:body) { "This is an example\nhttps://example.com/?query=foo&amp;query2=bar" }
+
+              it "renders an #{tag} body with working links" do
+                expect(renderer.render).to eq '&gt; This is an example<br>&gt; https://example.com/?query=foo&amp;query2=bar<br>'
+              end
+            end
+
+            context 'with &' do
+              let(:body) { "This is an example\nhttps://example.com/?query=foo&query2=bar" }
+
+              it "renders an #{tag} body with working links" do
+                expect(renderer.render).to eq '&gt; This is an example<br>&gt; https://example.com/?query=foo&amp;query2=bar<br>'
+              end
+            end
+          end
         end
       end
     end
@@ -200,7 +218,7 @@ RSpec.describe NotificationFactory::Renderer do
         let(:create_object_manager_attribute) do
           create(:object_manager_attribute_select, name: 'select')
         end
-        let(:ticket) { create(:ticket, customer: @user, select: 'key_1') }
+        let(:ticket)          { create(:ticket, customer: @user, select: 'key_1') }
         let(:template)        { '#{ticket.select} _SEPERATOR_ #{ticket.select.value}' }
         let(:expected_render) { 'key_1 _SEPERATOR_ value_1' }
 
@@ -454,19 +472,102 @@ RSpec.describe NotificationFactory::Renderer do
 
           it_behaves_like 'correctly rendering the attributes'
         end
+
+        context 'with external data source attribute on chained group object', db_adapter: :postgresql do
+          let(:create_object_manager_attribute) do
+            create(:object_manager_attribute_autocompletion_ajax_external_data_source,
+                   object_lookup_id: ObjectLookup.by_name('Group'),
+                   name:             'external_data_source')
+          end
+          let(:template)        { '#{ticket.group.external_data_source} _SEPERATOR_ #{ticket.group.external_data_source.value}' }
+          let(:expected_render) { '1234 _SEPERATOR_ Example' }
+
+          let(:ticket) { create(:ticket, customer: @user) }
+
+          before do
+            group = ticket.group
+            group.external_data_source = {
+              value: 1234,
+              label: 'Example'
+            }
+            group.save
+          end
+
+          it_behaves_like 'correctly rendering the attributes'
+        end
       end
 
       context 'with a tree select attribute' do
         let(:create_object_manager_attribute) do
           create(:object_manager_attribute_tree_select, name: 'tree_select')
         end
-        let(:ticket) { create(:ticket, customer: @user, tree_select: 'Incident::Hardware::Laptop') }
+        let(:ticket)          { create(:ticket, customer: @user, tree_select: 'Incident::Hardware::Laptop') }
         let(:template)        { '#{ticket.tree_select} _SEPERATOR_ #{ticket.tree_select.value}' }
         let(:expected_render) { 'Incident::Hardware::Laptop _SEPERATOR_ Incident::Hardware::Laptop' }
+
+        it_behaves_like 'correctly rendering the attributes'
+      end
+
+      context 'with a textarea attribute' do
+        let(:create_object_manager_attribute) do
+          create(:object_manager_attribute_textarea, name: 'textarea')
+          create(:object_manager_attribute_textarea, name: 'textarea_empty')
+        end
+        let(:ticket)          { create(:ticket, customer: @user, textarea: "Line 1\nLine 2\nLine 3", textarea_empty: nil) }
+        let(:template)        { '#{ticket.textarea} _SEPERATOR_ #{ticket.textarea.value} _SEPERATOR_ #{ticket.textarea_empty} _SEPERATOR_ #{ticket.textarea_empty.value}' }
+        let(:expected_render) { 'Line 1<br>Line 2<br>Line 3 _SEPERATOR_ Line 1<br>Line 2<br>Line 3 _SEPERATOR_  _SEPERATOR_ ' }
 
         it_behaves_like 'correctly rendering the attributes'
       end
     end
   end
   # rubocop:enable Lint/InterpolationCheck
+
+  context 'with user avatar' do
+    let(:base64_img) { 'iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==' }
+    let(:decoded_img) { Base64.decode64(base64_img) }
+    let(:mime_type)   { 'image/png' }
+
+    let(:avatar) do
+      Avatar.add(
+        object:        'User',
+        o_id:          owner.id,
+        full:          {
+          content:   decoded_img,
+          mime_type: mime_type,
+        },
+        resize:        {
+          content:   decoded_img,
+          mime_type: mime_type,
+        },
+        source:        "upload #{Time.zone.now}",
+        deletable:     true,
+        created_by_id: owner.id,
+        updated_by_id: owner.id,
+      )
+    end
+
+    let(:owner)  { create(:user, group_ids: Group.pluck(:id)) }
+    let(:ticket) { create(:ticket, owner: owner, group: Group.first) }
+
+    context 'with an avatar' do
+      before do
+        owner.update!(image: avatar.store_hash)
+      end
+
+      it 'returns a <img> tag' do
+        renderer = build(:notification_factory_renderer, template: 'Avatar test #{ticket.owner.avatar(150, 150)}', objects: { ticket: ticket }, trusted: true) # rubocop:disable Lint/InterpolationCheck
+
+        expect(renderer.render).to eq "Avatar test <img src='data:#{mime_type};base64,#{base64_img}' width='150' height='150' />"
+      end
+    end
+
+    context 'without an avatar' do
+      it 'returns empty string' do
+        renderer = build(:notification_factory_renderer, template: 'Avatar test #{ticket.owner.avatar(150, 150)}', objects: { ticket: ticket }, trusted: true) # rubocop:disable Lint/InterpolationCheck
+
+        expect(renderer.render).to eq 'Avatar test '
+      end
+    end
+  end
 end

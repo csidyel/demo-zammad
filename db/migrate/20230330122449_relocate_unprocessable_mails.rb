@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class RelocateUnprocessableMails < ActiveRecord::Migration[6.1]
   def change
@@ -14,7 +14,13 @@ class RelocateUnprocessableMails < ActiveRecord::Migration[6.1]
     return if !old_dir.exist? || old_dir.children.empty?
 
     new_dir = Rails.root.join('var/spool', type)
-    FileUtils.mkdir_p(new_dir)
+    begin
+      # In case of readonly file systems (like in k8s), skip this migration.
+      FileUtils.mkdir_p(new_dir)
+    rescue
+      return
+    end
+
     FileUtils.cp_r(old_dir.children, new_dir)
     FileUtils.rm_r(old_dir)
   end

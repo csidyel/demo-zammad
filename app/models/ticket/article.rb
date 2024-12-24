@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Ticket::Article < ApplicationModel
   include HasDefaultModelUserRelations
@@ -18,6 +18,7 @@ class Ticket::Article < ApplicationModel
   include Ticket::Article::EnqueueCommunicateSmsJob
   include Ticket::Article::EnqueueCommunicateTelegramJob
   include Ticket::Article::EnqueueCommunicateTwitterJob
+  include Ticket::Article::EnqueueCommunicateWhatsappJob
   include Ticket::Article::HasTicketContactAttributesImpact
   include Ticket::Article::ResetsTicketState
   include Ticket::Article::TriggersSubscriptions
@@ -26,6 +27,7 @@ class Ticket::Article < ApplicationModel
   include Ticket::Article::AddsMetadataOriginById
   include Ticket::Article::AddsMetadataGeneral
   include Ticket::Article::AddsMetadataEmail
+  include Ticket::Article::AddsMetadataWhatsapp
 
   include HasTransactionDispatcher
 
@@ -36,6 +38,7 @@ class Ticket::Article < ApplicationModel
   belongs_to :origin_by,  class_name: 'User', optional: true
 
   before_validation :check_mentions, on: :create
+  before_validation :check_email_recipient_validity, if: :check_email_recipient_raises_error
   before_create :check_subject, :check_body, :check_message_id_md5
   before_update :check_subject, :check_body, :check_message_id_md5
   after_destroy :store_delete, :update_time_units
@@ -46,6 +49,8 @@ class Ticket::Article < ApplicationModel
   validates :ticket_id, presence: true
   validates :type_id, presence: true
   validates :sender_id, presence: true
+
+  validates_with Validations::TicketArticleValidator
 
   sanitized_html :body
 
@@ -63,7 +68,7 @@ class Ticket::Article < ApplicationModel
                              :to,
                              :cc
 
-  attr_accessor :should_clone_inline_attachments
+  attr_accessor :should_clone_inline_attachments, :check_mentions_raises_error, :check_email_recipient_raises_error
 
   alias should_clone_inline_attachments? should_clone_inline_attachments
 
@@ -357,17 +362,45 @@ returns
 
     return if mention_user_ids.blank?
 
-    if !TicketPolicy.new(updated_by, ticket).create_mentions?
+    begin
+      Pundit.authorize updated_by, ticket, :create_mentions?
+    rescue Pundit::NotAuthorizedError => e
       return if ApplicationHandleInfo.postmaster?
       return if updated_by.id == 1
+      return if !check_mentions_raises_error
 
-      raise "User #{updated_by_id} has no permission to mention other users!"
+      raise e
     end
 
-    user_ids = User.where(id: mention_user_ids).pluck(:id)
-    user_ids.each do |user_id|
-      Mention.where(mentionable: ticket, user_id: user_id).first_or_create(mentionable: ticket, user_id: user_id)
+    mention_user_ids.each do |user_id|
+      begin
+        Mention.subscribe! ticket, User.find(user_id)
+      rescue ActiveRecord::RecordNotFound, ActiveRecord::RecordInvalid => e
+        next if ApplicationHandleInfo.postmaster?
+        next if updated_by.id == 1
+        next if !check_mentions_raises_error
+
+        raise e
+      end
     end
+  end
+
+  def check_email_recipient_validity
+    return if Setting.get('import_mode')
+
+    # Check if article type is email
+    email_article_type = Ticket::Article::Type.lookup(name: 'email')
+    return if type_id != email_article_type.id
+
+    # ... and if recipient is valid.
+    recipient = begin
+      Mail::Address.new(to).address
+    rescue Mail::Field::FieldError
+      # no-op
+    end
+    return if EmailAddressValidation.new(recipient).valid?
+
+    raise Exceptions::InvalidAttribute.new('email_recipient', __('Sending an email without a valid recipient is not possible.'))
   end
 
   def history_log_attributes

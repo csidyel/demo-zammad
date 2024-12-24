@@ -1,10 +1,14 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { onKeyStroke } from '@vueuse/core'
+import { ref, type Ref, type ShallowRef } from 'vue'
 
 import { getFocusableElements } from '#shared/utils/getFocusableElements.ts'
-import { onKeyStroke } from '@vueuse/core'
-import type { Ref } from 'vue'
 
-export const useTrapTab = (container: Ref<HTMLElement | undefined>) => {
+export const useTrapTab = <T extends HTMLElement>(
+  container: Readonly<ShallowRef<T | null>>,
+  noAutoActivation = false,
+) => {
   const trapFocus = (e: KeyboardEvent) => {
     const focusableElements = getFocusableElements(container.value)
     const firstFocusableElement = focusableElements[0]
@@ -26,14 +30,45 @@ export const useTrapTab = (container: Ref<HTMLElement | undefined>) => {
     }
   }
 
+  const active = ref(!noAutoActivation)
+
+  const activateTabTrap = () => {
+    active.value = true
+  }
+
+  const deactivateTabTrap = () => {
+    active.value = false
+  }
+
   onKeyStroke(
     (e) => {
+      if (!active.value) return
+
       const isTab = e.key === 'Tab' || e.keyCode === 9
 
-      if (isTab) {
-        trapFocus(e)
-      }
+      if (!isTab) return
+
+      trapFocus(e)
     },
     { target: container as Ref<EventTarget> },
   )
+
+  const moveNextFocusToTrap = () => {
+    if (!container.value) return
+
+    const dummyElement = document.createElement('div')
+    dummyElement.tabIndex = 0
+
+    requestAnimationFrame(() => {
+      container.value?.prepend(dummyElement)
+      dummyElement.focus()
+      dummyElement.remove()
+    })
+  }
+
+  return {
+    activateTabTrap,
+    deactivateTabTrap,
+    moveNextFocusToTrap,
+  }
 }

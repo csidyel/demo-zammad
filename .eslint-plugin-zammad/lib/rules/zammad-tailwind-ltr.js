@@ -1,4 +1,4 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 /**
  * @fileoverview Enforce "ltr/rtl" rule, if positioning classes are used
@@ -89,7 +89,7 @@ module.exports = {
 
   create(context) {
     const visitor =
-      context.parserServices?.defineTemplateBodyVisitor ||
+      context.sourceCode.parserServices?.defineTemplateBodyVisitor ||
       ((obj1, obj2) => ({ ...obj1, ...obj2 }))
 
     const processLiteral = (node, quotes = "'") => {

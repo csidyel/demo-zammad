@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Package < ApplicationModel
   @@root = Rails.root.to_s # rubocop:disable Style/ClassVars
@@ -284,6 +284,8 @@ subsequently in a separate step.
           raise "Can't create file, because of not allowed file location: #{file['location']}!"
         end
 
+        ensure_no_duplicate_files!(package_db.name, file['location'])
+
         permission = file['permission'] || '644'
         content    = Base64.decode64(file['content'])
         _write_file(file['location'], permission, content)
@@ -296,6 +298,39 @@ subsequently in a separate step.
     end
 
     package_db
+  end
+
+  def self.ensure_no_duplicate_files!(name, location)
+    all_files.each do |check_package, check_files|
+      next if check_package == name
+      next if check_files.exclude?(location)
+
+      raise "Can't create file, because file '#{location}' is already provided by package '#{check_package}'!"
+    end
+  end
+
+  def self.all_files
+    Auth::RequestCache.fetch_value('Package/all_files') do
+      Package.all.each_with_object({}) do |package, result|
+        json_file    = Package._get_bin(package.name, package.version)
+        package_json = JSON.parse(json_file)
+        result[package.name] = package_json['files'].pluck('location')
+      end
+    end
+  end
+
+  def self.app_frontend_files?
+    Auth::RequestCache.fetch_value('Package/app_frontend_files') do
+      Package.all_files.values.flatten.any? { |f| f.starts_with?('app/frontend') }
+    end
+  end
+
+  def self.gem_files?
+    Dir['Gemfile.local.*'].present?
+  end
+
+  def self.app_package_installation?
+    File.exist?('/usr/bin/zammad')
   end
 
 =begin
@@ -436,12 +471,13 @@ execute all pending package migrations at once
 
     # rename existing file if not already the same file
     if File.exist?(location)
-      content_fs = _read_file(file)
-      if content_fs == data
+      backup_location = "#{location}.save"
+      content_fs      = _read_file(file)
+      if content_fs == data && File.exist?(backup_location)
         logger.debug { "NOTICE: file '#{location}' already exists, skip install" }
         return true
       end
-      backup_location = "#{location}.save"
+
       logger.info "NOTICE: backup old file '#{location}' to #{backup_location}"
       File.rename(location, backup_location)
     end

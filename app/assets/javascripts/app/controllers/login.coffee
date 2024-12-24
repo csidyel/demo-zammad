@@ -42,11 +42,13 @@ class Login extends App.ControllerFullPage
         data:        JSON.stringify(params)
         processData: true
         success:     (verify_data, status, xhr) =>
-          if verify_data.message is 'ok'
-            data.showAdminPasswordLogin = true
-            data.username = verify_data.user_login
-          else
-            data.showAdminPasswordLoginFailed = true
+          @showAdminPasswordLogin = true
+          data.username = verify_data.user_login
+
+          @render(data)
+          @navupdate '#login'
+        error: =>
+          data.showAdminPasswordLoginFailed = true
 
           @render(data)
           @navupdate '#login'
@@ -81,6 +83,9 @@ class Login extends App.ControllerFullPage
       App.PublicLink.unsubscribe(@publicLinksSubscribeId)
 
   render: (data = {}) ->
+    if @showAdminPasswordLogin
+      data.showAdminPasswordLogin = true
+
     auth_provider_all = App.Config.get('auth_provider_all')
     auth_providers = []
     for key, provider of auth_provider_all

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 Scheduler.create_if_not_exists(
   name:   __('Process pending tickets.'),
@@ -33,15 +33,6 @@ Scheduler.create_if_not_exists(
 Scheduler.create_if_not_exists(
   name:          __("Check 'Channel' streams."),
   method:        'Channel.stream',
-  period:        60.seconds,
-  prio:          1,
-  active:        true,
-  updated_by_id: 1,
-  created_by_id: 1,
-)
-Scheduler.create_if_not_exists(
-  name:          __("Generate 'Session' data."),
-  method:        'Sessions.jobs',
   period:        60.seconds,
   prio:          1,
   active:        true,

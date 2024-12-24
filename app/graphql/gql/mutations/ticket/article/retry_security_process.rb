@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Gql::Mutations
   class Ticket::Article::RetrySecurityProcess < BaseMutation
@@ -10,7 +10,7 @@ module Gql::Mutations
     field :article, Gql::Types::Ticket::ArticleType, description: 'Updated article (article is not updated in case of an error result).'
 
     def self.authorize(_obj, ctx)
-      ctx[:current_user].permissions?(['ticket.agent'])
+      ctx.current_user.permissions?('ticket.agent')
     end
 
     def authorized?(article:)

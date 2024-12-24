@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -20,7 +20,7 @@ RSpec.describe 'Manage > Integration > Slack', type: :system do
         select group_ids,	from: 'group_ids'
         fill_in 'webhook',	with: webhook
         fill_in 'username',	with: username
-        click_button
+        click_on 'Submit'
       end
     end
 

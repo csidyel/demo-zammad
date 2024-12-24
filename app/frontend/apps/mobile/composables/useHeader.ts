@@ -1,9 +1,11 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { onBeforeUnmount, onBeforeMount, ref, watch } from 'vue'
+
+import useMetaTitle from '#shared/composables/useMetaTitle.ts'
 
 import type { ComputedRef, Ref, UnwrapRef } from 'vue'
-import { onBeforeUnmount, onBeforeMount, ref, watch } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
-import useMetaTitle from '#shared/composables/useMetaTitle.ts'
 
 export interface HeaderOptions {
   title?: string | ComputedRef<string>
@@ -15,7 +17,7 @@ export interface HeaderOptions {
   refetch?: ComputedRef<boolean>
   actionTitle?: string | ComputedRef<string>
   actionHidden?: boolean | ComputedRef<boolean> | Ref<boolean>
-  onAction?(): unknown
+  onAction?(): void
 }
 
 export const headerOptions = ref<HeaderOptions>({})

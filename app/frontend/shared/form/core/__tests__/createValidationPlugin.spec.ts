@@ -1,4 +1,4 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import createValidationPlugin, {
   getValidationRuleMessages,
@@ -13,11 +13,11 @@ describe('createValidationPlugin', () => {
 })
 
 describe('getValidationRuleMessages', () => {
-  // TODO: At the moment the rule messages are empty, because no custom rules exists, needs to be improved,
-  // when we have our first custom rules.
   it('get validation messages from custom rules', () => {
     const validationRuleMessages = getValidationRuleMessages()
 
-    expect(validationRuleMessages).toEqual({})
+    expect(validationRuleMessages).toEqual({
+      date_range: expect.any(Function),
+    })
   })
 })

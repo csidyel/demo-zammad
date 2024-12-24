@@ -1,12 +1,16 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Taskbar < ApplicationModel
   include ChecksClientNotification
   include ::Taskbar::HasAttachments
   include Taskbar::Assets
   include Taskbar::TriggersSubscriptions
+  include Taskbar::List
 
   TASKBAR_APPS = %w[desktop mobile].freeze
+  TASKBAR_STATIC_ENTITIES = %w[
+    Search
+  ].freeze
 
   store           :state
   store           :params
@@ -15,9 +19,12 @@ class Taskbar < ApplicationModel
   belongs_to :user
 
   validates :app, inclusion: { in: TASKBAR_APPS }
+  validates :key, uniqueness: { scope: %i[user_id app] }
 
-  before_create   :update_last_contact, :set_user, :update_preferences_infos
-  before_update   :update_last_contact, :set_user, :update_preferences_infos
+  before_validation :set_user
+
+  before_create   :update_last_contact, :update_preferences_infos
+  before_update   :update_last_contact, :update_preferences_infos
 
   after_update    :notify_clients
   after_destroy   :update_preferences_infos, :notify_clients
@@ -37,10 +44,32 @@ class Taskbar < ApplicationModel
       .where.not(id: taskbar.id)
   }
 
+  scope :app, ->(app) { where(app:) }
+
+  def self.taskbar_entities
+    @taskbar_entities ||= begin
+      ApplicationModel.descendants.select { |model| model.included_modules.include?(HasTaskbars) }.each_with_object([]) do |model, result|
+        model.taskbar_entities&.each do |entity|
+          result << entity
+        end
+      end | TASKBAR_STATIC_ENTITIES
+    end
+  end
+
+  def self.taskbar_ignore_state_updates_entities
+    @taskbar_ignore_state_updates_entities ||= begin
+      ApplicationModel.descendants.select { |model| model.included_modules.include?(HasTaskbars) }.each_with_object([]) do |model, result|
+        model.taskbar_ignore_state_updates_entities&.each do |entity|
+          result << entity
+        end
+      end
+    end
+  end
+
   def state_changed?
     return false if state.blank?
 
-    state.each_value do |value|
+    state.each do |key, value|
       if value.is_a? Hash
         value.each do |key1, value1|
           next if value1.blank?
@@ -50,6 +79,7 @@ class Taskbar < ApplicationModel
         end
       else
         next if value.blank?
+        next if key == 'form_id'
 
         return true
       end
@@ -79,11 +109,26 @@ class Taskbar < ApplicationModel
     self.class.related_taskbars(self)
   end
 
+  def touch_last_contact!
+    # Don't inform the current user (only!) about live user and item updates.
+    self.skip_live_user_trigger = true
+    self.skip_item_trigger      = true
+    self.last_contact           = Time.zone.now
+    save!
+  end
+
+  def saved_change_to_dirty?
+    return false if !saved_change_to_preferences?
+
+    !!preferences[:dirty] != !!preferences_previously_was[:dirty]
+  end
+
   private
 
   def update_last_contact
-    return true if local_update
-    return true if changes.blank?
+    return if local_update
+    return if changes.blank?
+    return if changed_only_prio?
 
     if changes['notify']
       count = 0
@@ -99,8 +144,8 @@ class Taskbar < ApplicationModel
   end
 
   def set_user
-    return true if local_update
-    return true if !UserInfo.current_user_id
+    return if local_update
+    return if !UserInfo.current_user_id
 
     self.user_id = UserInfo.current_user_id
   end
@@ -108,6 +153,7 @@ class Taskbar < ApplicationModel
   def update_preferences_infos
     return if key == 'Search'
     return if local_update
+    return if changed_only_prio?
 
     preferences = self.preferences || {}
     preferences[:tasks] = collect_related_tasks
@@ -126,6 +172,10 @@ class Taskbar < ApplicationModel
       .sort_by { |elem| elem[:id] || Float::MAX } # sort by IDs to pass old tests
   end
 
+  def changed_only_prio?
+    changed_attribute_names_to_save.to_set == Set.new(%w[updated_at prio])
+  end
+
   def reduce_related_tasks(elem, memo)
     key = elem[:user_id]
 
@@ -142,13 +192,14 @@ class Taskbar < ApplicationModel
       taskbar.with_lock do
         taskbar.preferences = preferences
         taskbar.local_update = true
+        taskbar.skip_item_trigger = true
         taskbar.save!
       end
     end
   end
 
   def notify_clients
-    return true if !saved_change_to_attribute?('preferences')
+    return if !saved_change_to_attribute?('preferences')
 
     data = {
       event: 'taskbar:preferences',
@@ -163,5 +214,4 @@ class Taskbar < ApplicationModel
       data,
     )
   end
-
 end

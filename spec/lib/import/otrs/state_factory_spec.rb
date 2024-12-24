@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 require 'lib/import/transaction_factory_examples'
@@ -7,11 +7,9 @@ RSpec.describe Import::OTRS::StateFactory do
   let(:state_backend_param) do
     states = %w[new open merged pending_reminder pending_auto_close_p pending_auto_close_n pending_auto_close_p closed_successful closed_unsuccessful removed]
 
-    state_backend_param = []
-    states.each do |state|
-      state_backend_param.push(load_state_json(state))
+    states.map do |state|
+      load_state_json(state)
     end
-    state_backend_param
   end
 
   it_behaves_like 'Import::TransactionFactory'
@@ -123,11 +121,9 @@ RSpec.describe Import::OTRS::StateFactory do
     let(:state_backend_param) do
       states = %w[new open merged pending_reminder pending_auto_close_p pending_auto_close_n pending_auto_close_p removed closed_other]
 
-      state_backend_param = []
-      states.each do |state|
-        state_backend_param.push(load_state_json(state))
+      states.map do |state|
+        load_state_json(state)
       end
-      state_backend_param
     end
 
     it 'use fallback for next state for pending auto states' do

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 # This class defines a Proxy for accessing objects inside of a AssetsSet Model sub structure.
 #
@@ -29,7 +29,7 @@ class AssetsSet < SimpleDelegator
     # This method overwrites the SimpleDelegator initializer
     # to be able to have the actual Assets Hash as an optional argument.
     def initialize(assets = {})
-      super(assets)
+      super
     end
 
     # This method intercepts `assets[model_name][object_id]` calls and return the actual objects data.

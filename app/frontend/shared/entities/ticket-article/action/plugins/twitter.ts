@@ -1,12 +1,15 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { FormValues } from '#shared/components/Form/types.ts'
+import { isArray, isObject, uniq } from 'lodash-es'
+
 import type { FieldEditorProps } from '#shared/components/Form/fields/FieldEditor/types.ts'
+import type { FormValues } from '#shared/components/Form/types.ts'
+import { EnumTicketArticleSenderName } from '#shared/graphql/types.ts'
 import { useSessionStore } from '#shared/stores/session.ts'
 import type { ConfigList } from '#shared/types/store.ts'
 import type { ConfidentTake } from '#shared/types/utils.ts'
 import { getInitials } from '#shared/utils/formatter.ts'
-import { isArray, isObject, uniq } from 'lodash-es'
+
 import type {
   TicketArticleAction,
   TicketArticleActionPlugin,
@@ -16,7 +19,7 @@ import type {
 const replyToTwitterComment = ((
   ticket,
   article,
-  { openReplyDialog, getNewArticleBody },
+  { openReplyForm, getNewArticleBody },
 ) => {
   const articleData: FormValues = {
     articleType: 'twitter status',
@@ -42,15 +45,15 @@ const replyToTwitterComment = ((
   if (body) articleData.body = `${recipientsString} ${body} `
   else articleData.body = `${recipientsString} `
 
-  openReplyDialog(articleData)
+  openReplyForm(articleData)
 }) satisfies TicketArticleAction['perform']
 
-const replyToTwitterDm = ((ticket, article, { openReplyDialog }) => {
+const replyToTwitterDm = ((ticket, article, { openReplyForm }) => {
   const sender = article.sender?.name
 
   let to: string | undefined | null
-  if (sender === 'Customer') to = article.from?.raw
-  else if (sender === 'Agent') to = article.to?.raw
+  if (sender === EnumTicketArticleSenderName.Customer) to = article.from?.raw
+  else if (sender === EnumTicketArticleSenderName.Agent) to = article.to?.raw
 
   if (!to) {
     const autorization = article.author.authorizations?.find(
@@ -66,7 +69,7 @@ const replyToTwitterDm = ((ticket, article, { openReplyDialog }) => {
     inReplyTo: article.messageId,
   }
 
-  openReplyDialog(articleData)
+  openReplyForm(articleData)
 }) satisfies TicketArticleAction['perform']
 
 const getTwitterInitials = (config: ConfigList) => {
@@ -90,10 +93,10 @@ const actionPlugin: TicketArticleActionPlugin = {
       return []
 
     const action: TicketArticleAction = {
-      apps: ['mobile'],
+      apps: ['mobile', 'desktop'],
       label: __('Reply'),
       name: type,
-      icon: { mobile: 'mobile-reply' },
+      icon: 'reply',
       view: {
         agent: ['change'],
       },
@@ -116,16 +119,20 @@ const actionPlugin: TicketArticleActionPlugin = {
       return []
 
     const type: TicketArticleType = {
-      apps: ['mobile'],
+      apps: ['mobile', 'desktop'],
       value: descriptionType,
       label: __('Twitter'),
-      icon: {
-        mobile: 'mobile-twitter',
-      },
+      buttonLabel: __('Add message'),
+      icon: 'twitter',
       view: {
         agent: ['change'],
       },
-      attributes: [],
+      fields: {
+        body: {
+          required: true,
+        },
+        to: {},
+      },
       internal: false,
       contentType: 'text/plain',
       updateForm(values) {
@@ -138,22 +145,18 @@ const actionPlugin: TicketArticleActionPlugin = {
       },
     }
 
-    let footer: ConfidentTake<FieldEditorProps, 'meta.footer'>
+    let footer: ConfidentTake<FieldEditorProps, 'meta.footer'> = {}
 
-    if (descriptionType === 'twitter status') {
-      type.validation = {
-        body: 'length:1,280',
-      }
+    if (descriptionType === 'twitter status' && type.fields.body) {
+      type.fields.body.validation = 'length:1,280'
       footer = {
         maxlength: 280,
         warningLength: 30,
       }
-    } else {
-      type.attributes = ['to']
-      type.validation = {
-        to: 'required',
-        body: 'length:1,10000',
-      }
+    } else if (type.fields.to && type.fields.body) {
+      type.fields.to.required = true
+      type.fields.body.validation = 'length:1,10000'
+
       footer = {
         maxlength: 10000,
         warningLength: 500,

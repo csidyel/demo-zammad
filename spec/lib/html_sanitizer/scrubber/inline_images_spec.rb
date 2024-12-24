@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -21,6 +21,43 @@ RSpec.describe HtmlSanitizer::Scrubber::InlineImages do
         actual
 
         expect(scrubber.attachments_inline).to match_array(include(filename: 'image1.jpeg'))
+      end
+
+      context 'when uploaded image is handled' do
+        let(:input)  { "<img src='/api/v1/attachments/#{Store.last.id}'>" }
+        let(:target) { %r{<img src="cid:.+?">} }
+
+        before do
+          form_id = SecureRandom.uuid
+
+          file_name    = 'file1.png'
+          file_type    = 'image/png'
+          file_content = Base64.strict_encode64('file1')
+
+          UploadCache.new(form_id).tap do |cache|
+            cache.add(
+              data:          file_content,
+              filename:      file_name,
+              preferences:   { 'Content-Type' => file_type },
+              created_by_id: 1,
+            )
+          end
+        end
+
+        it { is_expected.to match target }
+
+        it 'adds attachment to scrubber' do
+          actual
+
+          expect(scrubber.attachments_inline).to match_array(include(filename: 'file1.png'))
+        end
+      end
+
+      context 'when upload failed' do
+        let(:input)  { '<img src="blob:/api/v1/attachments/111">' }
+        let(:target) { '' }
+
+        it { is_expected.to match target }
       end
     end
 

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -89,7 +89,7 @@ RSpec.describe Store, type: :model do
           before { create(:store, **attributes) }
 
           it 'creates a new (duplicate) described_class record' do
-            expect { create(:store, **attributes.merge(filename: 'test-again.pdf')) }
+            expect { create(:store, **attributes, filename: 'test-again.pdf') }
               .to change(described_class, :count).by(1)
               .and change { described_class.last&.filename }.to('test-again.pdf')
               .and not_change { described_class.last&.content&.class }
@@ -136,7 +136,7 @@ RSpec.describe Store, type: :model do
       end
 
       context 'with the same file stored under multiple o_ids' do
-        before { create(:store, **attributes.merge(o_id: 2)) }
+        before { create(:store, **attributes, o_id: 2) }
 
         it 'destroys only the specified Store record' do
           expect { described_class.remove(object: 'Test', o_id: 1) }
@@ -150,7 +150,7 @@ RSpec.describe Store, type: :model do
       end
 
       context 'with multiple files stored under the same o_id' do
-        before { create(:store, **attributes.merge(data: 'bar')) }
+        before { create(:store, **attributes, data: 'bar') }
 
         it 'destroys all matching Store records' do
           expect { described_class.remove(object: 'Test', o_id: 1) }
@@ -360,6 +360,18 @@ RSpec.describe Store, type: :model do
             end
           end
         end
+      end
+    end
+
+    describe '#inline?' do
+      context 'when Content-Disposition is inline' do
+        let(:preferences) { { 'Content-Disposition' => 'inline' } }
+
+        it { is_expected.to be_inline }
+      end
+
+      context 'when Content-Disposition not inline' do
+        it { is_expected.not_to be_inline }
       end
     end
   end

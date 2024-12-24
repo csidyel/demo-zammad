@@ -1,7 +1,8 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 import { ref } from 'vue'
+
 import { useArticleSeen } from '../../composable/useArticleSeen.ts'
 
 defineProps<{
@@ -10,7 +11,7 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'seen'): void
+  seen: []
 }>()
 
 const articleElement = ref<HTMLDivElement>()
@@ -22,14 +23,14 @@ useArticleSeen(articleElement, emit)
   <div ref="articleElement" class="flex justify-center">
     <div
       :class="{ 'mt-6': gap === 'big', 'mt-2': gap === 'small' }"
-      class="flex flex-col items-center rounded-3xl border border-yellow bg-yellow-highlight p-4 text-yellow"
+      class="border-yellow bg-yellow-highlight text-yellow flex flex-col items-center rounded-3xl border p-4"
     >
       <div
-        class="absolute flex h-7 w-7 -translate-y-7 items-center justify-center rounded-full bg-yellow text-black"
+        class="bg-yellow absolute flex h-7 w-7 -translate-y-7 items-center justify-center rounded-full text-black"
       >
-        <CommonIcon name="mobile-warning" size="small" />
+        <CommonIcon name="warning" size="small" />
       </div>
-      <div>{{ $t('Delivery failed:') }} "{{ content }}"</div>
+      <div>{{ $t('Delivery failed: "%s"', content) }}</div>
     </div>
   </div>
 </template>

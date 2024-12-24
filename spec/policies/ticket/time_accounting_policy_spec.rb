@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -54,5 +54,13 @@ describe Ticket::TimeAccountingPolicy do
     before { user.user_groups.create! group: ticket.group, access: 'change' }
 
     it { is_expected.to permit_actions(:create) }
+  end
+
+  context 'when user has access to the ticket by having customer access' do
+    let(:user) { create(:customer) }
+
+    before { ticket.update! customer: user }
+
+    it { is_expected.to forbid_actions(:create) }
   end
 end

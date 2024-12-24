@@ -76,7 +76,7 @@ class PasswordResetVerify extends App.ControllerFullPage
       @$('[name=password_confirm]').val('')
       @notify(
         type:      'error'
-        msg:       __('Can\'t update password, your entered passwords do not match. Please try again!')
+        msg:       __("Can't update password, your entered passwords do not match. Please try again.")
         removeAll: true
       )
       return
@@ -84,7 +84,7 @@ class PasswordResetVerify extends App.ControllerFullPage
       @formEnable(e)
       @notify(
         type:      'error'
-        msg:       __('Please supply your new password!')
+        msg:       __('Please provide your new password.')
         removeAll: true
       )
       return
@@ -101,6 +101,12 @@ class PasswordResetVerify extends App.ControllerFullPage
 
   renderChanged: (data, status, xhr) =>
     if data.message is 'ok'
+      @notify(
+        type:      'success'
+        msg:       __('Woo hoo! Your password has been changed!')
+        removeAll: true
+      )
+
       App.Auth.login(
         data:
           username: data.user_login
@@ -110,25 +116,14 @@ class PasswordResetVerify extends App.ControllerFullPage
           # login check
           App.Auth.loginCheck()
 
-          # add notify
-          @notify(
-            type:      'success'
-            msg:       __('Woo hoo! Your password has been changed!')
-            removeAll: true
-          )
-
           # redirect to #
           @navigate '#'
 
         error: =>
-          @formEnable(@$('form'))
-
-          # add notify
-          @notify(
-            type:      'error'
-            msg:       __('Something went wrong. Please contact your administrator.')
-            removeAll: true
-          )
+          # The user may have an active 2FA method on their account, which will prevent an automatic login (#4989).
+          #   Instead, silently redirect to login screen and allow the user to login manually
+          #   and complete their 2FA challenge.
+          @navigate '#'
       )
     else
       if data.notice

@@ -1,10 +1,10 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Integration::GitHubController < ApplicationController
   prepend_before_action :authenticate_and_authorize!
 
   def verify
-    github = ::GitHub.new(params[:endpoint], params[:api_token])
+    github = ::GitHub.new(endpoint: params[:endpoint], api_token: params[:api_token])
 
     github.verify!
 
@@ -21,13 +21,21 @@ class Integration::GitHubController < ApplicationController
   end
 
   def query
-    config = Setting.get('github_config')
-
-    github = ::GitHub.new(config['endpoint'], config['api_token'])
+    issue_tracker_list_service = if params[:ticket_id]
+                                   Service::Ticket::ExternalReferences::IssueTracker::TicketList.new(
+                                     type:   'github',
+                                     ticket: Ticket.find(params[:ticket_id]),
+                                   )
+                                 else
+                                   Service::Ticket::ExternalReferences::IssueTracker::FetchMetadata.new(
+                                     type:        'github',
+                                     issue_links: params[:links],
+                                   )
+                                 end
 
     render json: {
       result:   'ok',
-      response: github.issues_by_urls(params[:links]),
+      response: issue_tracker_list_service.execute,
     }
   rescue => e
     logger.error e
@@ -51,5 +59,4 @@ class Integration::GitHubController < ApplicationController
       result: 'ok',
     }
   end
-
 end

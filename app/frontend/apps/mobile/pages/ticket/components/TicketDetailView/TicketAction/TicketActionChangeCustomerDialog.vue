@@ -1,31 +1,24 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
+import { toRef } from 'vue'
+
 import Form from '#shared/components/Form/Form.vue'
 import type { FormSubmitData } from '#shared/components/Form/types.ts'
 import { useForm } from '#shared/components/Form/useForm.ts'
-import {
-  EnumObjectManagerObjects,
-  type TicketCustomerUpdateInput,
-} from '#shared/graphql/types.ts'
-import { closeDialog } from '#shared/composables/useDialog.ts'
-import { useTicketFormOganizationHandler } from '#shared/entities/ticket/composables/useTicketFormOrganizationHandler.ts'
-import { MutationHandler } from '#shared/server/apollo/handler/index.ts'
-import { convertToGraphQLId } from '#shared/graphql/utils.ts'
-import {
-  NotificationTypes,
-  useNotifications,
-} from '#shared/components/CommonNotifications/index.ts'
-import UserError from '#shared/errors/UserError.ts'
-import { useTicketCustomerUpdateMutation } from '#shared/entities/ticket/graphql/mutations/customerUpdate.api.ts'
-import CommonButton from '#mobile/components/CommonButton/CommonButton.vue'
-import CommonDialog from '#mobile/components/CommonDialog/CommonDialog.vue'
-import { defineFormSchema } from '#mobile/form/defineFormSchema.ts'
+import { useConfirmation } from '#shared/composables/useConfirmation.ts'
+import { useTicketChangeCustomer } from '#shared/entities/ticket/composables/useTicketChangeCustomer.ts'
+import { useTicketFormOrganizationHandler } from '#shared/entities/ticket/composables/useTicketFormOrganizationHandler.ts'
 import type {
   TicketById,
   TicketCustomerUpdateFormData,
 } from '#shared/entities/ticket/types.ts'
-import { waitForConfirmation } from '#shared/utils/confirmation.ts'
+import { defineFormSchema } from '#shared/form/defineFormSchema.ts'
+import { EnumObjectManagerObjects } from '#shared/graphql/types.ts'
+
+import CommonButton from '#mobile/components/CommonButton/CommonButton.vue'
+import CommonDialog from '#mobile/components/CommonDialog/CommonDialog.vue'
+import { closeDialog } from '#mobile/composables/useDialog.ts'
 
 export interface Props {
   name: string
@@ -36,12 +29,14 @@ const props = defineProps<Props>()
 
 const { form, isDirty, canSubmit } = useForm()
 
+const { waitForConfirmation } = useConfirmation()
+
 const cancelDialog = async () => {
   if (isDirty.value) {
     const confirmed = await waitForConfirmation(
       __('Are you sure? You have unsaved changes that will get lost.'),
       {
-        buttonTitle: __('Discard changes'),
+        buttonLabel: __('Discard changes'),
         buttonVariant: 'danger',
       },
     )
@@ -66,48 +61,9 @@ const formSchema = defineFormSchema([
   },
 ])
 
-const changeCustomerMutation = new MutationHandler(
-  useTicketCustomerUpdateMutation({}),
-)
-
-const { notify } = useNotifications()
-
-const changeCustomer = async (
-  formData: FormSubmitData<TicketCustomerUpdateFormData>,
-) => {
-  const input = {
-    customerId: convertToGraphQLId('User', formData.customer_id),
-  } as TicketCustomerUpdateInput
-
-  if (formData.organization_id) {
-    input.organizationId = convertToGraphQLId(
-      'Organization',
-      formData.organization_id,
-    )
-  }
-
-  try {
-    const result = await changeCustomerMutation.send({
-      ticketId: props.ticket.id,
-      input,
-    })
-
-    if (result) {
-      closeDialog(props.name)
-      notify({
-        type: NotificationTypes.Success,
-        message: __('Ticket customer updated successfully.'),
-      })
-    }
-  } catch (errors) {
-    if (errors instanceof UserError) {
-      notify({
-        message: errors.generalErrors[0],
-        type: NotificationTypes.Error,
-      })
-    }
-  }
-}
+const { changeCustomer } = useTicketChangeCustomer(toRef(props, 'ticket'), {
+  onSuccess: () => closeDialog(props.name),
+})
 </script>
 
 <template>
@@ -137,9 +93,9 @@ const changeCustomer = async (
       :id="name"
       ref="form"
       class="w-full p-4"
-      autofocus
+      should-autofocus
       :schema="formSchema"
-      :handlers="[useTicketFormOganizationHandler()]"
+      :handlers="[useTicketFormOrganizationHandler()]"
       :initial-entity-object="ticket"
       use-object-attributes
       @submit="

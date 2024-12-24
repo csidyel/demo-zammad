@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Gql::Types
   class TicketType < BaseObject
@@ -53,19 +53,33 @@ module Gql::Types
     field :last_owner_update_at, GraphQL::Types::ISO8601DateTime
     field :escalation_at, GraphQL::Types::ISO8601DateTime
     field :pending_time, GraphQL::Types::ISO8601DateTime
+    field :initial_channel, Gql::Types::Enum::Channel::AreaType, description: 'The initial channel of the ticket.'
 
     # field :create_article_sender_id, Integer
     # field :article_count, Integer, description: "Count of ticket articles that were not sent by 'System'."
     # field :type, String
-    field :time_unit, Float
-    field :time_units_per_type, [Gql::Types::Ticket::TimeAccountingTypeSumType]
     field :preferences, GraphQL::Types::JSON
 
     field :state_color_code, Gql::Types::Enum::TicketStateColorCodeType, null: false, description: 'Ticket color indicator state.'
 
+    scoped_fields do
+      field :time_unit, Float
+      field :time_units_per_type, [Gql::Types::Ticket::TimeAccountingTypeSumType]
+      field :shared_draft_zoom_id, GraphQL::Types::ID, description: 'The Shared draft ID if the ticket has a shared draft.'
+      field :checklist, Gql::Types::ChecklistType, description: 'Returns the checklist of this ticket, if present'
+      field :referencing_checklist_tickets, [Gql::Types::TicketType, { null: false }], description: 'Returns (only accessible) other tickets which reference the current ticket'
+      field :external_references, Gql::Types::TicketExternalReferencesType, null: true, description: 'Returns links to external services'
+    end
+
     internal_fields do
-      field :subscribed, Boolean, null: true
-      field :mentions, Gql::Types::MentionType.connection_type, null: true
+      field :subscribed, Boolean
+      field :mentions, Gql::Types::MentionType.connection_type
+    end
+
+    def initial_channel
+      return nil if !@object.preferences['channel_area']
+
+      @object.preferences['channel_area']
     end
 
     def subscribed
@@ -93,6 +107,42 @@ module Gql::Types
       else
         time_units_per_type
       end
+    end
+
+    def shared_draft_zoom_id
+      return nil if !@object.shared_draft
+
+      Gql::ZammadSchema.id_from_object(@object.shared_draft)
+    end
+
+    def checklist
+      return nil if !Setting.get('checklist')
+
+      @object.checklist
+    end
+
+    def referencing_checklist_tickets
+      return nil if !Setting.get('checklist')
+
+      ::Checklist.tickets_referencing(@object, context.current_user)
+    end
+
+    def external_references
+      output = {}
+
+      if Setting.get('github_integration')
+        output[:github] = @object.preferences.dig('github', 'issue_links')
+      end
+
+      if Setting.get('gitlab_integration')
+        output[:gitlab] = @object.preferences.dig('gitlab', 'issue_links')
+      end
+
+      if Setting.get('idoit_integration')
+        output[:idoit] = @object.preferences.dig('idoit', 'object_ids')&.map(&:to_i)
+      end
+
+      output.compact_blank.presence
     end
 
     private

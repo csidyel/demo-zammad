@@ -1,4 +1,4 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 import { computed } from 'vue'
@@ -32,7 +32,7 @@ const classes = computed(() => {
       role="status"
       :aria-label="$t('Invalid values in step %s', label)"
       aria-live="assertive"
-      class="absolute mb-3 h-4 min-w-[1rem] rounded-full bg-red px-1 text-center text-xs text-black ltr:ml-6 rtl:mr-6"
+      class="bg-red absolute mb-3 h-4 min-w-[1rem] rounded-full px-1 text-center text-xs text-black ltr:ml-6 rtl:mr-6"
     >
       {{ errorCount }}
     </div>
@@ -40,14 +40,14 @@ const classes = computed(() => {
     <CommonIcon
       v-else-if="completed && !valid"
       decorative
-      name="mobile-close"
+      name="close"
       size="tiny"
       class="text-red-bright"
     />
     <CommonIcon
       v-else-if="completed"
       :aria-label="$t('Step %s is completed', label)"
-      name="mobile-check"
+      name="check"
       size="tiny"
       class="text-blue"
     />

@@ -2,9 +2,10 @@ class App.TicketZoom extends App.Controller
   @include App.TicketNavigable
 
   elements:
-    '.main':               'main'
-    '.ticketZoom':         'ticketZoom'
-    '.scrollPageHeader':   'scrollPageHeader'
+    '.main':             'main'
+    '.ticketZoom':       'ticketZoom'
+    '.scrollPageHeader': 'scrollPageHeader'
+    '.scrollPageAlert':  'scrollPageAlert'
 
   events:
     'click .js-submit':                                          'submit'
@@ -64,6 +65,11 @@ class App.TicketZoom extends App.Controller
       return if data.taskKey isnt @taskKey
       return if !@sidebarWidget
       @sidebarWidget.render(@formCurrent())
+    )
+    @controllerBind('config_update', (data) =>
+      return if data.name isnt 'checklist'
+      @renderDone = false
+      @render()
     )
 
   fetchMayBe: (data) =>
@@ -193,6 +199,8 @@ class App.TicketZoom extends App.Controller
     if beforeRenderDone
       App.Event.trigger('ui::ticket::load', data)
 
+    App.Event.trigger('ui::ticket::all::loaded', data)
+
   meta: =>
 
     # default attributes
@@ -304,6 +312,10 @@ class App.TicketZoom extends App.Controller
     offset = element.offset()
     if offset
       position = offset.top
+
+      # Subtract possible top padding of the parent container.
+      position -= parseInt(element.parent().css('paddingTop') or 0, 10)
+
     Math.abs(position)
 
   hide: =>
@@ -316,18 +328,20 @@ class App.TicketZoom extends App.Controller
     return if !@attributeBar
     @attributeBar.stop()
 
-  changed: =>
+  changed: (object, field) =>
     return false if !@ticket
     currentParams = @formCurrent()
     currentStore = @currentStore()
     modelDiff = @formDiff(currentParams, currentStore)
     return false if !modelDiff || _.isEmpty(modelDiff)
     return false if _.isEmpty(modelDiff.ticket) && _.isEmpty(modelDiff.article)
+    return not _.isUndefined(modelDiff[object]?[field]) if object and field
     return true
 
   release: =>
     @autosaveStop()
     @positionPageHeaderStop()
+    @sidebarWidget?.releaseController()
 
   muteTask: =>
     App.TaskManager.mute(@taskKey)
@@ -336,12 +350,14 @@ class App.TicketZoom extends App.Controller
     @articlePager =
       article_id: undefined
 
-    modifier = 'alt+ctrl+left'
-    $(document).on("keydown.ticket_zoom#{@ticket_id}", modifier, (e) =>
+    modifier = 'left'
+    $(document).on("keydown.ticket_zoom#{@ticket_id}", {keys: modifier}, (e) =>
+      return if App.KeyboardShortcutPlugin.isInput()
       @articleNavigate('ascending')
     )
-    modifier = 'alt+ctrl+right'
-    $(document).on("keydown.ticket_zoom#{@ticket_id}", modifier, (e) =>
+    modifier = 'right'
+    $(document).on("keydown.ticket_zoom#{@ticket_id}", {keys: modifier}, (e) =>
+      return if App.KeyboardShortcutPlugin.isInput()
       @articleNavigate('descending')
     )
 
@@ -394,14 +410,22 @@ class App.TicketZoom extends App.Controller
 
   positionPageHeaderUpdate: =>
     headerHeight     = @scrollPageHeader.outerHeight()
-    mainScrollHeigth = @main.prop('scrollHeight')
-    mainHeigth       = @main.height()
+    alertHeight      = if @isPageAlertVisible() then @scrollPageAlert.outerHeight() else 0
+    mainScrollHeight = @main.prop('scrollHeight')
+    mainHeight       = @main.height()
 
     scroll = @main.scrollTop()
 
-    # if page header is not possible to use - mainScrollHeigth to low - hide page header
-    if not mainScrollHeigth > mainHeigth + headerHeight
+    # if page header is not possible to use - mainScrollHeight to low - hide page header
+    if not mainScrollHeight > mainHeight + headerHeight
       @scrollPageHeader.css('transform', "translateY(#{-headerHeight}px)")
+
+      if alertHeight
+        @scrollPageAlert.css('transform', 'translateY(0)')
+        @main.css('paddingTop', "#{alertHeight}px")
+      else
+        @main.css('paddingTop', '0')
+
       return
 
     if scroll > headerHeight
@@ -414,7 +438,16 @@ class App.TicketZoom extends App.Controller
     # translateY: headerHeight .. 0
     @scrollPageHeader.css('transform', "translateY(#{scroll - headerHeight}px)")
 
+    if alertHeight
+      @scrollPageAlert.css('transform', "translateY(#{scroll}px)")
+      @main.css('paddingTop', "#{scroll + alertHeight}px")
+    else
+      @main.css('paddingTop', '0')
+
     @scrollHeaderPos = scroll
+
+  isPageAlertVisible: =>
+    not @scrollPageAlert.hasClass('hide')
 
   pendingTimeReminderReached: =>
     App.TaskManager.touch(@taskKey)
@@ -501,6 +534,14 @@ class App.TicketZoom extends App.Controller
           ticket:    @ticket
           ticket_id: @ticket_id
         )
+
+        # Check if the alert should be shown.
+        #   Normally, this is a concern of the associated channel, so we only render it if it's known.
+        if @ticket.preferences?.channel_id
+          new App.TicketZoomAlert(
+            el:        elLocal.find('.js-ticketAlertContainer')
+            object_id: @ticket_id
+          )
 
       new App.TicketZoomSetting(
         el:        elLocal.find('.js-settingContainer')
@@ -898,7 +939,9 @@ class App.TicketZoom extends App.Controller
       @autosaveStart()
       return
 
-    if articleParams && articleParams.body
+    # New article body required.
+    # But WhatsApp messages with some attachments go without adjacent text.
+    if articleParams && (articleParams.body || @articleNew?.checkBodyAllowEmpty())
       article = new App.TicketArticle
       article.load(articleParams)
       errors = article.validate()
@@ -919,6 +962,34 @@ class App.TicketZoom extends App.Controller
     if @sidebarWidget && @sidebarWidget.postParams
       @sidebarWidget.postParams(ticket: ticket)
 
+    @submitChecklist(e, ticket, macro, editContollerForm)
+
+  submitChecklist: (e, ticket, macro, editContollerForm) =>
+    return @submitTimeAccounting(e, ticket, macro, editContollerForm) if ticket.currentView() isnt 'agent'
+    return @submitTimeAccounting(e, ticket, macro, editContollerForm) if !App.Config.get('checklist')
+
+    # Warning modal should be considered only if the ticket state was changed.
+    return @submitTimeAccounting(e, ticket, macro, editContollerForm) if not @changed('ticket', 'state_id')
+
+    ticketState    = App.TicketState.find(ticket.state_id)
+    isClosed       = ticketState.state_type.name is 'closed'
+    isPendingClose = ticketState.state_type.name is 'pending action' && App.TicketState.find(ticketState.next_state_id).state_type.name is 'closed'
+    return @submitTimeAccounting(e, ticket, macro, editContollerForm) if !isClosed && !isPendingClose
+
+    checklist = App.Checklist.find ticket.checklist_id
+    if !checklist || checklist.open_items().length is 0
+      return @submitTimeAccounting(e, ticket, macro, editContollerForm)
+
+    new App.TicketZoomChecklistModal(
+      container: @el.closest('.content')
+      ticket: ticket
+      cancelCallback: =>
+        @submitEnable(e)
+      submitCallback: =>
+        @submitTimeAccounting(e, ticket, macro, editContollerForm)
+    )
+
+  submitTimeAccounting: (e, ticket, macro, editContollerForm) =>
     if !ticket.article
       @submitPost(e, ticket, macro)
       return
@@ -928,7 +999,7 @@ class App.TicketZoom extends App.Controller
       @submitPost(e, ticket, macro)
       return
 
-    new App.TicketZoomTimeAccounting(
+    new App.TicketZoomTimeAccountingModal(
       container: @el.closest('.content')
       ticket: ticket
       cancelCallback: =>
@@ -1049,7 +1120,7 @@ class App.TicketZoom extends App.Controller
           error = settings.responseJSON.error
         App.Event.trigger 'notify', {
           type:    'error'
-          msg:     App.i18n.translateContent(details.error_human || details.error || error || __('Saving failed.'))
+          msg:     details.error_human || details.error || error || __('Saving failed.')
           timeout: 2000
         }
         @autosaveStart()
@@ -1134,8 +1205,21 @@ class App.TicketZoom extends App.Controller
     return {} if !App.TaskManager.get(@taskKey)
     @localTaskData = App.TaskManager.get(@taskKey).state || {}
 
+    # Set the article type_id if the type is set.
+    if @localTaskData.article && @localTaskData.article.type && !@localTaskData.article.type_id
+      @localTaskData.article.type_id = App.TicketArticleType.findByAttribute('name', @localTaskData.article.type).id
+
+    if @localTaskData.form_id
+      if !@localTaskData.article
+        @localTaskData.article = {}
+      @localTaskData.article.form_id = @localTaskData.form_id
+
+    # Remove inline images.
     if _.isObject(@localTaskData.article) && _.isArray(App.TaskManager.get(@taskKey).attachments)
-      @localTaskData.article['attachments'] = App.TaskManager.get(@taskKey).attachments
+      @localTaskData.article['attachments'] = _.filter( App.TaskManager.get(@taskKey).attachments, (attachment) ->
+        return if attachment.preferences && attachment.preferences['Content-Disposition'] is 'inline'
+        return attachment
+      )
 
     if area
       if !@localTaskData[area]
@@ -1147,6 +1231,10 @@ class App.TicketZoom extends App.Controller
 
   taskUpdate: (area, data) =>
     @localTaskData[area] = data
+
+    # Set the article type if the type_id is set.
+    if @localTaskData[area]['type_id'] && !@localTaskData[area]['type']
+      @localTaskData[area]['type'] = App.TicketArticleType.find(@localTaskData[area]['type_id']).name
 
     taskData = { 'state': @localTaskData }
     if _.isArray(data.attachments)
@@ -1164,6 +1252,10 @@ class App.TicketZoom extends App.Controller
   taskUpdateAll: (data) =>
     @localTaskData = data
     @localTaskData.article['form_id'] = @form_id
+
+    # Set the article type if the type_id is set.
+    if @localTaskData.article['type_id'] && !@localTaskData.article['type']
+      @localTaskData.article['type'] = App.TicketArticleType.find(@localTaskData.article['type_id']).name
 
     taskData = { 'state': @localTaskData }
     if _.isArray(data.attachments)
@@ -1225,7 +1317,7 @@ class TicketZoomRouter extends App.ControllerPermanent
 
     App.Ajax.request(
       type:  'POST'
-      url:   "#{@apiPath}/tickets/search"
+      url:   "#{@apiPath}/tickets/search?full=true"
       processData: true
       data: JSON.stringify(
         condition: {
@@ -1237,8 +1329,8 @@ class TicketZoomRouter extends App.ControllerPermanent
         limit: 1
       )
       success: (data, status, xhr) =>
-        return @byTicketId(params) if _.isEmpty(data.tickets)
-        @navigate("ticket/zoom/#{data.tickets[0]}")
+        return @byTicketId(params) if _.isEmpty(data.record_ids)
+        @navigate("ticket/zoom/#{data.record_ids[0]}")
       error: =>
         @byTicketId(params)
     )

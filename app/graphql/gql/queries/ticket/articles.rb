@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Gql::Queries
   class Ticket::Articles < BaseQuery
@@ -10,11 +10,9 @@ module Gql::Queries
     type Gql::Types::Ticket::ArticleType.connection_type, null: false
 
     def resolve(ticket:)
-      if TicketPolicy.new(context.current_user, ticket).agent_read_access?
-        ::Ticket::Article.where(ticket: ticket).reorder(:id)
-      else
-        ::Ticket::Article.where(ticket: ticket, internal: false).reorder(:id)
-      end
+      Service::Ticket::Article::List
+        .new(current_user: context.current_user)
+        .execute(ticket:)
     end
   end
 end

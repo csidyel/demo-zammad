@@ -1,12 +1,15 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
+import { onClickOutside, onKeyUp, useVModel } from '@vueuse/core'
+import { nextTick, type Ref, watch, useTemplateRef } from 'vue'
+
 import { useTrapTab } from '#shared/composables/useTrapTab.ts'
 import stopEvent from '#shared/utils/events.ts'
 import { getFirstFocusableElement } from '#shared/utils/getFocusableElements.ts'
-import { onClickOutside, onKeyUp, useVModel } from '@vueuse/core'
-import { nextTick, type Ref, shallowRef, watch } from 'vue'
+
 import CommonButton from '#mobile/components/CommonButton/CommonButton.vue'
+
 import type { PopupItemDescriptor } from './types.ts'
 
 export interface Props {
@@ -15,19 +18,29 @@ export interface Props {
   noRefocus?: boolean
   zIndex?: number
   heading?: string
+  cancelLabel?: string
 }
 
 defineOptions({
   inheritAttrs: false,
 })
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  cancelLabel: __('Cancel'),
+})
 const emit = defineEmits<{
-  (e: 'close', isCancel: boolean): void
-  (e: 'update:state', state: boolean): void
+  close: [isCancel: boolean]
+  'update:state': [state: boolean]
 }>()
 
 const localState = useVModel(props, 'state', emit)
+
+let animating = false
+
+// separate method because eslint doesn't see that when it's reassigned in a template
+const setAnimating = (value: boolean) => {
+  animating = value
+}
 
 const hidePopup = (cancel = true) => {
   emit('close', cancel)
@@ -41,9 +54,12 @@ const onItemClick = (item: PopupItemDescriptor) => {
   }
 }
 
-const wrapper = shallowRef<HTMLElement>()
+const wrapperElement = useTemplateRef('wrapper')
 
-onClickOutside(wrapper, () => hidePopup())
+// ignore clicks while it's rendering
+onClickOutside(wrapperElement, () => !animating && hidePopup(), {
+  ignore: ['button > [data-ignore-click]'],
+})
 onKeyUp(
   'Escape',
   (e) => {
@@ -52,14 +68,14 @@ onKeyUp(
       hidePopup()
     }
   },
-  { target: wrapper as Ref<EventTarget> },
+  { target: wrapperElement as Ref<EventTarget> },
 )
 
-useTrapTab(wrapper)
+useTrapTab(wrapperElement)
 
 const focusFirstFocusableElementInside = async () => {
   await nextTick()
-  const firstElement = getFirstFocusableElement(wrapper.value)
+  const firstElement = getFirstFocusableElement(wrapperElement.value)
   firstElement?.focus()
   firstElement?.scrollIntoView({ block: 'nearest' })
 }
@@ -107,13 +123,19 @@ const getClassesByType = (type: PopupItemDescriptor['type']) => {
 
 <template>
   <Teleport to="body">
-    <Transition v-bind="transition">
+    <Transition
+      v-bind="transition"
+      @before-enter="setAnimating(true)"
+      @after-enter="setAnimating(false)"
+    >
       <!-- empty @click is needed for https://stackoverflow.com/a/39712411 -->
       <div
         v-if="localState"
-        class="window fixed bottom-0 top-0 flex w-screen flex-col justify-end px-4 text-white pb-safe-4 ltr:left-0 rtl:right-0"
+        class="window pb-safe-4 fixed bottom-0 top-0 flex w-screen flex-col justify-end px-4 text-white ltr:left-0 rtl:right-0"
         :class="{ 'z-20': !zIndex }"
         :style="{ zIndex }"
+        role="presentation"
+        tabindex="-1"
         data-test-id="popupWindow"
         @click="void 0"
         @keydown.esc="hidePopup()"
@@ -143,7 +165,7 @@ const getClassesByType = (type: PopupItemDescriptor['type']) => {
             class="mt-3 flex h-14 w-full items-center justify-center !bg-black"
             @click="hidePopup()"
           >
-            {{ $t('Cancel') }}
+            {{ $t(cancelLabel) }}
           </CommonButton>
         </div>
       </div>
@@ -151,7 +173,7 @@ const getClassesByType = (type: PopupItemDescriptor['type']) => {
   </Teleport>
 </template>
 
-<style scoped lang="scss">
+<style scoped>
 .window-open {
   &.window {
     transition: opacity 0.2s ease-in;

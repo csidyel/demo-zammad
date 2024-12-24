@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Gql::Mutations
   class TwoFactorMethodInitiateAuthentication < BaseMutation
@@ -6,7 +6,7 @@ module Gql::Mutations
 
     argument :login, String, description: 'User name'
     argument :password, String, description: 'Password'
-    argument :two_factor_method, Gql::Types::Enum::TwoFactorAuthenticationMethodType, description: 'Two-factor authentication method'
+    argument :two_factor_method, Gql::Types::Enum::TwoFactor::AuthenticationMethodType, description: 'Two-factor authentication method'
 
     field :initiation_data, GraphQL::Types::JSON, description: ''
 

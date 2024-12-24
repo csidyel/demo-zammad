@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class GitHub
   class LinkedIssue
@@ -15,6 +15,7 @@ class GitHub
            number
            title
            state
+           url
            milestone {
              title
            }
@@ -48,7 +49,7 @@ class GitHub
       @result = query_by_url(url)
       return if @result.blank?
 
-      to_h.merge(url: url)
+      to_h
     end
 
     private
@@ -57,6 +58,7 @@ class GitHub
       {
         id:         @result['number'].to_s,
         title:      @result['title'],
+        url:        @result['url'],
         icon_state: STATES_MAPPING.fetch(@result['state'], @result['state']),
         milestone:  milestone,
         assignees:  assignees,

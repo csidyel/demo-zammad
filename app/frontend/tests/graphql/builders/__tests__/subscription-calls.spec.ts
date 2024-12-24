@@ -1,11 +1,19 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+import { flushPromises } from '@vue/test-utils'
 
 import { convertToGraphQLId } from '#shared/graphql/utils.ts'
-import { flushPromises } from '@vue/test-utils'
-import { TestUserDocument, TestUserUpdatesDocument } from './queries.ts'
-import type { TestUserQuery, TestUserUpdatesSubscription } from './queries.ts'
-import { getQueryHandler, getSubscriptionHandler } from './utils.ts'
+
 import { getGraphQLSubscriptionHandler } from '../mocks.ts'
+
+import { TestUserDocument, TestUserUpdatesDocument } from './queries.ts'
+import { getQueryHandler, getSubscriptionHandler } from './utils.ts'
+
+import type {
+  TestUserQuery,
+  TestUserUpdatesSubscription,
+  TestUserUpdatesSubscriptionVariables,
+} from './queries.ts'
 
 describe('mocked subscription works correctly', () => {
   it('subscription returns data correctly when not mocked', async () => {
@@ -72,8 +80,9 @@ describe('mocked subscription works correctly', () => {
     const queryHandler = getQueryHandler<TestUserQuery>(TestUserDocument, {
       userId,
     })
-    queryHandler.subscribeToMore<TestUserUpdatesSubscription>({
+    queryHandler.subscribeToMore<TestUserUpdatesSubscriptionVariables>({
       document: TestUserUpdatesDocument,
+      variables: { userId },
     })
 
     queryHandler.load()
@@ -86,9 +95,7 @@ describe('mocked subscription works correctly', () => {
     expect(reactiveResult.value?.user.fullname).toBe(mocked.user.fullname)
 
     const mockedSubscription =
-      getGraphQLSubscriptionHandler<TestUserUpdatesSubscription>(
-        TestUserUpdatesDocument,
-      )
+      getGraphQLSubscriptionHandler<TestUserUpdatesSubscription>('userUpdates')
 
     await mockedSubscription.trigger({
       userUpdates: {

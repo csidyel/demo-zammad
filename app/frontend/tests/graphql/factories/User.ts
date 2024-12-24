@@ -1,9 +1,11 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { faker } from '@faker-js/faker'
+
 import type { Organization, User } from '#shared/graphql/types.ts'
-import type { DeepPartial } from '#shared/types/utils.ts'
 import { convertToGraphQLId } from '#shared/graphql/utils.ts'
+import type { DeepPartial } from '#shared/types/utils.ts'
+
 import { getStoredMockedObject } from '../builders/index.ts'
 
 export default (
@@ -20,8 +22,14 @@ export default (
     imageSource: null,
     email: faker.internet.email(),
     fax: null,
-    login: faker.internet.userName(),
-    phone: faker.helpers.replaceSymbolWithNumber('+49 #### ######'),
+    login: faker.internet.username(),
+    phone: '+49 #### ######'.replace(/#+/g, (m) =>
+      faker.string.numeric(m.length),
+    ),
+    outOfOffice: null,
+    outOfOfficeStartAt: null,
+    outOfOfficeEndAt: null,
+    outOfOfficeReplacement: null,
     objectAttributeValues: [],
     createdBy: null,
     secondaryOrganizations: {
@@ -33,6 +41,7 @@ export default (
       update: true,
       destroy: true,
     },
+    authorizations: [],
   }
   if (parent?.__typename === 'Organization') {
     user.organization = parent
@@ -41,18 +50,19 @@ export default (
     if (organization) {
       // if the organization already exists, add the user to it
       user.organization = organization
-      const members = organization.members.edges
+      const members = organization.allMembers.edges
       const lastCursor = members[members.length - 1]?.cursor
       const cursor = `${lastCursor || 'AB'}A`
-      organization.members.edges.push({
+      organization.allMembers.edges.push({
         __typename: 'UserEdge',
         cursor,
         node: userValue as any,
       })
-      organization.members.totalCount += 1
-      organization.members.pageInfo ??= {} as any
-      organization.members.pageInfo.startCursor = members[0]?.cursor || cursor
-      organization.members.pageInfo.endCursor = cursor
+      organization.allMembers.totalCount += 1
+      organization.allMembers.pageInfo ??= {} as any
+      organization.allMembers.pageInfo.startCursor =
+        members[0]?.cursor || cursor
+      organization.allMembers.pageInfo.endCursor = cursor
     } else {
       user.organization = {
         id: convertToGraphQLId('Organization', 1),

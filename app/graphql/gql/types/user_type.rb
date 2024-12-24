@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Gql::Types
   class UserType < Gql::Types::BaseObject
@@ -48,8 +48,11 @@ module Gql::Types
       field :out_of_office, Boolean
       field :out_of_office_start_at, GraphQL::Types::ISO8601Date
       field :out_of_office_end_at, GraphQL::Types::ISO8601Date
-      field :out_of_office_replacement_id, Integer
-      field :preferences, GraphQL::Types::JSON
+      field :out_of_office_replacement, Gql::Types::UserType, description: 'Replacement agent if this user is out of office'
+
+      field :personal_settings, Gql::Types::User::PersonalSettingsType, method: :preferences, description: 'Typed access to user preferences'
+      field :preferences, GraphQL::Types::JSON, description: 'Direct access to preferences store'
+
       field :permissions, Gql::Types::User::PermissionType, method: :itself
       field :tickets_count, Gql::Types::TicketCountType, method: :itself
     end

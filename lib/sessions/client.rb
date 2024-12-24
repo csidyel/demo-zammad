@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Sessions::Client
 
@@ -23,6 +23,10 @@ class Sessions::Client
     user_updated_at_last_run = nil
     loop_count               = 0
     loop do
+      return if BackgroundServices.shutdown_requested
+
+      ActiveRecord::Base.clear_query_caches_for_current_thread
+      ActiveSupport::CurrentAttributes.clear_all
 
       # check if session still exists
       return if !Sessions.session_exists?(@client_id)
@@ -82,7 +86,7 @@ class Sessions::Client
   end
 
   # send update to browser
-  def send(data)
+  def send(data) # rubocop:disable Zammad/ForbidDefSend
     Sessions.send(@client_id, data)
   end
 

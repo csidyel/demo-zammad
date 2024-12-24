@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 FactoryBot.define do
   factory :channel do
@@ -64,7 +64,16 @@ FactoryBot.define do
       transient do
         inbound do
           {
-            adapter: 'null', options: {}
+            'adapter' => 'imap',
+            'options' => {
+              'auth_type'      => 'plain',
+              'host'           => 'imap.example.com',
+              'ssl'            => 'ssl',
+              'ssl_verify'     => true,
+              'user'           => mail_server_user,
+              'folder'         => '',
+              'keep_on_server' => false,
+            }
           }
         end
 
@@ -73,6 +82,8 @@ FactoryBot.define do
             adapter: 'sendmail'
           }
         end
+
+        sequence(:mail_server_user) { |n| "user#{n}@example.com" }
       end
 
       trait :sendmail do
@@ -96,7 +107,7 @@ FactoryBot.define do
               'port'           => outbound_port,
               'ssl'            => true,
               'ssl_verify'     => true,
-              'user'           => 'user@example.com',
+              'user'           => mail_server_user,
               'authentication' => 'plain',
             }
           }
@@ -112,7 +123,7 @@ FactoryBot.define do
               'host'           => 'imap.example.com',
               'ssl'            => 'ssl',
               'ssl_verify'     => true,
-              'user'           => 'user@example.com',
+              'user'           => mail_server_user,
               'folder'         => '',
               'keep_on_server' => false,
             }
@@ -129,7 +140,7 @@ FactoryBot.define do
               'host'           => 'pop3.example.com',
               'ssl'            => 'ssl',
               'ssl_verify'     => true,
-              'user'           => 'user@example.com',
+              'user'           => mail_server_user,
               'folder'         => '',
               'keep_on_server' => false,
             }
@@ -233,6 +244,10 @@ FactoryBot.define do
     end
 
     factory :google_channel do
+      transient do
+        gmail_user { ENV['GMAIL_USER'] }
+      end
+
       area { 'Google::Account' }
       options do
         {
@@ -242,7 +257,7 @@ FactoryBot.define do
               'auth_type'      => 'XOAUTH2',
               'host'           => 'imap.gmail.com',
               'ssl'            => 'ssl',
-              'user'           => ENV['GMAIL_USER'],
+              'user'           => gmail_user,
               'folder'         => '',
               'keep_on_server' => false,
             }
@@ -253,7 +268,7 @@ FactoryBot.define do
               'host'           => 'smtp.gmail.com',
               'port'           => 465,
               'ssl'            => true,
-              'user'           => ENV['GMAIL_USER'],
+              'user'           => gmail_user,
               'authentication' => 'xoauth2',
             }
           },
@@ -352,8 +367,8 @@ FactoryBot.define do
           callback_token: callback_token,
           callback_url:   "http://localhost:3000/api/v1/channels_telegram_webhook/#{callback_token}?bid=#{bid}",
           api_token:      "#{bid}:#{external_credential.credentials['api_token']}",
-          welcome:        Faker::Lorem.sentence,
-          goodbye:        Faker::Lorem.sentence,
+          welcome:        Faker::Lorem.unique.sentence,
+          goodbye:        Faker::Lorem.unique.sentence,
         }.deep_merge(custom_options)
       end
 
@@ -362,6 +377,41 @@ FactoryBot.define do
         external_credential { association :telegram_credential }
         bid { Faker::Number.unique.number(digits: 10) }
         callback_token { Faker::Alphanumeric.alphanumeric(number: 14) }
+      end
+    end
+
+    factory :whatsapp_channel do
+      area { 'WhatsApp::Business' }
+
+      options do
+        {
+          adapter:           'whatsapp',
+          business_id:,
+          access_token:,
+          app_secret:,
+          phone_number_id:,
+          welcome:,
+          name:,
+          phone_number:,
+          reminder_active:,
+          reminder_message:,
+          callback_url_uuid:,
+          verify_token:,
+        }
+      end
+
+      transient do
+        business_id       { Faker::Number.unique.number(digits: 15) }
+        access_token      { Faker::Omniauth.unique.facebook[:credentials][:token] }
+        app_secret        { Faker::Crypto.unique.md5 }
+        phone_number_id   { Faker::Number.unique.number(digits: 15) }
+        welcome           { Faker::Lorem.unique.sentence }
+        name              { Faker::Company.name }
+        phone_number      { Faker::PhoneNumber.unique.cell_phone_with_country_code }
+        reminder_active   { true }
+        reminder_message  { '' }
+        callback_url_uuid { SecureRandom.uuid }
+        verify_token      { SecureRandom.urlsafe_base64(12) }
       end
     end
   end

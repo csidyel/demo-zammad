@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Gql::Queries
   class TextModule::Suggestions < BaseQuery
@@ -11,7 +11,7 @@ module Gql::Queries
     type [Gql::Types::TextModuleType], null: false
 
     def self.authorize(_obj, ctx)
-      ctx.current_user.permissions?(['ticket.agent'])
+      ctx.current_user.permissions?('ticket.agent')
     end
 
     def resolve(query:, template_render_context: nil, limit: 10)

@@ -1,6 +1,8 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import type { ObjectManagerFrontendAttribute } from '#shared/graphql/types.ts'
+import type { EnumObjectManagerObjects } from '#shared/graphql/types.ts'
+
+import type { ObjectAttribute } from './store.ts'
 import type FieldResolver from '../form/resolver/FieldResolver.ts'
 
 export interface ScreenConfig {
@@ -10,7 +12,8 @@ export interface ScreenConfig {
 }
 
 export type FieldResolverClass = new (
-  attribute: ObjectManagerFrontendAttribute,
+  object: EnumObjectManagerObjects,
+  attribute: ObjectAttribute,
 ) => FieldResolver
 
 export interface FieldResolverModule {

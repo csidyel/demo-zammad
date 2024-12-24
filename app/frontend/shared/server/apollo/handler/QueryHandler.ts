@@ -1,9 +1,21 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 /* eslint-disable no-use-before-define */
 
-import type { Ref, WatchStopHandle } from 'vue'
-import { watch } from 'vue'
+import { getOperationName } from '@apollo/client/utilities'
+import { useApolloClient } from '@vue/apollo-composable'
+import { watch, nextTick } from 'vue'
+
 import type {
+  OperationQueryOptionsReturn,
+  OperationQueryResult,
+  WatchResultCallback,
+} from '#shared/types/server/apollo/handler.ts'
+import type { ReactiveFunction } from '#shared/types/utils.ts'
+
+import BaseHandler from './BaseHandler.ts'
+
+import type {
+  ApolloError,
   ApolloQueryResult,
   FetchMoreOptions,
   FetchMoreQueryOptions,
@@ -12,16 +24,8 @@ import type {
   QueryOptions,
   SubscribeToMoreOptions,
 } from '@apollo/client/core'
-import type {
-  OperationQueryOptionsReturn,
-  OperationQueryResult,
-  WatchResultCallback,
-} from '#shared/types/server/apollo/handler.ts'
-import type { ReactiveFunction } from '#shared/types/utils.ts'
 import type { UseQueryOptions, UseQueryReturn } from '@vue/apollo-composable'
-import { useApolloClient } from '@vue/apollo-composable'
-import { getOperationName } from '@apollo/client/utilities'
-import BaseHandler from './BaseHandler.ts'
+import type { Ref, WatchStopHandle } from 'vue'
 
 export default class QueryHandler<
   TResult = OperationQueryResult,
@@ -96,9 +100,11 @@ export default class QueryHandler<
         },
       })
     } catch (error) {
+      // TODO: do we need to handleError here also in a genric way?
+
       return {
         data: null,
-        error,
+        error: error as ApolloError,
       }
     } finally {
       this.lastCancel = null
@@ -258,7 +264,18 @@ export default class QueryHandler<
 
   public onResult(
     callback: (result: ApolloQueryResult<TResult | undefined>) => void,
+    ignoreFirstResult?: boolean,
   ): void {
+    if (ignoreFirstResult) {
+      this.watchOnceOnResult(() => {
+        nextTick(() => {
+          this.operationResult.onResult(callback)
+        })
+      })
+
+      return
+    }
+
     this.operationResult.onResult(callback)
   }
 }

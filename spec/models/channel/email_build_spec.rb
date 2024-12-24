@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -495,7 +495,7 @@ RSpec.describe Channel::EmailBuild, type: :model do
       end
 
       it 'adds an html tag' do
-        expect(generated_html).to match '<html>'
+        expect(generated_html).to match '<html dir="auto">'
       end
 
       it 'adds the original element' do
@@ -520,7 +520,7 @@ RSpec.describe Channel::EmailBuild, type: :model do
       before { Setting.set('html_email_css_font', css_font) }
 
       it 'includes the configured css font' do
-        expect(generated_html).to match css_font
+        expect(generated_html).to include("#{css_font}\n")
       end
     end
   end

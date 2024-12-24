@@ -1,8 +1,8 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class CoreWorkflow::Custom::TicketTimeAccountingCheck < CoreWorkflow::Custom::Backend
   def saved_attribute_match?
-    @saved_attribute_match ||= ticket_edit? && enabled?
+    @saved_attribute_match ||= !@result_object.form_updater && ticket_edit? && enabled?
   end
 
   def selected_attribute_match?

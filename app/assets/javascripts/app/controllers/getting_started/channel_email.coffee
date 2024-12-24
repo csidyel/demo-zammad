@@ -230,7 +230,7 @@ class GettingStartedChannelEmail extends App.ControllerWizardFullScreen
           @account.inbound = params
 
           if data.content_messages && data.content_messages > 0 && (!@account['inbound']['options'] || @account['inbound']['options']['keep_on_server'] isnt true)
-            @probeInboundMessagesFound(data, true)
+            @probeInboundMessagesFound(data, false)
             @probeInboundArchive(data)
           else
             @showSlide('js-outbound')
@@ -258,7 +258,7 @@ class GettingStartedChannelEmail extends App.ControllerWizardFullScreen
     )
 
   probeInboundMessagesFound: (data, verify) =>
-    message = App.i18n.translateContent('We have already found %s email(s) in your mailbox. We will move them all from your mailbox into Zammad.', data.content_messages)
+    message = App.i18n.translateContent('%s email(s) were found in your mailbox. They will all be moved from your mailbox into Zammad.', data.content_messages)
     @$('.js-inbound-acknowledge .js-messageFound').html(message)
 
     if !verify
@@ -279,7 +279,11 @@ class GettingStartedChannelEmail extends App.ControllerWizardFullScreen
       return
 
     @$('.js-archiveMessage').removeClass('hide')
-    message = App.i18n.translateContent('In addition, we have found emails in your mailbox that are older than %s weeks. You can import such emails as an "archive", which means that no notifications are sent and the tickets have the status "closed". However, you can find them in Zammad anytime using the search function.', data.archive_week_range)
+
+    if data.archive_possible_is_fallback is true
+      message = App.i18n.translateContent('Since the mail server does not support sorting messages by date, it was not possible to detect if there is any mail older than %s weeks in the connected mailbox. You can import such emails as an "archive", which means that no notifications are sent and the tickets have the status "closed". However, you can find them in Zammad anytime using the search function.', data.archive_week_range)
+    else
+      message = App.i18n.translateContent('In addition, emails were found in your mailbox that are older than %s weeks. You can import such emails as an "archive", which means that no notifications are sent and the tickets have the status "closed". However, you can find them in Zammad anytime using the search function.', data.archive_week_range)
     @$('.js-inbound-acknowledge .js-archiveMessageCount').html(message)
 
     configureAttributesAcknowledge = [
@@ -322,6 +326,12 @@ class GettingStartedChannelEmail extends App.ControllerWizardFullScreen
     # get params
     params          = @formParam(e.target)
     params['email'] = @account['meta']['email']
+
+    sslVerifyField = $(e.target).closest('form').find('[name="options::ssl_verify"]')
+
+    if sslVerifyField[0]?.disabled
+      params.options.ssl_verify = false
+
     @disable(e)
 
     @showSlide('js-test')

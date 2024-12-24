@@ -1,18 +1,18 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useHeader } from '#mobile/composables/useHeader.ts'
-import { useOnlineNotificationsQuery } from '#shared/entities/online-notification/graphql/queries/onlineNotifications.api.ts'
-import {
-  QueryHandler,
-  MutationHandler,
-} from '#shared/server/apollo/handler/index.ts'
-import type { OnlineNotification, Scalars } from '#shared/graphql/types.ts'
-import { useOnlineNotificationMarkAllAsSeenMutation } from '#shared/entities/online-notification/graphql/mutations/markAllAsSeen.api.ts'
+
+import { useOnlineNotificationActions } from '#shared/entities/online-notification/composables/useOnlineNotificationActions.ts'
 import { useOnlineNotificationCount } from '#shared/entities/online-notification/composables/useOnlineNotificationCount.ts'
-import CommonLoader from '#mobile/components/CommonLoader/CommonLoader.vue'
+import { useOnlineNotificationsQuery } from '#shared/entities/online-notification/graphql/queries/onlineNotifications.api.ts'
+import type { OnlineNotification, Scalars } from '#shared/graphql/types.ts'
+import { QueryHandler } from '#shared/server/apollo/handler/index.ts'
 import { edgesToArray } from '#shared/utils/helpers.ts'
+
+import CommonLoader from '#mobile/components/CommonLoader/CommonLoader.vue'
+import { useHeader } from '#mobile/composables/useHeader.ts'
+
 import NotificationItem from '../components/NotificationItem.vue'
 
 const notificationsHandler = new QueryHandler(useOnlineNotificationsQuery())
@@ -34,44 +34,25 @@ const notifications = computed(
     ) as OnlineNotification[],
 )
 
-const seenNotification = (id: Scalars['ID']['output']) => {
-  const seenNotificationMutation = new MutationHandler(
-    useOnlineNotificationMarkAllAsSeenMutation({
-      variables: { onlineNotificationIds: [id] },
-    }),
-    {
-      errorNotificationMessage: __(
-        'The online notification could not be marked as seen.',
-      ),
-    },
-  )
+const { seenNotification, markAllRead } = useOnlineNotificationActions()
 
+const runSeenNotification = (id: Scalars['ID']['output']) => {
   mutationTriggered = true
-
-  seenNotificationMutation.send()
+  seenNotification(id)
 }
 
 const markingAsSeen = ref(false)
 
-const markAllRead = async () => {
+const runMarkAllRead = async () => {
   markingAsSeen.value = true
 
   const onlineNotificationIds = notifications.value
     .filter((elem) => !elem.seen)
     .map((elem) => elem.id)
 
-  const mutation = new MutationHandler(
-    useOnlineNotificationMarkAllAsSeenMutation({
-      variables: { onlineNotificationIds },
-    }),
-    {
-      errorNotificationMessage: __('Cannot set online notifications as seen'),
-    },
-  )
-
   mutationTriggered = true
 
-  await mutation.send()
+  await markAllRead(onlineNotificationIds)
 
   markingAsSeen.value = false
 }
@@ -99,15 +80,9 @@ const haveUnread = computed(() => unseenCount.value > 0)
       <NotificationItem
         v-for="notification of notifications"
         :key="notification.id"
-        :item-id="notification.id"
-        :type-name="notification.typeName"
-        :object-name="notification.objectName"
-        :seen="notification.seen"
-        :created-at="notification.createdAt"
-        :created-by="notification.createdBy"
-        :meta-object="notification.metaObject"
+        :activity="notification"
         @remove="notificationRemoved"
-        @seen="seenNotification"
+        @seen="runSeenNotification"
       />
 
       <div v-if="!notifications.length" class="px-4 py-3 text-center text-base">
@@ -118,9 +93,12 @@ const haveUnread = computed(() => unseenCount.value > 0)
         Maybe disabled state that it can not be clicked twice or hidding the action completley. -->
       <div
         v-if="haveUnread"
-        class="flex flex-1 cursor-pointer justify-center px-4 py-3 text-base text-blue"
+        class="text-blue flex flex-1 cursor-pointer justify-center px-4 py-3 text-base"
         :class="{ 'text-red': markingAsSeen }"
-        @click="markAllRead"
+        role="button"
+        tabindex="0"
+        @keydown.enter="runMarkAllRead"
+        @click="runMarkAllRead"
       >
         {{ $t('Mark all as read') }}
       </div>

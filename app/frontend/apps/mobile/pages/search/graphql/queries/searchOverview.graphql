@@ -10,6 +10,7 @@ query search(
       title
       number
       state {
+        id
         name
       }
       priority {
@@ -37,6 +38,8 @@ query search(
       image
       active
       outOfOffice
+      outOfOfficeStartAt
+      outOfOfficeEndAt
       vip
       organization {
         id

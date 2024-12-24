@@ -1,10 +1,38 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import log from '#shared/utils/log.ts'
+import { ref } from 'vue'
+
 import type { EnumObjectManagerObjects } from '#shared/graphql/types.ts'
-import type { ObjectAttributesObject } from '../types/store.ts'
+import log from '#shared/utils/log.ts'
+
+import type {
+  EntityStaticObjectAttributes,
+  ObjectAttribute,
+  ObjectAttributesObject,
+} from '../types/store.ts'
+
+const staticObjectAttributesEntityModules: Record<
+  string,
+  EntityStaticObjectAttributes
+> = import.meta.glob(['../../*/stores/objectAttributes.ts'], {
+  eager: true,
+  import: 'staticObjectAttributes',
+})
+
+export const entitiesStaticObjectAttributes = Object.values(
+  staticObjectAttributesEntityModules,
+)
+export const staticObjectAttributesByEntity =
+  entitiesStaticObjectAttributes.reduce<
+    Record<EnumObjectManagerObjects, ObjectAttribute[]>
+  >(
+    (result, entityItem) => {
+      result[entityItem.name] = entityItem.attributes
+      return result
+    },
+    {} as Record<EnumObjectManagerObjects, ObjectAttribute[]>,
+  )
 
 export const useObjectAttributesStore = defineStore('objectAttributes', () => {
   const objectAttributesObjectLookup = ref<
@@ -23,8 +51,16 @@ export const useObjectAttributesStore = defineStore('objectAttributes', () => {
     return objectAttributesObject
   }
 
+  const setObjectAttributesForObject = (
+    object: EnumObjectManagerObjects,
+    data: ObjectAttributesObject,
+  ) => {
+    objectAttributesObjectLookup.value[object] = data
+  }
+
   return {
     objectAttributesObjectLookup,
+    setObjectAttributesForObject,
     getObjectAttributesForObject,
   }
 })

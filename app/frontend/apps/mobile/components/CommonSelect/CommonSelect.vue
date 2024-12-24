@@ -1,18 +1,21 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
+import { onClickOutside, onKeyDown, useVModel } from '@vueuse/core'
+import { useTemplateRef, onUnmounted, computed, nextTick, ref } from 'vue'
+
+import type { SelectOption } from '#shared/components/CommonSelect/types.ts'
 import { useFocusWhenTyping } from '#shared/composables/useFocusWhenTyping.ts'
 import { useTrapTab } from '#shared/composables/useTrapTab.ts'
 import { useTraverseOptions } from '#shared/composables/useTraverseOptions.ts'
 import stopEvent from '#shared/utils/events.ts'
-import { onClickOutside, onKeyDown, useVModel } from '@vueuse/core'
-import type { Ref } from 'vue'
-import { onUnmounted, computed, nextTick, ref } from 'vue'
-import type { SelectOption } from '#shared/components/CommonSelect/types.ts'
 import testFlags from '#shared/utils/testFlags.ts'
+
 import CommonSelectItem from './CommonSelectItem.vue'
 import { useCommonSelect } from './useCommonSelect.ts'
+
 import type { CommonSelectInternalInstance } from './types.ts'
+import type { Ref } from 'vue'
 
 export interface Props {
   // we cannot move types into separate file, because Vue would not be able to
@@ -33,12 +36,12 @@ export interface Props {
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', option: string | number | (string | number)[]): void
-  (e: 'select', option: SelectOption): void
-  (e: 'close'): void
+  'update:modelValue': [option: string | number | (string | number)[]]
+  select: [option: SelectOption]
+  close: []
 }>()
 
-const dialogElement = ref<HTMLElement>()
+const dialogElement = useTemplateRef('dialog')
 const localValue = useVModel(props, 'modelValue', emit)
 
 // TODO: do we really want this initial transfomring of the value, when it's null?
@@ -186,6 +189,7 @@ const duration = VITE_TEST_MODE ? undefined : { enter: 300, leave: 200 }
         <div
           class="select-overlay fixed inset-0 flex h-full w-full bg-gray-500 opacity-60"
           data-test-id="dialog-overlay"
+          role="presentation"
           @click="void 0"
         ></div>
         <div class="select-dialog relative m-auto">
@@ -193,7 +197,7 @@ const duration = VITE_TEST_MODE ? undefined : { enter: 300, leave: 200 }
             class="flex min-w-[294px] max-w-[90vw] flex-col items-start rounded-xl bg-gray-400/80 backdrop-blur-[15px]"
           >
             <div
-              ref="dialogElement"
+              ref="dialog"
               :aria-label="$t('Select…')"
               role="listbox"
               :aria-multiselectable="multiple"
@@ -217,7 +221,7 @@ const duration = VITE_TEST_MODE ? undefined : { enter: 300, leave: 200 }
   </Teleport>
 </template>
 
-<style scoped lang="scss">
+<style scoped>
 .v-enter-active {
   .select-overlay,
   .select-dialog {

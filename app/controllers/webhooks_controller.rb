@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class WebhooksController < ApplicationController
   prepend_before_action :authenticate_and_authorize!
@@ -31,6 +31,10 @@ class WebhooksController < ApplicationController
 
   def destroy
     model_destroy_render(Webhook, params)
+  end
+
+  def search
+    model_search_render(Webhook, params)
   end
 
   def pre_defined_webhooks

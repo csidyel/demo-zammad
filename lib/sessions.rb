@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module Sessions
 
@@ -6,9 +6,6 @@ module Sessions
            when :redis then Sessions::Store::Redis.new
            else Sessions::Store::File.new
            end
-
-  # create global vars for threads
-  @@client_threads = {} # rubocop:disable Style/ClassVars
 
 =begin
 
@@ -217,7 +214,7 @@ returns
 
 =end
 
-  def self.send(client_id, data)
+  def self.send(client_id, data) # rubocop:disable Zammad/ForbidDefSend
     @store.send_data(client_id, data)
   end
 
@@ -351,128 +348,6 @@ itself was removed in the meantime.
     @store.clear_spool
   end
 
-  def self.jobs(node_id = nil)
-
-    # dispatch sessions
-    if node_id.blank? && ENV['ZAMMAD_SESSION_JOBS_CONCURRENT'].to_i.positive?
-
-      previous_nodes_sessions = Sessions::Node.stats
-      if previous_nodes_sessions.present?
-        log('info', "Cleaning up previous Sessions::Node sessions: #{previous_nodes_sessions}")
-        Sessions::Node.cleanup
-      end
-
-      dispatcher_pid = Process.pid
-      node_count     = ENV['ZAMMAD_SESSION_JOBS_CONCURRENT'].to_i
-      node_pids      = []
-      (1..node_count).each do |worker_node_id|
-        node_pids << fork do
-          title         = "Zammad Session Jobs Node ##{worker_node_id}: dispatch_pid:#{dispatcher_pid} -> worker_pid:#{Process.pid}"
-          $PROGRAM_NAME = title
-
-          log('info', "#{title} started.")
-
-          ::Sessions.jobs(worker_node_id)
-          sleep node_count
-        rescue Interrupt
-          nil
-        end
-      end
-
-      Signal.trap 'SIGTERM' do
-
-        node_pids.each do |node_pid|
-          Process.kill 'TERM', node_pid
-        end
-
-        Process.waitall
-
-        raise SignalException, 'SIGTERM'
-      end
-
-      # dispatch client_ids to nodes
-      loop do
-
-        # nodes
-        nodes_stats = Sessions::Node.stats
-
-        client_ids = sessions
-        client_ids.each do |client_id|
-
-          # ask nodes for nodes
-          next if nodes_stats[client_id]
-
-          # assign to node
-          Sessions::Node.session_assigne(client_id)
-          sleep 1
-        end
-        sleep 1
-      end
-    end
-
-    Thread.abort_on_exception = true
-    loop do
-
-      if node_id
-
-        # register node
-        Sessions::Node.register(node_id)
-
-        # watch for assigned sessions
-        client_ids = Sessions::Node.sessions_by(node_id)
-      else
-        client_ids = sessions
-      end
-
-      client_ids.each do |client_id|
-
-        # connection already open, ignore
-        next if @@client_threads[client_id]
-
-        # get current user
-        session_data = Sessions.get(client_id)
-        next if session_data.blank?
-        next if session_data[:user].blank?
-        next if session_data[:user]['id'].blank?
-
-        user = User.lookup(id: session_data[:user]['id'])
-        next if user.blank?
-
-        # start client thread
-        next if @@client_threads[client_id].present?
-
-        @@client_threads[client_id] = true
-        @@client_threads[client_id] = Thread.new do
-          thread_client(client_id, 0, Time.now.utc, node_id)
-          @@client_threads[client_id] = nil
-          log('debug', "close client (#{client_id}) thread")
-          if ActiveRecord::Base.connection.owner == Thread.current
-            ActiveRecord::Base.connection.close
-          end
-        end
-        sleep 1
-      end
-
-      sleep 1
-    end
-  end
-
-=begin
-
-check if thread for client_id is running
-
-  Sessions.thread_client_exists?(client_id)
-
-returns
-
-  thread
-
-=end
-
-  def self.thread_client_exists?(client_id)
-    @@client_threads[client_id]
-  end
-
 =begin
 
 start client for browser
@@ -493,11 +368,6 @@ returns
       log('error', "thread_client #{client_id} exited with error #{e.inspect}")
       log('error', e.backtrace.join("\n  "))
       sleep 10
-      begin
-        ActiveRecord::Base.connection_pool.release_connection
-      rescue => e
-        log('error', "Can't reconnect to database #{e.inspect}")
-      end
 
       try_run_max = 10
       try_count += 1
@@ -545,5 +415,17 @@ returns
       return
     end
     puts "#{Time.now.utc.iso8601}:#{level} #{message}" # rubocop:disable Rails/Output
+  end
+
+  # This is a shorthand to simulate the old Sessions.jobs behavior using the new BackgroundServices worker
+  # This should be used for debugging only
+  # For production, please run BackgroundServices
+  def self.jobs
+    BackgroundServices::Service::ProcessSessionsJobs
+      .pre_run
+
+    BackgroundServices::Service::ProcessSessionsJobs
+      .new(manager: nil)
+      .launch
   end
 end

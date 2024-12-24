@@ -1,10 +1,10 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Sessions::Event::Base
 
   def initialize(params)
     params.each do |key, value|
-      instance_variable_set "@#{key}", value
+      instance_variable_set :"@#{key}", value
     end
 
     @is_web_socket = false
@@ -20,6 +20,18 @@ class Sessions::Event::Base
       @reused_connection = false
       ActiveRecord::Base.establish_connection
     end
+
+    session_user_info
+  end
+
+  def session_user_info
+    return if !@session
+    return if !@session['id']
+
+    user = User.lookup(id: @session['id'])
+    return if user.blank?
+
+    UserInfo.current_user_id = user.id
   end
 
   def self.inherited(subclass)
@@ -109,7 +121,18 @@ class Sessions::Event::Base
   end
 
   def remote_ip
-    @headers&.fetch('X-Forwarded-For', nil).presence
+    # Basic implementation of the algorithm recommended by
+    #   https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-For#selecting_an_ip_address
+    #   because we cannot use Rails' request.remote_ip here (as it runs from websocket server without rack).
+    raw_header = @headers&.dig('X-Forwarded-For').presence
+
+    return if !raw_header
+
+    raw_header
+      .split(',')
+      .map(&:strip)
+      .difference(Rails.application.config.action_dispatch.trusted_proxies)
+      .last
   end
 
   def origin

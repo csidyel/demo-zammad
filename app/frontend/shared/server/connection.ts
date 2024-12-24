@@ -1,24 +1,64 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { computed, ref, watch } from 'vue'
-import {
-  consumer,
-  reopenWebSocketConnection,
-} from '#shared/server/action_cable/consumer.ts'
-import log from '#shared/utils/log.ts'
+
 import {
   NotificationTypes,
   useNotifications,
 } from '#shared/components/CommonNotifications/index.ts'
 import { useApplicationLoaded } from '#shared/composables/useApplicationLoaded.ts'
+import {
+  consumer,
+  reopenWebSocketConnection,
+} from '#shared/server/action_cable/consumer.ts'
+import log from '#shared/utils/log.ts'
 
 const wsConnectionState = ref(true)
 const wsReopening = ref(false)
 const { loaded } = useApplicationLoaded()
 
-window.setInterval(() => {
-  wsConnectionState.value = !loaded.value || consumer.connection.isOpen()
-}, 1000)
+const isConnectionOpen = () => !loaded.value || consumer.connection.isOpen()
+
+const INTERVAL_CHECK_CONNECTION = 1000
+const TIMEOUT_CONFIRM_FAIL = 2000
+
+let faledTimeout: number | null = null
+let checkInterval: number | null = null
+
+const clearFailedTimeout = () => {
+  if (faledTimeout) window.clearTimeout(faledTimeout)
+  faledTimeout = null
+}
+
+const clearCheckInterval = () => {
+  if (checkInterval) window.clearInterval(checkInterval)
+  checkInterval = null
+}
+
+const checkStatus = () => {
+  clearCheckInterval()
+
+  checkInterval = window.setInterval(() => {
+    const hasConnection = isConnectionOpen()
+
+    if (hasConnection) {
+      wsConnectionState.value = true
+      return
+    }
+
+    // if there is no connection, let's wait a few seconds and check again
+    // pause interval while we wait
+
+    clearCheckInterval()
+    clearFailedTimeout()
+    faledTimeout = window.setTimeout(() => {
+      wsConnectionState.value = isConnectionOpen()
+      checkStatus()
+    }, TIMEOUT_CONFIRM_FAIL)
+  }, INTERVAL_CHECK_CONNECTION)
+}
+
+checkStatus()
 
 let connectionNotificationId: string
 const networkConnectionState = ref(true)
@@ -41,6 +81,7 @@ watch(
     } else {
       log.debug('Application connection just went down.')
       connectionNotificationId = notifications.notify({
+        id: 'connection-lost',
         message: __('The connection to the server was lost.'),
         type: NotificationTypes.Error,
         persistent: true,

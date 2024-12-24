@@ -1,6 +1,8 @@
 class App.Model extends Spine.Model
   @apiPath: App.Config.get('api_path')
 
+  @allowedReplaceTagsFunctionMapping = {}
+
   constructor: ->
     super
 
@@ -660,6 +662,73 @@ set new attributes of model (remove already available attributes)
         App.Log.error('Model', statusText, error, url)
     )
 
+  ###
+
+  search full collection (with assets)
+
+  App.Model.searchFull(@callback)
+
+  App.Model.searchFull(
+    @callback
+    query: 'search string'
+    page: 1
+    per_page: 10
+    sort_by: 'name'
+    order_by: 'ASC'
+  )
+
+
+  ###
+  @searchFull: (callback, params = {}) ->
+    if params.full is undefined
+      params.full = true
+
+    url = "#{@url}/search"
+    App.Log.debug('Model', "searchFull collection #{@className}", url)
+
+    # request already active, queue callback
+    queueManagerName = "#{@className}::searchFull"
+
+    if params.refresh is undefined
+      params.refresh = true
+
+    App.Ajax.request(
+      type:  'POST'
+      url:   url
+      processData: true,
+      data: JSON.stringify(params)
+      success: (data, status, xhr) =>
+        App.Log.debug('Model', "got searchFull collection #{@className}", data)
+
+        recordIds = data.record_ids
+
+        # full / load assets
+        if data.assets
+          App.Collection.loadAssets(data.assets, targetModel: @className)
+
+          # if no record_ids are found, no initial render is fired
+          if data.record_ids && _.isEmpty(data.record_ids) && params.refresh
+            App[@className].trigger('refresh', [])
+
+        # find / load object
+        else if params.refresh
+          App[@className].refresh(data)
+
+        if callback
+          localCallback = =>
+            collection = []
+            for id in recordIds
+              collection.push App[@className].find(id)
+            callback(collection, data)
+          App.QueueManager.add(queueManagerName, localCallback)
+
+        App.QueueManager.run(queueManagerName)
+
+      error: (xhr, statusText, error) =>
+        @searchFullActive = false
+        App.Log.error('Model', statusText, error, url)
+    )
+
   @_bindsEmpty: ->
     if @SUBSCRIPTION_ITEM
       for id, keys of @SUBSCRIPTION_ITEM
@@ -937,6 +1006,16 @@ set new attributes of model (remove already available attributes)
         allAttributes.push $.extend(true, {}, attribute)
 
     @configure_attributes = $.extend(true, [], allAttributes.concat(configure_attributes))
+
+  replaceTagsFunctionCallback: (functionName, parameters) ->
+    functionMapping = App[ @constructor.className ].allowedReplaceTagsFunctionMapping[functionName]
+    return if !functionMapping
+
+    # First check, if there is a defined allowed function mapping inside the single moodel.
+    mappedFunctionName = functionMapping.function_name
+    return if !mappedFunctionName
+
+    @[mappedFunctionName](parameters...)
 
   @resetAttributes: ->
     return if _.isEmpty(@org_configure_attributes)

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -235,7 +235,7 @@ RSpec.describe 'Manage > Channels > Email', type: :system do
 
     context 'with SSL verification off' do
       before do
-        channel = Channel.find(1)
+        channel = Channel.in_area('Email::Account').first
         channel.options[:inbound][:options][:ssl_verify] = false
         channel.save!
       end
@@ -288,6 +288,18 @@ RSpec.describe 'Manage > Channels > Email', type: :system do
         verify_select.find(:option, 'yes').select_option
 
         expect(page).to have_no_text('Turning off SSL verification')
+
+        port_field = find('input[name="options::port"]')
+
+        port_field.fill_in with: '25'
+        port_field.execute_script "$(this).trigger('blur')"
+
+        expect(page).to have_css('select[name="options::ssl_verify"][disabled]')
+
+        port_field.fill_in with: '465'
+        port_field.execute_script "$(this).trigger('blur')"
+
+        expect(page).to have_css('select[name="options::ssl_verify"]:not([disabled])')
       end
     end
   end

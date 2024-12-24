@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class Sequencer::Unit::Import::Kayako::Mapping::CustomFields < Sequencer::Unit::Base
   include ::Sequencer::Unit::Import::Common::Mapping::Mixin::ProvideMapped
@@ -22,7 +22,18 @@ class Sequencer::Unit::Import::Kayako::Mapping::CustomFields < Sequencer::Unit::
 
       field_type_instance = attribute_type_instance(field)
 
-      result[ local_name.to_sym ] = field_type_instance.local_value(item['value'])
+      result[ local_name.to_sym ] = local_value(local_name, field_type_instance, item['value'])
+    end
+  end
+
+  def local_value(local_name, field_type_instance, value)
+    begin
+      field_type_instance.local_value(value)
+    rescue => e
+      logger.error "Error when setting local value for custom field (#{local_name}) for case: #{resource['id']}."
+      logger.error e
+
+      nil
     end
   end
 

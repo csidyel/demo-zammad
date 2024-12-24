@@ -1,25 +1,32 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
-vi.setSystemTime('2021-04-09T10:11:12Z')
+import { getByRole } from '@testing-library/vue'
+import { flushPromises } from '@vue/test-utils'
+import { keyBy } from 'lodash-es'
 
-const { getByRole } = await import('@testing-library/vue')
-const { mockApplicationConfig } = await import(
-  '#tests/support/mock-applicationConfig.ts'
-)
-const { mockPermissions } = await import('#tests/support/mock-permissions.ts')
-const { flushPromises } = await import('@vue/test-utils')
-const { keyBy } = await import('lodash-es')
-const { default: attributes } = await import('./attributes.json')
+import { renderComponent } from '#tests/support/components/index.ts'
+import { mockApplicationConfig } from '#tests/support/mock-applicationConfig.ts'
+import { mockPermissions } from '#tests/support/mock-permissions.ts'
 
-const { i18n } = await import('#shared/i18n.ts')
-const { default: ObjectAttributes } = await import('../ObjectAttributes.vue')
-const { renderComponent } = await import('#tests/support/components/index.ts')
+import { i18n } from '#shared/i18n.ts'
 
-export {}
+import ObjectAttributes from '../ObjectAttributes.vue'
+
+import attributes from './attributes.json'
+
+vi.hoisted(() => {
+  vi.setSystemTime('2021-04-09T10:11:12Z')
+})
 
 const attributesByKey = keyBy(attributes, 'name')
 
 describe('common object attributes interface', () => {
+  beforeEach(() => {
+    mockApplicationConfig({
+      pretty_date_format: 'absolute',
+    })
+  })
+
   test('renders all available attributes', () => {
     mockPermissions(['admin.user', 'ticket.agent'])
 
@@ -76,6 +83,10 @@ describe('common object attributes interface', () => {
           attribute: attributesByKey.phone,
           value: '+49 123456789',
         },
+        {
+          attribute: attributesByKey.external_attribute,
+          value: { value: 1, label: 'Display External' },
+        },
       ],
     }
 
@@ -116,6 +127,9 @@ describe('common object attributes interface', () => {
     )
     expect(getRegion('Multi Tree Select Field')).toHaveTextContent(
       'key1, key2, key2::key2_child1',
+    )
+    expect(getRegion('External Attribute')).toHaveTextContent(
+      'Display External',
     )
 
     expect(

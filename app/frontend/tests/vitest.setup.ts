@@ -1,13 +1,21 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
+import { loadErrorMessages, loadDevMessages } from '@apollo/client/dev'
 import '@testing-library/jest-dom/vitest'
 import { toBeDisabled } from '@testing-library/jest-dom/matchers'
 import { configure } from '@testing-library/vue'
-import * as matchers from 'vitest-axe/matchers'
 import { expect } from 'vitest'
+import * as matchers from 'vitest-axe/matchers'
 import 'vitest-axe/extend-expect'
+
 import { ServiceWorkerHelper } from '#shared/utils/testSw.ts'
+
 import * as assertions from './support/assertions/index.ts'
+
+// Zammad custom assertions: toBeAvatarElement, toHaveClasses, toHaveImagePreview, toHaveCurrentUrl
+
+loadDevMessages()
+loadErrorMessages()
 
 vi.hoisted(() => {
   globalThis.__ = (source) => {
@@ -68,6 +76,8 @@ Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
       drawImage: (img: HTMLImageElement) => {
         this.__image_src = img.src
       },
+      translate: vi.fn(),
+      scale: vi.fn(),
     }
   },
 })
@@ -150,7 +160,11 @@ vi.mock(
           },
         })
 
-        return { value, name: props.context.node.name, id: props.context.id }
+        return {
+          value,
+          name: props.context.node.name,
+          id: props.context.id,
+        }
       },
       template: `<textarea :id="id" :name="name" v-model="value" />`,
     })
@@ -241,7 +255,7 @@ declare module 'vitest' {
 }
 
 declare module 'vitest' {
-  // eslint-disable-next-line @typescript-eslint/no-empty-interface, @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type, @typescript-eslint/no-unused-vars
   interface Assertion<T> extends matchers.AxeMatchers {}
 }
 

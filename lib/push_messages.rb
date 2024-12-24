@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module PushMessages
 
@@ -14,7 +14,7 @@ module PushMessages
     Thread.current[:push_messages] = []
   end
 
-  def self.send(data)
+  def self.send(data) # rubocop:disable Zammad/ForbidDefSend
     if !PushMessages.enabled?
       Sessions.broadcast(
         data[:message],

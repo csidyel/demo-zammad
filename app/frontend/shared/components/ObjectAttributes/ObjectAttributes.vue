@@ -1,14 +1,15 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
 import { useSharedVisualConfig } from '#shared/composables/useSharedVisualConfig.ts'
-import type { ObjectManagerFrontendAttribute } from '#shared/graphql/types.ts'
+import type { ObjectAttribute } from '#shared/entities/object-attributes/types/store.ts'
 import type { ObjectLike } from '#shared/types/utils.ts'
+
 import { useDisplayObjectAttributes } from './useDisplayObjectAttributes.ts'
 
 export interface Props {
   object: ObjectLike
-  attributes: ObjectManagerFrontendAttribute[]
+  attributes: ObjectAttribute[]
   skipAttributes?: string[]
   accessors?: Record<string, string>
   alwaysShowAfterFields?: boolean
@@ -39,6 +40,7 @@ const { objectAttributes: objectAttributesConfig } = useSharedVisualConfig()
             :is="field.component"
             :attribute="field.attribute"
             :value="field.value"
+            :config="objectAttributesConfig"
           />
         </CommonLink>
         <Component
@@ -46,6 +48,7 @@ const { objectAttributes: objectAttributesConfig } = useSharedVisualConfig()
           v-else
           :attribute="field.attribute"
           :value="field.value"
+          :config="objectAttributesConfig"
         />
       </Component>
     </template>

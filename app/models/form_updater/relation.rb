@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 class FormUpdater::Relation
   attr_reader :context, :current_user, :data, :filter_ids
@@ -11,13 +11,9 @@ class FormUpdater::Relation
   end
 
   def options
-    options = []
-
-    items.each do |item|
-      options.push({ value: item.id, label: display_name(item) })
+    items.map do |item|
+      { value: item.id, label: display_name(item) }
     end
-
-    options
   end
 
   private

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 require 'models/core_workflow/base'
@@ -208,21 +208,21 @@ RSpec.describe CoreWorkflow, mariadb: true, type: :model do
   end
 
   describe 'Add clear selection action or has changed condition #3821' do
-    let!(:workflow_has_changed) do
+    let!(:workflow_just_changed) do
       create(:core_workflow,
              object:             'Ticket',
              condition_selected: {
                'ticket.priority_id': {
-                 operator: 'has_changed',
+                 operator: 'just_changed',
                },
              })
     end
-    let!(:workflow_changed_to) do
+    let!(:workflow_just_changed_to) do
       create(:core_workflow,
              object:             'Ticket',
              condition_selected: {
                'ticket.priority_id': {
-                 operator: 'changed_to',
+                 operator: 'just_changed_to',
                  value:    [ Ticket::Priority.find_by(name: '3 high').id.to_s ]
                },
              })
@@ -234,21 +234,21 @@ RSpec.describe CoreWorkflow, mariadb: true, type: :model do
       end
 
       it 'does match on condition has changed' do
-        expect(result[:matched_workflows]).to include(workflow_has_changed.id)
+        expect(result[:matched_workflows]).to include(workflow_just_changed.id)
       end
 
       it 'does match on condition changed to' do
-        expect(result[:matched_workflows]).to include(workflow_changed_to.id)
+        expect(result[:matched_workflows]).to include(workflow_just_changed_to.id)
       end
     end
 
     context 'when nothing changed' do
       it 'does not match on condition has changed' do
-        expect(result[:matched_workflows]).not_to include(workflow_has_changed.id)
+        expect(result[:matched_workflows]).not_to include(workflow_just_changed.id)
       end
 
       it 'does not match on condition changed to' do
-        expect(result[:matched_workflows]).not_to include(workflow_changed_to.id)
+        expect(result[:matched_workflows]).not_to include(workflow_just_changed_to.id)
       end
     end
 
@@ -258,11 +258,11 @@ RSpec.describe CoreWorkflow, mariadb: true, type: :model do
       end
 
       it 'does not match on condition has changed' do
-        expect(result[:matched_workflows]).not_to include(workflow_has_changed.id)
+        expect(result[:matched_workflows]).not_to include(workflow_just_changed.id)
       end
 
       it 'does not match on condition changed to' do
-        expect(result[:matched_workflows]).not_to include(workflow_changed_to.id)
+        expect(result[:matched_workflows]).not_to include(workflow_just_changed_to.id)
       end
     end
   end
@@ -310,6 +310,52 @@ RSpec.describe CoreWorkflow, mariadb: true, type: :model do
 
     it 'does not prefill if body is set already' do
       expect(result[:fill_in]['body']).to be_blank
+    end
+  end
+
+  describe 'Core-Workflows: Removing groups with re-adding some discards all permissions the user has #5002' do
+    let(:payload) do
+      base_payload.merge('params' => { 'group_id' => Group.first.id })
+    end
+    let!(:workflow1) do
+      create(:core_workflow,
+             object:  'Ticket',
+             perform: {
+               'ticket.group_id': {
+                 operator:      'remove_option',
+                 remove_option: Group.all.map { |x| x.id.to_s },
+               },
+             })
+    end
+    let!(:workflow2) do
+      create(:core_workflow,
+             object:  'Ticket',
+             perform: {
+               'ticket.group_id': {
+                 operator:   'add_option',
+                 add_option: [Group.first.id.to_s],
+               },
+             })
+    end
+
+    before do
+      action_user.group_names_access_map = {
+        Group.first.name => %w[full],
+      }
+      workflow1
+      workflow2
+    end
+
+    it 'does readd the group' do
+      expect(result[:restrict_values]['group_id']).to eq(['', Group.first.id.to_s])
+    end
+
+    it 'does keep owners' do
+      expect(result[:restrict_values]['owner_id']).to include(action_user.id.to_s)
+    end
+
+    it 'does not endless loop because of removing and adding the same element' do
+      expect(result[:rerun_count]).to be < CoreWorkflow::Result::MAX_RERUN
     end
   end
 end

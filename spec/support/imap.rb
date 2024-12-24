@@ -1,8 +1,10 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
+
+require 'net/imap'
 
 module ImapHelper
   def imap_delete_old_mails(options)
-    imap = ::Net::IMAP.new(options[:host], options[:port], options[:ssl], nil, false)
+    imap = ::Net::IMAP.new(options[:host], port: options[:port], ssl: (options[:ssl] ? { verify_mode: OpenSSL::SSL::VERIFY_NONE } : false))
     imap.authenticate(options[:auth_type], options[:user], options[:password])
     imap.select('INBOX')
 

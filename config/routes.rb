@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 Rails.application.routes.draw do
 
@@ -16,10 +16,10 @@ Rails.application.routes.draw do
   dir = File.expand_path(__dir__)
   files = Dir.glob("#{dir}/routes/*.rb")
   files.each do |file|
-    if Rails.configuration.cache_classes
-      require_dependency file
-    else
+    if Rails.configuration.enable_reloading
       load file
+    else
+      require_dependency file
     end
   end
 

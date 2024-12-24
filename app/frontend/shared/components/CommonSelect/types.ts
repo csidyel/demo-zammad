@@ -1,4 +1,4 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import type { Props as IconProps } from '#shared/components/CommonIcon/CommonIcon.vue'
 import type { ObjectSelectOption } from '#shared/entities/object-attributes/form/resolver/fields/select.ts'
@@ -11,4 +11,9 @@ export interface SelectOption extends ObjectSelectOption {
   status?: EnumTicketStateColorCode
   icon?: string
   iconProps?: Omit<IconProps, 'name'>
+  match?: RegExpExecArray
+}
+
+export interface MatchedSelectOption extends SelectOption {
+  matchedLabel?: string
 }

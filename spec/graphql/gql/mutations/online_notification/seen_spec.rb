@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 
@@ -40,7 +40,7 @@ RSpec.describe Gql::Mutations::OnlineNotification::Seen, :aggregate_failures, ty
         end
 
         it 'marks the existing notification as seen' do
-          expect(gql.result.data['success']).to be true
+          expect(gql.result.data[:success]).to be true
           expect(notification.reload).to have_attributes(seen: true)
         end
 
@@ -57,7 +57,7 @@ RSpec.describe Gql::Mutations::OnlineNotification::Seen, :aggregate_failures, ty
 
         it 'results in an error' do
           expect(gql.result.error_type).to eq Exceptions::Forbidden
-          expect(gql.result.error_message).to eq "not allowed to show? this #{object.class.name}"
+          expect(gql.result.error_message).to match %r{not allowed to .*Policy#show\? this #{object.class.name}}
         end
       end
     end

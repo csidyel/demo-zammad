@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 # The name AssetsSet combines the Assets term in Zammad with the Set class from the Ruby StdLib.
 # Zammad Assets serve the purpose to limit requests to the REST API. For a requested object all
@@ -21,7 +21,7 @@ class AssetsSet < SimpleDelegator
   # This method overwrites the SimpleDelegator initializer
   # to be able to have the actual Assets Hash as an optional argument.
   def initialize(assets = {})
-    super(assets)
+    super
   end
 
   # This method initializes the the global lookup table.

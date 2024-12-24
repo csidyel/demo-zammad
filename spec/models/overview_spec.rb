@@ -1,10 +1,14 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
 require 'models/application_model_examples'
 
 RSpec.describe Overview, type: :model do
-  it_behaves_like 'ApplicationModel', can_assets: { associations: :users, selectors: :condition }
+  it_behaves_like 'ApplicationModel',
+                  can_assets:        { associations: :users, selectors: :condition },
+                  can_create_update: { unique_name: false }
+  it_behaves_like 'Association clears cache', association: :roles
+  it_behaves_like 'Association clears cache', association: :users
 
   context 'link generation' do
 

@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rchardet'
 
@@ -92,7 +92,7 @@ class String
 
     removed = ''
     each_char.with_object('') do |c, result|
-      if c.bytes.count > 3
+      if c.bytesize > 3
         removed << c
         next
       end
@@ -320,6 +320,7 @@ class String
   def text2html
     text = CGI.escapeHTML(self)
     text.gsub!(%r{\n}, '<br>')
+    text.gsub!('&amp;amp;', '&amp;')
     text.chomp
   end
 
@@ -335,8 +336,9 @@ class String
     # https://github.com/zammad/zammad/issues/4112
     string.gsub!(%r{<!\[if !supportLists\]>.+?<!\[endif\]>}mi, '• ')
 
-    string = HtmlSanitizer.strict(string, true).strip
-    string = HtmlSanitizer.cleanup(string).strip
+    strict_sanitizer = HtmlSanitizer::Strict.new
+    string = strict_sanitizer.sanitize(string, external: true).strip
+    string = HtmlSanitizer::Cleanup.new.sanitize(string).strip
 
     # as fallback, use html2text and text2html
     if string.blank?
@@ -368,7 +370,13 @@ class String
     marker_template = '<span class="js-signatureMarker"></span>'
     string.sub!(%r{######SIGNATURE_MARKER######}, marker_template)
     string.gsub!(%r{######SIGNATURE_MARKER######}, '')
-    string.chomp
+
+    [
+      string.chomp,
+      {
+        remote_content_removed: strict_sanitizer.remote_content_removed
+      },
+    ]
   end
 
   def signature_identify(type = 'text', force = false)

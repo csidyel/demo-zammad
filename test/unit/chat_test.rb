@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'test_helper'
 
@@ -52,7 +52,7 @@ class ChatTest < ActiveSupport::TestCase
   test 'chat event db connection test' do
 
     class DummyWs # rubocop:disable Lint/ConstantDefinitionInBlock
-      def send(msg)
+      def send(msg) # rubocop:disable Zammad/ForbidDefSend
         Rails.logger.info "WS send: #{msg}"
       end
     end
@@ -66,7 +66,7 @@ class ChatTest < ActiveSupport::TestCase
     message = Sessions::Event.run(
       event:     'login',
       payload:   {},
-      session:   123,
+      session:   {},
       remote_ip: '127.0.0.1',
       client_id: '123',
       clients:   {
@@ -85,7 +85,7 @@ class ChatTest < ActiveSupport::TestCase
     message = Sessions::Event.run(
       event:     'chat_status_customer',
       payload:   {},
-      session:   123,
+      session:   {},
       remote_ip: '127.0.0.1',
       client_id: '123',
       clients:   {
@@ -107,7 +107,7 @@ class ChatTest < ActiveSupport::TestCase
     message = Sessions::Event.run(
       event:     'login',
       payload:   {},
-      session:   123,
+      session:   {},
       remote_ip: '127.0.0.1',
       client_id: '123',
       clients:   {},
@@ -119,7 +119,7 @@ class ChatTest < ActiveSupport::TestCase
     message = Sessions::Event.run(
       event:     'chat_status_customer',
       payload:   {},
-      session:   123,
+      session:   {},
       remote_ip: '127.0.0.1',
       client_id: '123',
       clients:   {},
@@ -626,14 +626,14 @@ class ChatTest < ActiveSupport::TestCase
       name:          'country test',
       max_queue:     5,
       note:          '',
-      block_country: 'AU;CH',
+      block_country: 'AU;CH;DE',
       active:        true,
       updated_by_id: 1,
       created_by_id: 1,
     )
 
     assert_not(chat.blocked_country?('127.0.0.1'))
-    assert(chat.blocked_country?('1.1.1.8'))
+    assert(chat.blocked_country?('116.203.82.166'))
   end
 
 end

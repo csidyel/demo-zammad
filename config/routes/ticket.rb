@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 Zammad::Application.routes.draw do
   api_path = Rails.configuration.api_path
@@ -23,7 +23,6 @@ Zammad::Application.routes.draw do
 
   # tickets
   match api_path + '/tickets/search',                                to: 'tickets#search',            via: %i[get post]
-  match api_path + '/tickets/selector',                              to: 'tickets#selector',          via: :post
   match api_path + '/tickets',                                       to: 'tickets#index',             via: :get
   match api_path + '/tickets/:id',                                   to: 'tickets#show',              via: :get
   match api_path + '/tickets',                                       to: 'tickets#create',            via: :post
@@ -59,14 +58,15 @@ Zammad::Application.routes.draw do
   match api_path + '/ticket_states/:id',                             to: 'ticket_states#destroy',     via: :delete
 
   # ticket articles
-  match api_path + '/ticket_articles',                               to: 'ticket_articles#index',           via: :get
-  match api_path + '/ticket_articles/:id',                           to: 'ticket_articles#show',            via: :get
-  match api_path + '/ticket_articles/by_ticket/:id',                 to: 'ticket_articles#index_by_ticket', via: :get
-  match api_path + '/ticket_articles',                               to: 'ticket_articles#create',          via: :post
-  match api_path + '/ticket_articles/:id',                           to: 'ticket_articles#update',          via: :put
-  match api_path + '/ticket_articles/:id',                           to: 'ticket_articles#destroy',     via: :delete
-  match api_path + '/ticket_attachment/:ticket_id/:article_id/:id',  to: 'ticket_articles#attachment',      via: :get
-  match api_path + '/ticket_attachment_upload_clone_by_article/:article_id', to: 'ticket_articles#ticket_attachment_upload_clone_by_article', via: :post
-  match api_path + '/ticket_article_plain/:id',                      to: 'ticket_articles#article_plain',   via: :get
-  match api_path + '/ticket_articles/:id/retry_security_process',    to: 'ticket_articles#retry_security_process', via: :post
+  match api_path + '/ticket_articles',                                        to: 'ticket_articles#index',                                     via: :get
+  match api_path + '/ticket_articles/:id',                                    to: 'ticket_articles#show',                                      via: :get
+  match api_path + '/ticket_articles/by_ticket/:id',                          to: 'ticket_articles#index_by_ticket',                           via: :get
+  match api_path + '/ticket_articles',                                        to: 'ticket_articles#create',                                    via: :post
+  match api_path + '/ticket_articles/:id',                                    to: 'ticket_articles#update',                                    via: :put
+  match api_path + '/ticket_articles/:id',                                    to: 'ticket_articles#destroy',                                   via: :delete
+  match api_path + '/ticket_attachment/:ticket_id/:article_id/:id',           to: 'ticket_articles#attachment',                                via: :get
+  match api_path + '/ticket_attachment_upload_clone_by_article/:article_id',  to: 'ticket_articles#ticket_attachment_upload_clone_by_article', via: :post
+  match api_path + '/ticket_article_plain/:id',                               to: 'ticket_articles#article_plain',                             via: :get
+  match api_path + '/ticket_articles/:id/retry_security_process',             to: 'ticket_articles#retry_security_process',                    via: :post
+  match api_path + '/ticket_articles/:id/retry_whatsapp_attachment_download', to: 'ticket_articles#retry_whatsapp_attachment_download',        via: :post
 end

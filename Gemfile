@@ -1,22 +1,15 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 source 'https://rubygems.org'
 
 # core - base
-ruby '3.1.3'
-gem 'rails', '~> 7.0.8'
-
-# TEMPORARY Security updates from Ruby 3.1.4. Can be removed when updating from Ruby 3.1.3 to a higher version.
-# See also: https://www.ruby-lang.org/en/news/2023/03/30/ruby-3-1-4-released/
-gem 'time', '>= 0.2.2'
-gem 'uri', '>= 0.12.1'
-# END TEMPORARY
+ruby '3.2.4'
+gem 'rails', '~> 7.2.0'
 
 # core - rails additions
 gem 'activerecord-import'
 gem 'activerecord-session_store'
 gem 'bootsnap', require: false
-gem 'composite_primary_keys'
 gem 'json'
 gem 'parallel'
 
@@ -24,9 +17,8 @@ gem 'parallel'
 gem 'puma', group: :puma
 
 # core - supported ORMs
-gem 'activerecord-nulldb-adapter', group: :nulldb
 gem 'mysql2', group: :mysql
-gem 'pg', '~> 1.2.0', group: :postgres
+gem 'pg', '~> 1.5', '>= 1.5.4', group: :postgres
 
 # core - asynchrous task execution
 gem 'daemons'
@@ -84,7 +76,11 @@ group :assets do
   gem 'eco', require: false
 
   # asset handling - SASS
-  gem 'sassc-rails', require: false
+  # We cannot use sassc-rails, as it can lead to crashes on modern platforms like CentOS 9.
+  # See https://jcmaciel.com/apple-silicon-ruby-on-rails-crash-segfault-sassc/
+  #     https://github.com/sass/sassc-ruby/issues/197
+  # Pin to v5 which does not use sassc internally.
+  gem 'sass-rails', '~> 5', require: false
 
   # asset handling - pipeline
   gem 'sprockets', '~> 3.7.2', require: false
@@ -119,10 +115,10 @@ gem 'omniauth-weibo-oauth2', git: 'https://github.com/zammad-deps/omniauth-weibo
 gem 'rack-attack'
 
 # channels
-gem 'gmail_xoauth'
 gem 'koala'
 gem 'telegram-bot-ruby'
-gem 'twitter'
+gem 'twitter', '~> 7'
+gem 'whatsapp_sdk'
 
 # channels - email additions
 gem 'email_address'
@@ -190,22 +186,26 @@ gem 'PoParser', require: false
 # Simple storage
 gem 'aws-sdk-s3', require: false
 
+# Debugging and profiling
+gem 'byebug'
+gem 'pry-byebug'
+gem 'pry-rails'
+gem 'pry-remote'
+gem 'pry-rescue'
+gem 'pry-stack_explorer'
+gem 'pry-theme'
+
+# monitoring / system report
+gem 'macaddr'
+
+# watch file changes (also relevant for graphql generation in context of CDs)
+gem 'listen'
+
 # Gems used only for develop/test and not required
 # in production environments by default.
 group :development, :test do
 
-  # watch file changes
-  gem 'listen'
-
-  # debugging
-  gem 'byebug'
-  gem 'pry-rails'
-  gem 'pry-remote'
-  gem 'pry-rescue'
-  gem 'pry-stack_explorer'
-
   # test frameworks
-  gem 'minitest-profile', require: false
   gem 'rails-controller-testing'
   gem 'rspec-rails'
   gem 'rspec-retry'
@@ -223,12 +223,15 @@ group :development, :test do
   gem 'brakeman', require: false
   gem 'overcommit'
   gem 'rubocop'
+  gem 'rubocop-capybara'
+  gem 'rubocop-factory_bot'
   gem 'rubocop-faker'
   gem 'rubocop-graphql'
   gem 'rubocop-inflector'
   gem 'rubocop-performance'
   gem 'rubocop-rails'
   gem 'rubocop-rspec'
+  gem 'rubocop-rspec_rails'
 
   # generate random test data
   gem 'factory_bot_rails'
@@ -247,9 +250,6 @@ group :development, :test do
   # image comparison in tests
   gem 'chunky_png'
 
-  # refresh ENVs in CI environment
-  gem 'dotenv', require: false
-
   # Slack helper for testing
   gem 'slack-ruby-client', require: false
 
@@ -257,8 +257,10 @@ group :development, :test do
   gem 'localhost'
 
   # Keycloak admin tool for setting up SAML auth tests
-  gem 'httparty'
-  gem 'keycloak-admin', git: 'https://github.com/tschaefer/ruby-keycloak-admin/', branch: 'develop', require: false
+  gem 'keycloak-admin', github: 'tschaefer/ruby-keycloak-admin', tag: 'v26.0.0', require: false
+
+  # Debugging and profiling
+  gem 'pry-doc' # This gem is very large, so don't include it in production.
 end
 
 # To permanently extend Zammad with additional gems, you can specify them in Gemfile.local.

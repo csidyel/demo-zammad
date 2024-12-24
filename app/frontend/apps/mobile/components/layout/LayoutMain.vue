@@ -1,13 +1,15 @@
-<!-- Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/ -->
+<!-- Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/ -->
 
 <script setup lang="ts">
-import { headerOptions as header } from '#mobile/composables/useHeader.ts'
 import { computed, ref, unref } from 'vue'
 import { useRoute } from 'vue-router'
-// import TransitionViewNavigation from '../transition/TransitionViewNavigation/TransitionViewNavigation.vue'
+
 import { useStickyHeader } from '#shared/composables/useStickyHeader.ts'
+
+import { headerOptions as header } from '#mobile/composables/useHeader.ts'
+
 import LayoutBottomNavigation from './LayoutBottomNavigation.vue'
-import LayoutHeader from './LayoutHeader.vue'
+import LayoutHeader, { type Props as HeaderProps } from './LayoutHeader.vue'
 
 const route = useRoute()
 
@@ -36,7 +38,7 @@ const { stickyStyles } = useStickyHeader([title], headerElement)
     <LayoutHeader
       v-if="showHeader"
       ref="headerComponent"
-      v-bind="header"
+      v-bind="header as HeaderProps"
       :title="title"
       :style="stickyStyles.header"
     />
@@ -52,7 +54,7 @@ const { stickyStyles } = useStickyHeader([title], headerElement)
   </div>
 </template>
 
-<style land="scss" scoped>
+<style scoped>
 .BottomNavigationPadding {
   @apply w-full shrink-0;
 

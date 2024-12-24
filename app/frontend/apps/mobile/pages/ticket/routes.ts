@@ -1,8 +1,8 @@
-// Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
-
-import type { RouteRecordRaw } from 'vue-router'
+// Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 import { ticketInformationRoutes } from './views/TicketInformation/plugins/index.ts'
+
+import type { RouteRecordRaw } from 'vue-router'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -10,7 +10,7 @@ const routes: RouteRecordRaw[] = [
     name: 'TicketDetailView',
     props: true,
     component: () => import('./views/TicketDetailView.vue'),
-    alias: '/ticket/zoom/:internalId(\\d+)',
+    alias: ['/ticket/:internalId(\\d+)', '/ticket/zoom/:internalId(\\d+)'],
     children: [
       {
         path: '',

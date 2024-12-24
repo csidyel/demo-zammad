@@ -1,6 +1,7 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 require 'rails_helper'
+require 'system/examples/pagination_examples'
 
 RSpec.describe 'Manage > Overviews', type: :system do
   let(:group) { create(:group) }
@@ -43,6 +44,10 @@ RSpec.describe 'Manage > Overviews', type: :system do
 
   let(:overview) { create(:overview, condition: condition) }
 
+  context 'when ajax pagination' do
+    include_examples 'pagination', model: :overview, klass: Overview, path: 'manage/overviews', sort_by: :prio
+  end
+
   shared_examples 'previewing the correct ticket for single selected object' do
     before do
       wait.until { page.has_css?('.js-previewLoader.hide', visible: :all) }
@@ -54,7 +59,7 @@ RSpec.describe 'Manage > Overviews', type: :system do
 
       it 'shows selected customer ticket' do
         within '.js-preview .js-tableBody' do
-          expect(page).to have_selector('tr.item', text: ticket_one.title)
+          expect(page).to have_css('tr.item', text: ticket_one.title)
         end
       end
 
@@ -77,8 +82,8 @@ RSpec.describe 'Manage > Overviews', type: :system do
 
       it 'does not show customer ticket that is not selected' do
         within '.js-preview .js-tableBody' do
-          expect(page).to have_selector('tr.item', text: ticket_two.title)
-          expect(page).to have_selector('tr.item', text: ticket_three.title)
+          expect(page).to have_css('tr.item', text: ticket_two.title)
+          expect(page).to have_css('tr.item', text: ticket_three.title)
         end
       end
     end
@@ -95,8 +100,8 @@ RSpec.describe 'Manage > Overviews', type: :system do
 
       it 'shows selected customer ticket' do
         within '.js-preview .js-tableBody' do
-          expect(page).to have_selector('tr.item', text: ticket_one.title)
-          expect(page).to have_selector('tr.item', text: ticket_two.title)
+          expect(page).to have_css('tr.item', text: ticket_one.title)
+          expect(page).to have_css('tr.item', text: ticket_two.title)
         end
       end
 
@@ -119,7 +124,7 @@ RSpec.describe 'Manage > Overviews', type: :system do
 
       it 'does not show customer ticket that is not selected' do
         within '.js-preview .js-tableBody' do
-          expect(page).to have_selector('tr.item', text: ticket_three.title)
+          expect(page).to have_css('tr.item', text: ticket_three.title)
         end
       end
     end

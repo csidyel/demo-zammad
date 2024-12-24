@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module SessionHelper::CollectionBase
 
@@ -47,7 +47,7 @@ module SessionHelper::CollectionBase
       end
     end
 
-    if user.permissions?(['admin.core_workflow'])
+    if user.permissions?('admin.core_workflow')
       collections['CoreWorkflowCustomModule'] = CoreWorkflow::Custom.list.map { |m| { name: m } }
     end
 

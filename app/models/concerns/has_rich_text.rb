@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2023 Zammad Foundation, https://zammad-foundation.org/
+# Copyright (C) 2012-2024 Zammad Foundation, https://zammad-foundation.org/
 
 module HasRichText
   extend ActiveSupport::Concern
@@ -41,36 +41,15 @@ Checks if file is used inline
   def has_rich_text_parse_attribute(attr) # rubocop:disable Naming/PredicateName
     image_prefix = "#{self.class.name}_#{attr}"
     raw = send(attr)
+    return if raw.blank?
 
-    scrubber = Loofah::Scrubber.new do |node|
-      next if node.name != 'img'
-      next if !(cid = node.delete 'cid')
-
-      node['src'] = "cid:#{cid}"
-    end
-
-    parsed = Loofah.scrub_fragment(raw, scrubber).to_s
+    parsed = Loofah.scrub_fragment(raw, HtmlSanitizer::CidToSrc.new).to_s
     parsed = HtmlSanitizer.strict(parsed)
-
-    line_breaks = ["\n", "\r", "\r\n"]
-    scrubber_cleaner = Loofah::Scrubber.new(direction: :bottom_up) do |node|
-      case node.name
-      when 'span'
-        node.children.reject { |t| line_breaks.include?(t.text) }.each { |child| node.before child }
-
-        node.remove
-      when 'div'
-        node.children.to_a.select { |t| t.text.match?(%r{\A([\n\r]+)\z}) }.each(&:remove)
-
-        node.remove if node.children.none? && node.classes.none?
-      end
-    end
-
-    parsed = Loofah.scrub_fragment(parsed, scrubber_cleaner).to_s
+    parsed = Loofah.scrub_fragment(parsed, HtmlSanitizer::RemoveLineBreaks.new).to_s
 
     (parsed, attachments_inline) = HtmlSanitizer.replace_inline_images(parsed, image_prefix)
 
-    send("#{attr}=", parsed)
+    send(:"#{attr}=", parsed)
 
     self.has_rich_text_attachments_cache ||= []
     self.has_rich_text_attachments_cache += attachments_inline
@@ -94,7 +73,7 @@ Checks if file is used inline
     attrs = super
 
     self.class.has_rich_text_attributes.each do |attr|
-      attrs[attr.to_s] = send("#{attr}_with_urls")
+      attrs[attr.to_s] = send(:"#{attr}_with_urls")
     end
 
     attrs
@@ -111,7 +90,7 @@ Checks if file is used inline
 
   def has_rich_text_cleanup_unused_attachments # rubocop:disable Naming/PredicateName
     active_cids = has_rich_text_attributes.each_with_object([]) do |elem, memo|
-      memo.concat self.class.has_rich_text_inline_cids(self, elem)
+      memo.concat HasRichText.extract_inline_cids(send(elem))
     end
 
     attachments
@@ -125,17 +104,15 @@ Checks if file is used inline
       (self.has_rich_text_attributes += attrs.map(&:to_sym)).freeze
 
       attrs.each do |attr|
-        define_method "#{attr}_with_urls" do
-          self.class.has_rich_text_insert_urls(self, attr)
+        define_method :"#{attr}_with_urls" do
+          HasRichText.insert_urls(send(attr), attachments)
         end
       end
     end
+  end
 
-    def has_rich_text_insert_urls(object, attr) # rubocop:disable Naming/PredicateName
-      raw = object.send(attr)
-
-      attachments = object.attachments
-
+  class << self
+    def insert_urls(raw, attachments)
       scrubber = Loofah::Scrubber.new do |node|
         next if node.name != 'img'
         next if !node['src']&.start_with?('cid:')
@@ -154,12 +131,9 @@ Checks if file is used inline
       end
 
       Loofah.scrub_fragment(raw, scrubber).to_s
-
     end
 
-    def has_rich_text_inline_cids(object, attr) # rubocop:disable Naming/PredicateName
-      raw = object.send(attr)
-
+    def extract_inline_cids(raw)
       inline_cids = []
 
       scrubber = Loofah::Scrubber.new do |node|

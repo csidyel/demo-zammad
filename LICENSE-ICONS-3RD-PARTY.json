@@ -229,6 +229,11 @@
         "url": "",
         "license": "MIT"
     },
+    "file-audio.svg": {
+        "author": "Zammad",
+        "url": "",
+        "license": "MIT"
+    },
     "file-calendar.svg": {
         "author": "Felix Niklas",
         "url": "",
@@ -249,6 +254,11 @@
         "url": "",
         "license": "MIT"
     },
+    "file-image.svg": {
+        "author": "Zammad",
+        "url": "",
+        "license": "MIT"
+    },
     "file-pdf.svg": {
         "author": "Adobe",
         "url": "",
@@ -266,6 +276,11 @@
     },
     "file-unknown.svg": {
         "author": "Felix Niklas",
+        "url": "",
+        "license": "MIT"
+    },
+    "file-video.svg": {
+        "author": "Zammad",
         "url": "",
         "license": "MIT"
     },
@@ -749,6 +764,11 @@
         "url": "",
         "license": "MIT"
     },
+    "status-report.svg": {
+        "author": "Zammad",
+        "url": "",
+        "license": "MIT"
+    },
     "stopwatch.svg": {
         "author": "Zammad",
         "url": "",
@@ -833,6 +853,11 @@
         "author": "R\u00e9my M\u00e9dard",
         "url": "https:\/\/thenounproject.com\/search\/?q=user&i=10314",
         "license": "CC 3.0 Attribution"
+    },
+    "whatsapp.svg": {
+        "author": "Meta",
+        "url": "https://about.meta.com/uk/brand/resources/whatsapp/whatsapp-brand/",
+        "license": ""
     },
     "web.svg": {
         "author": "Zammad",
