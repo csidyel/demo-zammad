@@ -44,18 +44,7 @@ jobs:
           key: gems-v1{{ checksum "Gemfile.lock" }}          
           paths:
             - vendor
-
-workflows:
-  nightly-snapshot:
-    triggers: #use the triggers key to indicate a scheduled build
-      - schedule:
-          cron: "0 8,14,20 * * *" # use cron syntax to set the schedule
-          filters:
-            branches:
-              only:
-                - circle-docker-large
-    jobs:
-      - zammad              
+          
   CI-workflow:
     jobs:
       - zammad
