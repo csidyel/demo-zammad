@@ -9,16 +9,14 @@ jobs:
           RAILS_ENV: test
           Z_LOCALES: "en-us:de-de"
           REDIS_URL: redis://redis:6379
-          ## Compile assets only once.
           CI_SKIP_ASSETS_PRECOMPILE: 'true'
-          # Avoid unnecessary DB resets.
           CI_SKIP_DB_RESET: 'true'
       - image: cimg/postgres:16.0
         environment:
           POSTGRES_USER: zammad
           POSTGRES_PASSWORD: zammad
       - image: cimg/redis:5.0
-      
+
     resource_class: large
     steps:
       - checkout
@@ -41,10 +39,12 @@ jobs:
             - node_modules/
       - save_cache:
           name: Save Ruby Gems
-          key: gems-v1{{ checksum "Gemfile.lock" }}          
+          key: gems-v1{{ checksum "Gemfile.lock" }}
           paths:
             - vendor
-          
+
+workflows:
+  version: 2
   CI-workflow:
     jobs:
       - zammad
