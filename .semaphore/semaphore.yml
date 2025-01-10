@@ -16,7 +16,7 @@ global_job_config:
   prologue:
     commands:
       - checkout
-      - sem-version ruby 3.2.2
+      - sem-version ruby 3.2.4
       - cache restore
       - bundle install --deployment --path vendor/bundle
 blocks:
