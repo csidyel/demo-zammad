@@ -70,6 +70,8 @@ blocks:
           commands:
             - 'bundle exec rake db:setup'
             - 'CI_NODE_TOTAL=$SEMAPHORE_JOB_COUNT CI_NODE_INDEX=$((SEMAPHORE_JOB_INDEX-1)) bundle exec rake "knapsack:rspec[-t ~manual -t ~v4 --format RspecJunitFormatter --out report.xml --format documentation]"'
+      secrets:
+        - name: KNAPSACK_PRO_TEST_SUITE_TOKEN_RSPEC
       epilogue:
         always:
           commands:
