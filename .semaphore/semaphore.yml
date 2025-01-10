@@ -1,55 +1,86 @@
 version: v1.0
-name: Zammad CI
+name: "\U0001F48E Ruby CI Pipeline"
 agent:
   machine:
     type: f1-standard-2
-    os_image: ubuntu2004
+    os_image: ubuntu2204
+fail_fast:
+  stop:
+    when: branch != 'master'
+auto_cancel:
+  running:
+    when: branch != 'master'
+  queued:
+    when: branch = 'master'
+global_job_config:
+  prologue:
+    commands:
+      - checkout
+      - sem-version ruby 3.2.2
+      - cache restore
+      - bundle install --deployment --path vendor/bundle
 blocks:
-  - name: CI test
+  - name: "\U0001F527 Setup and Cache"
+    task:
+      jobs:
+        - name: Install Dependencies
+          commands:
+            - cache store
+    dependencies: []
+  - name: "\U0001F9F9 Run RuboCop"
+    task:
+      jobs:
+        - name: bundle exec rubocop
+          commands:
+            - bundle exec rubocop
+    dependencies:
+      - "\U0001F527 Setup and Cache"
+  - name: "\U0001F6E1️ Run Brakeman"
+    task:
+      jobs:
+        - name: bundle exec brakeman --force
+          commands:
+            - bundle exec brakeman --force
+    dependencies:
+      - "\U0001F527 Setup and Cache"
+  - name: "\U0001F50D Run Bundler Audit"
+    task:
+      jobs:
+        - name: bundle exec bundle-audit check --update
+          commands:
+            - bundle exec bundle-audit check --update
+    dependencies:
+      - "\U0001F527 Setup and Cache"
+  - name: "\U0001F6A6 Test Suite"
     task:
       env_vars:
         - name: RAILS_ENV
           value: test
-        - name: Z_LOCALES
-          value: 'en-us:de-de'
-        - name: TZ
-          value: Europe/London
-        - name: CI_SKIP_ASSETS_PRECOMPILE
-          value: 'true'
-        - name: CI_SKIP_DB_RESET
-          value: 'true'
+        - name: PGHOST
+          value: 127.0.0.1
+        - name: PGUSER
+          value: postgres
+        - name: KNAPSACK_TEST_FILE_PATTERN
+          value: 'spec/**{,/*/**}/*_spec.rb'
+        - name: KNAPSACK_REPORT_PATH
+          value: knapsack_rspec_rails_report.json
       jobs:
-        - name: CI
+        - name: "\U0001F7E2 RSpec Tests "
+          parallelism: 5
           commands:
-            - checkout
-            - cache restore
-            - sem-service start postgres 17 --username=zammad --password=zammad
-            - sem-service start redis 5
-            - sem-version ruby 3.2.4
-            - sem-version node 20.11.0
-            - sudo apt-get update
-            - sudo apt-get install -y -f optipng jhead imagemagick libimlib2 openssl direnv shellcheck libimlib2-dev libxss1
-            - echo '127.0.0.1 redis postgresql' | sudo tee -a /etc/hosts
-            - rbenv rehash
-            - bundle install --path vendor/bundle
-            - npm install -g pnpm
-            - pnpm install
-            - 'pnpm cypress:install'
-            - bundle exec ruby .gitlab/configure_environment.rb
-            - 'bundle exec rake zammad:db:init'
-            - for FILE in i18n/*.pot i18n/*.po; do echo "Checking $FILE"; msgfmt -o /dev/null -c "$FILE"; done
-            - 'bundle exec rails generate zammad:translation_catalog --check'
-            - bundle exec brakeman -o /dev/stdout -o tmp/brakeman-report.html
-            - 'bundle exec rails zeitwerk:check'
-            - .gitlab/check_graphql_api_consistency.sh
-            - bundle exec .dev/rubocop/validate_todos.rb
-            - bundle exec rubocop --parallel
-            - '#npm install -g coffeelint'
-            - '#coffeelint --rules ./.dev/coffeelint/rules/* app/'
-            - pnpm lint
-            - 'bundle exec rake assets:precompile'
-            - pnpm test
-            - 'bundle exec rake zammad:db:init'
-            - bundle exec rspec --exclude-pattern "spec/system/**/*_spec.rb" -t ~searchindex -t ~integration -t ~required_envs
-            - 'bundle exec rake zammad:db:reset'
-            - 'bundle exec rake test:units'
+            - 'bundle exec rake db:setup'
+            - 'CI_NODE_TOTAL=$SEMAPHORE_JOB_COUNT CI_NODE_INDEX=$((SEMAPHORE_JOB_INDEX-1)) bundle exec rake "knapsack:rspec[-t ~manual -t ~v4 --format RspecJunitFormatter --out report.xml --format documentation]"'
+      epilogue:
+        always:
+          commands:
+            - '[[ -f report.xml ]] && test-results publish report.xml'
+    dependencies:
+      - "\U0001F50D Run Bundler Audit"
+      - "\U0001F6E1️ Run Brakeman"
+      - "\U0001F9F9 Run RuboCop"
+after_pipeline:
+  task:
+    jobs:
+      - name: "Merge Reports \U0001F4CA"
+        commands:
+          - test-results gen-pipeline-report
